@@ -7,11 +7,8 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from django.db import transaction
 from rest_framework import serializers
-# from workflows.serializers import (
-#     ResignationRequestWorkflowSerializer,
-#     TerminationInitiationWorkflowSerializer,
-#     RetirementRequestWorkflowSerializer,
-# )
+from django.db.utils import IntegrityError
+from django.db.models import Max
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from .models import (
     EmployeeSeparation,
@@ -20,16 +17,20 @@ from .models import (
     InstitutionEmployeeSeparationTypes,
     InstitutionSeparationPolicy,
     ResignationRequest,
+    SeparationStageProgress,
     TerminationInitiation,
     RetirementRequest,
 )
 from .serializers import (
     EmployeeSeparationSerializer,
+    EmployeeSeparationWithStagesSerializer,
     OnBoardingSerializer,
     OffboardingStageSerializer,
     InstitutionEmployeeSeparationTypesSerializer,
     InstitutionSeparationPolicySerializer,
     ResignationRequestSerializer,
+    SeparationStageProgressReorderSerializer,
+    SeparationStageProgressSerializer,
     TerminationInitiationSerializer,
     RetirementRequestSerializer,
 )
@@ -984,3 +985,178 @@ class OffboardingDashboardView(APIView):
         }
 
         return Response(dashboard_data)
+    
+
+
+class EmployeeSeparationListView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = [
+        "effective_date",
+        "separation_status",
+        "employee__user__fullname",
+        "employee_separation_type__separation_type",
+        "created_at",
+    ]
+    default_ordering = ["-created_at"]   
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=EmployeeSeparationWithStagesSerializer(many=True),
+                description="Paginated list of employee separations with stage progress, filtered by stage status and/or name.",
+            ),
+            400: OpenApiResponse(description="Bad request (e.g., user institution not found or invalid stage status)"),
+        },
+        tags=["Offboarding"],
+        summary="List Employee Separations with Stage Progress"
+    )
+    def get(self, request):
+        profile = request.user.profile
+        try:
+            institution = profile.institution
+        except AttributeError:
+            return Response(
+                {"detail": "User profile has no institution."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = EmployeeSeparation.objects.filter(
+            employee__department__institution=institution,
+            deleted_at__isnull=True,
+        ).select_related(
+            "employee",
+            "employee__user",
+            "employee_separation_type",
+            "initiated_by",
+        ).prefetch_related(
+            "stages",
+            "stages__stage",
+        )
+
+        search = request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                Q(employee__user__fullname__icontains=search)
+                | Q(employee_separation_type__separation_type__icontains=search)
+            )
+
+        stage_status = request.query_params.get("stage_status")
+        if stage_status:
+            if stage_status not in ["not_started", "in_progress", "completed", "skipped"]:
+                return Response(
+                    {"detail": "Invalid stage_status. Must be one of: not_started, in_progress, completed, skipped."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            queryset = queryset.filter(stages__status=stage_status)
+
+        stage_name = request.query_params.get("stage_name")
+        if stage_name:
+            queryset = queryset.filter(stages__stage__stage_name__icontains=stage_name)
+
+        queryset = queryset.distinct()
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = EmployeeSeparationWithStagesSerializer(page, many=True, context={"request": request})
+        return paginator.get_paginated_response(serializer.data)  
+    
+
+class ReorderSeparationStageView(APIView):
+
+    @extend_schema(
+        request=SeparationStageProgressReorderSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=SeparationStageProgressSerializer(many=True),
+                description="Stages reordered successfully.",
+            ),
+            400: OpenApiResponse(description="Invalid input or policy violation"),
+            404: OpenApiResponse(description="EmployeeSeparation or stages not found"),
+        },
+        tags=["Offboarding"],
+        summary="Reorder Separation Stage Progress",
+        description="Move one SeparationStageProgress above another, swapping their position numbers."
+    )
+    @transaction.atomic
+    def post(self, request, separation_id):
+        try:
+            separation = EmployeeSeparation.objects.get(
+                id=separation_id,
+                employee__department__institution=request.user.profile.institution,
+                deleted_at__isnull=True,
+            )
+        except EmployeeSeparation.DoesNotExist:
+            return Response(
+                {"detail": "EmployeeSeparation not found or not authorized."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = SeparationStageProgressReorderSerializer(
+            data=request.data, context={"separation_id": separation_id}
+        )
+        if serializer.is_valid():
+            source_stage_id = serializer.validated_data["source_stage_id"]
+            target_stage_id = serializer.validated_data["target_stage_id"]
+
+            try:
+                with transaction.atomic():
+                    # Lock the rows to prevent race conditions
+                    source_stage = SeparationStageProgress.objects.select_for_update().get(
+                        id=source_stage_id, separation=separation
+                    )
+                    target_stage = SeparationStageProgress.objects.select_for_update().get(
+                        id=target_stage_id, separation=separation
+                    )
+
+                    # Get the current position numbers
+                    source_position = source_stage.position
+                    target_position = target_stage.position
+
+                    # Use a temporary placeholder to avoid unique constraint violation
+                    max_position = SeparationStageProgress.objects.filter(
+                        separation=separation, deleted_at__isnull=True
+                    ).aggregate(Max("position"))["position__max"] or 0
+                    temp_position = max_position + 1
+
+                    # Step 1: Set source_stage to temporary position
+                    source_stage.position = temp_position
+                    source_stage.save(update_fields=["position"])
+
+                    # Step 2: Set target_stage to source_stage's original position
+                    target_stage.position = source_position
+                    target_stage.save(update_fields=["position"])
+
+                    # Step 3: Set source_stage to target_stage's original position
+                    source_stage.position = target_position
+                    source_stage.save(update_fields=["position"])
+
+                    # Return the updated list of stages for the separation
+                    stages = SeparationStageProgress.objects.filter(
+                        separation=separation, deleted_at__isnull=True
+                    ).order_by("position").select_related("stage")
+                    response_serializer = SeparationStageProgressSerializer(
+                        stages, many=True, context={"request": request}
+                    )
+                    return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+            except SeparationStageProgress.DoesNotExist:
+                return Response(
+                    {"error": "Source or target stage does not exist."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except IntegrityError as e:
+                return Response(
+                    {"error": f"Database error during reordering: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            except Exception as e:
+                return Response(
+                    {"error": f"Unexpected error: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  

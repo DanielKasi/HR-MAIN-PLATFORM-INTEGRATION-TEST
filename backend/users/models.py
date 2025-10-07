@@ -98,8 +98,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedMod
     
     def has_permission(self, perm_name):
         """Check if user has a specific permission."""
+        # Superusers always have access
         if self.is_active and self.is_superuser:
             return True
+        
+        # Check if user is the institution owner
+        if hasattr(self, 'profile') and self.profile.institution:
+            if self.profile.institution.institution_owner == self:
+                return True
+        
+        # Check against user's assigned permissions
         return perm_name in self.get_all_permissions()
 
     def has_perm(self, perm, obj=None):
@@ -222,15 +230,6 @@ class Role(BaseApprovableModel):
         null=True,
         blank=True,
     )
-
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["name", "institution"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_name_per_institution",
-            )
-        ]
 
     def save(self, *args, **kwargs):
         self.name = self.name.lower()

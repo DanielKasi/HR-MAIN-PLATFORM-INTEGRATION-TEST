@@ -254,7 +254,7 @@ export default function AttendanceDashboard() {
 					<ReportDialog
 						isOpen={isReportsDialogOpen}
 						onClose={() => setIsReportsDialogOpen(false)}
-						app="attendance"
+						app="employee"
 					/>
 				</div>
 			)}

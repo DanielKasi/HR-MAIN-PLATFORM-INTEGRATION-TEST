@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.db import models
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from employee.models import Employee
 from django.template.loader import render_to_string
 from django.core.mail import send_mail, EmailMultiAlternatives
@@ -76,9 +77,13 @@ class OffboardingStage(BaseApprovableModel):
     )
     stage_name = models.CharField(max_length=100, blank=False, null=False)
     stage_description = models.TextField(blank=True, null=True)
+    position = models.PositiveIntegerField(
+        default=0,
+        help_text="The order of this stage in the offboarding process (lower numbers come first)."
+    )
 
     def __str__(self):
-        return f"{self.institution.institution_name} - {self.stage_name}"
+        return f"{self.institution.institution_name} - {self.stage_name} (Position: {self.position})"
 
     class Meta:
         unique_together = (("institution", "stage_name"),)
@@ -87,12 +92,29 @@ class OffboardingStage(BaseApprovableModel):
                 fields=["institution", "stage_name"],
                 condition=Q(deleted_at__isnull=True),
                 name="unique_active_stage_name_per_institution",
-            )
+            ),
+            UniqueConstraint(
+                fields=["institution", "position"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_position_per_institution",
+            ),
         ]
+        indexes = [
+            models.Index(fields=["institution", "position"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.position == 0:  # Automatically set position if not provided
+            max_position = OffboardingStage.objects.filter(
+                institution=self.institution,
+                deleted_at__isnull=True
+            ).aggregate(models.Max('position'))['position__max'] or 0
+            self.position = max_position + 1
+        super().save(*args, **kwargs)
 
     def get_institution(self):
         return self.institution
-    
+
     @classmethod
     def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
@@ -102,6 +124,7 @@ class OffboardingStage(BaseApprovableModel):
         ).select_related('institution')
         return list(queryset.values(
             'stage_name',
+            'position',
             'created_at'
         ))
 
@@ -212,7 +235,7 @@ class InstitutionSeparationPolicy(BaseApprovableModel):
         ]
 
 
-class EmployeeSeparation(models.Model):
+class EmployeeSeparation(SoftDeletableTimeStampedModel):
     employee_separation_type = models.ForeignKey(
         InstitutionEmployeeSeparationTypes,
         on_delete=models.CASCADE,
@@ -256,13 +279,21 @@ class EmployeeSeparation(models.Model):
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
+        if is_new:
+            # Create progress records for all supported stages
+            supported_stages = self.employee_separation_type.supported_stages.filter(
+                deleted_at__isnull=True
+            )
+            for stage in supported_stages:
+                SeparationStageProgress.objects.get_or_create(
+                    separation=self,
+                    stage=stage,
+                    defaults={"status": "not_started"}
+                )
+
         if not is_new and self.separation_status == "completed":
-            # We Deactivate the employee when separation is completed
             self.employee.is_active = False
-
             self.employee.save()
-
-            # We deactivate the user account associated with the employee
             if self.employee.user:
                 self.employee.user.is_active = False
                 self.employee.user.save()
@@ -326,6 +357,8 @@ class ResignationRequest(BaseApprovableModel):
 
     def get_institution(self):
         return self.separation.employee.department.institution
+    
+    
 
     def finish_workflow(self, approval: Approval):
         with transaction.atomic():
@@ -541,7 +574,7 @@ class RetirementRequest(BaseApprovableModel):
                 self.separation.save()
 
 
-class SeparationStageProgress(models.Model):
+class SeparationStageProgress(SoftDeletableTimeStampedModel):
     separation = models.ForeignKey(
         EmployeeSeparation,
         on_delete=models.CASCADE,
@@ -563,8 +596,19 @@ class SeparationStageProgress(models.Model):
         default="not_started",
     )
     notes = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    position = models.PositiveIntegerField(
+        default=0,
+        help_text="Custom position of this stage for the specific separation (overrides OffboardingStage.position)."
+    )
 
     def __str__(self):
         return f"{self.separation.employee.user.fullname} - {self.stage.stage_name} ({self.status})"
+    
+    def clean(self):
+        if self.stage not in self.separation.employee_separation_type.supported_stages.all():
+            raise ValidationError({"error": f"Stage {self.stage.stage_name} is not supported for this separation type."})
+
+    def save(self, *args, **kwargs):
+        if self.position == 0:
+            self.position = self.stage.position
+        super().save(*args, **kwargs)

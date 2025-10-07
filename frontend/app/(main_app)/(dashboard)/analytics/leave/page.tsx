@@ -193,7 +193,7 @@ export default function AttendanceDashboard() {
 					<ReportDialog
 						isOpen={isReportsDialogOpen}
 						onClose={() => setIsReportsDialogOpen(false)}
-						app="leave"
+						app="leave_mgt"
 					/>
 				</div>
 			)}
