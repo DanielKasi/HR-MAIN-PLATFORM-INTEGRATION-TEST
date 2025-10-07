@@ -12,6 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
 from approval.models import Approval, BaseApprovableModel
 from django.db import transaction
+from django.db.models import Count
 
 
 class RequiredDocument(SoftDeletableTimeStampedModel):
@@ -211,6 +212,20 @@ class JobPositionAdvert(BaseApprovableModel):
 
     def __str__(self):
         return f"{self.job_position.name} - {self.job_position_advert_status} ({self.published_date})"
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            published_date__range=(start_date, end_date)
+        ).select_related('job_position')
+        return list(queryset.values(
+            'job_position__name',
+            'job_position_advert_status',
+            'advert_type',
+            'published_date',
+            'expiry_date',
+            'number_of_employees_expected',
+        ))
 
     def clean(self):
         """Validate that no other active advert exists for the same job position."""
@@ -363,6 +378,23 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
         if is_new_application:
             self.send_application_received_email()
 
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            application_date__range=(start_date, end_date)
+        ).select_related('job_position_advert__job_position')
+        return list(queryset.values(
+            'applicant_name',
+            'applicant_email',
+            'applicant_phone',
+            'application_date',
+            'status',
+            'gender',
+            'source',
+            'country',
+            'job_position_advert__job_position__name',
+        ).annotate(docs_count=Count('documents')))        
+
     def send_application_received_email(self):
         """Send confirmation email when application is received"""
         try:
@@ -471,6 +503,18 @@ class InterviewStage(BaseApprovableModel):
 
     def get_institution(self):
         return self.job_position_advert.job_position.department.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            job_position_advert__published_date__range=(start_date, end_date)
+        ).select_related('job_position_advert__job_position')
+        return list(queryset.values(
+            'name',
+            'level',
+            'job_position_advert__job_position__name',
+            'job_position_advert__published_date',
+        ))
 
 
 class JobInterview(BaseApprovableModel):
@@ -532,6 +576,23 @@ class JobInterview(BaseApprovableModel):
 
         if create_event:
             self._create_interview_event()
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            interview_date__range=(start_date, end_date)
+        ).select_related('job_position_application', 'interview_stage')
+        return list(queryset.values(
+            'job_position_application__applicant_name',
+            'interview_stage__name',
+            'interview_type',
+            'interview_date',
+            'interview_time',
+            'status',
+            'rating',
+            'additional_notes',
+        ))
+        
 
     def send_interview_scheduled_email(self):
         """Send email notification when interview is scheduled"""
@@ -753,4 +814,17 @@ class SkillZone(BaseApprovableModel):
         return f"SkillZone: {self.candidate.applicant_name} ({self.candidate.job_position_advert.job_position.name})"
     
     def get_institution(self):
-        return self.candidate.job_position_advert.job_position.department.institution    
+        return self.candidate.job_position_advert.job_position.department.institution   
+ 
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('candidate__job_position_advert__job_position')
+        return list(queryset.values(
+            'candidate__applicant_name',
+            'candidate__job_position_advert__job_position__name',
+            'created_at',
+            'potential_value',
+        ))
+    

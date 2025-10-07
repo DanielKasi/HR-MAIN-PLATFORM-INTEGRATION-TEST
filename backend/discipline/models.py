@@ -80,6 +80,24 @@ class DisciplinaryAction(BaseApprovableModel):
             else str(self.employee)
         )
         return f"{employee_name} - {self.discipline_type.name} ({self.incident_date})"
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            incident_date__range=(start_date, end_date)
+        ).select_related('employee', 'discipline_type', 'reported_by', 'assigned_to')
+        return list(queryset.values(
+            'employee__name',
+            'discipline_type__name',
+            'incident_date',
+            'reported_date',
+            'status',
+            'reported_by__name',
+            'assigned_to__name',
+            'resolution_date',
+            'follow_up_required',
+            'follow_up_date'
+        ))
 
     def get_institution(self):
         return self.employee.department.institution       

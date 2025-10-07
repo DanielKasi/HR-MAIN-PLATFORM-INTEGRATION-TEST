@@ -9,8 +9,12 @@ import BarHChart from "../_components/barh.chart";
 import BarVChart from "../_components/barv.chart";
 import LoadingComponent from "@/components/LoadingComponent";
 import DepartmentTreeMap from "./department.treemap";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function EmployeePage() {
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
 	const initialData: IEmployeeDashboard = {
 		total_employees: 0,
 		employees_by_gender: [
@@ -87,11 +91,18 @@ export default function EmployeePage() {
 				<div className="bg-background p-6 min-h-screen">
 					<div className="space-y-8">
 						{/* Header */}
-						<div className="space-y-2">
-							<h1 className="text-4xl font-bold text-foreground">Employee Analytics Dashboard</h1>
-							<p className="text-lg text-muted-foreground">
-								Comprehensive workforce insights and metrics
-							</p>
+						<div className="flex flex-col md:flex-row items-center justify-between gap-8">
+							<div className="space-y-2">
+								<h1 className="text-4xl font-bold text-foreground">Employee Analytics Dashboard</h1>
+								<p className="text-lg text-muted-foreground">
+									Comprehensive workforce insights and metrics
+								</p>
+							</div>
+							<div className="flex items-center justify-end gap-8">
+								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+									Generate Reports
+								</Button>
+							</div>
 						</div>
 
 						{/* Key Metrics */}
@@ -161,6 +172,11 @@ export default function EmployeePage() {
 							/>
 						</div>
 					</div>
+					<ReportDialog
+						isOpen={isReportsDialogOpen}
+						onClose={() => setIsReportsDialogOpen(false)}
+						app="employee"
+					/>
 				</div>
 			)}
 		></LoadingComponent>

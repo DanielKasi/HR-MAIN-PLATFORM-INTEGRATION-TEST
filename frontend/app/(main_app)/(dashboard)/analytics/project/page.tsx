@@ -6,11 +6,15 @@ import Piechart from "../_components/pie.chart";
 import colors from "../_components/colors";
 import BarHChart from "../_components/barh.chart";
 import { IProjectDashboard } from "@/types/project.type";
-import { getProjectDashboard } from "@/lib/utils";
 import BarVChart from "../_components/barv.chart";
 import ProjectsTable from "./projects.table";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function PayrollDashboard() {
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
+
 	const initialData: IProjectDashboard = {
 		projects: {
 			total: 5,
@@ -123,10 +127,15 @@ export default function PayrollDashboard() {
 				<div className="min-h-screen bg-gray-50 p-6">
 					<div className="space-y-8">
 						{/* Header */}
-						<div className="gap-4 flex">
+						<div className="flex flex-col items-center justify-between gap-8 ">
 							<h1 className="flex-grow text-4xl font-bold text-slate-900 text-balance">
 								Projects Analytics
 							</h1>
+							<div className="flex items-center justify-end gap-8">
+								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+									Generate Reports
+								</Button>
+							</div>
 						</div>
 
 						{/* Key Metrics */}
@@ -206,6 +215,11 @@ export default function PayrollDashboard() {
 
 						<ProjectsTable />
 					</div>
+					<ReportDialog
+						isOpen={isReportsDialogOpen}
+						onClose={() => setIsReportsDialogOpen(false)}
+						app="project"
+					/>
 				</div>
 			)}
 		></LoadingComponent>

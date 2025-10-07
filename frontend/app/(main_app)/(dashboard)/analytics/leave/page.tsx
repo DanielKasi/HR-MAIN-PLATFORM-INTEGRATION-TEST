@@ -16,8 +16,12 @@ import {
 } from "@/components/ui/select";
 import LeaveTable from "./leave.table";
 import { getLeaveDashboard } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function AttendanceDashboard() {
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
 	const initialData: ILeaveDashboard = {
 		total_leave_applications: 3,
 		applications_by_status: [
@@ -97,19 +101,26 @@ export default function AttendanceDashboard() {
 				<div className="min-h-screen bg-gray-50 p-6">
 					<div className="space-y-8">
 						{/* Header */}
-						<div className="gap-4 flex">
-							<h1 className="flex-grow text-4xl font-bold text-slate-900 text-balance">
-								Leave Analytics
-							</h1>
-							<div className="text-right">
-								<Select>
-									<SelectTrigger className="text-slate-900">
-										<SelectValue placeholder="This Year" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="This Year">This Year</SelectItem>
-									</SelectContent>
-								</Select>
+						<div className="flex flex-col md:flex-row items-center justify-between gap-8">
+							<div className="gap-4 flex">
+								<h1 className="flex-grow text-4xl font-bold text-slate-900 text-balance">
+									Leave Analytics
+								</h1>
+								<div className="text-right">
+									<Select>
+										<SelectTrigger className="text-slate-900">
+											<SelectValue placeholder="This Year" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="This Year">This Year</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<div className="flex items-center justify-end gap-8">
+								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+									Generate Reports
+								</Button>
 							</div>
 						</div>
 
@@ -179,6 +190,11 @@ export default function AttendanceDashboard() {
 
 						<LeaveTable />
 					</div>
+					<ReportDialog
+						isOpen={isReportsDialogOpen}
+						onClose={() => setIsReportsDialogOpen(false)}
+						app="leave"
+					/>
 				</div>
 			)}
 		></LoadingComponent>

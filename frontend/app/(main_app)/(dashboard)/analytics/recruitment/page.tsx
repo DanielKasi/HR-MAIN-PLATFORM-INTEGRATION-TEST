@@ -10,8 +10,12 @@ import RecentHiresTable from "./recent-hires";
 import colors from "../_components/colors";
 import BarSChart from "../_components/bars.chart";
 import BarVChart from "../_components/barv.chart";
+import { Button } from "@/components/ui/button";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function RecruitmentDashboard() {
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
+
 	const [data, setData] = useState<IRecruitmentDashboard | null>({
 		total_job_positions: 0,
 		active_job_positions: 0,
@@ -99,10 +103,15 @@ export default function RecruitmentDashboard() {
 	return (
 		<main className="space-y-6 p-6 min-h-screen bg-background">
 			{/* Header */}
-			<div className="flex gap-2 items-center w-full">
+			<div className="flex flex-col items-center justify-between gap-8 w-full">
 				<h1 className="flex-grow text-3xl font-bold tracking-tight text-slate-900">
 					Recruitment Analytics
 				</h1>
+				<div className="flex items-center justify-end gap-8">
+					<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+						Generate Reports
+					</Button>
+				</div>
 			</div>
 
 			{/* Key Metrics */}
@@ -156,6 +165,14 @@ export default function RecruitmentDashboard() {
 			{data.applications_over_time.length > 0 && (
 				<RecentHiresTable data={data.recent_hires} className="!border-none" />
 			)}
+<<<<<<< HEAD
+=======
+			<ReportDialog
+				isOpen={isReportsDialogOpen}
+				onClose={() => setIsReportsDialogOpen(false)}
+				app="recruitment"
+			/>
+>>>>>>> 8a8e9680bb6f09fe4de2e3daebf88f6dc38065cb
 		</main>
 	);
 }

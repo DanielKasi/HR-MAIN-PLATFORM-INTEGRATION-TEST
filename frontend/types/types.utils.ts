@@ -175,6 +175,8 @@ export interface JobApplication {
 	country: string;
 	source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
 	created_by: number;
+	// Add documents array
+	documents: JobApplicationDocument[];
 }
 
 export interface JobApplicationFormData {
@@ -182,22 +184,61 @@ export interface JobApplicationFormData {
 	applicant_name: string;
 	applicant_email: string;
 	applicant_phone?: string;
-	resume: File | null;
-	cover_letter?: File | null;
-	application_date?: string;
-	status?: JobApplicationStatus;
+	resume?: File | undefined;
+	cover_letter?: File | undefined;
+	status: string;
 	gender: "male" | "female";
 	state?: string;
 	address: string;
+	address_latitude?: string;
+	address_longitude?: string;
 	country: string;
-	source?: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
-	created_by?: number;
+	source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
+	recommended_by?: number;
+	application_date: string;
+	created_by: number;
+	required_document_files: Record<string, File>;
+	selectedJobRequiredDocuments?: RequiredDocument[];
+	// Add missing fields from backend schema
+	positions?: string;
+	job_position_advert_job_details?: string;
 	reviewed_by?: number;
 	shortlisted_by?: number;
+}
+
+export interface FormDataState {
+	job_position_advert: number;
+	applicant_name: string;
+	applicant_email: string;
+	applicant_phone: string;
+	resume: File | null;
+	cover_letter?: File | null;
+	status: "new";
+	gender: "male" | "female";
+	state: string;
+	address: string;
+	address_latitude: string;
+	address_longitude: string;
+	country: string;
+	source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
 	recommended_by?: number;
-	reviewed_by_name?: string;
-	shortlisted_by_name?: string;
-	recommended_by_name?: string;
+	application_date: string;
+	created_by: number;
+	required_document_files: Record<string, File>;
+}
+
+//organization-chart
+export interface IOrganisationFormData {
+	institutionName: string;
+	institutionEmail: string;
+	firstPhoneNumber: string;
+	secondPhoneNumber: string;
+	description: string;
+	location: string;
+	latitude: string;
+	longitude: string;
+	departments: IDepartment[];
+	institutionLogo?: File | null;
 }
 
 // Extended application form data that includes additional fields
@@ -221,32 +262,51 @@ export interface JobPositionAdvert {
 	// data: any;
 	job_position_details: IJobPosition;
 	id: number;
-	job_position: number; // Foreign key to JobPosition
-	job_position_advert_status: JobAdvertStatus;
-	published_date: string; // ISO datetime string
-	expiry_date: string; // ISO datetime string
+	job_position: number;
+	// job_position_advert_status: JobAdvertStatus;
+	published_date: string;
+	expiry_date: string;
 	number_of_employees_expected?: number | null;
 	extra_information?: string | null;
 	applications: JobApplication[];
 	interview_stages: IInterviewStage[];
 	advert_type: JobAdvertTypes;
+	job_position_advert_status: string;
+	required_documents?: RequiredDocument[];
 }
-
 // For creating/updating job openings
 export interface JobPositionAdvertFormData {
 	level: number;
 	interviewers: any;
 	job_position: number;
 	job_position_advert_status?: JobAdvertStatus;
-	expiry_date: string; // ISO datetime string
+	expiry_date: string;
 	number_of_employees_expected?: number;
 	extra_information?: string;
 	advert_type?: JobAdvertTypes;
+	required_documents?: Array<{
+		document_name: string;
+		description?: string;
+		is_optional: boolean;
+	}>;
+}
+
+export interface JobApplicationDocument {
+	id: number;
+	required_document: RequiredDocument;
+	created_at: string;
+	updated_at: string;
+	deleted_at: string | null;
+	is_active: boolean;
+	file: string;
+	uploaded_at: string;
+	created_by: number;
+	updated_by: number;
+	job_advert_application: number;
 }
 
 // Extended form data that includes interview stages setup
 export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
-	// Interview stages setup data
 	stages: Array<{
 		id: string;
 		name: string;
@@ -265,6 +325,7 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 	}>;
 	newFeedbackFieldName: string;
 	newFeedbackFieldType: string;
+	required_documents?: RequiredDocument[];
 }
 
 export interface ICompanyEmail {
@@ -478,6 +539,14 @@ export interface IInterview {
 	interview_type: IInterviewType;
 }
 
+export interface RequiredDocument {
+	id: number;
+	document_name: string;
+	description?: string;
+	is_optional: boolean;
+	content_object?: string;
+}
+
 export interface IInterviewFormData {
 	job_position_application: number;
 	interview_stage: number;
@@ -497,6 +566,48 @@ export interface User {
 	password?: string;
 	roles_ids?: number[];
 	permissions?: string;
+}
+
+export interface IOrganizationNode {
+	id: number;
+	name: string;
+	position?: string;
+	department?: string;
+	employee_id?: string;
+	email?: string;
+	phone_number?: string;
+	profile_picture?: string;
+	reports_to?: number;
+	subordinates?: IOrganizationNode[];
+	subordinate_count?: number;
+}
+
+export interface IOrganizationChart {
+	root: IOrganizationNode;
+	total_employees: number;
+	total_departments: number;
+	levels: number;
+}
+
+export interface IDefaultData {
+	departments?: Array<{ id: number; name: string }>;
+
+	[key: string]: any;
+}
+
+export interface IApiPosition {
+	id: number;
+	name: string;
+	description: string;
+	department: number;
+	reports_to: number | null;
+	subordinates: IApiPosition[];
+	salary_min: string;
+	salary_max: string;
+	job_position_status: string;
+	approval_status: string;
+	created_at: string;
+	updated_at: string;
 }
 
 export type IGender = "male" | "female" | "other";
