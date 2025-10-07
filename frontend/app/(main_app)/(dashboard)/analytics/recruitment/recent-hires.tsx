@@ -37,7 +37,7 @@ export default function RecentHiresTable({ className = "", data }: IRecentHirePr
 		{
 			key: "date",
 			header: <span>Date</span>,
-			cell: (props) => <span>{formatDate(props.created_at)}</span>,
+			cell: (props) => <span>{formatDate(props.date_of_joining)}</span>,
 		},
 	];
 	return (
