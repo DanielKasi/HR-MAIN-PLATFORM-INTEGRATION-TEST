@@ -19,27 +19,34 @@ import type {
 	IOrganizationChart,
 	IApiPosition,
 	IDefaultData,
+	IDepartment,
 } from "@/types/types.utils";
 
 export default function OrganizationChartPage() {
 	const [chartData, setChartData] = useState<IOrganizationChart | null>(null);
-	const [defaultData, setDefaultData] = useState<IDefaultData | null>(null);
+	// const [defaultData, setDefaultData] = useState<IDefaultData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
+	const [allDepartments, setAllDepartments] = useState<IDepartment[]>([]);
 
 	useDocumentTitle("ORGANIZATION CHART");
 
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
-	// Fetch all departments by handling pagination
+	useEffect(() => {
+		fetchOrganizationChart();
+	}, [selectedInstitution]);
+
 	const fetchAllDepartments = async () => {
-		const allDepartments: any[] = [];
-		let nextUrl: string | null = "/institution/departments/";
+		if (!selectedInstitution) {
+			return;
+		}
+		const allDepartments: IDepartment[] = [];
+		let nextUrl: string | null = `/institution/${selectedInstitution.id}/department/`;
 
 		try {
 			while (nextUrl) {
-				console.log("Fetching departments from:", nextUrl);
 				const response = await apiRequest.get(nextUrl);
 
 				// Check if response has results (paginated) or is a direct array
@@ -50,106 +57,85 @@ export default function OrganizationChartPage() {
 					// Handle full URL
 					if (nextUrl && nextUrl.startsWith("http")) {
 						const url = new URL(nextUrl);
-						nextUrl = `/institution/departments/${url.search}`;
+						nextUrl = `/institution/${selectedInstitution.id}/department/${url.search}`;
 					} else if (nextUrl && nextUrl.includes("/api/")) {
 						nextUrl = nextUrl.replace("/api/", "/");
 					}
 				} else if (Array.isArray(response.data)) {
-					// Direct array response (not paginated)
 					allDepartments.push(...response.data);
 					nextUrl = null;
 				} else {
-					// Unknown format
-					console.warn("Unexpected department response format:", response.data);
 					nextUrl = null;
 				}
 			}
-
-			console.log(`Total departments fetched: ${allDepartments.length}`, allDepartments);
+			setAllDepartments(allDepartments);
 			return allDepartments;
 		} catch (error) {
-			console.error("Error fetching departments:", error);
+			showErrorToast({ error, defaultMessage: "Error fetching departments" });
 			return [];
 		}
 	};
 
-	const fetchDefaultData = async () => {
-		try {
-			const response = await apiRequest.get("/institution/default-data/");
-			console.log("Default data response:", response.data);
+	// const fetchDefaultData = async () => {
+	// 	try {
+	// 		const response = await apiRequest.get("/institution/default-data/");
+	// 		console.log("Default data response:", response.data);
 
-			// The response is an object with dynamic keys, extract departments
-			// The structure might be { "departments": [...], "otherKey": [...], ... }
-			let departments: any[] = [];
+	// 		// The response is an object with dynamic keys, extract departments
+	// 		// The structure might be { "departments": [...], "otherKey": [...], ... }
+	// 		let departments: IDepartment[] = [];
 
-			if (response.data) {
-				// Check if there's a 'departments' key
-				if (response.data.departments && Array.isArray(response.data.departments)) {
-					departments = response.data.departments;
-				}
-				// Otherwise, check all keys for array values that look like departments
-				else {
-					const keys = Object.keys(response.data);
-					for (const key of keys) {
-						const value = response.data[key];
-						// If it's an array and has items with 'id' and 'name', likely departments
-						if (Array.isArray(value) && value.length > 0 && value[0].id && value[0].name) {
-							departments = [...departments, ...value];
-						}
-					}
-				}
-			}
+	// 		if (response.data) {
+	// 			// Check if there's a 'departments' key
+	// 			if (response.data.departments && Array.isArray(response.data.departments)) {
+	// 				departments = response.data.departments;
+	// 			}
+	// 			// Otherwise, check all keys for array values that look like departments
+	// 			else {
+	// 				const keys = Object.keys(response.data);
+	// 				for (const key of keys) {
+	// 					const value = response.data[key];
+	// 					// If it's an array and has items with 'id' and 'name', likely departments
+	// 					if (Array.isArray(value) && value.length > 0 && value[0].id && value[0].name) {
+	// 						departments = [...departments, ...value];
+	// 					}
+	// 				}
+	// 			}
+	// 		}
 
-			// If still no departments, try fetching from departments endpoint
-			if (departments.length === 0) {
-				console.log("No departments in default-data, trying departments endpoint...");
-				departments = await fetchAllDepartments();
-			}
+	// 		// If still no departments, try fetching from departments endpoint
+	// 		if (departments.length === 0) {
+	// 			console.log("No departments in default-data, trying departments endpoint...");
+	// 			departments = await fetchAllDepartments();
+	// 		}
 
-			const processedData = { departments };
+	// 		const processedData = { departments };
 
-			console.log("Processed default data with departments:", processedData);
-			setDefaultData(processedData);
-			return processedData;
-		} catch (error) {
-			console.error("Error fetching default data:", error);
-			// Fallback: try departments endpoint
-			try {
-				const departments = await fetchAllDepartments();
-				const processedData = { departments };
-				setDefaultData(processedData);
-				return processedData;
-			} catch (fallbackError) {
-				console.error("Error fetching departments fallback:", fallbackError);
-				return null;
-			}
-		}
-	};
+	// 		console.log("Processed default data with departments:", processedData);
+	// 		setDefaultData(processedData);
+	// 		return processedData;
+	// 	} catch (error) {
+	// 		console.error("Error fetching default data:", error);
+	// 		// Fallback: try departments endpoint
+	// 		try {
+	// 			const departments = await fetchAllDepartments();
+	// 			const processedData = { departments };
+	// 			setDefaultData(processedData);
+	// 			return processedData;
+	// 		} catch (fallbackError) {
+	// 			console.error("Error fetching departments fallback:", fallbackError);
+	// 			return null;
+	// 		}
+	// 	}
+	// };
 
 	// Get department name from default data or fallback
 	const getDepartmentName = (departmentId: number): string => {
-		if (defaultData?.departments) {
-			const department = defaultData.departments.find((dept) => dept.id === departmentId);
-			if (department) {
-				return department.name;
-			}
+		const department = allDepartments.find((dept) => dept.id === departmentId);
+		if (department) {
+			return department.name;
 		}
-
-		// Extended fallback mapping for all known departments
-		const fallbackMap: { [key: number]: string } = {
-			81: "Human Resources",
-			82: "Information Technology",
-			83: "Finance",
-			84: "Operations",
-			85: "Marketing",
-			86: "Sales",
-			87: "Research & Development",
-			88: "Customer Service",
-			89: "Legal",
-			90: "Facilities",
-		};
-
-		return fallbackMap[departmentId] || `Department ${departmentId}`;
+		return "Unknown department";
 	};
 
 	// Fetch all positions by handling pagination
@@ -157,48 +143,35 @@ export default function OrganizationChartPage() {
 		const allPositions: IApiPosition[] = [];
 		let nextUrl: string | null = "/institution/organization-chart/";
 
-		try {
-			while (nextUrl) {
-				console.log("Fetching positions from:", nextUrl);
-				const response = await apiRequest.get(nextUrl);
+		while (nextUrl) {
+			const response = await apiRequest.get(nextUrl);
 
-				// Add the results from this page
-				if (response.data.results && Array.isArray(response.data.results)) {
-					allPositions.push(...response.data.results);
-					console.log(
-						`Fetched ${response.data.results.length} positions. Total so far: ${allPositions.length}`,
-					);
-				}
-
-				// Check if there's a next page
-				nextUrl = response.data.next;
-
-				// If nextUrl is a full URL, extract just the query params and add to base endpoint
-				if (nextUrl) {
-					if (nextUrl.startsWith("http")) {
-						const url = new URL(nextUrl);
-						// Extract only the query params (e.g., ?page=2)
-						nextUrl = `/institution/organization-chart/${url.search}`;
-					}
-					// If it already has the endpoint path, make sure it doesn't duplicate /api/
-					else if (nextUrl.includes("/api/")) {
-						nextUrl = nextUrl.replace("/api/", "/");
-					}
-				}
+			// Add the results from this page
+			if (response.data.results && Array.isArray(response.data.results)) {
+				allPositions.push(...response.data.results);
 			}
 
-			console.log(`Total positions fetched: ${allPositions.length}`);
-			return allPositions;
-		} catch (error) {
-			console.error("Error fetching all positions:", error);
-			throw error;
+			// Check if there's a next page
+			nextUrl = response.data.next;
+
+			// If nextUrl is a full URL, extract just the query params and add to base endpoint
+			if (nextUrl) {
+				if (nextUrl.startsWith("http")) {
+					const url = new URL(nextUrl);
+					// Extract only the query params (e.g., ?page=2)
+					nextUrl = `/institution/organization-chart/${url.search}`;
+				}
+				// If it already has the endpoint path, make sure it doesn't duplicate /api/
+				else if (nextUrl.includes("/api/")) {
+					nextUrl = nextUrl.replace("/api/", "/");
+				}
+			}
 		}
+
+		return allPositions;
 	};
 
 	const transformToOrganizationChart = (positions: IApiPosition[]): IOrganizationChart => {
-		console.log("Transforming with department data:", defaultData?.departments);
-		console.log("Total positions to transform:", positions.length);
-
 		// Count all unique positions including nested subordinates
 		const countAllPositions = (position: IApiPosition): number => {
 			let count = 1; // Count this position
@@ -212,9 +185,6 @@ export default function OrganizationChartPage() {
 
 		const buildHierarchy = (position: IApiPosition): IOrganizationNode => {
 			const departmentName = getDepartmentName(position.department);
-			console.log(
-				`Position: ${position.name}, Department ID: ${position.department}, Name: ${departmentName}`,
-			);
 
 			return {
 				id: position.id,
@@ -228,14 +198,11 @@ export default function OrganizationChartPage() {
 		};
 
 		const rootNodes = positions.filter((pos) => pos.reports_to === null);
-		console.log("Root nodes found:", rootNodes.length);
 
 		// Calculate total positions by counting all nested positions
 		const totalPositions = rootNodes.reduce((total, rootNode) => {
 			return total + countAllPositions(rootNode);
 		}, 0);
-
-		console.log("Total positions including subordinates:", totalPositions);
 
 		const virtualRoot: IOrganizationNode = {
 			id: -1,
@@ -272,14 +239,8 @@ export default function OrganizationChartPage() {
 
 		setLoading(true);
 		try {
-			// Fetch default data first and wait for it to be set
-			const fetchedDefaultData = await fetchDefaultData();
-
-			// Fetch all positions (handling pagination)
+			await fetchAllDepartments();
 			const allPositions = await fetchAllPositions();
-
-			console.log("All positions fetched:", allPositions.length);
-			console.log("Default data departments:", fetchedDefaultData?.departments);
 
 			const transformedData = transformToOrganizationChart(allPositions);
 			setChartData(transformedData);
@@ -292,16 +253,11 @@ export default function OrganizationChartPage() {
 				setExpandedNodes(new Set(firstLevelIds));
 			}
 		} catch (error) {
-			console.error("Error fetching organization chart:", error);
 			showErrorToast({ error, defaultMessage: "Failed to load organization chart" });
 		} finally {
 			setLoading(false);
 		}
 	};
-
-	useEffect(() => {
-		fetchOrganizationChart();
-	}, [selectedInstitution?.id]);
 
 	const toggleNode = (nodeId: number) => {
 		setExpandedNodes((prev) => {
@@ -477,7 +433,7 @@ export default function OrganizationChartPage() {
 						<CardContent className="p-4">
 							<div className="flex items-center justify-between">
 								<div>
-									<div className="text-2xl font-bold">{chartData.total_departments}</div>
+									<div className="text-2xl font-bold">{allDepartments.length || 0}</div>
 									<p className="text-sm text-muted-foreground">Departments</p>
 								</div>
 								<Building2 className="h-8 w-8 text-primary" />
