@@ -181,10 +181,59 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
         data = super().validate(data)
         employee = self.context.get("employee")
 
-        separation_type = data["separation_type"]
+        # Validate employee context first
+        if not employee:
+            raise serializers.ValidationError(
+                {"error": "Employee context is required for resignation requests."}
+            )
+
+        institution = getattr(employee, "institution", None)
+
+        if not institution:
+            raise serializers.ValidationError(
+                {"error": "Employee's institution is not set."}
+            )
+
+        # Get separation type from data or lookup
+        separation_type = data.get("separation_type")
+        
+        if not separation_type:
+            try:
+                separation_type = InstitutionEmployeeSeparationTypes.objects.get(
+                    institution=institution,
+                    category="resignation",
+                    is_active=True,
+                )
+                data["separation_type"] = separation_type
+            except InstitutionEmployeeSeparationTypes.DoesNotExist:
+                raise serializers.ValidationError(
+                    {
+                        "error": "Resignation separation type is not configured for this institution."
+                    }
+                )
+
+        # Check for active resignation requests
+        active_sep = EmployeeSeparation.objects.filter(
+            employee=employee,
+            employee_separation_type=separation_type,
+            separation_status="planned",
+        ).first()
+
+        if (
+            active_sep
+            and ResignationRequest.objects.filter(separation=active_sep).exists()
+        ):
+            raise serializers.ValidationError(
+                {
+                    "error": "An active resignation request already exists for this employee."
+                }
+            )
+
+        # Validate against separation policy
         policy = InstitutionSeparationPolicy.objects.filter(
             separation_type=separation_type, is_active=True
         ).first()
+        
         if policy and policy.enforce_policy:
             last_working_day = data.get("last_working_day")
             if last_working_day:
@@ -202,51 +251,8 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
                 raise serializers.ValidationError(
                     {"error": "Resignation letter is required."}
                 )
-        return data
-
-        if not employee:
-            raise serializers.ValidationError(
-                {"error": "Employee context is required for resignation requests."}
-            )
-
-        institution = getattr(employee, "institution", None)
-
-        if not institution:
-            raise serializers.ValidationError(
-                {"error": "Employee's institution is not set."}
-            )
-
-        try:
-            separation_type = InstitutionEmployeeSeparationTypes.objects.get(
-                institution=institution,
-                category="resignation",
-                is_active=True,
-            )
-        except InstitutionEmployeeSeparationTypes.DoesNotExist:
-            raise serializers.ValidationError(
-                {
-                    "error": "Resignation separation type is not configured for this institution."
-                }
-            )
-
-        active_sep = EmployeeSeparation.objects.filter(
-            employee=employee,
-            employee_separation_type=separation_type,
-            separation_status="planned",
-        ).first()
-
-        if (
-            active_sep
-            and ResignationRequest.objects.filter(separation=active_sep).exists()
-        ):
-            raise serializers.ValidationError(
-                {
-                    "error": "An active resignation request already exists for this employee."
-                }
-            )
 
         data["employee"] = employee
-        data["separation_type"] = separation_type
 
         return data
 

@@ -8,7 +8,7 @@ from .models import (
 )
 
 REPORT_CONFIG = {
-    'employee': Employee,
+    # 'employee': Employee,
     'document requests': DocumentRequestEmployee,
     'shifts': EmployeeShift,
     'disciplinary actions': DisciplinaryAction,

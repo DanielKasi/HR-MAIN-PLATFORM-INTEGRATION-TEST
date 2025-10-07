@@ -231,15 +231,6 @@ class Role(BaseApprovableModel):
         blank=True,
     )
 
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["name", "institution"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_name_per_institution",
-            )
-        ]
-
     def save(self, *args, **kwargs):
         self.name = self.name.lower()
         super().save(*args, **kwargs)
