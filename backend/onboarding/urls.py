@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     BulkOnBoardingCreateAPI,
+    EmployeeSeparationListView,
     OnBoardingListAPI,
     OnBoardingDetailAPI,
     OffboardingStageListCreateView,
@@ -9,12 +10,13 @@ from .views import (
     InstitutionEmployeeSeparationTypesDetailView,
     InstitutionSeparationPolicyDetailView,
     InstitutionSeparationPolicyListCreateView,
+    ReorderSeparationStageView,
     ResignationRequestListCreateView,
     ResignationRequestDetailView,
     ResignationRequestByLoggedInUser,
     TerminationInitiationListCreateView,
     TerminationInitiationDetailView,
-    OffboardingDashboardView
+    OffboardingDashboardView,
 )
 
 urlpatterns = [
@@ -85,6 +87,16 @@ urlpatterns = [
         "termination-initiations/<int:termination_initiation_id>/",
         TerminationInitiationDetailView.as_view(),
         name="termination-initiations-detail",
+    ),
+    path(
+        "employee-separations/",
+        EmployeeSeparationListView.as_view(),
+        name="employee-separation-with-stages",
+    ),
+    path(
+        "employee-separations/<int:separation_id>/stage-reorder/",
+        ReorderSeparationStageView.as_view(),
+        name="update-separation-stage-positions",
     ),
     path("analytics/", OffboardingDashboardView.as_view(), name="offboarding-analytics")
 ]
