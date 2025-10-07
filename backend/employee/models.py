@@ -991,6 +991,29 @@ class EmployeeMonthlyHourAccount(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.year}-{self.month:02d}"
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        # Convert start_date and end_date to year/month for filtering
+        start_year, start_month = start_date.year, start_date.month
+        end_year, end_month = end_date.year, end_date.month
+
+        queryset = cls.objects.filter(
+            year__gte=start_year,
+            year__lte=end_year,
+            month__gte=start_month,
+            month__lte=end_month
+        ).select_related('employee')
+        return list(queryset.values(
+            'employee__name',
+            'year',
+            'month',
+            'total_worked_hours',
+            'total_overtime_hours',
+            'total_late_minutes',
+            'total_early_checkout_minutes',
+            'total_absent_days'
+        ))
 
 
 class EmployeeAttendance(BaseApprovableModel):
@@ -1045,6 +1068,24 @@ class EmployeeAttendance(BaseApprovableModel):
 
     def get_institution(self):
         return self.employee.get_institution()
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            date__range=(start_date, end_date)
+        ).select_related('employee')
+        return list(queryset.values(
+            'employee__name',
+            'date',
+            'check_in_time',
+            'check_out_time',
+            'status',
+            'attendance_status',
+            'overtime_hours',
+            'late_minutes',
+            'early_checkout_minutes',
+            'worked_hours'
+        ))
 
     def calculate_overtime_hours(self):
         if (
@@ -1325,6 +1366,19 @@ class EmployeeContract(BaseApprovableModel):
 
     def __str__(self):
         return f"Contract {self.contract_reference} "
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('employee')
+        return list(queryset.values(
+            'employee__name',
+            'contract_reference',
+            'status',
+            'created_at',
+            'status',
+        ))
 
     def get_institution(self):
         return self.employee.get_institution() if self.employee else None
