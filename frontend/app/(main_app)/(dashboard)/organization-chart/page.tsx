@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { ArrowLeft, Users, Building2, RefreshCw, Download } from "lucide-react";
+import { ArrowLeft, Users, Building2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,11 @@ import type {
 	IOrganizationNode,
 	IOrganizationChart,
 	IApiPosition,
-	IDefaultData,
 	IDepartment,
 } from "@/types/types.utils";
 
 export default function OrganizationChartPage() {
 	const [chartData, setChartData] = useState<IOrganizationChart | null>(null);
-	// const [defaultData, setDefaultData] = useState<IDefaultData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
 	const [allDepartments, setAllDepartments] = useState<IDepartment[]>([]);
@@ -38,9 +36,9 @@ export default function OrganizationChartPage() {
 		fetchOrganizationChart();
 	}, [selectedInstitution]);
 
-	const fetchAllDepartments = async () => {
+	const fetchAllDepartments = async (): Promise<IDepartment[]> => {
 		if (!selectedInstitution) {
-			return;
+			return [];
 		}
 		const allDepartments: IDepartment[] = [];
 		let nextUrl: string | null = `/institution/${selectedInstitution.id}/department/`;
@@ -76,62 +74,9 @@ export default function OrganizationChartPage() {
 		}
 	};
 
-	// const fetchDefaultData = async () => {
-	// 	try {
-	// 		const response = await apiRequest.get("/institution/default-data/");
-	// 		console.log("Default data response:", response.data);
-
-	// 		// The response is an object with dynamic keys, extract departments
-	// 		// The structure might be { "departments": [...], "otherKey": [...], ... }
-	// 		let departments: IDepartment[] = [];
-
-	// 		if (response.data) {
-	// 			// Check if there's a 'departments' key
-	// 			if (response.data.departments && Array.isArray(response.data.departments)) {
-	// 				departments = response.data.departments;
-	// 			}
-	// 			// Otherwise, check all keys for array values that look like departments
-	// 			else {
-	// 				const keys = Object.keys(response.data);
-	// 				for (const key of keys) {
-	// 					const value = response.data[key];
-	// 					// If it's an array and has items with 'id' and 'name', likely departments
-	// 					if (Array.isArray(value) && value.length > 0 && value[0].id && value[0].name) {
-	// 						departments = [...departments, ...value];
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-
-	// 		// If still no departments, try fetching from departments endpoint
-	// 		if (departments.length === 0) {
-	// 			console.log("No departments in default-data, trying departments endpoint...");
-	// 			departments = await fetchAllDepartments();
-	// 		}
-
-	// 		const processedData = { departments };
-
-	// 		console.log("Processed default data with departments:", processedData);
-	// 		setDefaultData(processedData);
-	// 		return processedData;
-	// 	} catch (error) {
-	// 		console.error("Error fetching default data:", error);
-	// 		// Fallback: try departments endpoint
-	// 		try {
-	// 			const departments = await fetchAllDepartments();
-	// 			const processedData = { departments };
-	// 			setDefaultData(processedData);
-	// 			return processedData;
-	// 		} catch (fallbackError) {
-	// 			console.error("Error fetching departments fallback:", fallbackError);
-	// 			return null;
-	// 		}
-	// 	}
-	// };
-
-	// Get department name from default data or fallback
-	const getDepartmentName = (departmentId: number): string => {
-		const department = allDepartments.find((dept) => dept.id === departmentId);
+	// Get department name from departments array
+	const getDepartmentName = (departmentId: number, departments: IDepartment[]): string => {
+		const department = departments.find((dept) => dept.id === departmentId);
 		if (department) {
 			return department.name;
 		}
@@ -171,7 +116,10 @@ export default function OrganizationChartPage() {
 		return allPositions;
 	};
 
-	const transformToOrganizationChart = (positions: IApiPosition[]): IOrganizationChart => {
+	const transformToOrganizationChart = (
+		positions: IApiPosition[],
+		departments: IDepartment[],
+	): IOrganizationChart => {
 		// Count all unique positions including nested subordinates
 		const countAllPositions = (position: IApiPosition): number => {
 			let count = 1; // Count this position
@@ -184,7 +132,7 @@ export default function OrganizationChartPage() {
 		};
 
 		const buildHierarchy = (position: IApiPosition): IOrganizationNode => {
-			const departmentName = getDepartmentName(position.department);
+			const departmentName = getDepartmentName(position.department, departments);
 
 			return {
 				id: position.id,
@@ -221,7 +169,9 @@ export default function OrganizationChartPage() {
 		};
 
 		// Calculate unique departments using proper names
-		const uniqueDepartments = new Set(positions.map((p) => getDepartmentName(p.department))).size;
+		const uniqueDepartments = new Set(
+			positions.map((p) => getDepartmentName(p.department, departments)),
+		).size;
 
 		return {
 			root: virtualRoot,
@@ -239,10 +189,12 @@ export default function OrganizationChartPage() {
 
 		setLoading(true);
 		try {
-			await fetchAllDepartments();
+			// Fetch departments and get the returned value
+			const departments = await fetchAllDepartments();
 			const allPositions = await fetchAllPositions();
 
-			const transformedData = transformToOrganizationChart(allPositions);
+			// Pass departments directly to the transform function
+			const transformedData = transformToOrganizationChart(allPositions, departments);
 			setChartData(transformedData);
 
 			// Auto-expand first level (virtual root's direct subordinates)
@@ -417,9 +369,9 @@ export default function OrganizationChartPage() {
 
 			{/* Stats Cards */}
 			{chartData && (
-				<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
 					<Card className="shadow-sm">
-						<CardContent className="p-4">
+						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
 									<div className="text-2xl font-bold">{chartData.total_employees}</div>
@@ -430,26 +382,13 @@ export default function OrganizationChartPage() {
 						</CardContent>
 					</Card>
 					<Card className="shadow-sm">
-						<CardContent className="p-4">
+						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
 									<div className="text-2xl font-bold">{allDepartments.length || 0}</div>
 									<p className="text-sm text-muted-foreground">Departments</p>
 								</div>
 								<Building2 className="h-8 w-8 text-primary" />
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="shadow-sm">
-						<CardContent className="p-4">
-							<div className="flex items-center justify-between">
-								<div>
-									<div className="text-2xl font-bold">{chartData.levels}</div>
-									<p className="text-sm text-muted-foreground">Hierarchy Levels</p>
-								</div>
-								<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-									<span className="text-primary font-bold">#{chartData.levels}</span>
-								</div>
 							</div>
 						</CardContent>
 					</Card>
