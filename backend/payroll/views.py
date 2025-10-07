@@ -50,6 +50,8 @@ from datetime import timedelta
 from .models import Payslip, PayrollPeriod
 from employee.models import Employee
 from utilities.sortable_api import SortableAPIMixin
+from django.contrib.auth.decorators import permission_required
+from django.utils.decorators import method_decorator
 
 
 
@@ -150,6 +152,7 @@ class EmployeeAllowanceAPIView(APIView, SortableAPIMixin):
         summary="List employee allowances for a specific institution",
         responses=EmployeeAllowanceSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_employee_allowances', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
@@ -198,6 +201,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
         responses=EmployeeAllowanceSerializer,
         summary="Retrieve an employee allowance by ID",
     )
+    @method_decorator(permission_required('can_view_employee_allowances', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         serializer = EmployeeAllowanceSerializer(instance)
@@ -208,6 +212,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
         responses=EmployeeAllowanceSerializer,
         summary="Update an employee allowance (partial)",
     )
+    @method_decorator(permission_required('can_edit_employee_allowances', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         instance.approval_status = 'under_update'
@@ -221,6 +226,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee allowance")
+    @method_decorator(permission_required('can_delete_employee_allowances', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -237,6 +243,7 @@ class PayrollPeriodAPIView(APIView, SortableAPIMixin):
         summary="List payroll periods for a given institution",
         responses=PayrollPeriodSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_payroll_periods', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         periods = PayrollPeriod.objects.filter(institution_id=institution_id, deleted_at__isnull=True).order_by(
@@ -275,6 +282,7 @@ class PayrollPeriodDetailAPIView(APIView):
     @extend_schema(
         responses=PayrollPeriodSerializer, summary="Retrieve a payroll period by ID"
     )
+    @method_decorator(permission_required('can_view_payroll_periods', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
         serializer = PayrollPeriodSerializer(instance)
@@ -285,6 +293,7 @@ class PayrollPeriodDetailAPIView(APIView):
         responses=PayrollPeriodSerializer,
         summary="Update a payroll period (partial)",
     )
+    @method_decorator(permission_required('can_edit_payroll_periods', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
         instance.approval_status = 'under_update'
@@ -296,6 +305,7 @@ class PayrollPeriodDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a payroll period")
+    @method_decorator(permission_required('can_delete_payroll_periods', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -312,6 +322,7 @@ class EmployeeDeductionAPIView(APIView, SortableAPIMixin):
         summary="List employee deductions for a specific institution",
         responses=EmployeeDeductionSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_employee_deductions', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
@@ -365,6 +376,7 @@ class EmployeeDeductionDetailAPIView(APIView):
         responses=EmployeeDeductionSerializer,
         summary="Retrieve an employee deduction by ID",
     )
+    @method_decorator(permission_required('can_view_employee_deductions', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
         serializer = EmployeeDeductionSerializer(instance)
@@ -375,6 +387,7 @@ class EmployeeDeductionDetailAPIView(APIView):
         responses=EmployeeDeductionSerializer,
         summary="Update an employee deduction (partial)",
     )
+    @method_decorator(permission_required('can_edit_employee_deductions', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
         instance.approval_status = 'under_update'
@@ -388,6 +401,7 @@ class EmployeeDeductionDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee deduction")
+    @method_decorator(permission_required('can_delete_employee_deductions', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -404,6 +418,7 @@ class AllowanceTypeAPIView(APIView, SortableAPIMixin):
         summary="List allowance types for an institution",
         responses=AllowanceTypeSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_allowance_types', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         allowance_types = AllowanceType.objects.filter(
@@ -445,6 +460,7 @@ class AllowanceTypeDetailAPIView(APIView):
     @extend_schema(
         responses=AllowanceTypeSerializer, summary="Retrieve an allowance type by ID"
     )
+    @method_decorator(permission_required('can_view_allowance_types', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
         serializer = AllowanceTypeSerializer(instance)
@@ -455,6 +471,7 @@ class AllowanceTypeDetailAPIView(APIView):
         responses=AllowanceTypeSerializer,
         summary="Update an allowance type (partial)",
     )
+    @method_decorator(permission_required('can_edit_allowance_types', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
         instance.approval_status = 'under_update'
@@ -466,6 +483,7 @@ class AllowanceTypeDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an allowance type")
+    @method_decorator(permission_required('can_delete_allowance_types', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
         instance.delete()
@@ -493,6 +511,7 @@ class DeductionTypeAPIView(APIView, SortableAPIMixin):
         summary="List deduction types for an institution",
         responses=DeductionTypeSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_deduction_types', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         deduction_types = DeductionType.objects.filter(
@@ -533,6 +552,7 @@ class DeductionTypeDetailAPIView(APIView):
     @extend_schema(
         responses=DeductionTypeSerializer, summary="Retrieve a deduction type by ID"
     )
+    @method_decorator(permission_required('can_view_deduction_types', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
         serializer = DeductionTypeSerializer(instance)
@@ -543,6 +563,7 @@ class DeductionTypeDetailAPIView(APIView):
         responses=DeductionTypeSerializer,
         summary="Update a deduction type (partial)",
     )
+    @method_decorator(permission_required('can_edit_deduction_types', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
         instance.approval_status = 'under_update'
@@ -554,6 +575,7 @@ class DeductionTypeDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a deduction type")
+    @method_decorator(permission_required('can_delete_deduction_types', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -571,6 +593,7 @@ class EmployeeTaxListAPIView(APIView, SortableAPIMixin):
         responses=EmployeeTaxSerializer(many=True),
         tags=["Employee Taxes MGT"],
     )
+    @method_decorator(permission_required('can_view_employee_tax', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get('search', None)
         user = request.user.profile
@@ -637,6 +660,7 @@ class EmployeeTaxDetailAPIView(APIView):
         summary="Retrieve an employee tax by ID",
         tags=["Employee Taxes MGT"],
     )
+    @method_decorator(permission_required('can_view_employee_tax', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
         serializer = EmployeeTaxSerializer(instance)
@@ -648,6 +672,7 @@ class EmployeeTaxDetailAPIView(APIView):
         summary="Update an employee tax (partial)",
         tags=["Employee Taxes MGT"],
     )
+    @method_decorator(permission_required('can_edit_employee_tax', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
         instance.approval_status = 'under_update'
@@ -661,6 +686,7 @@ class EmployeeTaxDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee tax")
+    @method_decorator(permission_required('can_delete_employee_tax', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
         instance.delete()
