@@ -90,6 +90,16 @@ class OffboardingStage(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('institution')
+        return list(queryset.values(
+            'stage_name',
+            'created_at'
+        ))
 
 
 class InstitutionEmployeeSeparationTypes(BaseApprovableModel):
@@ -125,6 +135,16 @@ class InstitutionEmployeeSeparationTypes(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('institution').prefetch_related('supported_stages')
+        return list(queryset.values(
+            'separation_type',
+            'category',
+            'created_at'
+        ))
 
 
 class InstitutionSeparationPolicy(BaseApprovableModel):
@@ -156,6 +176,23 @@ class InstitutionSeparationPolicy(BaseApprovableModel):
 
     def get_institution(self):
         return self.separation_type.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('separation_type', 'separation_type__institution')
+        return list(queryset.values(
+            'policy_name',
+            'separation_type__separation_type',
+            'min_notice_days',
+            'max_notice_days',
+            'require_separation_letter',
+            'require_all_stages',
+            'enforce_policy',
+            'created_at'
+        ))
+
 
     class Meta:
         constraints = [
@@ -221,6 +258,19 @@ class EmployeeSeparation(models.Model):
             if self.employee.user:
                 self.employee.user.is_active = False
                 self.employee.user.save()
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            effective_date__range=(start_date, end_date)
+        ).select_related('employee_separation_type', 'employee', 'initiated_by')
+        return list(queryset.values(
+            'employee__user__fullname',
+            'employee_separation_type__separation_type',
+            'initiated_by__user__fullname',
+            'effective_date',
+            'separation_status'
+        ))    
 
 
 class ResignationRequest(BaseApprovableModel):
@@ -293,6 +343,19 @@ class ResignationRequest(BaseApprovableModel):
             ]:
                 self.separation.separation_status = "completed"
                 self.separation.save()
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('separation', 'separation__employee', 'separation__employee_separation_type')
+        return list(queryset.values(
+            'separation__employee__user__fullname',
+            'separation__employee_separation_type__separation_type',
+            'request_status',
+            'last_working_day',
+            'created_at'
+        ))            
 
 
 class TerminationInitiation(BaseApprovableModel):
@@ -371,6 +434,21 @@ class TerminationInitiation(BaseApprovableModel):
             ]:
                 self.separation.separation_status = "completed"
                 self.separation.save()
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('separation', 'separation__employee', 'separation__employee_separation_type')
+        return list(queryset.values(
+            'separation__employee__user__fullname',
+            'separation__employee_separation_type__separation_type',
+            'initiation_status',
+            'last_working_day',
+            'created_at'
+        ))            
+
+
 
 
 class RetirementRequest(BaseApprovableModel):
