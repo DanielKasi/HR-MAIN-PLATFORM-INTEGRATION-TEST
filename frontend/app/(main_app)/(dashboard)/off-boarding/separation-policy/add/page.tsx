@@ -268,7 +268,22 @@ export default function AddSeparationPolicyPage() {
 							</div>
 
 							<div className="space-y-2 ">
-								<Label htmlFor="separation_type">Separation Type *</Label>
+								<div className="flex items-center justify-start gap-8">
+									<Label htmlFor="separation_type">Separation Type *</Label>
+									<Button
+										variant={"outline"}
+										size={"sm"}
+										type="button"
+										className="rounded-xl p-2"
+										onClick={() =>
+											router.push(
+												"/off-boarding/separation-types?from=/off-boarding/separation-policy/add",
+											)
+										}
+									>
+										<Icon icon="hugeicons:add-01" className="!h-5 !w-5" />
+									</Button>
+								</div>
 								<div className="flex items-center gap-4">
 									<Select
 										value={formData.separation_type}
@@ -293,17 +308,6 @@ export default function AddSeparationPolicyPage() {
 											))}
 										</SelectContent>
 									</Select>
-									<button
-										type="button"
-										className="text-[16-px] hover:underline border border-gray-300 rounded-md p-2"
-										onClick={() =>
-											router.push(
-												"/off-boarding/separation-types?from=/off-boarding/separation-policy/add",
-											)
-										}
-									>
-										<Icon icon="hugeicons:add-01" className="inline-block mr-1" />
-									</button>
 								</div>
 							</div>
 						</div>
