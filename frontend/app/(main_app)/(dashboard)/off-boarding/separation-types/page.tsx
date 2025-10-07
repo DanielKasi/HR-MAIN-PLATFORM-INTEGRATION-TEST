@@ -68,7 +68,6 @@ const SEPARATION_CATEGORIES = [
 	{ value: "termination", label: "Termination" },
 	{ value: "retirement", label: "Retirement" },
 	{ value: "contract_end", label: "Contract End" },
-	{ value: "other", label: "Other" },
 ] as const;
 
 const formSchema = z.object({
