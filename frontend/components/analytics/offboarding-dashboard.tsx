@@ -273,7 +273,7 @@ export default function OffboardingDashboard() {
 			<ReportDialog
 				isOpen={isReportsDialogOpen}
 				onClose={() => setIsReportsDialogOpen(false)}
-				app="offboarding"
+				app="onboarding"
 			/>
 		</div>
 	);
