@@ -43,8 +43,8 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import StageReorderModal from "@/components/stage-reorder-modal";
+import { IEmployee,IEmployeeSeparation,ISeparationType} from "@/types/types.utils";
 
-// Types based on the API schema
 interface IEmployee {
 	id: number;
 	name: string;
@@ -248,19 +248,17 @@ export default function ExitProcessPage() {
 		return () => clearTimeout(timeout);
 	}, [searchTerm, statusFilter, categoryFilter]);
 
-	// Fetch more when page changes (but not on initial mount)
 	useEffect(() => {
 		if (page > 1 && currentInstitution) {
 			fetchSeparations(page, false);
 		}
 	}, [page]);
-
-	// Handle create new exit process with separation type
-	const handleCreateNewExitProcess = (separationTypeId: number) => {
-		router.push(`/exit-process/create?separationTypeId=${separationTypeId}`);
+	//handlecreate
+	const handleCreateNewExitProcess = (separationType: ISeparationType) => {
+		const basePath = "/off-boarding/exit-process/create";
+		router.push(`${basePath}?category=${separationType.category}`);
 	};
 
-	// Handle delete
 	const handleDelete = async () => {
 		if (!separationToDelete) return;
 
@@ -373,21 +371,18 @@ export default function ExitProcessPage() {
 							separationTypes.map((type) => (
 								<DropdownMenuItem
 									key={type.id}
-									onClick={() => handleCreateNewExitProcess(type.id)}
+									onClick={() => handleCreateNewExitProcess(type)}
 									className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50"
 								>
-									<div className="font-medium text-sm">{type.separation_type}</div>
-									{/* {type.description && (
-										<div className="text-xs text-muted-foreground mt-1">
-											{type.description}
-										</div>
+									<div className="flex items-center justify-between w-full">
+										<span className="font-medium text-sm">{type.separation_type}</span>
+										<Badge className={getCategoryColor(type.category)} variant="outline">
+											{type.category}
+										</Badge>
+									</div>
+									{type.description && (
+										<span className="text-xs text-muted-foreground mt-1">{type.description}</span>
 									)}
-									<Badge 
-										className={`mt-2 ${getCategoryColor(type.category)}`}
-										variant="secondary"
-									>
-										{type.category}
-									</Badge> */}
 								</DropdownMenuItem>
 							))
 						)}
@@ -395,7 +390,6 @@ export default function ExitProcessPage() {
 				</DropdownMenu>
 			</div>
 
-			{/* Rest of the component remains the same */}
 			{/* Statistics Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 				<Card>
@@ -476,7 +470,6 @@ export default function ExitProcessPage() {
 						<SelectItem value="termination">Termination</SelectItem>
 						<SelectItem value="retirement">Retirement</SelectItem>
 						<SelectItem value="contract_end">Contract End</SelectItem>
-						<SelectItem value="other">Other</SelectItem>
 					</SelectContent>
 				</Select>
 			</div>
