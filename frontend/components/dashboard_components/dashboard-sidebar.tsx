@@ -350,7 +350,7 @@ export default function DashboardSideBar() {
 				{ title: "Offboarding Stages", href: "/off-boarding/stages" },
 				{ title: "Separation Types", href: "/off-boarding/separation-types" },
 				{ title: "Separation Policy", href: "/off-boarding/separation-policy" },
-				{ title: "Terminations", href: "/off-boarding/terminations" },
+				// { title: "Terminations", href: "/off-boarding/terminations" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_OFFBOARDING_STAGES,
 		},
