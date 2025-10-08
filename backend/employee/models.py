@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.db import models, transaction
 from django.utils import timezone
+from communication.models import Announcement
 from calendar2.models import Calendar, Event
 from django.db import models
 from datetime import datetime
@@ -738,21 +739,66 @@ class DocumentRequest(BaseApprovableModel):
                     self.is_active = True
                     self.deleted_at = None
                     self.employee_requests.update(
-                        status="pending",  
+                        status="pending",
                         is_active=True
                     )
+                    # Create announcements for each employee
+                    for employee in self.employees.all():
+                        title = f"Document Request: {self.document_type}"
+                        content = (
+                            f"You are requested to submit a {self.document_type} "
+                            f"in {self.document_format} format"
+                            f"{f' by {self.due_date}' if self.due_date else ''}. "
+                            f"{self.description if self.description else 'No additional details provided.'}"
+                        )
+                        announcement = Announcement.objects.create(
+                            title=title,
+                            content=content,
+                            requires_acknowledgment=True,
+                            is_active=True
+                        )
+                        announcement.target_employees.add(employee)
+                        print(f"Created announcement {announcement.id} for employee {employee.id}")
                 elif approval.action.name == "update":
                     self.is_active = True
                     self.deleted_at = None
                     self.employee_requests.update(is_active=True)
+                    # Recreate or update announcements for each employee
+                    for employee in self.employees.all():
+                        title = f"Document Request: {self.document_type}"
+                        content = (
+                            f"You are requested to submit a {self.document_type} "
+                            f"in {self.document_format} format"
+                            f"{f' by {self.due_date}' if self.due_date else ''}. "
+                            f"{self.description if self.description else 'No additional details provided.'}"
+                        )
+                        # Check for existing active announcement to avoid duplicates
+                        existing = Announcement.objects.filter(
+                            target_employees=employee,
+                            is_active=True,
+                            title=title
+                        ).first()
+                        if existing:
+                            existing.content = content
+                            existing.save()
+                            print(f"Updated announcement {existing.id} for employee {employee.id}")
+                        else:
+                            announcement = Announcement.objects.create(
+                                title=title,
+                                content=content,
+                                requires_acknowledgment=True,
+                                is_active=True
+                            )
+                            announcement.target_employees.add(employee)
+                            print(f"Created announcement {announcement.id} for employee {employee.id}")
                 elif approval.action.name == "delete":
                     self.is_active = False
                     self.deleted_at = timezone.now()
                     self.employee_requests.update(
-                        status="rejected",  
+                        status="rejected",
                         is_active=False,
                         deleted_at=timezone.now()
-                    )   
+                    )
             elif approval.status == "rejected":
                 if approval.action.name == "create":
                     self.is_active = False
@@ -763,7 +809,7 @@ class DocumentRequest(BaseApprovableModel):
                         deleted_at=timezone.now()
                     )
                 elif approval.action.name == "update":
-                    self.is_active = True  
+                    self.is_active = True
                 elif approval.action.name == "delete":
                     self.is_active = True
                     self.deleted_at = None
@@ -771,7 +817,7 @@ class DocumentRequest(BaseApprovableModel):
                         is_active=True,
                         deleted_at=None
                     )
-            self.save()         
+            self.save()
 
 class DocumentRequestEmployee(SoftDeletableTimeStampedModel):
 

@@ -55,7 +55,6 @@ class Announcement(BaseApprovableModel):
                 return job_position.department.institution
 
     def save(self, *args, skip_notifications=False, **kwargs):
-        print(f"Saving announcement {self.pk or 'new'}, is_new={self.pk is None}, skip_notifications={skip_notifications}")
         is_new = self.pk is None
         # Check if announcement was previously inactive
         was_inactive = False
@@ -69,22 +68,18 @@ class Announcement(BaseApprovableModel):
         super().save(*args, **kwargs)  # Call the parent save method
 
         if skip_notifications:
-            print(f"Skipping notifications for announcement {self.pk}")
             return
 
         # Send notifications if new or just became active
         if not self.is_active:
-            print(f"Announcement {self.pk} is not active, skipping notifications")
             return
 
         target_employees = self.get_target_employees()
         message = f"New announcement: {self.title}" if is_new else f"Updated announcement: {self.title}"
-        print(f"Notification message: {message}")
 
         from .views import add_notification
         for employee in target_employees:
             if employee.user:
-                print(f"Preparing notification for employee {employee.id} (user {employee.user.id})")
                 try:
                     # Check if an unread notification already exists
                     if not Notification.objects.filter(
@@ -100,9 +95,7 @@ class Announcement(BaseApprovableModel):
                             object_id=str(self.pk),
                             requires_acknowledgment=self.requires_acknowledgment
                         )
-                        print(f"Created new notification for employee {employee.id} (user {employee.user.id})")
-                    else:
-                        print(f"Unread notification already exists for employee {employee.id} (user {employee.user.id}), skipping")
+                    
                 except Exception as e:
                     print(f"Failed to send notification to employee {employee.id} (user {employee.user.id}): {str(e)}")
             else:
@@ -113,6 +106,7 @@ class EmployeeAnnouncementAcknowledgment(SoftDeletableTimeStampedModel):
     announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE)
     acknowledged = models.BooleanField(default=False)
     acknowledged_at = models.DateTimeField(null=True, blank=True)
+    
 
     class Meta:
         unique_together = ('employee', 'announcement')      
