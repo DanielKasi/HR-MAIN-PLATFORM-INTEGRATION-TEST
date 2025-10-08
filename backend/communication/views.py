@@ -589,7 +589,7 @@ class EmployeeAnnouncementAcknowledgmentListView(APIView):
             announcement_id = request.query_params.get("announcement_id", None)
             employee = Employee.objects.get(user=request.user)
             acknowledgments = EmployeeAnnouncementAcknowledgment.objects.filter(
-                employee=employee, deleted_at__isnull=True
+                employee=employee, deleted_at__isnull=True, acknowledged=False
             )
 
             if announcement_id:
