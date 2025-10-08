@@ -1,7 +1,6 @@
 from decimal import Decimal
 from django.db import models, transaction
 from django.utils import timezone
-from communication.models import Announcement
 from calendar2.models import Calendar, Event
 from django.db import models
 from datetime import datetime
@@ -772,6 +771,8 @@ class DocumentRequest(BaseApprovableModel):
                             f"{f' by {self.due_date}' if self.due_date else ''}. "
                             f"{self.description if self.description else 'No additional details provided.'}"
                         )
+                        from communication.models import Announcement
+
                         # Check for existing active announcement to avoid duplicates
                         existing = Announcement.objects.filter(
                             target_employees=employee,
