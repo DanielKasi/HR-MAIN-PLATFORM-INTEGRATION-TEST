@@ -124,28 +124,17 @@ const ExitProcessCreate = () => {
 				}
 				formPayload.append("additional_notes", formData.additional_notes);
 				if (formData.category === "termination" && formData.employee_id) {
-					formPayload.append("employee", formData.employee_id.toString());
+					formPayload.append("employee_id", formData.employee_id.toString());
 				}
-				formPayload.append("created_by", formData.created_by!.toString());
-				formPayload.append("updated_by", formData.updated_by!.toString());
-				formPayload.append("initiated_by", formData.initiated_by!.toString());
-
-				const response = await apiPost("/api/on-boarding/employee-separations/", formPayload);
-				console.log("API response:", response);
-				showSuccessToast(
-					`${formData.category.charAt(0).toUpperCase() + formData.category.slice(1)} request submitted successfully`,
-				);
+				if (category === "termination") {
+					await apiPost("/on-boarding/termination-initiations/", formPayload);
+				} else if (category === "resignation") {
+					await apiPost("/on-boarding/resignation-requests/", formPayload);
+				}
+				showSuccessToast(`request submitted successfully`);
 				router.push("/off-boarding/exit-process");
 			} catch (error: any) {
-				console.error("API error:", error);
-				if (error.response?.status === 405) {
-					showErrorToast({
-						defaultMessage:
-							"The server does not allow this action. Please check the API endpoint or contact support.",
-					});
-				} else {
-					showErrorToast({ error, defaultMessage: "Failed to submit request" });
-				}
+				showErrorToast({ error, defaultMessage: "Failed to submit request" });
 			} finally {
 				setLoading(false);
 			}
@@ -208,21 +197,20 @@ const ExitProcessCreate = () => {
 
 						<form onSubmit={handleSubmit} className="space-y-6">
 							{/* Employee Selection - Only for Termination */}
-							{formData.category === "termination" && (
-								<div className="space-y-2">
-									<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
-										Select Employee *
-									</Label>
-									<EmployeeSearchableSelect
-										id="employee_id"
-										value={selectedEmployee}
-										onValueChange={handleEmployeeSelect}
-										placeholder="Select an employee"
-										multiple={false}
-										className="w-full"
-									/>
-								</div>
-							)}
+
+							<div className="space-y-2">
+								<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
+									Select Employee *
+								</Label>
+								<EmployeeSearchableSelect
+									id="employee_id"
+									value={selectedEmployee}
+									onValueChange={handleEmployeeSelect}
+									placeholder="Select an employee"
+									multiple={false}
+									className="w-full"
+								/>
+							</div>
 
 							{/* Date and File Upload in Grid */}
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
