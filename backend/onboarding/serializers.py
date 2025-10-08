@@ -1,3 +1,4 @@
+from datetime import date
 from recruitment.serializers import JobAdvertApplicationSerializer
 from rest_framework import serializers
 from .models import (
@@ -7,6 +8,7 @@ from .models import (
     InstitutionSeparationPolicy,
     ResignationRequest,
     RetirementRequest,
+    SeparationStageProgress,
     TerminationInitiation,
     EmployeeSeparation,
 )
@@ -18,7 +20,6 @@ from employee.serializers import EmployeeSerializer
 from general.serializers import BaseApprovableSerializer
 
 
-
 class OnBoardingSerializer(BaseApprovableSerializer):
     application_details = JobAdvertApplicationSerializer(
         source="application", read_only=True
@@ -26,14 +27,14 @@ class OnBoardingSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = OnBoarding
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ["created_at", "updated_at"]
 
 
 class OffboardingStageSerializer(BaseApprovableSerializer):
     class Meta:
         model = OffboardingStage
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at", "institution"]
 
     def validate_stage_name(self, value):
@@ -72,12 +73,14 @@ class InstitutionEmployeeSeparationTypesSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionEmployeeSeparationTypes
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at", "institution"]
 
     def validate_separation_type(self, value):
         if not value:
-            raise serializers.ValidationError({"error": "Separation type cannot be empty."})
+            raise serializers.ValidationError(
+                {"error": "Separation type cannot be empty."}
+            )
         return value
 
     def create(self, validated_data):
@@ -116,7 +119,7 @@ class InstitutionSeparationPolicySerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionSeparationPolicy
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def to_representation(self, instance):
@@ -152,7 +155,7 @@ class EmployeeSeparationSerializer(serializers.ModelSerializer):
 class ResignationRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = ResignationRequest
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_fields(self):
@@ -175,8 +178,10 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
         return fields
 
     def validate(self, data):
+        data = super().validate(data)
         employee = self.context.get("employee")
 
+        # Validate employee context first
         if not employee:
             raise serializers.ValidationError(
                 {"error": "Employee context is required for resignation requests."}
@@ -185,19 +190,29 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
         institution = getattr(employee, "institution", None)
 
         if not institution:
-            raise serializers.ValidationError({"error": "Employee's institution is not set."})
-
-        try:
-            separation_type = InstitutionEmployeeSeparationTypes.objects.get(
-                institution=institution,
-                category="resignation",
-                is_active=True,
-            )
-        except InstitutionEmployeeSeparationTypes.DoesNotExist:
             raise serializers.ValidationError(
-                {"error": "Resignation separation type is not configured for this institution."}
+                {"error": "Employee's institution is not set."}
             )
 
+        # Get separation type from data or lookup
+        separation_type = data.get("separation_type")
+        
+        if not separation_type:
+            try:
+                separation_type = InstitutionEmployeeSeparationTypes.objects.get(
+                    institution=institution,
+                    category="resignation",
+                    is_active=True,
+                )
+                data["separation_type"] = separation_type
+            except InstitutionEmployeeSeparationTypes.DoesNotExist:
+                raise serializers.ValidationError(
+                    {
+                        "error": "Resignation separation type is not configured for this institution."
+                    }
+                )
+
+        # Check for active resignation requests
         active_sep = EmployeeSeparation.objects.filter(
             employee=employee,
             employee_separation_type=separation_type,
@@ -209,11 +224,35 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
             and ResignationRequest.objects.filter(separation=active_sep).exists()
         ):
             raise serializers.ValidationError(
-                {"error": "An active resignation request already exists for this employee."}
+                {
+                    "error": "An active resignation request already exists for this employee."
+                }
             )
 
+        # Validate against separation policy
+        policy = InstitutionSeparationPolicy.objects.filter(
+            separation_type=separation_type, is_active=True
+        ).first()
+        
+        if policy and policy.enforce_policy:
+            last_working_day = data.get("last_working_day")
+            if last_working_day:
+                notice_days = (last_working_day - date.today()).days
+                if (
+                    notice_days < policy.min_notice_days
+                    or notice_days > policy.max_notice_days
+                ):
+                    raise serializers.ValidationError(
+                        {
+                            "error": f"Notice period must be between {policy.min_notice_days} and {policy.max_notice_days} days."
+                        }
+                    )
+            if policy.require_separation_letter and not data.get("resignation_letter"):
+                raise serializers.ValidationError(
+                    {"error": "Resignation letter is required."}
+                )
+
         data["employee"] = employee
-        data["separation_type"] = separation_type
 
         return data
 
@@ -238,7 +277,6 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
             request_status="submitted",
         )
 
-
         return resignation_request
 
     def update(self, instance, validated_data):
@@ -259,7 +297,7 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
 class RetirementRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = RetirementRequest
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_fields(self):
@@ -292,7 +330,9 @@ class RetirementRequestSerializer(BaseApprovableSerializer):
         institution = getattr(employee, "institution", None)
 
         if not institution:
-            raise serializers.ValidationError({"error": "Employee's institution is not set."})
+            raise serializers.ValidationError(
+                {"error": "Employee's institution is not set."}
+            )
 
         try:
             separation_type = InstitutionEmployeeSeparationTypes.objects.get(
@@ -302,7 +342,9 @@ class RetirementRequestSerializer(BaseApprovableSerializer):
             )
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
             raise serializers.ValidationError(
-                {"error": "Retirement separation type is not configured for this institution."}
+                {
+                    "error": "Retirement separation type is not configured for this institution."
+                }
             )
 
         active_sep = EmployeeSeparation.objects.filter(
@@ -316,7 +358,9 @@ class RetirementRequestSerializer(BaseApprovableSerializer):
             and RetirementRequest.objects.filter(separation=active_sep).exists()
         ):
             raise serializers.ValidationError(
-                {"error": "An active retirement request already exists for this employee."}
+                {
+                    "error": "An active retirement request already exists for this employee."
+                }
             )
 
         data["employee"] = employee
@@ -345,7 +389,6 @@ class RetirementRequestSerializer(BaseApprovableSerializer):
             request_status="submitted",
         )
 
-
         return retirement_request
 
 
@@ -356,7 +399,7 @@ class TerminationInitiationSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = TerminationInitiation
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at", "separation"]
 
     def to_representation(self, instance):
@@ -420,7 +463,9 @@ class TerminationInitiationSerializer(BaseApprovableSerializer):
             )
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
             raise serializers.ValidationError(
-                {"error": "Termination separation type not configured for this institution."}
+                {
+                    "error": "Termination separation type not configured for this institution."
+                }
             )
 
         last_working_day = validated_data.get("last_working_day", None)
@@ -443,7 +488,6 @@ class TerminationInitiationSerializer(BaseApprovableSerializer):
 
         termination_initiation = TerminationInitiation.objects.create(**validated_data)
 
-
         return termination_initiation
 
     def update(self, instance, validated_data):
@@ -459,3 +503,84 @@ class TerminationInitiationSerializer(BaseApprovableSerializer):
                 separation.save()
 
         return instance
+
+
+class SeparationStageProgressSerializer(serializers.ModelSerializer):
+    """Serializes the progress of a single off-boarding stage."""
+    stage_name = serializers.CharField(source="stage.stage_name", read_only=True)
+
+    class Meta:
+        model = SeparationStageProgress
+        fields = [
+            "id",
+            "stage_name",
+            "status",
+            "notes",
+            "position",
+            "created_at",
+            "updated_at",
+        ]
+
+class EmployeeSeparationWithStagesSerializer(serializers.ModelSerializer):
+    employee = serializers.SerializerMethodField()
+    employee_separation_type = InstitutionEmployeeSeparationTypesSerializer(read_only=True)
+    initiated_by = ProfileSerializer(read_only=True)
+    stages = SeparationStageProgressSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = EmployeeSeparation
+        fields = [
+            "id",
+            "employee",
+            "employee_separation_type",
+            "initiated_by",
+            "effective_date",
+            "additional_notes",
+            "separation_status",
+            "created_at",
+            "updated_at",
+            "stages",
+        ]
+
+    def get_employee(self, obj):
+        """Return only the employee's name and position."""
+        employee = obj.employee
+        if not employee:
+            return None
+
+        return {
+            "name": employee.name,
+            "position": employee.position.name,
+        }
+
+
+class SeparationStageProgressReorderSerializer(serializers.Serializer):
+    source_stage_id = serializers.IntegerField()
+    target_stage_id = serializers.IntegerField()
+
+    def validate(self, data):
+        source_stage_id = data.get("source_stage_id")
+        target_stage_id = data.get("target_stage_id")
+        separation_id = self.context.get("separation_id")
+
+        if source_stage_id == target_stage_id:
+            raise serializers.ValidationError({"error": "Source and target stage IDs cannot be the same."})
+
+        try:
+            source_stage = SeparationStageProgress.objects.get(
+                id=source_stage_id, separation_id=separation_id, deleted_at__isnull=True
+            )
+        except SeparationStageProgress.DoesNotExist:
+            raise serializers.ValidationError({"error": f"Source stage ID {source_stage_id} not found."})
+
+        try:
+            target_stage = SeparationStageProgress.objects.get(
+                id=target_stage_id, separation_id=separation_id, deleted_at__isnull=True
+            )
+        except SeparationStageProgress.DoesNotExist:
+            raise serializers.ValidationError({"error": f"Target stage ID {target_stage_id} not found."})
+
+        if source_stage.separation != target_stage.separation:
+            raise serializers.ValidationError({"error": "Source and target stages must belong to the same separation."})
+
+        return data        

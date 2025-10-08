@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getOffboardingDashboard } from "@/lib/utils";
+import { ReportDialog } from "../dialogs/reports-dialog";
 
 const statusColors = {
 	Completed: "bg-green-100 text-green-800 border-green-200",
@@ -31,6 +32,7 @@ export default function OffboardingDashboard() {
 	const [data, setData] = useState<OffboardingData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
 
 	useEffect(() => {
 		async function fetchData() {
@@ -100,7 +102,7 @@ export default function OffboardingDashboard() {
 		<div className="min-h-screen bg-background p-6">
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="flex items-center justify-between">
+				<div className="flex flex-col md:flex-row items-center justify-between">
 					<div>
 						<h1 className="text-3xl font-bold text-foreground text-balance">
 							HR Offboarding Dashboard
@@ -109,10 +111,11 @@ export default function OffboardingDashboard() {
 							Track employee separations and manage offboarding processes
 						</p>
 					</div>
-					{/* <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Users className="w-4 h-4 mr-2" />
-            New Separation
-          </Button> */}
+					<div className="flex items-center justify-end gap-8">
+						<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+							Generate Reports
+						</Button>
+					</div>
 				</div>
 
 				{/* Key Metrics Cards */}
@@ -266,52 +269,12 @@ export default function OffboardingDashboard() {
 						</ChartContainer>
 					</CardContent>
 				</Card>
-
-				{/* Recent Separations Table */}
-				{/* <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">Recent Separations</CardTitle>
-            <CardDescription>Latest employee separation activities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Effective Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.recent_separations.map((separation) => (
-                  <TableRow key={separation.id}>
-                    <TableCell className="font-medium">{separation.employee_name}</TableCell>
-                    <TableCell>{separation.separation_type}</TableCell>
-                    <TableCell>{new Date(separation.effective_date).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={statusColors[separation.separation_status as keyof typeof statusColors]}
-                      >
-                        {separation.separation_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">{separation.additional_notes}</TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card> */}
 			</div>
+			<ReportDialog
+				isOpen={isReportsDialogOpen}
+				onClose={() => setIsReportsDialogOpen(false)}
+				app="onboarding"
+			/>
 		</div>
 	);
 }

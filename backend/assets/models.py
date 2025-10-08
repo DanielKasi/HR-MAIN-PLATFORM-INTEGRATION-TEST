@@ -41,6 +41,19 @@ class AssetCategory(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution')
+        return list(queryset.values(
+            'category_name',
+            'code',
+            'created_at'
+        ))
 
     @staticmethod
     def generate_unique_code():
@@ -180,6 +193,23 @@ class Asset(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            category__institution=institution,
+            **filters
+        ).select_related('institution', 'category', 'current_holder')
+        return list(queryset.values(
+            'asset_name',
+            'category__category_name',
+            'batch_number',
+            'serial_number',
+            'status',
+            'current_holder__user__fullname',
+            'created_at'
+        ))
 
 
 class AssetRequest(BaseApprovableModel):
@@ -236,6 +266,21 @@ class AssetRequest(BaseApprovableModel):
 
     def get_institution(self):
         return self.asset.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            requester__institution=institution,
+            **filters
+        ).select_related('asset', 'requester')
+        return list(queryset.values(
+            'asset__asset_name',
+            'requester__user__fullname',
+            'request_reference_code',
+            'asset_request_status',
+            'created_at'
+        ))
 
     def finish_workflow(self, approval: Approval):
         with transaction.atomic():
@@ -357,6 +402,23 @@ class AssetAllocation(BaseApprovableModel):
 
     def get_institution(self):
         return self.asset.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            allocatd_to__institution=institution,
+            **filters
+        ).select_related('asset', 'allocated_to', 'responding_to_request', 'allocated_by')
+        return list(queryset.values(
+            'asset__asset_name',
+            'allocated_to__user__fullname',
+            'responding_to_request__request_reference_code',
+            'allocated_by__user__fullname',
+            'allocation_status',
+            'alloc_code',
+            'created_at'
+        ))  
 
     def finish_workflow(self, approval: Approval):
         if approval.status == "completed":
@@ -415,6 +477,20 @@ class AssetReturn(BaseApprovableModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            allocation__allocated_to__institution=institution,
+            **filters
+        ).select_related('asset', 'allocation')
+        return list(queryset.values(
+            'asset__asset_name',
+            'allocation__allocated_to__user__fullname',
+            'condition',
+            'created_at'
+        ))    
 
     def get_institution(self):
         return self.asset.institution
@@ -486,6 +562,21 @@ class AssetHistory(SoftDeletableTimeStampedModel):
     )
 
     notes = models.TextField(blank=True, null=True)
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            asset__category__institution=institution,
+            **filters
+        ).select_related('asset', 'performed_by', 'affected_user')
+        return list(queryset.values(
+            'asset__asset_name',
+            'event_type',
+            'performed_by__user__fullname',
+            'affected_user__user__fullname',
+            'created_at'
+        ))
 
     def __str__(self):
         return f"{self.asset.asset_name} - {self.event_type}"

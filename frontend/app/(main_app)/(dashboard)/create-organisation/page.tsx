@@ -55,18 +55,7 @@ import {
 	DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
 
-interface OrganisationFormData {
-	institutionName: string;
-	institutionEmail: string;
-	firstPhoneNumber: string;
-	secondPhoneNumber: string;
-	description: string;
-	location: string;
-	latitude: string;
-	longitude: string;
-	departments: IDepartment[];
-	institutionLogo?: File | null;
-}
+import type { IOrganisationFormData } from "@/types/types.utils";
 
 const STEPS: StepItem[] = [
 	{
@@ -119,7 +108,7 @@ export default function CreateOrganisationWizard() {
 	const refreshToken = useSelector(selectRefreshToken);
 	const dispatch = useDispatch();
 
-	const [organizationFormData, setOrganizationFormData] = useState<OrganisationFormData>({
+	const [organizationFormData, setOrganizationFormData] = useState<IOrganisationFormData>({
 		institutionName: "",
 		institutionEmail: "",
 		firstPhoneNumber: "",
@@ -201,7 +190,7 @@ export default function CreateOrganisationWizard() {
 		}
 	};
 
-	const updateFormData = (field: keyof OrganisationFormData, value: any) => {
+	const updateFormData = (field: keyof IOrganisationFormData, value: any) => {
 		setOrganizationFormData((prev) => ({ ...prev, [field]: value }));
 	};
 

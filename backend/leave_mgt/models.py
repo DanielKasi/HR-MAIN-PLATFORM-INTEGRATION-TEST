@@ -49,6 +49,24 @@ class LeaveType(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution')
+        return list(queryset.values(
+            'name',
+            'category',
+            'max_days_per_year',
+            'carry_forward_allowed',
+            'max_carry_forward_days',
+            'requires_document',
+            'gender_specific',
+            'created_at'
+        ))
 
     def save(self, *args, **kwargs):
         is_new_leave_type = self.pk is None
@@ -190,6 +208,25 @@ class LeaveBalance(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        start_year, end_year = start_date.year, end_date.year
+        queryset = cls.objects.filter(
+            year__range=(start_year, end_year),
+            institution=institution,
+            **filters
+        ).select_related('employee', 'leave_type', 'institution')
+        return list(queryset.values(
+            'employee__name',
+            'leave_type__name',
+            'year',
+            'allocated_days',
+            'used_days',
+            'pending_days',
+            'carried_forward_days',
+            'available_days'
+        ))
 
 
 class LeaveApplication(BaseApprovableModel):
@@ -257,6 +294,28 @@ class LeaveApplication(BaseApprovableModel):
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            start_date__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('employee', 'leave_type', 'institution', 'approved_by')
+        return list(queryset.values(
+            'employee__name',
+            'leave_type__name',
+            'start_date',
+            'end_date',
+            'duration_type',
+            'total_days',
+            'status',
+            'approved_by__fullname',
+            'approved_at',
+            'rejection_reason',
+            'created_at',
+            'created_by__fullname'
+        ))
 
 
 class LeavePolicy(BaseApprovableModel):

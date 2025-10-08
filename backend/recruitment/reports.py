@@ -7,7 +7,7 @@ REPORT_CONFIG = {
     'candidates': JobAdvertApplication,
     'interviews': JobInterview,
     'job openings': JobPositionAdvert,
-    'onboarding': OnBoarding,
-    # 'skill zone': SkillZone,
+    # 'onboarding': OnBoarding,
+    'skill zone': SkillZone,
     'interview stages': InterviewStage,
 }

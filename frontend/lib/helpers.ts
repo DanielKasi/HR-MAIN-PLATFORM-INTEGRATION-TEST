@@ -235,7 +235,6 @@ export const getFileUrl = (filePath: string) => {
 		return filePath;
 	}
 	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
 	return `${baseUrl}${filePath}`;
 };
 
@@ -348,3 +347,10 @@ export function isToday(dateString: string) {
 
 	return dateString === `${yyyy}-${mm}-${dd}`;
 }
+
+export const replaceUnderscore = (text: string) => {
+	if (!text) {
+		return "";
+	}
+	return text.replace(/_/g, "");
+};

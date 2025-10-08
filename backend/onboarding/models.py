@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.db import models
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from employee.models import Employee
 from django.template.loader import render_to_string
 from django.core.mail import send_mail, EmailMultiAlternatives
@@ -48,9 +49,11 @@ class OnBoarding(BaseApprovableModel):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            application__application_date__range=(start_date, end_date)
+            application__application_date__range=(start_date, end_date),
+            application__job_position_advert__job_position__department__institution=institution,
+            **filters
         ).select_related('application')
         return list(queryset.values(
             'status',
@@ -74,9 +77,13 @@ class OffboardingStage(BaseApprovableModel):
     )
     stage_name = models.CharField(max_length=100, blank=False, null=False)
     stage_description = models.TextField(blank=True, null=True)
+    position = models.PositiveIntegerField(
+        default=0,
+        help_text="The order of this stage in the offboarding process (lower numbers come first)."
+    )
 
     def __str__(self):
-        return f"{self.institution.institution_name} - {self.stage_name}"
+        return f"{self.institution.institution_name} - {self.stage_name} (Position: {self.position})"
 
     class Meta:
         unique_together = (("institution", "stage_name"),)
@@ -85,11 +92,41 @@ class OffboardingStage(BaseApprovableModel):
                 fields=["institution", "stage_name"],
                 condition=Q(deleted_at__isnull=True),
                 name="unique_active_stage_name_per_institution",
-            )
+            ),
+            UniqueConstraint(
+                fields=["institution", "position"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_position_per_institution",
+            ),
         ]
+        indexes = [
+            models.Index(fields=["institution", "position"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.position == 0:  # Automatically set position if not provided
+            max_position = OffboardingStage.objects.filter(
+                institution=self.institution,
+                deleted_at__isnull=True
+            ).aggregate(models.Max('position'))['position__max'] or 0
+            self.position = max_position + 1
+        super().save(*args, **kwargs)
 
     def get_institution(self):
         return self.institution
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution')
+        return list(queryset.values(
+            'stage_name',
+            'position',
+            'created_at'
+        ))
 
 
 class InstitutionEmployeeSeparationTypes(BaseApprovableModel):
@@ -125,6 +162,18 @@ class InstitutionEmployeeSeparationTypes(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution').prefetch_related('supported_stages')
+        return list(queryset.values(
+            'separation_type',
+            'category',
+            'created_at'
+        ))
 
 
 class InstitutionSeparationPolicy(BaseApprovableModel):
@@ -156,6 +205,25 @@ class InstitutionSeparationPolicy(BaseApprovableModel):
 
     def get_institution(self):
         return self.separation_type.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            separation_type__institution=institution,
+            **filters
+        ).select_related('separation_type', 'separation_type__institution')
+        return list(queryset.values(
+            'policy_name',
+            'separation_type__separation_type',
+            'min_notice_days',
+            'max_notice_days',
+            'require_separation_letter',
+            'require_all_stages',
+            'enforce_policy',
+            'created_at'
+        ))
+
 
     class Meta:
         constraints = [
@@ -167,7 +235,7 @@ class InstitutionSeparationPolicy(BaseApprovableModel):
         ]
 
 
-class EmployeeSeparation(models.Model):
+class EmployeeSeparation(SoftDeletableTimeStampedModel):
     employee_separation_type = models.ForeignKey(
         InstitutionEmployeeSeparationTypes,
         on_delete=models.CASCADE,
@@ -211,16 +279,39 @@ class EmployeeSeparation(models.Model):
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
+        if is_new:
+            # Create progress records for all supported stages
+            supported_stages = self.employee_separation_type.supported_stages.filter(
+                deleted_at__isnull=True
+            )
+            for stage in supported_stages:
+                SeparationStageProgress.objects.get_or_create(
+                    separation=self,
+                    stage=stage,
+                    defaults={"status": "not_started"}
+                )
+
         if not is_new and self.separation_status == "completed":
-            # We Deactivate the employee when separation is completed
             self.employee.is_active = False
-
             self.employee.save()
-
-            # We deactivate the user account associated with the employee
             if self.employee.user:
                 self.employee.user.is_active = False
                 self.employee.user.save()
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            effective_date__range=(start_date, end_date),
+            employe_separation_type__institution=institution,
+            **filters
+        ).select_related('employee_separation_type', 'employee', 'initiated_by')
+        return list(queryset.values(
+            'employee__user__fullname',
+            'employee_separation_type__separation_type',
+            'initiated_by__user__fullname',
+            'effective_date',
+            'separation_status'
+        ))    
 
 
 class ResignationRequest(BaseApprovableModel):
@@ -266,6 +357,8 @@ class ResignationRequest(BaseApprovableModel):
 
     def get_institution(self):
         return self.separation.employee.department.institution
+    
+    
 
     def finish_workflow(self, approval: Approval):
         with transaction.atomic():
@@ -293,6 +386,21 @@ class ResignationRequest(BaseApprovableModel):
             ]:
                 self.separation.separation_status = "completed"
                 self.separation.save()
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            separation__employe_separation_type__institution=institution,
+            **filters
+        ).select_related('separation', 'separation__employee', 'separation__employee_separation_type')
+        return list(queryset.values(
+            'separation__employee__user__fullname',
+            'separation__employee_separation_type__separation_type',
+            'request_status',
+            'last_working_day',
+            'created_at'
+        ))            
 
 
 class TerminationInitiation(BaseApprovableModel):
@@ -372,6 +480,23 @@ class TerminationInitiation(BaseApprovableModel):
                 self.separation.separation_status = "completed"
                 self.separation.save()
 
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            separation__employe_separation_type__institution=institution,
+            **filters
+        ).select_related('separation', 'separation__employee', 'separation__employee_separation_type')
+        return list(queryset.values(
+            'separation__employee__user__fullname',
+            'separation__employee_separation_type__separation_type',
+            'initiation_status',
+            'last_working_day',
+            'created_at'
+        ))            
+
+
+
 
 class RetirementRequest(BaseApprovableModel):
     separation = models.OneToOneField(
@@ -449,7 +574,7 @@ class RetirementRequest(BaseApprovableModel):
                 self.separation.save()
 
 
-class SeparationStageProgress(models.Model):
+class SeparationStageProgress(SoftDeletableTimeStampedModel):
     separation = models.ForeignKey(
         EmployeeSeparation,
         on_delete=models.CASCADE,
@@ -471,8 +596,19 @@ class SeparationStageProgress(models.Model):
         default="not_started",
     )
     notes = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    position = models.PositiveIntegerField(
+        default=0,
+        help_text="Custom position of this stage for the specific separation (overrides OffboardingStage.position)."
+    )
 
     def __str__(self):
         return f"{self.separation.employee.user.fullname} - {self.stage.stage_name} ({self.status})"
+    
+    def clean(self):
+        if self.stage not in self.separation.employee_separation_type.supported_stages.all():
+            raise ValidationError({"error": f"Stage {self.stage.stage_name} is not supported for this separation type."})
+
+    def save(self, *args, **kwargs):
+        if self.position == 0:
+            self.position = self.stage.position
+        super().save(*args, **kwargs)

@@ -32,6 +32,20 @@ class Period(BaseApprovableModel):
     def get_institution(self):
         return self.institution 
     
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            start_date__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution')
+        return list(queryset.values(
+            'name',
+            'start_date',
+            'end_date',
+            'is_closed'
+        ))
+    
 class Objectives(BaseApprovableModel):
     DURATION_CHOICES = [
         ("days", "Days"),
@@ -59,6 +73,23 @@ class Objectives(BaseApprovableModel):
     
     def get_institution(self):
         return self.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            date__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution', 'managers', 'key_result').prefetch_related('assignees')
+        return list(queryset.values(
+            'name',
+            'managers__name',
+            'duration_unit',
+            'duration',
+            'key_result__title',
+            'date',
+            'completion_date'
+        ))
     
     def finish_workflow(self, approval: Approval):
         with transaction.atomic():
@@ -185,6 +216,21 @@ class KeyResult(BaseApprovableModel):
     
     def get_institution(self):
         return self.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution')
+        return list(queryset.values(
+            'title',
+            'target_value',
+            'progress_type',
+            'duration',
+            'created_at'
+        ))
 
 class Feedback360(BaseApprovableModel):
     reviewer = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='received_feedback', null=True, blank=True)
@@ -200,6 +246,21 @@ class Feedback360(BaseApprovableModel):
     
     def get_institution(self):
         return self.reviewer.payroll_branch.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            submission_date__range=(start_date, end_date),
+            period__institution=institution,
+            **filters
+        ).select_related('reviewer', 'given_by', 'period')
+        return list(queryset.values(
+            'reviewer__name',
+            'given_by__name',
+            'period__name',
+            'rating',
+            'submission_date'
+        ))
 
 
 
@@ -223,6 +284,22 @@ class EmployeeBonusPoint(BaseApprovableModel):
 
     def get_institution(self):
         return self.employee.payroll_branch.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
+        ).select_related('employee', 'bonus_point_setting', 'period')
+        return list(queryset.values(
+            'employee__name',
+            'bonus_point_setting__points',
+            'reason',
+            'date',
+            'period__name',
+            'redeemed'
+        ))
     
 class QuestionTemplate(BaseApprovableModel):
     CATEGORY_CHOICES = [
@@ -342,6 +419,23 @@ class Meeting(BaseApprovableModel):
 
     def __str__(self):
         return f"{self.title} on {self.start_time.date()}"
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            start_time__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution', 'organizer').prefetch_related('participants')
+        return list(queryset.values(
+            'title',
+            'start_time',
+            'end_time',
+            'mode',
+            'location',
+            'organizer__name',
+            'is_recurring',
+        ))
 
     def _get_institution_meeting_link(self):
         integration = self.institution.meeting_integrations.first()
@@ -634,6 +728,22 @@ class PerformanceImprovementPlan(BaseApprovableModel):
     
     def get_institution(self):
         return self.employee.payroll_branch.institution
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            start_date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
+        ).select_related('employee', 'document_template').prefetch_related('issues', 'support_resources', 'objectives')
+        return list(queryset.values(
+            'employee__name',
+            'start_date',
+            'end_date',
+            'status',
+            'final_review_date',
+            'document_template__name'
+        ))
 
 class PIPEmployeeObjectives(EmployeeObjectives):
     """

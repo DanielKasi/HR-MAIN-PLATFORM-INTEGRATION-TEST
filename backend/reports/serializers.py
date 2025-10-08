@@ -24,9 +24,9 @@ class ReportGenerateInputSerializer(serializers.Serializer):
     end_date = serializers.DateField(
         help_text="End date for the report period (YYYY-MM-DD). Must be after start_date."
     )
-    format = serializers.ChoiceField(
+    format_type = serializers.ChoiceField(
         choices=['excel', 'pdf'],
-        help_text="Output format: 'excel' for XLSX or 'pdf' for PDF."
+        help_text="Output format_type: 'excel' for XLSX or 'pdf' for PDF."
     )
 
     def validate(self, attrs):
@@ -54,45 +54,4 @@ class ReportGenerateInputSerializer(serializers.Serializer):
                 raise serializers.ValidationError(str(e))
         return value
     
-class ReportGenerateQuerySerializer(serializers.Serializer):
-    """Serializer for query params in report generation (used for validation/Swagger)."""
-    app = serializers.CharField(
-        max_length=50,
-        help_text="App name (e.g., 'recruitment')."
-    )
-    report_type = serializers.CharField(
-        max_length=50,
-        help_text="Report type (e.g., 'onboardings')."
-    )
-    start_date = serializers.DateField(
-        help_text="Start date (YYYY-MM-DD)."
-    )
-    end_date = serializers.DateField(
-        help_text="End date (YYYY-MM-DD)."
-    )
-    format = serializers.ChoiceField(
-        choices=['excel', 'pdf'],
-        help_text="Output format."
-    )
-
-    def validate(self, attrs):
-        if attrs['end_date'] <= attrs['start_date']:
-            raise serializers.ValidationError("End date must be after start date.")
-        return attrs
-
-    def validate_app(self, value):
-        from .registry import build_reports_registry
-        all_reports = build_reports_registry()
-        if value not in all_reports:
-            raise serializers.ValidationError(f"Invalid app '{value}'. Available: {list(all_reports.keys())}")
-        return value
-
-    def validate_report_type(self, value):
-        app = self.initial_data.get('app')
-        if app:
-            from .registry import get_report_config
-            try:
-                get_report_config(app, value)
-            except ValueError as e:
-                raise serializers.ValidationError(str(e))
-        return value    
+    

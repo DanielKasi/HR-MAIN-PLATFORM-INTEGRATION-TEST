@@ -21,6 +21,7 @@ export interface BankTypeSearchableSelectProps {
 	showSelectedItems?: boolean;
 	defaultLabel?: string;
 	setAccounts?: (accounts: IBankType[]) => void;
+	required?: boolean;
 }
 
 export const BankTypeSearchableSelect = memo(
@@ -36,6 +37,7 @@ export const BankTypeSearchableSelect = memo(
 		hideSelectedFromList = false,
 		defaultLabel,
 		setAccounts,
+		required,
 	}: BankTypeSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
 		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
@@ -96,12 +98,13 @@ export const BankTypeSearchableSelect = memo(
 					multiple={multiple}
 					disabled={disabled}
 					placeholder={placeholder}
-					searchPlaceholder="Search bank accounts by name..."
+					searchPlaceholder="Search banks by name..."
 					triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
 					popoverClassName="w-full"
 					hideSelectedFromList={hideSelectedFromList}
 					setParentItems={setAccounts}
 					defaultLabel={defaultLabel}
+					required={required}
 				/>
 			</div>
 		);

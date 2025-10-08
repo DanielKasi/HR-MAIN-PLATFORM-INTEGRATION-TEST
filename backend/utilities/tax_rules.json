@@ -100,7 +100,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "tax_rule_formula": "[ ( taxable_gross_salary - 410000 ) * 30% + 25000 ] + [ ( taxable_gross_salary - 10000000 ) * 10% ]",
                         "salary_from": "10000001.00",
-                        "salary_to": null,
+                        "salary_to": "",
                         "tax_rule_category": "RE"
                     },
                     {
@@ -140,7 +140,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "tax_rule_formula": "[ ( taxable_gross_salary - 410000 ) * 30% + 48500 ] + [ ( taxable_gross_salary - 10000000 ) * 10% ]",
                         "salary_from": "10000001.00",
-                        "salary_to": null,
+                        "salary_to": "",
                         "tax_rule_category": "NR"
                     }
                 ]

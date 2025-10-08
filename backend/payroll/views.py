@@ -50,6 +50,8 @@ from datetime import timedelta
 from .models import Payslip, PayrollPeriod
 from employee.models import Employee
 from utilities.sortable_api import SortableAPIMixin
+from django.contrib.auth.decorators import permission_required
+from django.utils.decorators import method_decorator
 
 
 
@@ -150,6 +152,7 @@ class EmployeeAllowanceAPIView(APIView, SortableAPIMixin):
         summary="List employee allowances for a specific institution",
         responses=EmployeeAllowanceSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_employee_allowances', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
@@ -198,6 +201,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
         responses=EmployeeAllowanceSerializer,
         summary="Retrieve an employee allowance by ID",
     )
+    @method_decorator(permission_required('can_view_employee_allowances', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         serializer = EmployeeAllowanceSerializer(instance)
@@ -208,6 +212,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
         responses=EmployeeAllowanceSerializer,
         summary="Update an employee allowance (partial)",
     )
+    @method_decorator(permission_required('can_edit_employee_allowances', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         instance.approval_status = 'under_update'
@@ -221,6 +226,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee allowance")
+    @method_decorator(permission_required('can_delete_employee_allowances', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -237,6 +243,7 @@ class PayrollPeriodAPIView(APIView, SortableAPIMixin):
         summary="List payroll periods for a given institution",
         responses=PayrollPeriodSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_payroll_periods', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         periods = PayrollPeriod.objects.filter(institution_id=institution_id, deleted_at__isnull=True).order_by(
@@ -275,6 +282,7 @@ class PayrollPeriodDetailAPIView(APIView):
     @extend_schema(
         responses=PayrollPeriodSerializer, summary="Retrieve a payroll period by ID"
     )
+    @method_decorator(permission_required('can_view_payroll_periods', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
         serializer = PayrollPeriodSerializer(instance)
@@ -285,6 +293,7 @@ class PayrollPeriodDetailAPIView(APIView):
         responses=PayrollPeriodSerializer,
         summary="Update a payroll period (partial)",
     )
+    @method_decorator(permission_required('can_edit_payroll_periods', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
         instance.approval_status = 'under_update'
@@ -296,6 +305,7 @@ class PayrollPeriodDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a payroll period")
+    @method_decorator(permission_required('can_delete_payroll_periods', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -312,6 +322,7 @@ class EmployeeDeductionAPIView(APIView, SortableAPIMixin):
         summary="List employee deductions for a specific institution",
         responses=EmployeeDeductionSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_employee_deductions', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
@@ -365,6 +376,7 @@ class EmployeeDeductionDetailAPIView(APIView):
         responses=EmployeeDeductionSerializer,
         summary="Retrieve an employee deduction by ID",
     )
+    @method_decorator(permission_required('can_view_employee_deductions', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
         serializer = EmployeeDeductionSerializer(instance)
@@ -375,6 +387,7 @@ class EmployeeDeductionDetailAPIView(APIView):
         responses=EmployeeDeductionSerializer,
         summary="Update an employee deduction (partial)",
     )
+    @method_decorator(permission_required('can_edit_employee_deductions', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
         instance.approval_status = 'under_update'
@@ -388,6 +401,7 @@ class EmployeeDeductionDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee deduction")
+    @method_decorator(permission_required('can_delete_employee_deductions', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -404,6 +418,7 @@ class AllowanceTypeAPIView(APIView, SortableAPIMixin):
         summary="List allowance types for an institution",
         responses=AllowanceTypeSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_allowance_types', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         allowance_types = AllowanceType.objects.filter(
@@ -445,6 +460,7 @@ class AllowanceTypeDetailAPIView(APIView):
     @extend_schema(
         responses=AllowanceTypeSerializer, summary="Retrieve an allowance type by ID"
     )
+    @method_decorator(permission_required('can_view_allowance_types', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
         serializer = AllowanceTypeSerializer(instance)
@@ -455,6 +471,7 @@ class AllowanceTypeDetailAPIView(APIView):
         responses=AllowanceTypeSerializer,
         summary="Update an allowance type (partial)",
     )
+    @method_decorator(permission_required('can_edit_allowance_types', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
         instance.approval_status = 'under_update'
@@ -466,6 +483,7 @@ class AllowanceTypeDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an allowance type")
+    @method_decorator(permission_required('can_delete_allowance_types', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
         instance.delete()
@@ -493,6 +511,7 @@ class DeductionTypeAPIView(APIView, SortableAPIMixin):
         summary="List deduction types for an institution",
         responses=DeductionTypeSerializer(many=True),
     )
+    @method_decorator(permission_required('can_view_deduction_types', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         deduction_types = DeductionType.objects.filter(
@@ -533,6 +552,7 @@ class DeductionTypeDetailAPIView(APIView):
     @extend_schema(
         responses=DeductionTypeSerializer, summary="Retrieve a deduction type by ID"
     )
+    @method_decorator(permission_required('can_view_deduction_types', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
         serializer = DeductionTypeSerializer(instance)
@@ -543,6 +563,7 @@ class DeductionTypeDetailAPIView(APIView):
         responses=DeductionTypeSerializer,
         summary="Update a deduction type (partial)",
     )
+    @method_decorator(permission_required('can_edit_deduction_types', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
         instance.approval_status = 'under_update'
@@ -554,6 +575,7 @@ class DeductionTypeDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a deduction type")
+    @method_decorator(permission_required('can_delete_deduction_types', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
         instance.approval_status = 'under_deletion'
@@ -571,6 +593,7 @@ class EmployeeTaxListAPIView(APIView, SortableAPIMixin):
         responses=EmployeeTaxSerializer(many=True),
         tags=["Employee Taxes MGT"],
     )
+    @method_decorator(permission_required('can_view_employee_tax', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get('search', None)
         user = request.user.profile
@@ -637,6 +660,7 @@ class EmployeeTaxDetailAPIView(APIView):
         summary="Retrieve an employee tax by ID",
         tags=["Employee Taxes MGT"],
     )
+    @method_decorator(permission_required('can_view_employee_tax', raise_exception=True))
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
         serializer = EmployeeTaxSerializer(instance)
@@ -648,6 +672,7 @@ class EmployeeTaxDetailAPIView(APIView):
         summary="Update an employee tax (partial)",
         tags=["Employee Taxes MGT"],
     )
+    @method_decorator(permission_required('can_edit_employee_tax', raise_exception=True))
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
         instance.approval_status = 'under_update'
@@ -661,6 +686,7 @@ class EmployeeTaxDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee tax")
+    @method_decorator(permission_required('can_delete_employee_tax', raise_exception=True))
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
         instance.delete()
@@ -1127,7 +1153,7 @@ class PayrollAnalyticsAPI(APIView):
                 response=inline_serializer(
                     name='PayrollSummaryResponse',
                     fields={
-                        'payroll_period': serializers.UUIDField(), # Corrected this line to match the field type
+                        # 'payroll_period': serializers.UUIDField(), 
                         'overall_financials': serializers.DictField(
                             help_text="Total financial amounts for the period.",
                             child=serializers.FloatField(),
@@ -1139,6 +1165,14 @@ class PayrollAnalyticsAPI(APIView):
                         'average_metrics': serializers.DictField(
                             help_text="Average gross and net salary per employee.",
                             child=serializers.FloatField(),
+                        ),
+                        'payroll_distribution': serializers.DictField(
+                            help_text="Payroll distribution including salary, deductions, overtime, penalties and allowances.",
+                            child=serializers.FloatField(),
+                        ),
+                        'payroll_periods_data': serializers.ListField(
+                            help_text="Data for payroll periods table.",
+                            child=serializers.DictField(),
                         ),
                     }
                 ),
@@ -1159,6 +1193,7 @@ class PayrollAnalyticsAPI(APIView):
         try:
             if payroll_period_id:
                 payroll_period = PayrollPeriod.objects.get(id=payroll_period_id)
+                payroll_periods = PayrollPeriod.objects.filter(id=payroll_period_id)
             else:
                 # Get the most recent payroll period for the institution
                 payroll_period = PayrollPeriod.objects.filter(
@@ -1187,9 +1222,11 @@ class PayrollAnalyticsAPI(APIView):
             total_allowances=Sum('total_allowances', default=0.00),
             total_deductions=Sum('total_deductions', default=0.00),
             total_penalties=Sum('total_penalties', default=0.00),
+            total_basic_salary=Sum('basic_salary', default=0.00),
         )
         
         total_gross_salary = overall_financials.get('total_gross_salary', 0)
+        total_net_payroll = overall_financials.get('total_net_salary', 0)
         
         # 2. Cost Breakdown Percentages
         cost_breakdown_percentages = {}
@@ -1202,16 +1239,76 @@ class PayrollAnalyticsAPI(APIView):
             }
 
         # 3. Average Metrics
+        employee_count = payslips.values('employee').distinct().count()
         average_metrics = payslips.aggregate(
             avg_gross_salary=Avg('gross_salary', default=0.00),
             avg_net_salary=Avg('net_salary', default=0.00),
+            avg_basic_salary=Avg('basic_salary', default=0.00),
         )
+
+        # 4. Add average salary per employee
+        average_metrics['avg_salary_per_employee'] = round(total_net_payroll / employee_count, 2) if employee_count > 0 else 0
 
         response_data = {
             "payroll_period": serializers.UUIDField().to_representation(payroll_period.id),
             "overall_financials": {k: round(v, 2) for k, v in overall_financials.items()},
             "cost_breakdown_percentages": cost_breakdown_percentages,
             "average_metrics": {k: round(v, 2) for k, v in average_metrics.items()},
+        }
+
+        # 5. Payroll Distribution
+        payroll_distribution = {
+            'salary': float(overall_financials['total_basic_salary'] or 0),
+            'allowances': float(overall_financials['total_allowances'] or 0),
+            'deductions': float(overall_financials['total_deductions'] or 0),
+            'penalties': float(overall_financials['total_penalties'] or 0),
+            'net_payroll': float(total_net_payroll or 0),
+        }
+        
+        # Calculate total overtime from PayslipItems
+        overtime_total = PayslipItem.objects.filter(
+            payslip__in=payslips,
+            item_type='overtime'
+        ).aggregate(total_overtime=Sum('amount', default=0.00))
+        payroll_distribution['overtime'] = float(overtime_total['total_overtime'] or 0.00)
+
+
+
+        # 6. Payroll Periods Data for Table
+        payroll_periods_data = []
+        for period in payroll_periods:
+            period_payslips = Payslip.objects.filter(
+                payroll_period=period,
+                employee__is_active=True,
+                deleted_at__isnull=True
+            )
+            
+            period_totals = period_payslips.aggregate(
+                total_net=Sum('net_salary', default=0.00),
+                total_employees=Count('employee', distinct=True)
+            )
+            
+            payroll_periods_data.append({
+                'payroll_period': {
+                    'id': period.id,
+                    'name': period.name,
+                    'start_date': period.start_date,
+                    'end_date': period.end_date,
+                    'pay_date': period.pay_date,
+                },
+                'total_amount_paid': float(period_totals['total_net'] or 0),
+                'number_of_employees': period_totals['total_employees'] or 0,
+                'status': 'Processed' if period.is_processed else 'Pending',
+                'pay_date': period.pay_date,
+            })
+
+        response_data = {
+            # "payroll_period": serializers.UUIDField().to_representation(payroll_period.id),
+            "overall_financials": {k: round(float(v), 2) for k, v in overall_financials.items()},
+            "cost_breakdown_percentages": cost_breakdown_percentages,
+            "average_metrics": {k: round(float(v), 2) for k, v in average_metrics.items()},
+            "payroll_distribution": payroll_distribution,
+            "payroll_periods_data": payroll_periods_data,
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
@@ -1388,14 +1485,14 @@ class PayrollDashboardAPIView(APIView):
             )
             .order_by('-total_amount')
         )
-        penalty_breakdown = [
-            {
-                'penalty_type': dict(PENALTY_TYPES).get(item['penalty_type'], item['penalty_type']),
-                'count': item['count'],
-                'total_amount': float(item['total_amount'] or 0)
-            }
-            for item in penalty_breakdown
-        ]
+        # penalty_breakdown = [
+        #     {
+        #         'penalty_type': dict(PENALTY_TYPES).get(item['penalty_type'], item['penalty_type']),
+        #         'count': item['count'],
+        #         'total_amount': float(item['total_amount'] or 0)
+        #     }
+        #     for item in penalty_breakdown
+        # ]
 
         # Allowances vs Deductions
         allowances_deductions = payslips.aggregate(
@@ -1433,25 +1530,25 @@ class PayrollDashboardAPIView(APIView):
             })
 
         # Payroll periods summary
-        payroll_periods = PayrollPeriod.objects.filter(
-            institution=institution,
-            start_date__year=current_year,
-            deleted_at__isnull=True
-        )
+        # payroll_periods = PayrollPeriod.objects.filter(
+        #     institution=institution,
+        #     start_date__year=current_year,
+        #     deleted_at__isnull=True
+        # )
         
-        periods_summary = payroll_periods.aggregate(
-            total_periods=Count('id'),
-            processed_periods=Count('id', filter=Q(is_processed=True))
-        )
+        # periods_summary = payroll_periods.aggregate(
+        #     total_periods=Count('id'),
+        #     processed_periods=Count('id', filter=Q(is_processed=True))
+        # )
         
-        latest_period = payroll_periods.order_by('-start_date').first()
+        # latest_period = payroll_periods.order_by('-start_date').first()
         
-        payroll_periods_summary = {
-            'total_periods': periods_summary['total_periods'] or 0,
-            'processed_periods': periods_summary['processed_periods'] or 0,
-            'pending_periods': (periods_summary['total_periods'] or 0) - (periods_summary['processed_periods'] or 0),
-            'latest_period': latest_period.name if latest_period else 'No periods found'
-        }
+        # payroll_periods_summary = {
+        #     'total_periods': periods_summary['total_periods'] or 0,
+        #     'processed_periods': periods_summary['processed_periods'] or 0,
+        #     'pending_periods': (periods_summary['total_periods'] or 0) - (periods_summary['processed_periods'] or 0),
+        #     'latest_period': latest_period.name if latest_period else 'No periods found'
+        # }
 
         data = {
             'total_payroll_amount': total_payroll_amount,
@@ -1461,10 +1558,10 @@ class PayrollDashboardAPIView(APIView):
             'average_gross_salary': average_gross_salary,
             'total_penalties_amount': total_penalties_amount,
             'total_penalties_count': total_penalties_count,
-            'penalty_breakdown': penalty_breakdown,
+            # 'penalty_breakdown': penalty_breakdown,
             'allowances_vs_deductions': allowances_vs_deductions,
             'payroll_over_time': payroll_over_time,
-            'payroll_periods_summary': payroll_periods_summary,
+            # 'payroll_periods_summary': payroll_periods_summary,
         }
 
         return Response(data)

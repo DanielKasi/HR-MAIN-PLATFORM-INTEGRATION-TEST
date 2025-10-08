@@ -446,9 +446,7 @@ export default function BranchesPage() {
 											</div>
 
 											<div className="grid grid-cols-4 items-center gap-4">
-												<Label className="text-right" htmlFor="branch_closing_time">
-													Closing Time
-												</Label>
+												<Label className="text-right">Bank account</Label>
 												<BankAccountSearchableSelect
 													className="col-span-3"
 													value={[newBranch.paying_bank_account ?? 0]}

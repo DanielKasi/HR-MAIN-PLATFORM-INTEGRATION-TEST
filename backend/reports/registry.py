@@ -13,7 +13,7 @@ def build_reports_registry():
         return _ALL_REPORTS
 
     all_reports = {}
-    installed_apps = [app.split('.')[-1] for app in settings.INSTALLED_APPS if app.count('.') == 0 or app.startswith('recruitment')]  # Focus on custom apps; adjust filter
+    installed_apps = [app.split('.')[-1] for app in settings.INSTALLED_APPS if app.count('.') == 0 or app.startswith('recruitment')]
 
     for app_name in installed_apps:
         try:
@@ -24,7 +24,6 @@ def build_reports_registry():
                     if not callable(model_class) or not hasattr(model_class, 'get_report_data'):
                         raise ImproperlyConfigured(f"Invalid REPORT_CONFIG in {app_name}: '{report_type}' must map to a model class with 'get_report_data' method.")
                 all_reports[app_name] = config
-                print(f"Loaded reports config for app: {app_name} ({len(config)} types)")
         except (ImportError, AttributeError) as e:
             print(f"Skipping app {app_name}: {e}")
         except ImproperlyConfigured as e:
@@ -43,3 +42,18 @@ def get_report_config(app_name, report_type):
 
 def get_all_reportable_apps():
     return list(build_reports_registry().keys())
+
+def generate_institution_reports(start_date, end_date, institution, app_name=None, **filters):
+    reports = {}
+    all_reports = build_reports_registry()
+    apps_to_process = [app_name] if app_name else all_reports.keys()
+    
+    for app in apps_to_process:
+        if app in all_reports:
+            try:
+                reports_module = importlib.import_module(f'{app}.reports')
+                reports[app] = reports_module.generate_reports(start_date, end_date, institution, **filters)
+            except (ImportError, AttributeError) as e:
+                logger.error(f"Error generating reports for app {app}: {e}")
+    
+    return reports

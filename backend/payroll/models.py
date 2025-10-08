@@ -233,6 +233,23 @@ class EmployeeAllowance(BaseApprovableModel):
                 current_date += relativedelta(years=1)
 
         return recurrence_count
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            effective_from__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
+        ).select_related('employee', 'allowance_type')
+        return list(queryset.values(
+            'employee__name',
+            'allowance_type__name',
+            'calculation_method',
+            'amount',
+            'percentage',
+            'effective_from',
+            'effective_to'
+        ))
 
 
 class EmployeeDeduction(BaseApprovableModel):
@@ -362,6 +379,23 @@ class EmployeeDeduction(BaseApprovableModel):
                 current_date += relativedelta(years=1)
 
         return recurrence_count
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            effective_from__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
+        ).select_related('employee', 'deduction_type')
+        return list(queryset.values(
+            'employee__name',
+            'deduction_type__name',
+            'calculation_method',
+            'amount',
+            'percentage',
+            'effective_from',
+            'effective_to'
+        ))
 
 
 class EmployeeTax(BaseApprovableModel):
@@ -422,6 +456,20 @@ class EmployeeTax(BaseApprovableModel):
 
 
         return Decimal(0.00)
+    
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            effective_from__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
+        ).select_related('employee', 'institution_tax')
+        return list(queryset.values(
+            'employee__name',
+            'institution_tax__tax_name',
+            'effective_from',
+            'effective_to'
+        ))
 
 class EmployeePenalty(BaseApprovableModel):
     PENALTY_STATUS_CHOICES = [
@@ -467,6 +515,22 @@ class EmployeePenalty(BaseApprovableModel):
             elif self.spot_check:
                 self.date = self.spot_check.spotcheck_time.date()
         super().save(*args, **kwargs)
+        
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
+        ).select_related('employee', 'attendance', 'spot_check')
+        return list(queryset.values(
+            'employee__name',
+            'penalty_type',
+            'amount',
+            'status',
+            'date',
+            'notes'
+        ))    
 
     @classmethod
     def update_or_remove_penalty_for_attendance(cls, attendance):
@@ -746,6 +810,21 @@ class PayrollPeriod(BaseApprovableModel):
 
     class Meta:
         ordering = ["-start_date"]
+        
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            start_date__range=(start_date, end_date),
+            institution=institution,
+            **filters
+        ).select_related('institution')
+        return list(queryset.values(
+            'name',
+            'start_date',
+            'end_date',
+            'pay_date',
+            'is_processed'
+        ))    
 
 
 class Payslip(BaseApprovableModel):
@@ -952,16 +1031,32 @@ class Payslip(BaseApprovableModel):
         self.taxable_gross_salary = taxable_gross
         self.net_salary = gross_salary - tax_total - deductions - total_penalties
 
-        print(f"Final totals for payslip {self.id}:")
-        print(f"  total_allowances={self.total_allowances}")
-        print(f"  total_deductions={self.total_deductions} (non-tax deductions={deductions}, tax_total={tax_total})")
-        print(f"  total_penalties={self.total_penalties}")
-        print(f"  gross_salary={self.gross_salary}")
-        print(f"  taxable_gross_salary={self.taxable_gross_salary}")
-        print(f"  net_salary={self.net_salary}")
-        print(f"  items={[{'name': item.name, 'amount': item.amount} for item in self.items.all()]}")
 
         self.save()
+        
+    @classmethod
+    def get_report_data(cls, start_date, end_date, institution, **filters):
+        queryset = cls.objects.filter(
+            payroll_period__start_date__range=(start_date, end_date),
+            payroll_period__institution=institution,
+            **filters
+        ).select_related('employee', 'payroll_period')
+        return list(queryset.values(
+            'employee__name',
+            'payroll_period__name',
+            'basic_salary',
+            'total_allowances',
+            'total_deductions',
+            'total_penalties',
+            'taxable_allowances',
+            'non_taxable_allowances',
+            'gross_salary',
+            'taxable_gross_salary',
+            'net_salary',
+            'days_worked',
+            'is_paid',
+            'paid_date'
+        ))    
 
 
     def get_penalty_breakdown(self):
