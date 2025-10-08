@@ -42,9 +42,29 @@ import apiRequest from "@/lib/apiRequest";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 
 // Types based on the API schema
+interface IEmployee {
+	id: number;
+	name: string;
+	email: string;
+	employee_id?: string;
+	date_of_birth?: string;
+	gender?: string;
+	phone_number?: string;
+	department?: {
+		id: number;
+		name: string;
+		institution_id: number;
+	};
+	position?: {
+		id: number;
+		name: string;
+		department_id?: number;
+	};
+}
+
 interface IEmployeeSeparation {
 	id: number;
-	employee: string;
+	employee: IEmployee | null;
 	employee_separation_type: {
 		id: number;
 		separation_type: string;
@@ -58,7 +78,7 @@ interface IEmployeeSeparation {
 			fullname: string;
 			email: string;
 		};
-	};
+	} | null;
 	effective_date: string;
 	additional_notes: string;
 	separation_status: "planned" | "completed" | "cancelled";
@@ -107,60 +127,83 @@ export default function ExitProcessPage() {
 	});
 
 	// Fetch separations
-	const fetchSeparations = useCallback(async () => {
-		if (!currentInstitution || loading || !hasMore) return;
+	const fetchSeparations = useCallback(
+		async (currentPage: number, isNewSearch: boolean = false) => {
+			if (!currentInstitution || loading) return;
 
-		try {
-			setLoading(true);
-			const params = new URLSearchParams({
-				page: page.toString(),
-			});
+			console.log("=== FETCH DEBUG ===");
+			console.log("Current Institution:", currentInstitution);
+			console.log("Page:", currentPage);
+			console.log("Is New Search:", isNewSearch);
 
-			if (searchTerm) params.append("search", searchTerm);
-			if (statusFilter !== "all") params.append("separation_status", statusFilter);
-			if (categoryFilter !== "all") params.append("category", categoryFilter);
-
-			const response = await apiRequest.get(
-				`/on-boarding/employee-separations/?${params.toString()}`,
-			);
-
-			const data = response.data as IPaginatedResponse<IEmployeeSeparation>;
-
-			setSeparations((prev) => (page === 1 ? data.results : [...prev, ...data.results]));
-			setHasMore(!!data.next);
-
-			// Update stats
-			if (page === 1) {
-				setStats({
-					total: data.count,
-					planned: data.results.filter((s) => s.separation_status === "planned").length,
-					completed: data.results.filter((s) => s.separation_status === "completed").length,
-					cancelled: data.results.filter((s) => s.separation_status === "cancelled").length,
+			try {
+				setLoading(true);
+				const params = new URLSearchParams({
+					page: currentPage.toString(),
 				});
+
+				console.log("Query Params:", params.toString());
+
+				if (searchTerm) params.append("search", searchTerm);
+				if (statusFilter !== "all") params.append("separation_status", statusFilter);
+				if (categoryFilter !== "all") params.append("category", categoryFilter);
+
+				const response = await apiRequest.get(
+					`/on-boarding/employee-separations/?${params.toString()}`,
+				);
+
+				const data = response.data as IPaginatedResponse<IEmployeeSeparation>;
+
+				// Debug logging
+				// console.log('API Response:', data);
+				// console.log('Results count:', data.results.length);
+				// console.log('First result:', data.results[0]);
+
+				setSeparations((prev) => (isNewSearch ? data.results : [...prev, ...data.results]));
+				setHasMore(!!data.next);
+
+				// Update stats on first page
+				if (currentPage === 1) {
+					setStats({
+						total: data.count,
+						planned: data.results.filter((s) => s.separation_status === "planned").length,
+						completed: data.results.filter((s) => s.separation_status === "completed").length,
+						cancelled: data.results.filter((s) => s.separation_status === "cancelled").length,
+					});
+				}
+			} catch (err) {
+				showErrorToast({ error: err, defaultMessage: "Failed to fetch exit processes" });
+			} finally {
+				setLoading(false);
 			}
-		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to fetch exit processes" });
-		} finally {
-			setLoading(false);
+		},
+		[currentInstitution, searchTerm, statusFilter, categoryFilter],
+	);
+
+	// Initial fetch on mount
+	useEffect(() => {
+		if (currentInstitution) {
+			fetchSeparations(1, true);
 		}
-	}, [currentInstitution, page, searchTerm, statusFilter, categoryFilter, loading, hasMore]);
+	}, [currentInstitution]);
 
 	// Reset and fetch on filter change
 	useEffect(() => {
+		if (!currentInstitution) return;
+
 		const timeout = setTimeout(() => {
 			setPage(1);
-			setSeparations([]);
 			setHasMore(true);
-			fetchSeparations();
+			fetchSeparations(1, true);
 		}, 500);
 
 		return () => clearTimeout(timeout);
 	}, [searchTerm, statusFilter, categoryFilter]);
 
-	// Initial fetch
+	// Fetch more when page changes (but not on initial mount)
 	useEffect(() => {
-		if (page > 1) {
-			fetchSeparations();
+		if (page > 1 && currentInstitution) {
+			fetchSeparations(page, false);
 		}
 	}, [page]);
 
@@ -298,7 +341,7 @@ export default function ExitProcessPage() {
 				</Card>
 			</div>
 
-			{/* Filters */}
+			{/* Filters
 			<div className="flex flex-col sm:flex-row gap-4">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -333,7 +376,7 @@ export default function ExitProcessPage() {
 						<SelectItem value="other">Other</SelectItem>
 					</SelectContent>
 				</Select>
-			</div>
+			</div> */}
 
 			{/* Separations List */}
 			<div className="grid grid-cols-1 gap-4">
@@ -355,7 +398,11 @@ export default function ExitProcessPage() {
 									<div className="flex-1 space-y-3">
 										<div className="flex items-start justify-between">
 											<div>
-												<h3 className="font-semibold text-lg">{separation.employee}</h3>
+												<h3 className="font-semibold text-lg">
+													{separation.employee?.name ||
+														separation.employee?.email ||
+														"Unknown Employee"}
+												</h3>
 												<p className="text-sm text-muted-foreground">
 													{separation.employee_separation_type.separation_type}
 												</p>
@@ -417,7 +464,9 @@ export default function ExitProcessPage() {
 											<div className="flex items-center gap-2">
 												<Users className="h-4 w-4 text-muted-foreground" />
 												<span className="text-muted-foreground">Initiated by:</span>
-												<span className="font-medium">{separation.initiated_by.user.fullname}</span>
+												<span className="font-medium">
+													{separation.initiated_by?.user.fullname || "N/A"}
+												</span>
 											</div>
 										</div>
 
@@ -487,7 +536,11 @@ export default function ExitProcessPage() {
 					}}
 					onConfirm={handleDelete}
 					title="Delete Exit Process"
-					description={`Are you sure you want to delete the exit process for ${separationToDelete.employee}? This action cannot be undone.`}
+					description={`Are you sure you want to delete the exit process for ${
+						separationToDelete.employee?.name ||
+						separationToDelete.employee?.email ||
+						"this employee"
+					}? This action cannot be undone.`}
 					confirmText="Delete"
 					cancelText="Cancel"
 					disabled={deleting}
