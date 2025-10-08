@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { apiPost } from "@/lib/apiRequest";
-import { IEmployee } from "@/types/types.utils";
 
 interface FormData {
 	employee_id: number | null;
@@ -50,7 +50,7 @@ const ExitProcessCreate = () => {
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
-		console.log("Redux auth state:", { user: currentUser }); // Debug Redux state
+		console.log("Redux auth state:", { user: currentUser });
 		if (!category || !["resignation", "termination"].includes(category)) {
 			router.push("/off-boarding/exit-process");
 			return;
@@ -131,13 +131,13 @@ const ExitProcessCreate = () => {
 				formPayload.append("initiated_by", formData.initiated_by!.toString());
 
 				const response = await apiPost("/api/on-boarding/employee-separations/", formPayload);
-				console.log("API response:", response); // Debug API response
+				console.log("API response:", response);
 				showSuccessToast(
 					`${formData.category.charAt(0).toUpperCase() + formData.category.slice(1)} request submitted successfully`,
 				);
 				router.push("/off-boarding/exit-process");
 			} catch (error: any) {
-				console.error("API error:", error); // Debug error
+				console.error("API error:", error);
 				if (error.response?.status === 405) {
 					showErrorToast({
 						defaultMessage:
@@ -153,6 +153,10 @@ const ExitProcessCreate = () => {
 		[formData, currentInstitution, currentUserId, router],
 	);
 
+	const handleBack = () => {
+		router.back();
+	};
+
 	if (isLoadingUser) {
 		return (
 			<div className="flex flex-col w-full min-h-screen bg-white p-4 sm:p-6 items-center justify-center">
@@ -163,146 +167,142 @@ const ExitProcessCreate = () => {
 	}
 
 	return (
-		<div className="flex flex-col w-full min-h-screen bg-white p-4 sm:p-6 md:p-8">
-			{authError && (
-				<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-					<p>{authError}</p>
-					<Button
-						onClick={() => router.push("/login")}
-						className="mt-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-sm"
-					>
-						Go to Login
-					</Button>
-				</div>
-			)}
+		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+			<div className="w-full">
+				{/* Main Card Container */}
+				<Card className="w-full shadow-lg border-0">
+					<CardHeader className="border-b border-gray-200 pb-6">
+						<div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleBack}
+								className="rounded-full aspect-square border-gray-300 hover:bg-gray-50"
+							>
+								<ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+							</Button>
+							<div>
+								<CardTitle className="text-2xl sm:text-3xl font-semibold text-gray-800">
+									{formData.category === "termination" ? "Termination" : "Resignation"} Request
+								</CardTitle>
+								<p className="text-sm text-gray-600 mt-1">
+									Create a new {formData.category === "termination" ? "termination" : "resignation"}{" "}
+									process
+								</p>
+							</div>
+						</div>
+					</CardHeader>
 
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-				<div className="flex items-center gap-3">
-					<Button
-						size="sm"
-						variant="outline"
-						className="rounded-full aspect-square border-gray-300 hover:bg-gray-100"
-						onClick={() => router.push("/off-boarding/exit-process")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-					</Button>
-					<div>
-						<h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-							{formData.category === "termination" ? "Termination" : "Resignation"} Request
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Create a new {formData.category === "termination" ? "termination" : "resignation"}{" "}
-							process
-						</p>
-					</div>
-				</div>
-			</div>
-
-			{/* Full page card layout */}
-			<div className="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-6 sm:p-8">
-				<div className="max-w-2xl mx-auto">
-					<form onSubmit={handleSubmit} className="space-y-8">
-						{formData.category === "termination" && (
-							<div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-								<Label
-									htmlFor="employee_id"
-									className="text-base font-semibold text-gray-800 mb-3 block"
+					<CardContent className="p-6">
+						{authError && (
+							<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+								<p>{authError}</p>
+								<Button
+									onClick={() => router.push("/login")}
+									className="mt-2 rounded-md bg-red-600 hover:bg-red-700 text-white text-sm"
 								>
-									Select Employee
-								</Label>
-								<EmployeeSearchableSelect
-									id="employee_id"
-									value={selectedEmployee}
-									onValueChange={handleEmployeeSelect}
-									placeholder="Select an employee"
-									multiple={false}
-									className="w-full"
-								/>
+									Go to Login
+								</Button>
 							</div>
 						)}
 
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-							<div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-								<Label
-									htmlFor="effective_date"
-									className="text-base font-semibold text-gray-800 mb-3 block"
-								>
-									Effective Date
+						<form onSubmit={handleSubmit} className="space-y-6">
+							{/* Employee Selection - Only for Termination */}
+							{formData.category === "termination" && (
+								<div className="space-y-2">
+									<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
+										Select Employee *
+									</Label>
+									<EmployeeSearchableSelect
+										id="employee_id"
+										value={selectedEmployee}
+										onValueChange={handleEmployeeSelect}
+										placeholder="Select an employee"
+										multiple={false}
+										className="w-full"
+									/>
+								</div>
+							)}
+
+							{/* Date and File Upload in Grid */}
+							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+								{/* Effective Date */}
+								<div className="space-y-2">
+									<Label htmlFor="effective_date" className="text-sm font-medium text-gray-800">
+										Effective Date *
+									</Label>
+									<Input
+										type="date"
+										id="effective_date"
+										name="effective_date"
+										value={formData.effective_date}
+										onChange={handleInputChange}
+										required
+										className="w-full bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400"
+									/>
+								</div>
+
+								{/* Letter Upload */}
+								<div className="space-y-2">
+									<Label htmlFor="letter" className="text-sm font-medium text-gray-800">
+										{formData.category === "termination" ? "Termination" : "Resignation"} Letter *
+									</Label>
+									<Input
+										type="file"
+										id="letter"
+										name="letter"
+										accept=".pdf,.doc,.docx"
+										onChange={handleFileChange}
+										className="w-full bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400"
+										required
+									/>
+								</div>
+							</div>
+
+							{/* Additional Notes */}
+							<div className="space-y-2">
+								<Label htmlFor="additional_notes" className="text-sm font-medium text-gray-800">
+									Additional Notes
 								</Label>
-								<Input
-									type="date"
-									id="effective_date"
-									name="effective_date"
-									value={formData.effective_date}
+								<Textarea
+									id="additional_notes"
+									name="additional_notes"
+									value={formData.additional_notes}
 									onChange={handleInputChange}
-									required
-									className="w-full h-12 text-base"
+									placeholder="Enter any additional notes or context for this process..."
+									className="w-full min-h-[120px] resize-vertical bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400"
 								/>
 							</div>
 
-							<div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-								<Label
-									htmlFor="letter"
-									className="text-base font-semibold text-gray-800 mb-3 block"
+							{/* Action Buttons */}
+							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-gray-200">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => router.push("/off-boarding/exit-process")}
+									disabled={loading}
+									className="w-full sm:w-auto px-6 py-2 text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50"
 								>
-									{formData.category === "termination" ? "Termination" : "Resignation"} Letter
-								</Label>
-								<Input
-									type="file"
-									id="letter"
-									name="letter"
-									accept=".pdf,.doc,.docx"
-									onChange={handleFileChange}
-									className="w-full h-12 text-base"
-									required
-								/>
+									Cancel
+								</Button>
+								<Button
+									type="submit"
+									disabled={loading}
+									className="w-full sm:w-auto px-6 py-2 text-sm font-medium bg-[#FF4D4D] hover:bg-[#E04444] text-white"
+								>
+									{loading ? (
+										<div className="flex items-center gap-2">
+											<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+											Submitting...
+										</div>
+									) : (
+										`Submit ${formData.category === "termination" ? "Termination" : "Resignation"} Request`
+									)}
+								</Button>
 							</div>
-						</div>
-
-						<div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-							<Label
-								htmlFor="additional_notes"
-								className="text-base font-semibold text-gray-800 mb-3 block"
-							>
-								Additional Notes
-							</Label>
-							<Textarea
-								id="additional_notes"
-								name="additional_notes"
-								value={formData.additional_notes}
-								onChange={handleInputChange}
-								placeholder="Enter any additional notes or context for this process..."
-								className="w-full min-h-[200px] text-base resize-vertical"
-							/>
-						</div>
-
-						<div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => router.push("/off-boarding/exit-process")}
-								disabled={loading}
-								className="w-full sm:w-auto px-8 py-3 text-base font-medium"
-							>
-								Cancel
-							</Button>
-							<Button
-								type="submit"
-								disabled={loading}
-								className="w-full sm:w-auto px-8 py-3 text-base font-medium bg-indigo-600 hover:bg-indigo-700 text-white"
-							>
-								{loading ? (
-									<div className="flex items-center gap-2">
-										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-										Submitting...
-									</div>
-								) : (
-									`Submit ${formData.category === "termination" ? "Termination" : "Resignation"} Request`
-								)}
-							</Button>
-						</div>
-					</form>
-				</div>
+						</form>
+					</CardContent>
+				</Card>
 			</div>
 		</div>
 	);
