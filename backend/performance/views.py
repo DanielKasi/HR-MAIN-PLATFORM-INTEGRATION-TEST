@@ -25,6 +25,8 @@ import os
 import subprocess
 import tempfile
 from django.core.files import File
+from django.contrib.auth.decorators import permission_required
+from django.utils.decorators import method_decorator
 
 class PeriodListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
@@ -62,6 +64,8 @@ class PeriodListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Performance Management"],
     )
+
+    @method_decorator(permission_required('can_view_period', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         try:
@@ -101,6 +105,7 @@ class PeriodDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_period', raise_exception=True))
     def get(self, request, pk):
         period = get_object_or_404(Period, pk=pk)
         serializer = PeriodSerializer(period)
@@ -113,6 +118,7 @@ class PeriodDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_delete_period', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         period = get_object_or_404(Period, pk=pk)
@@ -130,6 +136,7 @@ class PeriodDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_edit_period', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         period = get_object_or_404(Period, pk=pk)
@@ -176,6 +183,7 @@ class ObjectivesListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_objectives', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         try:
@@ -212,6 +220,7 @@ class ObjectivesDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_objectives', raise_exception=True))
     def get(self, request, pk):
         objective = get_object_or_404(Objectives, pk=pk, institution=request.user.profile.institution)
         serializer = ObjectivesSerializer(objective)
@@ -224,6 +233,7 @@ class ObjectivesDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_delete_objectives', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         objective = get_object_or_404(Objectives, pk=pk, institution=request.user.profile.institution)
@@ -241,6 +251,7 @@ class ObjectivesDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_edit_objectives', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         objective = get_object_or_404(Objectives, pk=pk, institution=request.user.profile.institution)
@@ -287,6 +298,7 @@ class EmployeeObjectivesListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_assigned_objective', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         try:
@@ -329,6 +341,7 @@ class EmployeeObjectivesDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_assigned_objective', raise_exception=True))
     def get(self, request, pk):
         objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__payroll_branch__institution=request.user.profile.institution)
         serializer = EmployeeObjectivesSerializer(objective)
@@ -341,6 +354,7 @@ class EmployeeObjectivesDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_delete_assigned_objective', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__payroll_branch__institution=request.user.profile.institution)
@@ -358,6 +372,7 @@ class EmployeeObjectivesDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_edit_assigned_objective', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__payroll_branch__institution=request.user.profile.institution)
@@ -515,6 +530,7 @@ class Feedback360ListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_feedback', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         try:
@@ -554,6 +570,7 @@ class Feedback360DetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_feedback', raise_exception=True))
     def get(self, request, pk):
         feedback = get_object_or_404(Feedback360, pk=pk, period__institution=request.user.profile.institution)
         serializer = Feedback360Serializer(feedback)
@@ -566,6 +583,7 @@ class Feedback360DetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_delete_feedback', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         feedback = get_object_or_404(Feedback360, pk=pk, period__institution=request.user.profile.institution)
@@ -583,6 +601,7 @@ class Feedback360DetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_edit_feedback', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         feedback = get_object_or_404(Feedback360, pk=pk, period__institution=request.user.profile.institution)
@@ -996,6 +1015,7 @@ class MeetingListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_scheduled_meeting', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         try:
@@ -1038,6 +1058,7 @@ class MeetingDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_view_scheduled_meeting', raise_exception=True))
     def get(self, request, pk):
         meeting = get_object_or_404(Meeting, pk=pk, institution=request.user.profile.institution)
         serializer = MeetingSerializer(meeting)
@@ -1050,6 +1071,7 @@ class MeetingDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_delete_scheduled_meeting', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         meeting = get_object_or_404(Meeting, pk=pk, institution=request.user.profile.institution)
@@ -1067,6 +1089,7 @@ class MeetingDetailView(APIView):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_edit_scheduled_meeting', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         meeting = get_object_or_404(Meeting, pk=pk, institution=request.user.profile.institution)

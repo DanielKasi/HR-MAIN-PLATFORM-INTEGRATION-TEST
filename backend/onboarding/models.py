@@ -93,11 +93,11 @@ class OffboardingStage(BaseApprovableModel):
                 condition=Q(deleted_at__isnull=True),
                 name="unique_active_stage_name_per_institution",
             ),
-            UniqueConstraint(
-                fields=["institution", "position"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_position_per_institution",
-            ),
+            # UniqueConstraint(
+            #     fields=["institution", "position"],
+            #     condition=Q(deleted_at__isnull=True),
+            #     name="unique_active_position_per_institution",
+            # ),
         ]
         indexes = [
             models.Index(fields=["institution", "position"]),

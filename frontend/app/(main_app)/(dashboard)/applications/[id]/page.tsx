@@ -545,7 +545,7 @@ export default function ApplicationViewPage() {
 				return (
 					<iframe
 						src={previewBlobUrl}
-						className="w-full h-[400px] border-0 rounded"
+						className="w-full h-[700px] border-0 rounded"
 						title={`Preview of ${document.required_document.document_name}`}
 					/>
 				);

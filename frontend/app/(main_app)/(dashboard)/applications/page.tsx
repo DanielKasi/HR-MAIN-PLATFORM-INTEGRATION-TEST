@@ -403,8 +403,6 @@ const DocumentPreviewDialog = ({
 	);
 };
 
-// Enhanced Required Documents Cell
-// Enhanced Required Documents Cell
 // Update the RequiredDocumentsCell component to accept handleDownload as a prop
 const RequiredDocumentsCell = ({
 	application,
@@ -424,11 +422,13 @@ const RequiredDocumentsCell = ({
 		<>
 			<Popover>
 				<PopoverTrigger asChild>
-					<Button variant="outline" size="sm" className="gap-2">
+					<div className="inline-flex items-center gap-2 cursor-pointer hover:text-primary transition-colors">
 						<FileText className="h-4 w-4" />
-						{documents.length} {documents.length === 1 ? "Document" : "Documents"}
+						<span>
+							{documents.length} {documents.length === 1 ? "Document" : "Documents"}
+						</span>
 						<ChevronRight className="h-3 w-3" />
-					</Button>
+					</div>
 				</PopoverTrigger>
 				<PopoverContent className="w-80 p-0" align="start">
 					<div className="p-2">
@@ -440,7 +440,7 @@ const RequiredDocumentsCell = ({
 									className="flex items-center justify-between p-2 hover:bg-muted/50 rounded"
 								>
 									<div className="flex items-center gap-2 flex-1 min-w-0">
-										<FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+										<FileText className="h-4 w-4 text-primary flex-shrink-0" />
 										<span className="text-sm truncate flex-1">
 											{doc.required_document.document_name}
 										</span>

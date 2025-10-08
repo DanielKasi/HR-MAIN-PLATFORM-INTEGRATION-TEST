@@ -22,8 +22,8 @@ class Migration(migrations.Migration):
             model_name='offboardingstage',
             index=models.Index(fields=['institution', 'position'], name='onboarding__institu_adf17f_idx'),
         ),
-        migrations.AddConstraint(
-            model_name='offboardingstage',
-            constraint=models.UniqueConstraint(condition=models.Q(('deleted_at__isnull', True)), fields=('institution', 'position'), name='unique_active_position_per_institution'),
-        ),
+        # migrations.AddConstraint(
+        #     model_name='offboardingstage',
+        #     constraint=models.UniqueConstraint(condition=models.Q(('deleted_at__isnull', True)), fields=('institution', 'position'), name='unique_active_position_per_institution'),
+        # ),
     ]
