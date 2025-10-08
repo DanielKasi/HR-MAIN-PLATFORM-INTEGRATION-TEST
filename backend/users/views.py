@@ -100,7 +100,6 @@ class UserListAPIView(APIView, SortableAPIMixin):
         summary="Create a new user",
         tags=["User Management"],
     )
-    @method_decorator(permission_required('can_create_users'))
     def post(self, request):
 
         serializer = CustomUserSerializer(data=request.data)
