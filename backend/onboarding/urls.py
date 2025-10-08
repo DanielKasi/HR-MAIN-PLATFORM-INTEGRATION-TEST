@@ -14,6 +14,8 @@ from .views import (
     ResignationRequestListCreateView,
     ResignationRequestDetailView,
     ResignationRequestByLoggedInUser,
+    RetirementRequestDetailView,
+    RetirementRequestListCreateView,
     TerminationInitiationListCreateView,
     TerminationInitiationDetailView,
     OffboardingDashboardView,
@@ -98,5 +100,15 @@ urlpatterns = [
         ReorderSeparationStageView.as_view(),
         name="update-separation-stage-positions",
     ),
-    path("analytics/", OffboardingDashboardView.as_view(), name="offboarding-analytics")
+    path("analytics/", OffboardingDashboardView.as_view(), name="offboarding-analytics"),
+        path(
+        "retirement-requests/",
+        RetirementRequestListCreateView.as_view(),
+        name="retirement-request-list-create",
+    ),
+    path(
+        "retirement-requests/<int:retirement_request_id>/",
+        RetirementRequestDetailView.as_view(),
+        name="retirement-request-detail",
+    ),
 ]
