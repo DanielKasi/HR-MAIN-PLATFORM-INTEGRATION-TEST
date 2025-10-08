@@ -18,6 +18,7 @@ import {
 	Clock,
 	XCircle,
 	ArrowLeft,
+	ArrowUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
+	DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
 	Select,
@@ -40,6 +42,7 @@ import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
+import StageReorderModal from "@/components/stage-reorder-modal";
 
 // Types based on the API schema
 interface IEmployee {
@@ -95,6 +98,23 @@ interface IEmployeeSeparation {
 	}>;
 }
 
+interface ISeparationType {
+	id: number;
+	separation_type: string;
+	description: string;
+	category: "resignation" | "termination" | "retirement" | "contract_end" | "other";
+	approval_status: string;
+	approvals: string;
+	supported_stages: number[];
+	created_at: string;
+	updated_at: string;
+	deleted_at: string | null;
+	is_active: boolean;
+	created_by: number;
+	updated_by: number;
+	institution: number;
+}
+
 interface IPaginatedResponse<T> {
 	count: number;
 	next: string | null;
@@ -108,7 +128,9 @@ export default function ExitProcessPage() {
 
 	// State management
 	const [separations, setSeparations] = useState<IEmployeeSeparation[]>([]);
+	const [separationTypes, setSeparationTypes] = useState<ISeparationType[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [loadingSeparationTypes, setLoadingSeparationTypes] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [categoryFilter, setCategoryFilter] = useState("all");
@@ -118,6 +140,10 @@ export default function ExitProcessPage() {
 	const [separationToDelete, setSeparationToDelete] = useState<IEmployeeSeparation | null>(null);
 	const [deleting, setDeleting] = useState(false);
 
+	// Reorder modal state
+	const [reorderModalOpen, setReorderModalOpen] = useState(false);
+	const [separationToReorder, setSeparationToReorder] = useState<IEmployeeSeparation | null>(null);
+
 	// Statistics
 	const [stats, setStats] = useState({
 		total: 0,
@@ -126,23 +152,49 @@ export default function ExitProcessPage() {
 		cancelled: 0,
 	});
 
+	// Fetch separation types
+	const fetchSeparationTypes = useCallback(async () => {
+		if (!currentInstitution) return;
+
+		try {
+			setLoadingSeparationTypes(true);
+			const response = await apiRequest.get("/on-boarding/separation-types/");
+			const data = response.data;
+
+			// Handle both array and paginated response formats
+			let typesArray: ISeparationType[] = [];
+
+			if (Array.isArray(data)) {
+				// If the response is directly an array
+				typesArray = data;
+			} else if (data && Array.isArray(data.results)) {
+				// If the response has a results property (paginated response)
+				typesArray = data.results;
+			} else if (data && typeof data === "object") {
+				// If it's a single object, wrap it in an array
+				typesArray = [data];
+			}
+
+			setSeparationTypes(typesArray);
+		} catch (err) {
+			console.error("Error fetching separation types:", err);
+			showErrorToast({ error: err, defaultMessage: "Failed to fetch separation types" });
+			setSeparationTypes([]); // Ensure it's always an array
+		} finally {
+			setLoadingSeparationTypes(false);
+		}
+	}, [currentInstitution]);
+
 	// Fetch separations
 	const fetchSeparations = useCallback(
 		async (currentPage: number, isNewSearch: boolean = false) => {
 			if (!currentInstitution || loading) return;
-
-			console.log("=== FETCH DEBUG ===");
-			console.log("Current Institution:", currentInstitution);
-			console.log("Page:", currentPage);
-			console.log("Is New Search:", isNewSearch);
 
 			try {
 				setLoading(true);
 				const params = new URLSearchParams({
 					page: currentPage.toString(),
 				});
-
-				console.log("Query Params:", params.toString());
 
 				if (searchTerm) params.append("search", searchTerm);
 				if (statusFilter !== "all") params.append("separation_status", statusFilter);
@@ -153,11 +205,6 @@ export default function ExitProcessPage() {
 				);
 
 				const data = response.data as IPaginatedResponse<IEmployeeSeparation>;
-
-				// Debug logging
-				// console.log('API Response:', data);
-				// console.log('Results count:', data.results.length);
-				// console.log('First result:', data.results[0]);
 
 				setSeparations((prev) => (isNewSearch ? data.results : [...prev, ...data.results]));
 				setHasMore(!!data.next);
@@ -184,6 +231,7 @@ export default function ExitProcessPage() {
 	useEffect(() => {
 		if (currentInstitution) {
 			fetchSeparations(1, true);
+			fetchSeparationTypes();
 		}
 	}, [currentInstitution]);
 
@@ -207,6 +255,11 @@ export default function ExitProcessPage() {
 		}
 	}, [page]);
 
+	// Handle create new exit process with separation type
+	const handleCreateNewExitProcess = (separationTypeId: number) => {
+		router.push(`/exit-process/create?separationTypeId=${separationTypeId}`);
+	};
+
 	// Handle delete
 	const handleDelete = async () => {
 		if (!separationToDelete) return;
@@ -223,6 +276,18 @@ export default function ExitProcessPage() {
 			setDeleteConfirmOpen(false);
 			setSeparationToDelete(null);
 		}
+	};
+
+	// Handle reorder success
+	const handleReorderSuccess = (updatedStages: any[]) => {
+		if (!separationToReorder) return;
+
+		// Update the separation in the list with new stages
+		setSeparations((prev) =>
+			prev.map((sep) =>
+				sep.id === separationToReorder.id ? { ...sep, stages: updatedStages } : sep,
+			),
+		);
 	};
 
 	// Status badge colors
@@ -287,12 +352,50 @@ export default function ExitProcessPage() {
 						</p>
 					</div>
 				</div>
-				<Button onClick={() => router.push("/exit-process/create")} className="rounded-xl">
-					<Plus className="h-4 w-4 mr-2" />
-					New Exit Process
-				</Button>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button className="rounded-xl">
+							<Plus className="h-4 w-4 mr-2" />
+							New Exit Process
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-64">
+						{loadingSeparationTypes ? (
+							<div className="flex items-center justify-center py-4">
+								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+								<span className="ml-2 text-sm">Loading separation types...</span>
+							</div>
+						) : separationTypes.length === 0 ? (
+							<div className="text-center py-4 text-sm text-muted-foreground">
+								No separation types found
+							</div>
+						) : (
+							separationTypes.map((type) => (
+								<DropdownMenuItem
+									key={type.id}
+									onClick={() => handleCreateNewExitProcess(type.id)}
+									className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50"
+								>
+									<div className="font-medium text-sm">{type.separation_type}</div>
+									{/* {type.description && (
+										<div className="text-xs text-muted-foreground mt-1">
+											{type.description}
+										</div>
+									)}
+									<Badge 
+										className={`mt-2 ${getCategoryColor(type.category)}`}
+										variant="secondary"
+									>
+										{type.category}
+									</Badge> */}
+								</DropdownMenuItem>
+							))
+						)}
+					</DropdownMenuContent>
+				</DropdownMenu>
 			</div>
 
+			{/* Rest of the component remains the same */}
 			{/* Statistics Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 				<Card>
@@ -341,7 +444,7 @@ export default function ExitProcessPage() {
 				</Card>
 			</div>
 
-			{/* Filters
+			{/* Filters */}
 			<div className="flex flex-col sm:flex-row gap-4">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -376,7 +479,7 @@ export default function ExitProcessPage() {
 						<SelectItem value="other">Other</SelectItem>
 					</SelectContent>
 				</Select>
-			</div> */}
+			</div>
 
 			{/* Separations List */}
 			<div className="grid grid-cols-1 gap-4">
@@ -426,6 +529,21 @@ export default function ExitProcessPage() {
 														<Edit className="h-4 w-4 mr-2" />
 														Edit
 													</DropdownMenuItem>
+													{separation.stages && separation.stages.length > 0 && (
+														<>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																onClick={() => {
+																	setSeparationToReorder(separation);
+																	setReorderModalOpen(true);
+																}}
+															>
+																<ArrowUpDown className="h-4 w-4 mr-2" />
+																Reorder Stages
+															</DropdownMenuItem>
+														</>
+													)}
+													<DropdownMenuSeparator />
 													<DropdownMenuItem
 														onClick={() => {
 															setSeparationToDelete(separation);
@@ -544,6 +662,23 @@ export default function ExitProcessPage() {
 					confirmText="Delete"
 					cancelText="Cancel"
 					disabled={deleting}
+				/>
+			)}
+
+			{/* Stage Reorder Modal */}
+			{separationToReorder && (
+				<StageReorderModal
+					isOpen={reorderModalOpen}
+					separationId={separationToReorder.id}
+					stages={separationToReorder.stages}
+					employeeName={
+						separationToReorder.employee?.name || separationToReorder.employee?.email || "Employee"
+					}
+					onClose={() => {
+						setReorderModalOpen(false);
+						setSeparationToReorder(null);
+					}}
+					onSuccess={handleReorderSuccess}
 				/>
 			)}
 		</div>
