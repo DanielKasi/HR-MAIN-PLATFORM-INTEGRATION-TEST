@@ -43,7 +43,6 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import StageReorderModal from "@/components/stage-reorder-modal";
-// import { IEmployee,IEmployeeSeparation,ISeparationType,IPaginatedResponse} from "@/types/types.utils";
 
 export interface IEmployee {
 	id: number;
@@ -126,7 +125,6 @@ export default function ExitProcessPage() {
 	const router = useRouter();
 	const currentInstitution = useSelector(selectSelectedInstitution);
 
-	// State management
 	const [separations, setSeparations] = useState<IEmployeeSeparation[]>([]);
 	const [separationTypes, setSeparationTypes] = useState<ISeparationType[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -140,11 +138,9 @@ export default function ExitProcessPage() {
 	const [separationToDelete, setSeparationToDelete] = useState<IEmployeeSeparation | null>(null);
 	const [deleting, setDeleting] = useState(false);
 
-	// Reorder modal state
 	const [reorderModalOpen, setReorderModalOpen] = useState(false);
 	const [separationToReorder, setSeparationToReorder] = useState<IEmployeeSeparation | null>(null);
 
-	// Statistics
 	const [stats, setStats] = useState({
 		total: 0,
 		planned: 0,
@@ -152,7 +148,6 @@ export default function ExitProcessPage() {
 		cancelled: 0,
 	});
 
-	// Fetch separation types
 	const fetchSeparationTypes = useCallback(async () => {
 		if (!currentInstitution) return;
 
@@ -161,17 +156,13 @@ export default function ExitProcessPage() {
 			const response = await apiRequest.get("/on-boarding/separation-types/");
 			const data = response.data;
 
-			// Handle both array and paginated response formats
 			let typesArray: ISeparationType[] = [];
 
 			if (Array.isArray(data)) {
-				// If the response is directly an array
 				typesArray = data;
 			} else if (data && Array.isArray(data.results)) {
-				// If the response has a results property (paginated response)
 				typesArray = data.results;
 			} else if (data && typeof data === "object") {
-				// If it's a single object, wrap it in an array
 				typesArray = [data];
 			}
 
@@ -179,13 +170,12 @@ export default function ExitProcessPage() {
 		} catch (err) {
 			console.error("Error fetching separation types:", err);
 			showErrorToast({ error: err, defaultMessage: "Failed to fetch separation types" });
-			setSeparationTypes([]); // Ensure it's always an array
+			setSeparationTypes([]);
 		} finally {
 			setLoadingSeparationTypes(false);
 		}
 	}, [currentInstitution]);
 
-	// Fetch separations
 	const fetchSeparations = useCallback(
 		async (currentPage: number, isNewSearch: boolean = false) => {
 			if (!currentInstitution || loading) return;
@@ -209,7 +199,6 @@ export default function ExitProcessPage() {
 				setSeparations((prev) => (isNewSearch ? data.results : [...prev, ...data.results]));
 				setHasMore(!!data.next);
 
-				// Update stats on first page
 				if (currentPage === 1) {
 					setStats({
 						total: data.count,
@@ -227,7 +216,6 @@ export default function ExitProcessPage() {
 		[currentInstitution, searchTerm, statusFilter, categoryFilter],
 	);
 
-	// Initial fetch on mount
 	useEffect(() => {
 		if (currentInstitution) {
 			fetchSeparations(1, true);
@@ -235,7 +223,6 @@ export default function ExitProcessPage() {
 		}
 	}, [currentInstitution]);
 
-	// Reset and fetch on filter change
 	useEffect(() => {
 		if (!currentInstitution) return;
 
@@ -253,7 +240,7 @@ export default function ExitProcessPage() {
 			fetchSeparations(page, false);
 		}
 	}, [page]);
-	//handlecreate
+
 	const handleCreateNewExitProcess = (separationType: ISeparationType) => {
 		const basePath = "/off-boarding/exit-process/create";
 		router.push(`${basePath}?category=${separationType.category}`);
@@ -276,11 +263,9 @@ export default function ExitProcessPage() {
 		}
 	};
 
-	// Handle reorder success
 	const handleReorderSuccess = (updatedStages: any[]) => {
 		if (!separationToReorder) return;
 
-		// Update the separation in the list with new stages
 		setSeparations((prev) =>
 			prev.map((sep) =>
 				sep.id === separationToReorder.id ? { ...sep, stages: updatedStages } : sep,
@@ -288,7 +273,6 @@ export default function ExitProcessPage() {
 		);
 	};
 
-	// Status badge colors
 	const getStatusColor = (status: string) => {
 		switch (status) {
 			case "planned":
@@ -331,67 +315,67 @@ export default function ExitProcessPage() {
 	};
 
 	return (
-		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
+		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			{/* Header */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-				<div className="flex items-center gap-2">
-					<Button
-						size="sm"
-						variant="outline"
-						className="rounded-full aspect-square"
-						onClick={() => router.push("/admin")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-					</Button>
-					<div>
-						<h1 className="text-2xl font-bold">Exit Process </h1>
-						<p className="text-sm text-muted-foreground">
-							Manage employee separations and offboarding processes
-						</p>
-					</div>
+			<div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
+				<Button
+					size="sm"
+					variant="outline"
+					className="rounded-full aspect-square"
+					onClick={() => router.push("/admin")}
+				>
+					<ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+				</Button>
+				<div>
+					<h1 className="text-3xl font-semibold">Exit Process Management</h1>
+					<p className="text-sm text-muted-foreground mt-1">
+						Manage employee separations and offboarding processes
+					</p>
 				</div>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button className="rounded-xl">
-							<Plus className="h-4 w-4 mr-2" />
-							New Exit Process
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-64">
-						{loadingSeparationTypes ? (
-							<div className="flex items-center justify-center py-4">
-								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-								<span className="ml-2 text-sm">Loading separation types...</span>
-							</div>
-						) : separationTypes.length === 0 ? (
-							<div className="text-center py-4 text-sm text-muted-foreground">
-								No separation types found
-							</div>
-						) : (
-							separationTypes.map((type) => (
-								<DropdownMenuItem
-									key={type.id}
-									onClick={() => handleCreateNewExitProcess(type)}
-									className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50"
-								>
-									<div className="flex items-center justify-between w-full">
-										<span className="font-medium text-sm">{type.separation_type}</span>
-										<Badge className={getCategoryColor(type.category)} variant="outline">
-											{type.category}
-										</Badge>
-									</div>
-									{type.description && (
-										<span className="text-xs text-muted-foreground mt-1">{type.description}</span>
-									)}
-								</DropdownMenuItem>
-							))
-						)}
-					</DropdownMenuContent>
-				</DropdownMenu>
+				<div className="ml-auto">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button className="rounded-xl px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base">
+								<Plus className="h-4 w-4 mr-2" />
+								New Exit Process
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-64">
+							{loadingSeparationTypes ? (
+								<div className="flex items-center justify-center py-4">
+									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+									<span className="ml-2 text-sm">Loading separation types...</span>
+								</div>
+							) : separationTypes.length === 0 ? (
+								<div className="text-center py-4 text-sm text-muted-foreground">
+									No separation types found
+								</div>
+							) : (
+								separationTypes.map((type) => (
+									<DropdownMenuItem
+										key={type.id}
+										onClick={() => handleCreateNewExitProcess(type)}
+										className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50"
+									>
+										<div className="flex items-center justify-between w-full">
+											<span className="font-medium text-sm">{type.separation_type}</span>
+											<Badge className={getCategoryColor(type.category)} variant="outline">
+												{type.category}
+											</Badge>
+										</div>
+										{type.description && (
+											<span className="text-xs text-muted-foreground mt-1">{type.description}</span>
+										)}
+									</DropdownMenuItem>
+								))
+							)}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
 			</div>
 
 			{/* Statistics Cards */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 				<Card>
 					<CardContent className="p-4">
 						<div className="flex items-center justify-between">
@@ -439,7 +423,7 @@ export default function ExitProcessPage() {
 			</div>
 
 			{/* Filters */}
-			<div className="flex flex-col sm:flex-row gap-4">
+			<div className="flex flex-col sm:flex-row gap-4 mb-6">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
@@ -490,7 +474,6 @@ export default function ExitProcessPage() {
 						<Card key={separation.id} className="hover:shadow-md transition-shadow">
 							<CardContent className="p-6">
 								<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-									{/* Main Info */}
 									<div className="flex-1 space-y-3">
 										<div className="flex items-start justify-between">
 											<div>
@@ -551,7 +534,6 @@ export default function ExitProcessPage() {
 											</DropdownMenu>
 										</div>
 
-										{/* Badges */}
 										<div className="flex flex-wrap gap-2">
 											<Badge className={getStatusColor(separation.separation_status)}>
 												{separation.separation_status}
@@ -563,7 +545,6 @@ export default function ExitProcessPage() {
 											</Badge>
 										</div>
 
-										{/* Details */}
 										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
 											<div className="flex items-center gap-2">
 												<Calendar className="h-4 w-4 text-muted-foreground" />
@@ -581,7 +562,6 @@ export default function ExitProcessPage() {
 											</div>
 										</div>
 
-										{/* Stages Progress */}
 										{separation.stages && separation.stages.length > 0 && (
 											<div className="mt-4">
 												<p className="text-sm font-medium mb-2">Exit Stages:</p>
@@ -611,7 +591,6 @@ export default function ExitProcessPage() {
 											</div>
 										)}
 
-										{/* Notes */}
 										{separation.additional_notes && (
 											<div className="mt-3 p-3 bg-gray-50 rounded-md">
 												<p className="text-sm text-muted-foreground">
@@ -631,7 +610,12 @@ export default function ExitProcessPage() {
 			{/* Load More */}
 			{hasMore && separations.length > 0 && (
 				<div className="flex justify-center py-4">
-					<Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={loading}>
+					<Button
+						variant="outline"
+						onClick={() => setPage((p) => p + 1)}
+						disabled={loading}
+						className="rounded-xl"
+					>
 						{loading ? "Loading..." : "Load More"}
 					</Button>
 				</div>
