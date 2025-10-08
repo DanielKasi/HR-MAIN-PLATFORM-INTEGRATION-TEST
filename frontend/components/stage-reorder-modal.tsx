@@ -13,6 +13,7 @@ interface Stage {
 	position: number;
 	created_at: string;
 	updated_at: string;
+	isOpen: boolean;
 }
 
 interface StageReorderProps {

@@ -43,9 +43,9 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import StageReorderModal from "@/components/stage-reorder-modal";
-import { IEmployee,IEmployeeSeparation,ISeparationType} from "@/types/types.utils";
+// import { IEmployee,IEmployeeSeparation,ISeparationType,IPaginatedResponse} from "@/types/types.utils";
 
-interface IEmployee {
+export interface IEmployee {
 	id: number;
 	name: string;
 	email: string;
@@ -65,7 +65,7 @@ interface IEmployee {
 	};
 }
 
-interface IEmployeeSeparation {
+export interface IEmployeeSeparation {
 	id: number;
 	employee: IEmployee | null;
 	employee_separation_type: {
@@ -98,7 +98,7 @@ interface IEmployeeSeparation {
 	}>;
 }
 
-interface ISeparationType {
+export interface ISeparationType {
 	id: number;
 	separation_type: string;
 	description: string;
@@ -115,7 +115,7 @@ interface ISeparationType {
 	institution: number;
 }
 
-interface IPaginatedResponse<T> {
+export interface IPaginatedResponse<T> {
 	count: number;
 	next: string | null;
 	previous: string | null;
