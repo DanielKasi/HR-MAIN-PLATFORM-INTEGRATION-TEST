@@ -157,8 +157,8 @@ class LeaveApplicationSerializer(BaseApprovableSerializer):
 
                     # Check probation period
                     if hasattr(policy, 'applicable_after_probation_months') and policy.applicable_after_probation_months is not None and policy.applicable_after_probation_months > 0:
-                        if hasattr(employee, 'hire_date') and employee.hire_date:
-                            months_employed = (timezone.now().date() - employee.hire_date).days / 30.44
+                        if hasattr(employee, 'date_of_joining') and employee.date_of_joining:
+                            months_employed = (timezone.now().date() - employee.date_of_joining).days / 30.44
                             if months_employed < policy.applicable_after_probation_months:
                                 raise serializers.ValidationError(
                                     {"error": f"Leave available after {policy.applicable_after_probation_months} months of employment"}
