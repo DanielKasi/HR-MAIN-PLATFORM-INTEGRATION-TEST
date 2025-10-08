@@ -317,12 +317,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 								{isMobile ? (
 									<Menu className="w-4 h-4" />
 								) : (
-									<Icon
-										icon={
-											!isSideBarOpen ? "hugeicons:transition-right" : "hugeicons:transition-left"
-										}
-										className="w-5 h-5"
-									/>
+									<Icon icon={"hugeicons:menu-05"} className="w-5 h-5" />
 								)}
 							</button>
 							<h1 className="text-xl font-bold truncate">PERACOSOFT</h1>

@@ -441,7 +441,7 @@ export const getPaginatedJobPositions = async ({
 		page: page?.toString() || "1",
 	});
 
-	params.append("page", page.toString());
+	// params.append("page", page.toString());
 	if (search) {
 		params.append("search", search);
 	}

@@ -121,11 +121,11 @@ export function AttendanceRecordsTable({
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead>Name</TableHead>
-												<TableHead>Email</TableHead>
-												<TableHead>Date</TableHead>
-												<TableHead>Checkin Time</TableHead>
-												<TableHead>Checkout Time</TableHead>
+												<TableHead className="min-w-[6rem]">Name</TableHead>
+												<TableHead className="min-w-[6rem]">Email</TableHead>
+												<TableHead className="min-w-[6rem]">Date</TableHead>
+												<TableHead className="min-w-[6rem]">Checkin Time</TableHead>
+												<TableHead className="min-w-[6rem]">Checkout Time</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
@@ -139,7 +139,7 @@ export function AttendanceRecordsTable({
 												attendanceData?.results.map((att, idx) => {
 													return (
 														<TableRow key={idx} className="hover:bg-gray-50">
-															<TableCell>
+															<TableCell className="min-w-[6rem] bg-red-200">
 																<div className="flex flex-col">
 																	<Link
 																		href={`/employees/attendance/${att.employee.id}`}
@@ -150,15 +150,16 @@ export function AttendanceRecordsTable({
 																	<span className="text-xs text-gray-400" />
 																</div>
 															</TableCell>
-															<TableCell>{att.employee.email || ""}</TableCell>
-															<TableCell>{selectedDate}</TableCell>
+															<TableCell className="min-w-[6rem]">
+																{att.employee.email || ""}
+															</TableCell>
+															<TableCell className="min-w-[6rem]">{selectedDate}</TableCell>
 															<TableCell className="min-w-[6rem]">
 																<span>{att?.check_in_time}</span>
 															</TableCell>
 															<TableCell className="min-w-[6rem]">
 																<span>{att?.check_out_time}</span>
 															</TableCell>
-															<TableCell className="min-w-[6rem]"></TableCell>
 														</TableRow>
 													);
 												})
