@@ -729,6 +729,7 @@ class ResignationRequestDetailView(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
+
 class ResignationRequestByLoggedInUser(APIView, SortableAPIMixin):
     allowed_ordering_fields = ['created_at', 'last_working_day', 'request_status', 'separation', 'is_active']
     default_ordering = ['created_at']
@@ -760,6 +761,149 @@ class ResignationRequestByLoggedInUser(APIView, SortableAPIMixin):
 
         return paginator.get_paginated_response(serializer.data)
 
+class RetirementRequestListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = [
+        "created_at",
+        "last_working_day",
+        "request_status",
+        "separation",
+        "approval_status",
+    ]
+    default_ordering = ["-created_at"]  
+
+    @extend_schema(
+        request=RetirementRequestSerializer,
+        responses={201: RetirementRequestSerializer},
+        summary="Initiate Retirement Request",
+        tags=["Offboarding"],
+    )
+    @transaction.atomic
+    def post(self, request):
+        serializer = RetirementRequestSerializer(
+            data=request.data, context={"request": request, "employee": request.user.profile.employee}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(
+                RetirementRequestSerializer(instance).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={200: RetirementRequestSerializer(many=True)},
+        summary="List Retirement Requests",
+        tags=["Offboarding"],
+        parameters=[
+            {
+                "name": "search",
+                "in": "query",
+                "required": False,
+                "description": "Search by employee full name",
+                "schema": {"type": "string"},
+            },
+        ],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search")
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        queryset = RetirementRequest.objects.filter(
+            separation__employee__department__institution=institution,
+            deleted_at__isnull=True
+        ).select_related(
+            "separation",
+            "separation__employee",
+            "separation__employee__user",
+            "separation__employee_separation_type"
+        ).order_by(*self.default_ordering)
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(separation__employee__user__fullname__icontains=search_query)
+            )
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = RetirementRequestSerializer(paginated_qs, many=True, context={"request": request})
+        return paginator.get_paginated_response(serializer.data)
+    
+class RetirementRequestDetailView(APIView):
+    @extend_schema(
+        responses={200: RetirementRequestSerializer},
+        summary="Get Retirement Request",
+        tags=["Offboarding"],
+    )
+    def get(self, request, retirement_request_id):
+        try:
+            retirement_request = RetirementRequest.objects.get(
+                id=retirement_request_id,
+                separation__employee__department__institution=request.user.profile.institution,
+                deleted_at__isnull=True
+            )
+            serializer = RetirementRequestSerializer(retirement_request, context={"request": request})
+            return Response(serializer.data)
+        except RetirementRequest.DoesNotExist:
+            return Response({"detail": "Retirement request not found or not authorized."}, status=status.HTTP_404_NOT_FOUND)
+
+    @extend_schema(
+        request=RetirementRequestSerializer,
+        responses={200: RetirementRequestSerializer},
+        summary="Update Retirement Request",
+        tags=["Offboarding"],
+    )
+    @transaction.atomic
+    def patch(self, request, retirement_request_id):
+        try:
+            retirement_request = RetirementRequest.objects.get(
+                id=retirement_request_id,
+                separation__employee__department__institution=request.user.profile.institution,
+                deleted_at__isnull=True
+            )
+            retirement_request.approval_status = "under_update"
+            serializer = RetirementRequestSerializer(
+                retirement_request, data=request.data, partial=True, context={"request": request, "employee": retirement_request.separation.employee}
+            )
+            if serializer.is_valid():
+                serializer.save()
+                retirement_request.confirm_update()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except RetirementRequest.DoesNotExist:
+            return Response({"detail": "Retirement request not found or not authorized."}, status=status.HTTP_404_NOT_FOUND)
+
+    @extend_schema(
+        responses={204: None},
+        summary="Delete Retirement Request",
+        tags=["Offboarding"],
+    )
+    @transaction.atomic
+    def delete(self, request, retirement_request_id):
+        try:
+            retirement_request = RetirementRequest.objects.get(
+                id=retirement_request_id,
+                separation__employee__department__institution=request.user.profile.institution,
+                deleted_at__isnull=True
+            )
+            retirement_request.approval_status = "under_deletion"
+            retirement_request.save(update_fields=["approval_status"])
+            retirement_request.confirm_delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except RetirementRequest.DoesNotExist:
+            return Response({"detail": "Retirement request not found or not authorized."}, status=status.HTTP_404_NOT_FOUND)    
 
 class TerminationInitiationListCreateView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ['created_at', 'last_working_day', 'request_status', 'separation', 'is_active', 'initiation_status']
