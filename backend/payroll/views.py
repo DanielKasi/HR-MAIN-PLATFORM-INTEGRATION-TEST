@@ -184,6 +184,7 @@ class EmployeeAllowanceAPIView(APIView, SortableAPIMixin):
         responses=EmployeeAllowanceSerializer,
         summary="Create a new employee allowance",
     )
+    @method_decorator(permission_required('can_create_employee_allowances', raise_exception=True))
     def post(self, request, institution_id):
         serializer = EmployeeAllowanceSerializer(
             data=request.data, context={"request": request}
@@ -268,6 +269,7 @@ class PayrollPeriodAPIView(APIView, SortableAPIMixin):
         responses=PayrollPeriodSerializer,
         summary="Create a new payroll period",
     )
+    @method_decorator(permission_required('can_create_payroll_periods', raise_exception=True))
     def post(self, request, institution_id):
         serializer = PayrollPeriodSerializer(data=request.data)
         if serializer.is_valid():
@@ -359,6 +361,7 @@ class EmployeeDeductionAPIView(APIView, SortableAPIMixin):
         responses=EmployeeDeductionSerializer,
         summary="Create a new employee deduction",
     )
+    @method_decorator(permission_required('can_create_employee_deductions', raise_exception=True))
     def post(self, request, institution_id):
         serializer = EmployeeDeductionSerializer(
             data=request.data, context={"request": request}
@@ -446,6 +449,7 @@ class AllowanceTypeAPIView(APIView, SortableAPIMixin):
         responses=AllowanceTypeSerializer,
         summary="Create a new allowance type",
     )
+    @method_decorator(permission_required('can_create_allowance_types', raise_exception=True))
     def post(self, request, institution_id):
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
@@ -494,6 +498,7 @@ class AllowanceTypeDetailAPIView(APIView):
         responses=AllowanceTypeSerializer,
         summary="Create allowance types for an institution",
     )
+    @method_decorator(permission_required('can_create_allowance_types', raise_exception=True))
     def post(self, request):
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
@@ -538,6 +543,7 @@ class DeductionTypeAPIView(APIView, SortableAPIMixin):
         responses=DeductionTypeSerializer,
         summary="Create a new deduction type",
     )
+    @method_decorator(permission_required('can_create_deduction_types', raise_exception=True))
     def post(self, request, institution_id):
         serializer = DeductionTypeSerializer(data=request.data)
         if serializer.is_valid():
@@ -642,6 +648,7 @@ class EmployeeTaxListAPIView(APIView, SortableAPIMixin):
         summary="Create a new employee tax",
         tags=["Employee Taxes MGT"],
     )
+    @method_decorator(permission_required('can_create_employee_tax', raise_exception=True))
     def post(self, request):
         serializer = EmployeeTaxSerializer(
             data=request.data, context={"request": request}

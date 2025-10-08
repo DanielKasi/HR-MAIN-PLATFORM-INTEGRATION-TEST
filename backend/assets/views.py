@@ -32,6 +32,8 @@ from django.db.models import Q, Count
 from employee.models import Employee
 from django.db import transaction
 from utilities.sortable_api import SortableAPIMixin
+from django.contrib.auth.decorators import permission_required
+from django.utils.decorators import method_decorator
 
 
 
@@ -54,6 +56,7 @@ class AssetCategoryListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_create_asset_categories', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = AssetCategorySerializer(
@@ -82,6 +85,7 @@ class AssetCategoryListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_categories', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get("search", None)
@@ -142,6 +146,7 @@ class AssetCategoryDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_categories', raise_exception=True))
     def get(self, request, pk):
         category = get_object_or_404(AssetCategory, pk=pk)
         serializer = AssetCategorySerializer(category)
@@ -160,6 +165,7 @@ class AssetCategoryDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_delete_asset_categories', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         category = get_object_or_404(AssetCategory, pk=pk)
@@ -190,6 +196,7 @@ class AssetCategoryDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_edit_asset_categories', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         category = get_object_or_404(AssetCategory, pk=pk)
@@ -221,6 +228,7 @@ class AssetListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_create_assets', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         data = request.data.copy()
@@ -244,7 +252,7 @@ class AssetListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
-    
+    @method_decorator(permission_required('can_view_assets', raise_exception=True))
     def get(self, request):
         user = request.user.profile if request and hasattr(request, "user") else None
 
@@ -308,6 +316,7 @@ class AssetDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_assets', raise_exception=True))
     def get(self, request, pk):
         asset = get_object_or_404(Asset, pk=pk)
         serializer = AssetSerializer(asset)
@@ -326,6 +335,7 @@ class AssetDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_delete_assets', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         asset = get_object_or_404(Asset, pk=pk)
@@ -347,6 +357,7 @@ class AssetDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_edit_assets', raise_exception=True))
     def patch(self, request, pk):
         asset = get_object_or_404(Asset, pk=pk)
         asset.approval_status = 'under_update'
@@ -377,6 +388,7 @@ class AssetRequestListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_request_assets', raise_exception=True))
     @transaction.atomic()
 
     def post(self, request):
@@ -402,6 +414,7 @@ class AssetRequestListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_requests', raise_exception=True))
     def get(self, request):
         user = request.user.profile if request and hasattr(request, "user") else None
         employee_id = request.query_params.get("employee_id", None)
@@ -491,6 +504,7 @@ class AssetRequestDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_requests', raise_exception=True))
     def get(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
         serializer = AssetRequestSerializer(asset_request)
@@ -509,6 +523,7 @@ class AssetRequestDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_delete_asset_requests', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
@@ -530,6 +545,7 @@ class AssetRequestDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_edit_asset_requests', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
@@ -564,6 +580,7 @@ class AssetAllocationListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_allocate_assets', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = AssetAllocationSerializer(
@@ -588,6 +605,7 @@ class AssetAllocationListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_allocations', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get("search", None)
@@ -672,6 +690,7 @@ class AssetAllocationDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_allocations', raise_exception=True))
     def get(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
         serializer = AssetAllocationSerializer(asset_allocation)
@@ -690,6 +709,7 @@ class AssetAllocationDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_delete_asset_allocations', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
@@ -711,6 +731,7 @@ class AssetAllocationDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_edit_asset_allocations', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
@@ -745,6 +766,7 @@ class AssetReturnListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_return_assets', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = AssetReturnSerializer(data=request.data)
@@ -763,6 +785,7 @@ class AssetReturnListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_returns', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get("search", None)
         user = request.user.profile if request and hasattr(request, "user") else None
@@ -816,6 +839,7 @@ class AssetReturnDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_returns', raise_exception=True))
     def get(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
         serializer = AssetReturnSerializer(asset_return)
@@ -834,6 +858,7 @@ class AssetReturnDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_delete_asset_returns', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
@@ -855,6 +880,7 @@ class AssetReturnDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_edit_asset_returns', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
@@ -883,6 +909,7 @@ class AssetHistoryListView(APIView, SortableAPIMixin):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_history', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get("search", None)
         status = request.query_params.get("status", None)
@@ -936,6 +963,7 @@ class AssetHistoryDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @method_decorator(permission_required('can_view_asset_history', raise_exception=True))
     def get(self, request, pk):
         asset_history = get_object_or_404(AssetHistory, pk=pk)
         serializer = AssetHistorySerializer(asset_history)
