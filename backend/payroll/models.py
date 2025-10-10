@@ -1,12 +1,13 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
+from leave_mgt.models import LeaveApplication
 from employee.models import Employee, EmployeeAttendance
 from django.utils import timezone
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig, InstitutionTaxRule
+from institution.models import BranchWorkingDays, Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig, InstitutionTaxRule, InstitutionWorkingDays
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from approval.models import BaseApprovableModel
@@ -880,7 +881,81 @@ class Payslip(BaseApprovableModel):
         non_taxable_allowances = Decimal('0')
         total_penalties = Decimal('0')
         deductions = Decimal('0')
-        tax_items = []  # Store individual tax deductions for items
+        tax_items = []  
+        unpaid_leave_deductions = Decimal('0')
+        leave_items = []
+
+        #calculate total days in payroll period
+        payroll_days = (self.payroll_period.end_date - self.payroll_period.start_date).days + 1
+
+        #check working days
+        working_day_indices = []
+        DAY_NAME_TO_WEEKDAY_INDEX = {
+            "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3,
+            "Friday": 4, "Saturday": 5, "Sunday": 6
+        }
+
+        # Check payroll_branch working days first
+        try:
+            branch_working_days = self.employee.payroll_branch.working_days
+            working_days_list = branch_working_days.days.all()
+            if working_days_list.exists():
+                working_day_indices = [DAY_NAME_TO_WEEKDAY_INDEX[day.day_name] for day in working_days_list]
+        except (AttributeError, BranchWorkingDays.DoesNotExist):
+            # Fall back to institution working days
+            try:
+                institution_working_days = self.get_institution().working_days
+                working_days_list = institution_working_days.days.all()
+                if working_days_list.exists():
+                    working_day_indices = [DAY_NAME_TO_WEEKDAY_INDEX[day.day_name] for day in working_days_list]
+            except (AttributeError, InstitutionWorkingDays.DoesNotExist):
+                working_days_list = []
+
+        # Step 3: Calculate Basic Salary Based on Payroll Period Days
+        employee_salary = self.employee.salary or Decimal('0')
+        daily_salary_rate = employee_salary / Decimal(str(payroll_days))
+        basic_salary = employee_salary        
+
+        # Step 4: Calculate Unpaid Leave Deductions (only for working days)
+        leave_applications = LeaveApplication.objects.filter(
+            employee=self.employee,
+            status='approved',
+            start_date__lte=self.payroll_period.end_date,
+            end_date__gte=self.payroll_period.start_date
+        ).select_related('leave_type')
+
+        for leave in leave_applications:
+            if not leave.leave_type.is_paid:
+                # Calculate overlapping days within the payroll period
+                start_date = max(leave.start_date, self.payroll_period.start_date)
+                end_date = min(leave.end_date, self.payroll_period.end_date)
+                leave_days = 0
+
+                # Count only working days for the leave period
+                if working_day_indices:
+                    current_date = start_date
+                    while current_date <= end_date:
+                        if current_date.weekday() in working_day_indices:
+                            leave_days += 1
+                        current_date += timedelta(days=1)
+                else:
+                    leave_days = (end_date - start_date).days + 1
+
+                deduction_amount = daily_salary_rate * Decimal(str(leave_days))
+                unpaid_leave_deductions += deduction_amount
+
+                 # Add to PayslipItem for transparency
+                leave_items.append({
+                    'item_type': 'deduction',
+                    'name': f"Unpaid {leave.leave_type.name}",
+                    'amount': str(deduction_amount.quantize(Decimal('0.01'))),
+                    'description': f"Unpaid leave: {leave_days} days from {start_date} to {end_date}",
+                    'payslip': self
+                })
+
+        # Adjust basic_salary for unpaid leave
+        basic_salary -= unpaid_leave_deductions
+
 
         # Step 1: Calculate Allowances
         allowances = (
@@ -1098,13 +1173,6 @@ class Payslip(BaseApprovableModel):
 
     class Meta:
         ordering = ["-payroll_period__start_date"]
-        constraints = [
-            UniqueConstraint(
-                fields=["employee", "payroll_period"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_payroll_period_per_employee",
-            )
-        ]
 
 
 class PayslipItem(models.Model):

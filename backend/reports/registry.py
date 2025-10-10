@@ -25,9 +25,9 @@ def build_reports_registry():
                         raise ImproperlyConfigured(f"Invalid REPORT_CONFIG in {app_name}: '{report_type}' must map to a model class with 'get_report_data' method.")
                 all_reports[app_name] = config
         except (ImportError, AttributeError) as e:
-            print(f"Skipping app {app_name}: {e}")
+            pass        
         except ImproperlyConfigured as e:
-            print(f"Config error in {app_name}: {e}")
+            pass
 
     _ALL_REPORTS = all_reports
     return _ALL_REPORTS
@@ -54,6 +54,6 @@ def generate_institution_reports(start_date, end_date, institution, app_name=Non
                 reports_module = importlib.import_module(f'{app}.reports')
                 reports[app] = reports_module.generate_reports(start_date, end_date, institution, **filters)
             except (ImportError, AttributeError) as e:
-                logger.error(f"Error generating reports for app {app}: {e}")
+                pass
     
     return reports
