@@ -5,40 +5,39 @@ import { useEffect, useState, useCallback, memo } from "react";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils";
+import { DEVICES_API } from "@/lib/api/devices.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { IEmployee } from "@/types/types.utils";
+import { IDevice } from "@/types/devices.types";
+import { getPaginatedFromUrl } from "@/lib/api/_api.utils";
 
-interface EmployeeSearchableSelectProps {
+export interface DeviceSearchableSelectProps {
 	value: (string | number)[];
+	defaultLabel?: string;
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
-	showEmployeeId?: boolean;
-	showDepartment?: boolean;
 	className?: string;
 	triggerClassName?: string;
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
-	id?: string;
-	employees_under?: number;
+	setDevices?: (devices: IDevice[]) => void;
 }
 
-export const EmployeeSearchableSelect = memo(
+export const DeviceSearchableSelect = memo(
 	({
 		value,
+		defaultLabel,
 		onValueChange,
 		disabled = false,
 		showSelectedItems = true,
-		placeholder = "Select employee(s)",
+		placeholder = "Select Device(s)",
 		className,
 		triggerClassName,
 		multiple = false,
 		hideSelectedFromList = false,
-		employees_under,
-		id,
-	}: EmployeeSearchableSelectProps) => {
+		setDevices,
+	}: DeviceSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
 		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
@@ -51,21 +50,17 @@ export const EmployeeSearchableSelect = memo(
 				if (!currentInstitution) {
 					throw new Error("No institution found!");
 				}
-				return await getPaginatedEmployees({
-					institutionId: currentInstitution.id,
-					employees_under,
-					...query,
-				});
+				return await DEVICES_API.getPaginated({ ...query });
 			},
 			[currentInstitution],
 		);
 
 		const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
-			return await getPaginatedEmployeesFromUrl({ url });
+			return await getPaginatedFromUrl<IDevice>({ url });
 		}, []);
 
 		const handleSelect = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+			(itemId: string | number, _item: PaginatedSelectItem<IDevice>) => {
 				if (!selectedItems.includes(itemId)) {
 					if (multiple) {
 						onValueChange([...selectedItems, itemId]);
@@ -74,11 +69,11 @@ export const EmployeeSearchableSelect = memo(
 					}
 				}
 			},
-			[multiple, selectedItems],
+			[multiple, selectedItems, onValueChange],
 		);
 
 		const handleRemove = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+			(itemId: string | number, _item: PaginatedSelectItem<IDevice>) => {
 				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
 				setSelectedItems(newItems);
 				onValueChange(newItems);
@@ -88,14 +83,13 @@ export const EmployeeSearchableSelect = memo(
 
 		return (
 			<div className={className}>
-				<PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
-					id={id}
+				<PaginatedSearchableSelect<IDevice, { search?: string; page?: number }>
 					paginated
 					fetchFirstPage={fetchFirstPage}
 					fetchFromUrl={fetchFromUrl}
-					getItemId={(emp) => emp.id}
-					getItemLabel={(emp) => emp.user?.fullname || ""}
-					getItemValue={(emp) => emp.id.toString()}
+					getItemId={(device) => device.id}
+					getItemLabel={(device) => device.serial_number || ""}
+					getItemValue={(device) => device.id.toString()}
 					selectedItems={selectedItems}
 					onSelect={handleSelect}
 					onRemove={handleRemove}
@@ -103,16 +97,16 @@ export const EmployeeSearchableSelect = memo(
 					multiple={multiple}
 					disabled={disabled}
 					placeholder={placeholder}
-					searchPlaceholder="Search employees by name, email, ID, or department..."
-					triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
+					searchPlaceholder="Search devices by serial number or description..."
+					triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
 					popoverClassName="w-full"
 					hideSelectedFromList={hideSelectedFromList}
+					setParentItems={setDevices}
+					defaultLabel={defaultLabel}
 				/>
 			</div>
 		);
 	},
 );
 
-EmployeeSearchableSelect.displayName = "EmployeeSearchableSelect";
-
-export default EmployeeSearchableSelect;
+DeviceSearchableSelect.displayName = "DeviceSearchableSelect";

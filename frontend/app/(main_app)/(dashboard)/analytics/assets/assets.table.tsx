@@ -30,7 +30,7 @@ export default function RecentAssetsTable({ className = "", data }: Props) {
 		{
 			key: "category",
 			header: <span>Category</span>,
-			cell: (props) => <span>{props.category?.category_name || "N/A"}</span>,
+			cell: (props) => <span>{props.category?.category_name || "Unknown"}</span>,
 		},
 		{
 			key: "status",

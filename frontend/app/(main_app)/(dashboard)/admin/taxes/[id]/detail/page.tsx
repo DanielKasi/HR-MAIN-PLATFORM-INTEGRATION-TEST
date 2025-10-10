@@ -152,7 +152,7 @@ const TaxDetailsPage = () => {
 		} else if (rule.tax_rule_formula) {
 			return "Custom Formula";
 		}
-		return "N/A";
+		return "Unknown";
 	};
 
 	const columns: ColumnDef<ITaxRule>[] = [

@@ -13,7 +13,6 @@ import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
 import { Plus } from "lucide-react";
 import {
 	DropdownMenu,

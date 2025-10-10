@@ -268,7 +268,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			{/* Trigger button */}
 			<div
 				className={cn(
-					"relative flex items-center justify-between w-full px-3 py-2 text-sm bg-background border border-input rounded-md cursor-pointer hover:bg-accent/50 transition-colors",
+					"relative flex items-center justify-between w-full px-3 py-2 min-h-12 text-sm bg-background border border-input rounded-2xl cursor-pointer hover:bg-accent/50 transition-colors",
 					disabled && "opacity-50 cursor-not-allowed",
 					triggerClassName,
 				)}
@@ -288,7 +288,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 				<div className="flex items-center gap-2">
 					{selectedItems.length > 0 && (
 						<div className="flex items-center gap-1">
-							<span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md font-medium">
+							<span className="bg-primary text-primary-foreground text-xs px-4 py-1 rounded-md font-medium">
 								{selectedItems.length}
 							</span>
 							<button
@@ -316,7 +316,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			{open && (
 				<div
 					className={cn(
-						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-64 overflow-hidden",
+						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-hidden",
 						popoverClassName,
 					)}
 				>

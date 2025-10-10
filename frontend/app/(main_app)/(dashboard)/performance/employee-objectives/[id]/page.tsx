@@ -204,19 +204,19 @@ const EmployeeObjectiveDetailPage = () => {
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Employee ID:</span>
 									<span className="text-sm">
-										{employeeObjective.employee?.employee_id || "N/A"}
+										{employeeObjective.employee?.employee_id || "Unknown"}
 									</span>
 								</div>
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Position:</span>
 									<span className="text-sm">
-										{employeeObjective.employee?.position?.name || "N/A"}
+										{employeeObjective.employee?.position?.name || "Unknown"}
 									</span>
 								</div>
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Department:</span>
 									<span className="text-sm">
-										{employeeObjective.employee?.department?.name || "N/A"}
+										{employeeObjective.employee?.department?.name || "Unknown"}
 									</span>
 								</div>
 							</div>
@@ -249,7 +249,7 @@ const EmployeeObjectiveDetailPage = () => {
 									<span className="text-sm">
 										{employeeObjective.objective.date
 											? formatDate(employeeObjective.objective.date)
-											: "N/A"}
+											: "Unknown"}
 									</span>
 								</div>
 							</div>
@@ -356,7 +356,7 @@ const EmployeeObjectiveDetailPage = () => {
 									<p className="text-sm">
 										{employeeObjective.created_at
 											? formatDate(employeeObjective.created_at)
-											: "N/A"}
+											: "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
@@ -364,7 +364,7 @@ const EmployeeObjectiveDetailPage = () => {
 									<p className="text-sm">
 										{employeeObjective.updated_at
 											? formatDate(employeeObjective.updated_at)
-											: "N/A"}
+											: "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">

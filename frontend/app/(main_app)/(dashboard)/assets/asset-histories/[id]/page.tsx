@@ -204,7 +204,7 @@ const AssetHistoryDetailPage = () => {
 									<p className="text-sm text-gray-900 mt-1">
 										{typeof assetHistory.asset === "string"
 											? assetHistory.asset
-											: assetHistory.asset?.asset_name || "N/A"}
+											: assetHistory.asset?.asset_name || "Unknown"}
 									</p>
 								</div>
 
@@ -238,7 +238,7 @@ const AssetHistoryDetailPage = () => {
 										<p className="text-sm font-medium text-gray-900">
 											{typeof assetHistory.performed_by === "string"
 												? assetHistory.performed_by
-												: assetHistory.performed_by?.fullname || "N/A"}
+												: assetHistory.performed_by?.fullname || "Unknown"}
 										</p>
 									</div>
 								</div>
@@ -257,7 +257,7 @@ const AssetHistoryDetailPage = () => {
 											{assetHistory.affected_user
 												? typeof assetHistory.affected_user === "string"
 													? assetHistory.affected_user
-													: assetHistory.affected_user?.fullname || "N/A"
+													: assetHistory.affected_user?.fullname || "Unknown"
 												: "No affected user"}
 										</p>
 									</div>
