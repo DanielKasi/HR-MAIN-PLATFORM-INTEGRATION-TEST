@@ -11,6 +11,7 @@ class DeviceSerializer(serializers.ModelSerializer):
     branch_id = serializers.PrimaryKeyRelatedField(
         queryset=Branch.objects.all(), source='branch', write_only=True, allow_null=True, required=False
     )
+    attached_employees = serializers.SerializerMethodField()
     status = serializers.ChoiceField(choices=DeviceStatus.choices, default=DeviceStatus.ACTIVE)
 
     class Meta:
@@ -34,7 +35,18 @@ class DeviceSerializer(serializers.ModelSerializer):
                 'id': obj.branch.id,
                 'name': obj.branch.branch_name
             }
-        return None    
+        return None   
+
+    def get_attached_employees(self, obj):
+        """Return list of attached employees with basic details."""
+        employees = obj.attached_employees.all()
+        return [
+            {
+                'id': employee.id,
+                'name': employee.name  
+            }
+            for employee in employees
+        ]
 
     def validate_serial_number(self, value):
         """Ensure serial number is unique for the institution."""
