@@ -16,7 +16,7 @@ export function PayrollByDepartment({ data, onRefresh, loading }: PayrollByDepar
 				<CardTitle className="text-base font-medium">Payroll by Department</CardTitle>
 			</CardHeader>
 			<CardContent>
-				<div className="space-y-4">
+				<div className="space-y-4 !h-80">
 					{data?.map((item, index) => (
 						<div key={item.dept} className="flex items-center justify-between">
 							<span className="text-sm font-medium text-gray-700">{item.dept}</span>
