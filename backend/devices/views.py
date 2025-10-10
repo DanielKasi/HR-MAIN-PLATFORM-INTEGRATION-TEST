@@ -11,6 +11,8 @@ from .models import Device, DeviceStatus, DeviceEmployeeAttachment
 from .serializers import DeviceSerializer, DeviceEmployeeAttachmentSerializer
 from institution.models import Institution
 from django.shortcuts import get_object_or_404
+import requests
+from decouple import config
 
 
 class DeviceListCreateView(APIView, SortableAPIMixin):
@@ -49,6 +51,18 @@ class DeviceListCreateView(APIView, SortableAPIMixin):
         if serializer.is_valid():
             instance = serializer.save()
             instance.confirm_create()
+
+            external_data = {
+                "serial_number": instance.serial_number,
+            }
+
+            external_api_url = config('DEVICE_REG_API')
+            response = requests.post(
+                external_api_url,
+                json=external_data,
+                headers={"API-KEY": config('API_KEY')}
+            )
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -99,6 +113,9 @@ class DeviceListCreateView(APIView, SortableAPIMixin):
 
         if created_at:
             devices = devices.filter(created_at=created_at)
+   
+        if employee_id:
+            devices = devices.filter(attached_employees__id=employee_id)
 
         try:
             devices = self.apply_sorting(devices, request)

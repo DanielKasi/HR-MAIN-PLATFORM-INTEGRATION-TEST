@@ -39,6 +39,7 @@ class LeaveType(BaseApprovableModel):
         choices=[("male", "Male"), ("female", "Female"), ("all", "All")],
         default="all",
     )
+    is_paid = models.BooleanField(default=False, null=True)
 
     class Meta:
         db_table = "leave_types"
