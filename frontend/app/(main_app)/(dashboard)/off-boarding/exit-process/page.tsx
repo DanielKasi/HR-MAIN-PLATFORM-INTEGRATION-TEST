@@ -605,7 +605,7 @@ export default function ExitProcessPage() {
 					}
 					onClose={() => {
 						setReorderModalOpen(false);
-						setSeparationToReorder(null);
+						setTimeout(() => setSeparationToReorder(null), 100);
 					}}
 					onSuccess={handleReorderSuccess}
 				/>

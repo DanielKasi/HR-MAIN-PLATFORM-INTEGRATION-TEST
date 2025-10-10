@@ -3,42 +3,48 @@ import { GripVertical, CheckCircle, Clock, XCircle, AlertCircle, Save, X } from 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import apiRequest from "@/lib/apiRequest";
+import { showErrorToast, showSuccessToast } from "@/lib/utils";
 
-// Types
 interface Stage {
 	id: number;
 	stage_name: string;
-	status: "not_started" | "in_progress" | "completed" | "skipped";
-	notes: string;
+	status: string;
 	position: number;
-	created_at: string;
-	updated_at: string;
-	isOpen: boolean;
+	notes?: string;
 }
 
-interface StageReorderProps {
+interface StageReorderModalProps {
+	isOpen: boolean;
 	separationId: number;
 	stages: Stage[];
-	onReorderSuccess?: (updatedStages: Stage[]) => void;
-	onCancel?: () => void;
+	employeeName: string;
+	onClose: () => void;
+	onSuccess: (updatedStages: Stage[]) => void;
 }
 
-export default function StageReorderComponent({
+export default function StageReorderModal({
+	isOpen,
 	separationId,
 	stages: initialStages,
-	onReorderSuccess,
-	onCancel,
-}: StageReorderProps) {
-	const [stages, setStages] = useState<Stage[]>(initialStages);
+	employeeName,
+	onClose,
+	onSuccess,
+}: StageReorderModalProps) {
+	const [stages, setStages] = useState<Stage[]>([]);
 	const [draggedStage, setDraggedStage] = useState<Stage | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
 	const [saving, setSaving] = useState(false);
 
-	// Sort stages by position on mount
+	// Initialize and sort stages
 	useEffect(() => {
-		const sorted = [...initialStages].sort((a, b) => a.position - b.position);
-		setStages(sorted);
-	}, [initialStages]);
+		if (isOpen) {
+			const sorted = [...initialStages].sort((a, b) => a.position - b.position);
+			setStages(sorted);
+			setHasChanges(false);
+		}
+	}, [initialStages, isOpen]);
 
 	const getStageStatusIcon = (status: string) => {
 		switch (status) {
@@ -137,47 +143,32 @@ export default function StageReorderComponent({
 		setSaving(true);
 
 		try {
-			// Find the changes and make API calls
-			const reorderPromises: Promise<any>[] = [];
+			// Prepare the update data - send all stages with their new positions
+			const updatePromises = stages.map((stage) =>
+				apiRequest.patch(`/on-boarding/offboarding-stages/${stage.id}/`, {
+					position: stage.position,
+				}),
+			);
 
-			for (let i = 0; i < stages.length - 1; i++) {
-				const currentStage = stages[i];
-				const nextStage = stages[i + 1];
+			await Promise.all(updatePromises);
 
-				// Check if this stage's position changed
-				const originalStage = initialStages.find((s) => s.id === currentStage.id);
-				if (originalStage && originalStage.position !== currentStage.position) {
-					// Make API call to reorder
-					reorderPromises.push(
-						fetch(`/api/on-boarding/employee-separations/${separationId}/stage-reorder/`, {
-							method: "POST",
-							headers: {
-								"Content-Type": "application/json",
-							},
-							body: JSON.stringify({
-								source_stage_id: currentStage.id,
-								target_stage_id: nextStage.id,
-							}),
-						}).then((res) => {
-							if (!res.ok) throw new Error("Failed to reorder stage");
-							return res.json();
-						}),
-					);
-				}
-			}
-
-			await Promise.all(reorderPromises);
-
-			// Success
+			showSuccessToast("Stages reordered successfully!");
 			setHasChanges(false);
-			if (onReorderSuccess) {
-				onReorderSuccess(stages);
+
+			if (onSuccess) {
+				onSuccess(stages);
 			}
 
-			alert("Stages reordered successfully!");
+			// Close modal after successful save
+			setTimeout(() => {
+				onClose();
+			}, 500);
 		} catch (error) {
 			console.error("Error reordering stages:", error);
-			alert("Failed to reorder stages. Please try again.");
+			showErrorToast({
+				error,
+				defaultMessage: "Failed to reorder stages. Please try again.",
+			});
 		} finally {
 			setSaving(false);
 		}
@@ -191,135 +182,157 @@ export default function StageReorderComponent({
 			if (!confirmed) return;
 		}
 
-		setStages([...initialStages].sort((a, b) => a.position - b.position));
+		// Reset stages to original
+		const sorted = [...initialStages].sort((a, b) => a.position - b.position);
+		setStages(sorted);
 		setHasChanges(false);
 
-		if (onCancel) {
-			onCancel();
-		}
+		// Close the modal
+		onClose();
 	};
 
 	return (
-		<div className="space-y-4">
-			<Card>
-				<CardHeader>
-					<div className="flex items-center justify-between">
-						<div>
-							<CardTitle>Reorder Exit Stages</CardTitle>
-							<p className="text-sm text-muted-foreground mt-1">
-								Drag and drop stages to change their execution order
-							</p>
-						</div>
-						<div className="flex gap-2">
-							<Button variant="outline" onClick={handleCancel} disabled={saving}>
-								<X className="h-4 w-4 mr-2" />
-								Cancel
-							</Button>
-							<Button onClick={handleSave} disabled={!hasChanges || saving}>
-								<Save className="h-4 w-4 mr-2" />
-								{saving ? "Saving..." : "Save Order"}
-							</Button>
-						</div>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-2">
-						{stages.map((stage, index) => (
-							<div
-								key={stage.id}
-								draggable
-								onDragStart={(e) => handleDragStart(e, stage)}
-								onDragOver={handleDragOver}
-								onDrop={(e) => handleDrop(e, stage)}
-								onDragEnd={handleDragEnd}
-								className={`
-                  flex items-center gap-3 p-4 border rounded-lg cursor-move
-                  transition-all duration-200
-                  ${draggedStage?.id === stage.id ? "opacity-50 scale-95" : "hover:shadow-md hover:border-blue-300"}
-                  ${hasChanges ? "bg-blue-50" : "bg-white"}
-                `}
-							>
-								{/* Drag Handle */}
-								<div className="flex-shrink-0">
-									<GripVertical className="h-5 w-5 text-gray-400" />
-								</div>
+		<Dialog open={isOpen} onOpenChange={onClose}>
+			<DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+				<DialogHeader>
+					<DialogTitle>Reorder Exit Stages - {employeeName}</DialogTitle>
+				</DialogHeader>
 
-								{/* Position Number */}
-								<div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-semibold text-sm">
-									{index + 1}
-								</div>
-
-								{/* Stage Icon */}
-								<div className="flex-shrink-0">{getStageStatusIcon(stage.status)}</div>
-
-								{/* Stage Info */}
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-2 mb-1">
-										<h4 className="font-medium truncate">{stage.stage_name}</h4>
-										<Badge className={getStageStatusColor(stage.status)} variant="secondary">
-											{stage.status.replace("_", " ")}
-										</Badge>
+				<div className="flex-1 overflow-y-auto pr-2">
+					<div className="space-y-4">
+						<Card>
+							<CardHeader>
+								<div className="flex items-center justify-between">
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Drag and drop stages to change their execution order
+										</p>
 									</div>
-									{stage.notes && (
-										<p className="text-sm text-muted-foreground truncate">{stage.notes}</p>
-									)}
+									<div className="flex gap-2">
+										<Button
+											variant="outline"
+											onClick={handleCancel}
+											disabled={saving}
+											size="sm"
+											className="rounded-full"
+										>
+											<X className="h-4 w-4 mr-2" />
+											Cancel
+										</Button>
+										<Button
+											onClick={handleSave}
+											disabled={!hasChanges || saving}
+											size="sm"
+											className="flex rounded-full w-full max-w-sm items-center gap-2 px-6 lg:px-8"
+										>
+											<Save className="h-4 w-4 mr-2" />
+											{saving ? "Saving..." : "Save Order"}
+										</Button>
+									</div>
+								</div>
+							</CardHeader>
+							<CardContent>
+								<div className="space-y-2">
+									{stages.map((stage, index) => (
+										<div
+											key={stage.id}
+											draggable
+											onDragStart={(e) => handleDragStart(e, stage)}
+											onDragOver={handleDragOver}
+											onDrop={(e) => handleDrop(e, stage)}
+											onDragEnd={handleDragEnd}
+											className={`
+												flex items-center gap-3 p-4 border rounded-lg cursor-move
+												transition-all duration-200
+												${draggedStage?.id === stage.id ? "opacity-50 scale-95" : "hover:shadow-md hover:border-blue-300"}
+												${hasChanges ? "bg-blue-50" : "bg-white"}
+											`}
+										>
+											{/* Drag Handle */}
+											<div className="flex-shrink-0">
+												<GripVertical className="h-5 w-5 text-gray-400" />
+											</div>
+
+											{/* Position Number */}
+											<div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-semibold text-sm">
+												{index + 1}
+											</div>
+
+											{/* Stage Icon */}
+											<div className="flex-shrink-0">{getStageStatusIcon(stage.status)}</div>
+
+											{/* Stage Info */}
+											<div className="flex-1 min-w-0">
+												<div className="flex items-center gap-2 mb-1">
+													<h4 className="font-medium truncate">{stage.stage_name}</h4>
+													<Badge className={getStageStatusColor(stage.status)} variant="secondary">
+														{stage.status.replace("_", " ")}
+													</Badge>
+												</div>
+												{stage.notes && (
+													<p className="text-sm text-muted-foreground truncate">{stage.notes}</p>
+												)}
+											</div>
+
+											{/* Move Buttons */}
+											<div className="flex flex-col gap-1">
+												<Button
+													size="sm"
+													variant="ghost"
+													onClick={() => moveStage(stage.id, "up")}
+													disabled={index === 0}
+													className="h-6 w-6 p-0"
+												>
+													▲
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onClick={() => moveStage(stage.id, "down")}
+													disabled={index === stages.length - 1}
+													className="h-6 w-6 p-0"
+												>
+													▼
+												</Button>
+											</div>
+										</div>
+									))}
 								</div>
 
-								{/* Move Buttons */}
-								<div className="flex flex-col gap-1">
-									<Button
-										size="sm"
-										variant="ghost"
-										onClick={() => moveStage(stage.id, "up")}
-										disabled={index === 0}
-										className="h-6 w-6 p-0"
-									>
-										▲
-									</Button>
-									<Button
-										size="sm"
-										variant="ghost"
-										onClick={() => moveStage(stage.id, "down")}
-										disabled={index === stages.length - 1}
-										className="h-6 w-6 p-0"
-									>
-										▼
-									</Button>
-								</div>
-							</div>
-						))}
+								{hasChanges && (
+									<div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+										<p className="text-sm text-yellow-800 font-medium">
+											You have unsaved changes. Click "Save Order" to apply the new stage order.
+										</p>
+									</div>
+								)}
+							</CardContent>
+						</Card>
+
+						{/* Instructions */}
+						<Card>
+							<CardContent className="p-4">
+								<h4 className="font-medium mb-2">How to reorder stages:</h4>
+								<ul className="text-sm text-muted-foreground space-y-1">
+									<li>
+										• <strong>Drag & Drop:</strong> Click and drag a stage to move it to a new
+										position
+									</li>
+									<li>
+										• <strong>Arrow Buttons:</strong> Use ▲ and ▼ buttons to move stages up or down
+									</li>
+									<li>
+										• <strong>Save:</strong> Click "Save Order" to apply changes
+									</li>
+									<li>
+										• <strong>Cancel:</strong> Click "Cancel" to discard changes and close
+									</li>
+								</ul>
+							</CardContent>
+						</Card>
 					</div>
-
-					{hasChanges && (
-						<div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-							<p className="text-sm text-yellow-800 font-medium">
-								⚠️ You have unsaved changes. Click "Save Order" to apply the new stage order.
-							</p>
-						</div>
-					)}
-				</CardContent>
-			</Card>
-
-			{/* Instructions */}
-			<Card>
-				<CardContent className="p-4">
-					<h4 className="font-medium mb-2">How to reorder stages:</h4>
-					<ul className="text-sm text-muted-foreground space-y-1">
-						<li>
-							• <strong>Drag & Drop:</strong> Click and drag a stage to move it to a new position
-						</li>
-						<li>
-							• <strong>Arrow Buttons:</strong> Use ▲ and ▼ buttons to move stages up or down
-						</li>
-						<li>
-							• <strong>Save:</strong> Click "Save Order" to apply changes
-						</li>
-						<li>
-							• <strong>Cancel:</strong> Click "Cancel" to discard changes
-						</li>
-					</ul>
-				</CardContent>
-			</Card>
-		</div>
+				</div>
+			</DialogContent>
+		</Dialog>
 	);
 }

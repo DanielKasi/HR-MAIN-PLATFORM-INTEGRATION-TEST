@@ -19,6 +19,24 @@ export interface ContextItem {
 	description?: string;
 }
 
+export interface Stage {
+	id: number;
+	stage_name: string;
+	status: "not_started" | "in_progress" | "completed" | "skipped";
+	notes: string;
+	position: number;
+	created_at: string;
+	updated_at: string;
+	isOpen: boolean;
+}
+
+export interface StageReorderProps {
+	separationId: number;
+	stages: Stage[];
+	onReorderSuccess?: (updatedStages: Stage[]) => void;
+	onCancel?: () => void;
+}
+
 export interface CreateDepartmentData {
 	name: string;
 	description: string;
