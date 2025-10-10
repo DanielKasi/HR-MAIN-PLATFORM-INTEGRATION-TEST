@@ -19,6 +19,24 @@ export interface ContextItem {
 	description?: string;
 }
 
+export interface Stage {
+	id: number;
+	stage_name: string;
+	status: "not_started" | "in_progress" | "completed" | "skipped";
+	notes: string;
+	position: number;
+	created_at: string;
+	updated_at: string;
+	isOpen: boolean;
+}
+
+export interface StageReorderProps {
+	separationId: number;
+	stages: Stage[];
+	onReorderSuccess?: (updatedStages: Stage[]) => void;
+	onCancel?: () => void;
+}
+
 export interface CreateDepartmentData {
 	name: string;
 	description: string;
@@ -63,6 +81,83 @@ export interface IDepartment {
 	institution: number;
 	institution_details?: IUserInstitution | null;
 	job_positions?: { id: number; name: string; description: string; department_id: number }[];
+}
+
+export interface IEmployeeS {
+	id: number;
+	name: string;
+	email: string;
+	employee_id?: string;
+	date_of_birth?: string;
+	gender?: string;
+	phone_number?: string;
+	department?: {
+		id: number;
+		name: string;
+		institution_id: number;
+	};
+	position?: {
+		id: number;
+		name: string;
+		department_id?: number;
+	};
+}
+
+export interface IEmployeeSeparation {
+	id: number;
+	employee: IEmployee | null;
+	employee_separation_type: {
+		id: number;
+		separation_type: string;
+		description: string;
+		category: "resignation" | "termination" | "retirement" | "contract_end" | "other";
+		approval_status: string;
+	};
+	initiated_by: {
+		id: number;
+		user: {
+			fullname: string;
+			email: string;
+		};
+	} | null;
+	effective_date: string;
+	additional_notes: string;
+	separation_status: "planned" | "completed" | "cancelled";
+	created_at: string;
+	updated_at: string;
+	stages: Array<{
+		id: number;
+		stage_name: string;
+		status: "not_started" | "in_progress" | "completed" | "skipped";
+		notes: string;
+		position: number;
+		created_at: string;
+		updated_at: string;
+		isOpen: boolean;
+	}>;
+}
+export interface ISeparationType {
+	id: number;
+	separation_type: string;
+	description: string;
+	category: "resignation" | "termination" | "retirement" | "contract_end" | "other";
+	approval_status: string;
+	approvals: string;
+	supported_stages: number[];
+	created_at: string;
+	updated_at: string;
+	deleted_at: string | null;
+	is_active: boolean;
+	created_by: number;
+	updated_by: number;
+	institution: number;
+}
+
+export interface IPaginatedResponse<T> {
+	count: number;
+	next: string | null;
+	previous: string | null;
+	results: T[];
 }
 
 export type OffboardingData = {
@@ -334,6 +429,63 @@ export interface ICompanyEmail {
 	email: string;
 	provider: string;
 	status: string;
+}
+
+export interface IEmployeeSeparation {
+	id: number;
+	employee: IEmployee | null;
+	employee_separation_type: {
+		id: number;
+		separation_type: string;
+		description: string;
+		category: "resignation" | "termination" | "retirement" | "contract_end" | "other";
+		approval_status: string;
+	};
+	initiated_by: {
+		id: number;
+		user: {
+			fullname: string;
+			email: string;
+		};
+	} | null;
+	effective_date: string;
+	additional_notes: string;
+	separation_status: "planned" | "completed" | "cancelled";
+	created_at: string;
+	updated_at: string;
+	stages: Array<{
+		id: number;
+		stage_name: string;
+		status: "not_started" | "in_progress" | "completed" | "skipped";
+		notes: string;
+		position: number;
+		created_at: string;
+		updated_at: string;
+	}>;
+}
+
+export interface ISeparationType {
+	id: number;
+	separation_type: string;
+	description: string;
+	category: "resignation" | "termination" | "retirement" | "contract_end" | "other";
+	approval_status: string;
+	approvals: string;
+	supported_stages: number[];
+	created_at: string;
+	updated_at: string;
+	deleted_at: string | null;
+	is_active: boolean;
+	created_by: number;
+	updated_by: number;
+	institution: number;
+}
+
+export interface IPaginatedResponse<T> {
+	count: number;
+	next: string | null;
+	previous: string | null;
+	results: T[];
 }
 
 export interface IEmployee {

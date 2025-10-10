@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Plus, Search, Eye, Edit, Trash2, MoreVertical } from "lucide-react";
+import { Plus, Search, Eye, Edit, Trash2, MoreVertical, ArrowLeft } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -79,7 +79,16 @@ export default function SeparationPoliciesPage() {
 	return (
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 -ml-2">
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-				<div className="mb-6">
+				<div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
+					<Button
+						size="sm"
+						variant="outline"
+						className="rounded-full aspect-square"
+						onClick={() => router.push("/admin")}
+					>
+						<ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+					</Button>
+
 					<h1 className="text-3xl font-bold">Separation Policies</h1>
 				</div>
 			</div>
