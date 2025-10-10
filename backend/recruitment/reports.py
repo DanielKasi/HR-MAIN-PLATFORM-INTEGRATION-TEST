@@ -4,10 +4,10 @@ from .models import (
 from onboarding.models import OnBoarding
 
 REPORT_CONFIG = {
-    'candidates': JobAdvertApplication,
-    'interviews': JobInterview,
-    'job openings': JobPositionAdvert,
+    'Candidates': JobAdvertApplication,
+    'Interviews': JobInterview,
+    'Job Openings': JobPositionAdvert,
     # 'onboarding': OnBoarding,
-    'skill zone': SkillZone,
-    'interview stages': InterviewStage,
+    'Skill Zone': SkillZone,
+    'Interview Stages': InterviewStage,
 }

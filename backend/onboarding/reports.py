@@ -8,11 +8,11 @@ from .models import (
 )
 
 REPORT_CONFIG = {
-    'offboarding stages': OffboardingStage,
-    'separation types': InstitutionEmployeeSeparationTypes,
-    'separation policies': InstitutionSeparationPolicy,
-    'employee separations': EmployeeSeparation,
-    'resignation requests': ResignationRequest,
-    'termination initiations': TerminationInitiation,
+    'Offboarding Stages': OffboardingStage,
+    'Separation Types': InstitutionEmployeeSeparationTypes,
+    'Separation Policies': InstitutionSeparationPolicy,
+    'Employee Separations': EmployeeSeparation,
+    'Resignation Requests': ResignationRequest,
+    'Termination Initiations': TerminationInitiation,
 }
 
