@@ -1,6 +1,8 @@
 from decimal import Decimal
+from dj_database_url import config
 from django.db import models, transaction
 from django.utils import timezone
+import requests
 from calendar2.models import Calendar, Event
 from django.db import models
 from datetime import datetime
@@ -464,6 +466,26 @@ class Employee(BaseApprovableModel):
         )
         if should_initialize:
             self.sync_leave_balances()
+
+        if is_new:
+            external_data = {
+                "external_user_id": self.employee_id,
+                "name": self.name
+            }
+
+            external_api_url = config('DEVICE_USER_REG_API')
+            api_key = config('API_KEY')
+
+            try:
+                response = requests.post(
+                    external_api_url,
+                    json=external_data,
+                    headers={"API-KEY": api_key},
+                    timeout=10
+                )
+                response.raise_for_status()
+            except requests.RequestException as e:
+                print(f"Error registering employee {self.employee_id} on external device system: {str(e)}")     
 
         # if is_new_employee and self.is_active:
         #     self.sync_employee_working_days()
