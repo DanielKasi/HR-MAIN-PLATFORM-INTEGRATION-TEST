@@ -9,9 +9,9 @@ from .models import (
 
 REPORT_CONFIG = {
     # 'employee': Employee,
-    'document requests': DocumentRequestEmployee,
-    'shifts': EmployeeShift,
-    'disciplinary actions': DisciplinaryAction,
-    'employee attendance': EmployeeAttendance,
-    'employee monthly hours': EmployeeMonthlyHourAccount,
+    'Document Requests': DocumentRequestEmployee,
+    'Shifts': EmployeeShift,
+    'Disciplinary Actions': DisciplinaryAction,
+    'Employee Attendance': EmployeeAttendance,
+    'Employee Monthly Hours': EmployeeMonthlyHourAccount,
 }

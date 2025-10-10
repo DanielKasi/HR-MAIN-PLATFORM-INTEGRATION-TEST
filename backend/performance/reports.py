@@ -10,12 +10,12 @@ from .models import (
 )
 
 REPORT_CONFIG = {
-    'periods': Period,
-    'objectives': Objectives,
-    'employee objectives': EmployeeObjectives,
-    'key results': KeyResult,
-    '360 feedback': Feedback360,
-    'employee bonus points': EmployeeBonusPoint,
-    'meetings': Meeting,
-    'performance improvement plans': PerformanceImprovementPlan,
+    'Periods': Period,
+    'Objectives': Objectives,
+    'Employee Objectives': EmployeeObjectives,
+    'Key Results': KeyResult,
+    '360 Feedback': Feedback360,
+    'Employee Bonus Points': EmployeeBonusPoint,
+    'Meetings': Meeting,
+    'Performance Improvement Plans': PerformanceImprovementPlan,
 }
