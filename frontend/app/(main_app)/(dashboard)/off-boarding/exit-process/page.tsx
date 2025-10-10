@@ -70,12 +70,7 @@ export default function ExitProcessPage() {
 	const [reorderModalOpen, setReorderModalOpen] = useState(false);
 	const [separationToReorder, setSeparationToReorder] = useState<IEmployeeSeparation | null>(null);
 
-	const [stats, setStats] = useState({
-		total: 0,
-		planned: 0,
-		completed: 0,
-		cancelled: 0,
-	});
+	//
 
 	const fetchSeparationTypes = useCallback(async () => {
 		if (!currentInstitution) return;
@@ -127,15 +122,6 @@ export default function ExitProcessPage() {
 
 				setSeparations((prev) => (isNewSearch ? data.results : [...prev, ...data.results]));
 				setHasMore(!!data.next);
-
-				if (currentPage === 1) {
-					setStats({
-						total: data.count,
-						planned: data.results.filter((s) => s.separation_status === "planned").length,
-						completed: data.results.filter((s) => s.separation_status === "completed").length,
-						cancelled: data.results.filter((s) => s.separation_status === "cancelled").length,
-					});
-				}
 			} catch (err) {
 				showErrorToast({ error: err, defaultMessage: "Failed to fetch exit processes" });
 			} finally {
@@ -284,54 +270,6 @@ export default function ExitProcessPage() {
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>
-			</div>
-
-			{/* Statistics Cards */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-				<Card>
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-muted-foreground">Total Processes</p>
-								<p className="text-2xl font-bold">{stats.total}</p>
-							</div>
-							<Users className="h-8 w-8 text-blue-500" />
-						</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-muted-foreground">Planned</p>
-								<p className="text-2xl font-bold">{stats.planned}</p>
-							</div>
-							<Clock className="h-8 w-8 text-orange-500" />
-						</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-muted-foreground">Completed</p>
-								<p className="text-2xl font-bold">{stats.completed}</p>
-							</div>
-							<CheckCircle className="h-8 w-8 text-green-500" />
-						</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-muted-foreground">Cancelled</p>
-								<p className="text-2xl font-bold">{stats.cancelled}</p>
-							</div>
-							<XCircle className="h-8 w-8 text-gray-500" />
-						</div>
-					</CardContent>
-				</Card>
 			</div>
 
 			{/* Filters */}
