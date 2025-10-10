@@ -37,6 +37,7 @@ urlpatterns = [
     path("api/communication/", include("communication.urls")),
     path("api/help-desk/", include("helpdesk.urls")),
     path("api/reports/", include("reports.urls")),
+    path("api/devices/", include("devices.urls")),
 ]
 
 if settings.DEBUG:

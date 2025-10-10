@@ -133,10 +133,41 @@ class InstitutionSeparationPolicySerializer(BaseApprovableSerializer):
 
 
 class EmployeeSeparationSerializer(serializers.ModelSerializer):
+    current_stage = serializers.SerializerMethodField()
+    
     class Meta:
         model = EmployeeSeparation
         fields = "__all__"
-
+    
+    def get_current_stage(self, instance):
+        """
+        Returns the current active stage or the next incomplete stage
+        """
+        # Get all stage progress records ordered by stage position
+        stage_progresses = instance.stage_progress.select_related('stage').order_by('stage__position')
+        
+        # Find the first incomplete stage (not_started or in_progress)
+        for progress in stage_progresses:
+            if progress.status in ['in_progress']:
+                return {
+                    'id': progress.stage.id,
+                    'stage_name': progress.stage.stage_name,
+                    'position': progress.stage.position,
+                    'status': progress.status,
+                }
+        
+        # If all stages are completed, return the last stage
+        last_progress = stage_progresses.last()
+        if last_progress:
+            return {
+                'id': last_progress.stage.id,
+                'stage_name': last_progress.stage.stage_name,
+                'position': last_progress.stage.position,
+                'status': last_progress.status,
+            }
+        
+        return None
+    
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation["initiated_by"] = (
