@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'helpdesk',
     'reports',
+    'devices'
     
 ]
 
