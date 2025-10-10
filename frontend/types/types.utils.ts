@@ -610,7 +610,7 @@ export interface IApiPosition {
 	updated_at: string;
 }
 
-export type IGender = "male" | "female" | "other";
+export type IGender = "male" | "female" | "other" | "all";
 export type IMaritalStatus = "single" | "married" | "divorced" | "widowed";
 
 // Base interfaces for nested objects
@@ -1069,17 +1069,27 @@ export interface IDisciplinaryAction extends IBaseApprovable {
 	updated_at: string;
 	notes: string;
 }
+export type ILeaveTypeCategory =
+	| "annual"
+	| "sick"
+	| "personal"
+	| "maternity"
+	| "paternity"
+	| "emergency"
+	| "unpaid";
+export type ILeaveTypeGender = "male" | "female" | "all";
 
 export interface ILeaveTypeFormData {
 	name: string;
-	category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+	category: ILeaveTypeCategory;
 	description: string;
 	max_days_per_year: number;
 	carry_forward_allowed: boolean;
 	max_carry_forward_days: number;
-	is_active: boolean;
+	is_active?: boolean;
 	requires_document: boolean;
-	gender_specific: "male" | "female" | "all" | null;
+	gender_specific: ILeaveTypeGender | null;
+	is_paid: boolean;
 }
 
 export interface ILeaveType {
@@ -1087,14 +1097,15 @@ export interface ILeaveType {
 	created_at?: string;
 	updated_at?: string;
 	name: string;
-	category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+	category: ILeaveTypeCategory;
 	description: string;
 	max_days_per_year: number;
 	carry_forward_allowed: boolean;
 	max_carry_forward_days: number;
 	is_active: boolean;
 	requires_document: boolean;
-	gender_specific: "male" | "female" | "all" | null;
+	gender_specific: ILeaveTypeGender | null;
+	is_paid: boolean;
 }
 
 export interface ILeaveBalance {
