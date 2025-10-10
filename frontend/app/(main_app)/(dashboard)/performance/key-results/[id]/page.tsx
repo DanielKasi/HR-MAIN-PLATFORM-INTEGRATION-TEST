@@ -131,7 +131,7 @@ export default function KeyResultViewPage() {
 								<span className="text-sm">
 									{typeof keyResult.created_at === "string"
 										? formatDateTime(keyResult.created_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 							<div className="flex justify-between mt-5">
@@ -139,7 +139,7 @@ export default function KeyResultViewPage() {
 								<span className="text-sm">
 									{typeof keyResult.updated_at === "string"
 										? formatDateTime(keyResult.updated_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 						</CardContent>

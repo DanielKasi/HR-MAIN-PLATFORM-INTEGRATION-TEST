@@ -232,13 +232,13 @@ const LeaveTypeDetailPage = () => {
 								<div className="space-y-2">
 									<Label className="text-sm font-medium text-gray-600">Created Date</Label>
 									<p className="text-sm">
-										{leaveType.created_at ? formatDateTime(leaveType.created_at) : "N/A"}
+										{leaveType.created_at ? formatDateTime(leaveType.created_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
 									<Label className="text-sm font-medium text-gray-600">Last Updated</Label>
 									<p className="text-sm">
-										{leaveType.updated_at ? formatDateTime(leaveType.updated_at) : "N/A"}
+										{leaveType.updated_at ? formatDateTime(leaveType.updated_at) : "Unknown"}
 									</p>
 								</div>
 							</div>

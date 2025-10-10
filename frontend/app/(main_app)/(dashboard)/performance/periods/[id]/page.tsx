@@ -177,7 +177,7 @@ export default function PeriodViewPage() {
 								<p className="text-sm">
 									{typeof period.created_at === "string"
 										? formatDateTime(period.created_at)
-										: "N/A"}
+										: "Unknown"}
 								</p>
 							</div>
 						</CardContent>

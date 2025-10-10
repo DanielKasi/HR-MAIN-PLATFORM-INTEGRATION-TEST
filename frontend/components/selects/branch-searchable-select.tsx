@@ -5,40 +5,39 @@ import { useEffect, useState, useCallback, memo } from "react";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils";
+import { branchesAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { IEmployee } from "@/types/types.utils";
+import { Branch } from "@/types/branch.types";
+import { getPaginatedFromUrl } from "@/lib/api/_api.utils";
 
-interface EmployeeSearchableSelectProps {
+export interface BranchSearchableSelectProps {
 	value: (string | number)[];
+	defaultLabel?: string;
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
-	showEmployeeId?: boolean;
-	showDepartment?: boolean;
 	className?: string;
 	triggerClassName?: string;
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
-	id?: string;
-	employees_under?: number;
+	setBranches?: (branches: Branch[]) => void;
 }
 
-export const EmployeeSearchableSelect = memo(
+export const BranchSearchableSelect = memo(
 	({
 		value,
+		defaultLabel,
 		onValueChange,
 		disabled = false,
 		showSelectedItems = true,
-		placeholder = "Select employee(s)",
+		placeholder = "Select Branch(es)",
 		className,
 		triggerClassName,
 		multiple = false,
 		hideSelectedFromList = false,
-		employees_under,
-		id,
-	}: EmployeeSearchableSelectProps) => {
+		setBranches,
+	}: BranchSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
 		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
@@ -51,21 +50,17 @@ export const EmployeeSearchableSelect = memo(
 				if (!currentInstitution) {
 					throw new Error("No institution found!");
 				}
-				return await getPaginatedEmployees({
-					institutionId: currentInstitution.id,
-					employees_under,
-					...query,
-				});
+				return await branchesAPI.getPaginated({ ...query });
 			},
 			[currentInstitution],
 		);
 
 		const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
-			return await getPaginatedEmployeesFromUrl({ url });
+			return await getPaginatedFromUrl<Branch>({ url });
 		}, []);
 
 		const handleSelect = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+			(itemId: string | number, _item: PaginatedSelectItem<Branch>) => {
 				if (!selectedItems.includes(itemId)) {
 					if (multiple) {
 						onValueChange([...selectedItems, itemId]);
@@ -74,11 +69,11 @@ export const EmployeeSearchableSelect = memo(
 					}
 				}
 			},
-			[multiple, selectedItems],
+			[multiple, selectedItems, onValueChange],
 		);
 
 		const handleRemove = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+			(itemId: string | number, _item: PaginatedSelectItem<Branch>) => {
 				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
 				setSelectedItems(newItems);
 				onValueChange(newItems);
@@ -88,14 +83,13 @@ export const EmployeeSearchableSelect = memo(
 
 		return (
 			<div className={className}>
-				<PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
-					id={id}
+				<PaginatedSearchableSelect<Branch, { search?: string; page?: number }>
 					paginated
 					fetchFirstPage={fetchFirstPage}
 					fetchFromUrl={fetchFromUrl}
-					getItemId={(emp) => emp.id}
-					getItemLabel={(emp) => emp.user?.fullname || ""}
-					getItemValue={(emp) => emp.id.toString()}
+					getItemId={(branch) => branch.id}
+					getItemLabel={(branch) => branch.branch_name || ""}
+					getItemValue={(branch) => branch.id.toString()}
 					selectedItems={selectedItems}
 					onSelect={handleSelect}
 					onRemove={handleRemove}
@@ -103,16 +97,18 @@ export const EmployeeSearchableSelect = memo(
 					multiple={multiple}
 					disabled={disabled}
 					placeholder={placeholder}
-					searchPlaceholder="Search employees by name, email, ID, or department..."
-					triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
+					searchPlaceholder="Search branches by name..."
+					triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
 					popoverClassName="w-full"
 					hideSelectedFromList={hideSelectedFromList}
+					setParentItems={setBranches}
+					defaultLabel={defaultLabel}
 				/>
 			</div>
 		);
 	},
 );
 
-EmployeeSearchableSelect.displayName = "EmployeeSearchableSelect";
+BranchSearchableSelect.displayName = "BranchSearchableSelect";
 
-export default EmployeeSearchableSelect;
+export default BranchSearchableSelect;

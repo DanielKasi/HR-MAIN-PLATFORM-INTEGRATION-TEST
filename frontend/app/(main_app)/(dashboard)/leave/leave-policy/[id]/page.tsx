@@ -268,13 +268,13 @@ const LeavePolicyDetailPage = () => {
 								<div className="space-y-2">
 									<Label className="text-sm font-medium text-gray-600">Created Date</Label>
 									<p className="text-sm">
-										{leavePolicy.created_at ? formatDateTime(leavePolicy.created_at) : "N/A"}
+										{leavePolicy.created_at ? formatDateTime(leavePolicy.created_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
 									<Label className="text-sm font-medium text-gray-600">Last Updated</Label>
 									<p className="text-sm">
-										{leavePolicy.updated_at ? formatDateTime(leavePolicy.updated_at) : "N/A"}
+										{leavePolicy.updated_at ? formatDateTime(leavePolicy.updated_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">

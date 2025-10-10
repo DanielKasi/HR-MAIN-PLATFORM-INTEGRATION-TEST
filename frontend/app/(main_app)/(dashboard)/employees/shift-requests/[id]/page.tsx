@@ -153,21 +153,21 @@ const EmployeeShiftDetailPage = () => {
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Day:</span>
 									<span className="text-sm">
-										{typeof shift.shift === "object" ? shift.shift?.shift_day?.day_name : "N/A"}
+										{typeof shift.shift === "object" ? shift.shift?.shift_day?.day_name : "Unknown"}
 									</span>
 								</div>
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Start Time:</span>
 									<span className="text-sm flex items-center">
 										<Clock className="mr-1 h-3 w-3" />
-										{typeof shift.shift === "object" ? shift.shift?.start_time : "N/A"}
+										{typeof shift.shift === "object" ? shift.shift?.start_time : "Unknown"}
 									</span>
 								</div>
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">End Time:</span>
 									<span className="text-sm flex items-center">
 										<Clock className="mr-1 h-3 w-3" />
-										{typeof shift.shift === "object" ? shift.shift?.end_time : "N/A"}
+										{typeof shift.shift === "object" ? shift.shift?.end_time : "Unknown"}
 									</span>
 								</div>
 							</div>
@@ -209,13 +209,13 @@ const EmployeeShiftDetailPage = () => {
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Created Date:</span>
 									<p className="text-sm">
-										{shift.created_at ? new Date(shift.created_at).toLocaleDateString() : "N/A"}
+										{shift.created_at ? new Date(shift.created_at).toLocaleDateString() : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Last Updated:</span>
 									<p className="text-sm">
-										{shift.updated_at ? new Date(shift.updated_at).toLocaleDateString() : "N/A"}
+										{shift.updated_at ? new Date(shift.updated_at).toLocaleDateString() : "Unknown"}
 									</p>
 								</div>
 							</div>
