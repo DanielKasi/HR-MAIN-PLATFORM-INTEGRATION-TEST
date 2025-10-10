@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreVertical, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreVertical, Search, X } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -83,6 +83,7 @@ export default function SeparationPolicyTypesPage() {
 	const [stages, setStages] = useState<IOffboardingStage[]>([]);
 	const [editingPolicyType, setEditingPolicyType] = useState<ISeparationType | null>(null);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false); // Add this state
 	const [policyTypeToDelete, setPolicyTypeToDelete] = useState<ISeparationType | null>(null);
 	const [searchTerm, setSearchTerm] = useState("");
 	const refreshTableRef = useRef<(() => void) | null>(null);
@@ -121,6 +122,8 @@ export default function SeparationPolicyTypesPage() {
 
 	const handleCreateSuccess = (newPolicyType: ISeparationType) => {
 		toast.success("Separation type created successfully");
+		setIsCreateDialogOpen(false); // Close the create dialog
+		form.reset(); // Reset the form
 		if (from) {
 			// Redirect to the page specified in the "from" query param
 			router.push(from);
@@ -132,6 +135,7 @@ export default function SeparationPolicyTypesPage() {
 	const handleUpdateSuccess = (updatedPolicyType: ISeparationType) => {
 		setIsEditDialogOpen(false);
 		setEditingPolicyType(null);
+		form.reset(); // Reset the form
 		toast.success("Separation type updated successfully");
 		refreshTableRef.current?.();
 	};
@@ -159,9 +163,6 @@ export default function SeparationPolicyTypesPage() {
 				});
 				handleCreateSuccess({} as ISeparationType); // We don't have the created separation type here, but the refresh will show it
 			}
-			form.reset();
-			setEditingPolicyType(null);
-			setIsEditDialogOpen(false);
 		} catch (error) {
 			toast.error(
 				editingPolicyType ? "Failed to update separation type" : "Failed to create separation type",
@@ -190,6 +191,14 @@ export default function SeparationPolicyTypesPage() {
 			is_active: policyType.is_active,
 		});
 		setIsEditDialogOpen(true);
+	};
+
+	const removeStage = (stageId: number) => {
+		const currentValues = form.getValues("supported_stages") || [];
+		form.setValue(
+			"supported_stages",
+			currentValues.filter((v) => v !== stageId),
+		);
 	};
 
 	const clearFilters = () => {
@@ -228,7 +237,7 @@ export default function SeparationPolicyTypesPage() {
 								</Button>
 							)}
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_SEPARATION_TYPES}>
-								<Dialog>
+								<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
 									<DialogTrigger asChild>
 										<Button>
 											<Plus className="h-4 w-4 mr-2" />
@@ -327,6 +336,26 @@ export default function SeparationPolicyTypesPage() {
 															<FormDescription>
 																Selected stages: {field.value?.length || 0}
 															</FormDescription>
+															{field.value && field.value.length > 0 && (
+																<div className="flex flex-wrap gap-2 mt-2">
+																	{field.value.map((stageId) => {
+																		const stage = stages.find((s) => s.id === stageId);
+																		return stage ? (
+																			<Badge
+																				key={stageId}
+																				variant="secondary"
+																				className="flex items-center gap-1"
+																			>
+																				{stage.stage_name}
+																				<X
+																					className="h-3 w-3 cursor-pointer"
+																					onClick={() => removeStage(stageId)}
+																				/>
+																			</Badge>
+																		) : null;
+																	})}
+																</div>
+															)}
 															<FormMessage />
 														</FormItem>
 													)}
@@ -445,6 +474,26 @@ export default function SeparationPolicyTypesPage() {
 											</SelectContent>
 										</Select>
 										<FormDescription>Selected stages: {field.value?.length || 0}</FormDescription>
+										{field.value && field.value.length > 0 && (
+											<div className="flex flex-wrap gap-2 mt-2">
+												{field.value.map((stageId) => {
+													const stage = stages.find((s) => s.id === stageId);
+													return stage ? (
+														<Badge
+															key={stageId}
+															variant="secondary"
+															className="flex items-center gap-1"
+														>
+															{stage.stage_name}
+															<X
+																className="h-3 w-3 cursor-pointer"
+																onClick={() => removeStage(stageId)}
+															/>
+														</Badge>
+													) : null;
+												})}
+											</div>
+										)}
 										<FormMessage />
 									</FormItem>
 								)}
