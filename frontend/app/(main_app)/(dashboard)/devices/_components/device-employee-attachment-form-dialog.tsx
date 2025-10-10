@@ -80,7 +80,6 @@ export const DeviceEmployeeAttachmentFormDialog = ({
 		setIsSubmitting(true);
 		try {
 			let result: IDeviceEmployeeAttachment | null = null;
-
 			if (isEditMode && editingAttachment) {
 				result = await DEVICE_EMPLOYEE_ATTACHMENTS_API.update({
 					attachmentId: editingAttachment.id,
@@ -109,6 +108,7 @@ export const DeviceEmployeeAttachmentFormDialog = ({
 					<DialogTitle className="text-xl font-semibold">
 						{isEditMode ? "Edit Attachment" : "Attach Employee to Device"}
 					</DialogTitle>
+
 					<DialogDescription>
 						{isEditMode
 							? "Update the attachment details."

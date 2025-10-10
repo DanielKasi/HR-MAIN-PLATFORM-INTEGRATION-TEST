@@ -138,9 +138,9 @@ export default function DeviceDetailsPage() {
 								<p>
 									<b>Branch:</b> {device.branch?.name || "Unknown"}
 								</p>
-								<p>
+								<div className="flex items-center gap-8">
 									<b>Status:</b> <Badge>{device.status}</Badge>
-								</p>
+								</div>
 							</div>
 						</div>
 					</CardContent>
