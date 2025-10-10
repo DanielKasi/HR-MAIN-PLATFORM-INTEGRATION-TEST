@@ -1,10 +1,11 @@
+import json
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, inline_serializer
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
 from .models import Device, DeviceStatus, DeviceEmployeeAttachment
@@ -13,6 +14,9 @@ from institution.models import Institution
 from django.shortcuts import get_object_or_404
 import requests
 from decouple import config
+from rest_framework import serializers
+
+
 
 
 class DeviceListCreateView(APIView, SortableAPIMixin):
@@ -48,6 +52,7 @@ class DeviceListCreateView(APIView, SortableAPIMixin):
             data=request.data,
             context={"request": request, "institution": institution}
         )
+
         if serializer.is_valid():
             instance = serializer.save()
             instance.confirm_create()
@@ -57,13 +62,24 @@ class DeviceListCreateView(APIView, SortableAPIMixin):
             }
 
             external_api_url = config('DEVICE_REG_API')
-            response = requests.post(
-                external_api_url,
-                json=external_data,
-                headers={"API-KEY": config('API_KEY')}
-            )
+            api_key = config('API_KEY')
+
+            try:
+                response = requests.post(
+                    external_api_url,
+                    json=external_data,
+                    headers={"API-KEY": api_key},
+                    timeout=10  
+                )
+                response.raise_for_status()  
+            except requests.exceptions.RequestException as e:
+                return Response(
+                    {"detail": f"External API registration failed: {str(e)}"},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -347,3 +363,69 @@ class DeviceEmployeeAttachmentDetailView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+    
+
+class DeviceCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=inline_serializer(
+            name="DeviceCallbackRequest",
+            fields={
+                "event_type": serializers.CharField(),
+                "device_sn": serializers.CharField(),
+                "status": serializers.CharField(),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(description="Callback received and processed successfully."),
+            400: OpenApiResponse(description="Invalid payload or unknown event type."),
+            403: OpenApiResponse(description="Invalid callback secret."),
+            404: OpenApiResponse(description="Device not found in HR system."),
+            500: OpenApiResponse(description="Internal error processing callback."),
+        },
+        tags=["Device Mgt"],
+        description="Endpoint to handle device callback events (e.g., registration, logs).",
+    )
+    def post(self, request):
+        payload = request.data
+        event_type = payload.get("event_type")
+        device_sn = payload.get("device_sn")
+        status_str = payload.get("status")
+
+        if not event_type:
+            return Response(
+                {"detail": "Missing event_type in payload."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Example event handling
+            if event_type == "send_log":
+                # Process log callback
+                pass
+
+            elif event_type == "reg":
+                # Process registration callback
+                pass
+
+            else:
+                return Response(
+                    {"detail": f"Unknown event_type: {event_type}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            return Response({"detail": "Callback received successfully."}, status=status.HTTP_200_OK)
+
+        except Device.DoesNotExist:
+            return Response(
+                {"detail": "Device not found in HR system."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"Internal error: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+                    

@@ -236,7 +236,6 @@ DEFAULT_FROM_EMAIL = os.environ.get("RESPONSE_EMAIL", None)
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 parsed_redis_url = urlparse(REDIS_URL)
 
-DEVICE_REG_API = config('DEVICE_REG_API')
 
 # Channel layers configuration
 CHANNEL_LAYERS = {
