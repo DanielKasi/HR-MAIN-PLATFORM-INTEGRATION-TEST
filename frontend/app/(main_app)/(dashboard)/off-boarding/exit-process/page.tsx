@@ -64,11 +64,7 @@ export default function ExitProcessPage() {
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-	const [stageToDelete, setStageToDelete] = useState<{
-		stageId: number;
-		separationId: number;
-		stageName: string;
-	} | null>(null);
+
 	const [deleting, setDeleting] = useState(false);
 
 	const [reorderModalOpen, setReorderModalOpen] = useState(false);
@@ -177,34 +173,6 @@ export default function ExitProcessPage() {
 	const handleCreateNewExitProcess = (separationType: ISeparationType) => {
 		const basePath = "/off-boarding/exit-process/create";
 		router.push(`${basePath}?category=${separationType.category}`);
-	};
-
-	const handleDeleteStage = async () => {
-		if (!stageToDelete) return;
-
-		try {
-			setDeleting(true);
-			await apiRequest.delete(`/on-boarding/offboarding-stages/${stageToDelete.stageId}/`);
-			showSuccessToast("Stage deleted successfully");
-
-			// Update the separations list by removing the deleted stage
-			setSeparations((prev) =>
-				prev.map((sep) =>
-					sep.id === stageToDelete.separationId
-						? {
-								...sep,
-								stages: sep.stages.filter((stage) => stage.id !== stageToDelete.stageId),
-							}
-						: sep,
-				),
-			);
-		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to delete stage" });
-		} finally {
-			setDeleting(false);
-			setDeleteConfirmOpen(false);
-			setStageToDelete(null);
-		}
 	};
 
 	const handleReorderSuccess = (updatedStages: any[]) => {
@@ -513,29 +481,6 @@ export default function ExitProcessPage() {
 																<Badge variant="outline" className="ml-auto text-xs">
 																	{stage.status}
 																</Badge>
-																<DropdownMenu>
-																	<DropdownMenuTrigger asChild>
-																		<Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-																			<MoreVertical className="h-3 w-3" />
-																		</Button>
-																	</DropdownMenuTrigger>
-																	<DropdownMenuContent align="end">
-																		<DropdownMenuItem
-																			onClick={() => {
-																				setStageToDelete({
-																					stageId: stage.id,
-																					separationId: separation.id,
-																					stageName: stage.stage_name,
-																				});
-																				setDeleteConfirmOpen(true);
-																			}}
-																			className="text-red-600"
-																		>
-																			<Trash2 className="h-4 w-4 mr-2" />
-																			Delete Stage
-																		</DropdownMenuItem>
-																	</DropdownMenuContent>
-																</DropdownMenu>
 															</div>
 														))}
 													{separation.stages.length > 3 && (
@@ -575,23 +520,6 @@ export default function ExitProcessPage() {
 						{loading ? "Loading..." : "Load More"}
 					</Button>
 				</div>
-			)}
-
-			{/* Delete Confirmation Dialog */}
-			{stageToDelete && (
-				<ConfirmationDialog
-					isOpen={deleteConfirmOpen}
-					onClose={() => {
-						setDeleteConfirmOpen(false);
-						setStageToDelete(null);
-					}}
-					onConfirm={handleDeleteStage}
-					title="Delete Stage"
-					description={`Are you sure you want to delete the stage "${stageToDelete.stageName}"? This action cannot be undone.`}
-					confirmText="Delete"
-					cancelText="Cancel"
-					disabled={deleting}
-				/>
 			)}
 
 			{/* Stage Reorder Modal */}
