@@ -135,7 +135,11 @@ export default function ExitProcessPage() {
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-	const [separationToDelete, setSeparationToDelete] = useState<IEmployeeSeparation | null>(null);
+	const [stageToDelete, setStageToDelete] = useState<{
+		stageId: number;
+		separationId: number;
+		stageName: string;
+	} | null>(null);
 	const [deleting, setDeleting] = useState(false);
 
 	const [reorderModalOpen, setReorderModalOpen] = useState(false);
@@ -246,20 +250,31 @@ export default function ExitProcessPage() {
 		router.push(`${basePath}?category=${separationType.category}`);
 	};
 
-	const handleDelete = async () => {
-		if (!separationToDelete) return;
+	const handleDeleteStage = async () => {
+		if (!stageToDelete) return;
 
 		try {
 			setDeleting(true);
-			await apiRequest.delete(`/on-boarding/employee-separations/${separationToDelete.id}/`);
-			showSuccessToast("Exit process deleted successfully");
-			setSeparations((prev) => prev.filter((s) => s.id !== separationToDelete.id));
+			await apiRequest.delete(`/on-boarding/offboarding-stages/${stageToDelete.stageId}/`);
+			showSuccessToast("Stage deleted successfully");
+
+			// Update the separations list by removing the deleted stage
+			setSeparations((prev) =>
+				prev.map((sep) =>
+					sep.id === stageToDelete.separationId
+						? {
+								...sep,
+								stages: sep.stages.filter((stage) => stage.id !== stageToDelete.stageId),
+							}
+						: sep,
+				),
+			);
 		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to delete exit process" });
+			showErrorToast({ error: err, defaultMessage: "Failed to delete stage" });
 		} finally {
 			setDeleting(false);
 			setDeleteConfirmOpen(false);
-			setSeparationToDelete(null);
+			setStageToDelete(null);
 		}
 	};
 
@@ -519,17 +534,6 @@ export default function ExitProcessPage() {
 															</DropdownMenuItem>
 														</>
 													)}
-													<DropdownMenuSeparator />
-													<DropdownMenuItem
-														onClick={() => {
-															setSeparationToDelete(separation);
-															setDeleteConfirmOpen(true);
-														}}
-														className="text-red-600"
-													>
-														<Trash2 className="h-4 w-4 mr-2" />
-														Delete
-													</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>
 										</div>
@@ -580,6 +584,29 @@ export default function ExitProcessPage() {
 																<Badge variant="outline" className="ml-auto text-xs">
 																	{stage.status}
 																</Badge>
+																<DropdownMenu>
+																	<DropdownMenuTrigger asChild>
+																		<Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+																			<MoreVertical className="h-3 w-3" />
+																		</Button>
+																	</DropdownMenuTrigger>
+																	<DropdownMenuContent align="end">
+																		<DropdownMenuItem
+																			onClick={() => {
+																				setStageToDelete({
+																					stageId: stage.id,
+																					separationId: separation.id,
+																					stageName: stage.stage_name,
+																				});
+																				setDeleteConfirmOpen(true);
+																			}}
+																			className="text-red-600"
+																		>
+																			<Trash2 className="h-4 w-4 mr-2" />
+																			Delete Stage
+																		</DropdownMenuItem>
+																	</DropdownMenuContent>
+																</DropdownMenu>
 															</div>
 														))}
 													{separation.stages.length > 3 && (
@@ -622,20 +649,16 @@ export default function ExitProcessPage() {
 			)}
 
 			{/* Delete Confirmation Dialog */}
-			{separationToDelete && (
+			{stageToDelete && (
 				<ConfirmationDialog
 					isOpen={deleteConfirmOpen}
 					onClose={() => {
 						setDeleteConfirmOpen(false);
-						setSeparationToDelete(null);
+						setStageToDelete(null);
 					}}
-					onConfirm={handleDelete}
-					title="Delete Exit Process"
-					description={`Are you sure you want to delete the exit process for ${
-						separationToDelete.employee?.name ||
-						separationToDelete.employee?.email ||
-						"this employee"
-					}? This action cannot be undone.`}
+					onConfirm={handleDeleteStage}
+					title="Delete Stage"
+					description={`Are you sure you want to delete the stage "${stageToDelete.stageName}"? This action cannot be undone.`}
 					confirmText="Delete"
 					cancelText="Cancel"
 					disabled={deleting}

@@ -16,9 +16,9 @@ import { apiPost } from "@/lib/apiRequest";
 
 interface FormData {
 	employee_id: number | null;
-	last_working_day: string; // Changed from effective_date
+	last_working_day: string;
 	letter: File | null;
-	comments: string; // Changed from additional_notes
+	comments: string;
 	category: "resignation" | "termination";
 	created_by: number | null;
 	updated_by: number | null;
@@ -37,9 +37,9 @@ const ExitProcessCreate = () => {
 
 	const [formData, setFormData] = useState<FormData>({
 		employee_id: null,
-		last_working_day: new Date().toISOString().split("T")[0], // Changed from effective_date
+		last_working_day: new Date().toISOString().split("T")[0],
 		letter: null,
-		comments: "", // Changed from additional_notes
+		comments: "",
 		category:
 			category && ["resignation", "termination"].includes(category) ? category : "resignation",
 		created_by: currentUserId,
@@ -115,30 +115,31 @@ const ExitProcessCreate = () => {
 				setLoading(true);
 				const formPayload = new FormData();
 
-				// Add required fields for termination
-				if (category === "termination" && formData.employee_id) {
-					formPayload.append("employee_id", formData.employee_id.toString());
-				}
-
-				formPayload.append("last_working_day", formData.last_working_day); // Changed from effective_date
-				formPayload.append("comments", formData.comments); // Changed from additional_notes
-				formPayload.append("approval_status", "under_creation"); // Add default status
-				formPayload.append("initiation_status", "submitted"); // Add default status
-				formPayload.append("is_active", "true"); // Add is_active flag
-
-				// Add user tracking fields
+				// Common fields for both termination and resignation
+				formPayload.append("last_working_day", formData.last_working_day);
+				formPayload.append("comments", formData.comments);
+				formPayload.append("approval_status", "under_creation");
+				formPayload.append("is_active", "true");
 				formPayload.append("created_by", currentUserId.toString());
 				formPayload.append("updated_by", currentUserId.toString());
 
-				// Add the letter file
-				if (formData.letter) {
-					formPayload.append("termination_letter", formData.letter); // Use correct field name
-				}
-
 				if (category === "termination") {
+					// Termination-specific fields
+					if (formData.employee_id) {
+						formPayload.append("employee_id", formData.employee_id.toString());
+					}
+					formPayload.append("initiation_status", "submitted");
+					if (formData.letter) {
+						formPayload.append("termination_letter", formData.letter);
+					}
 					await apiPost("/on-boarding/termination-initiations/", formPayload);
 				} else if (category === "resignation") {
-					// For resignation, adjust field names if needed
+					// Resignation-specific fields
+					// NOTE: Do NOT send employee_id for resignations - backend uses logged-in user
+					formPayload.append("request_status", "submitted"); // Different field name!
+					if (formData.letter) {
+						formPayload.append("resignation_letter", formData.letter); // Different field name!
+					}
 					await apiPost("/on-boarding/resignation-requests/", formPayload);
 				}
 
@@ -170,7 +171,6 @@ const ExitProcessCreate = () => {
 	return (
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="w-full">
-				{/* Main Card Container */}
 				<Card className="w-full border-0">
 					<CardHeader className="pb-6">
 						<div className="flex items-center gap-2 sm:gap-3 md:gap-4">
@@ -208,24 +208,35 @@ const ExitProcessCreate = () => {
 						)}
 
 						<form onSubmit={handleSubmit} className="space-y-6">
-							{/* Employee Selection - Only for Termination */}
-							<div className="space-y-2">
-								<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
-									Select Employee *
-								</Label>
-								<EmployeeSearchableSelect
-									id="employee_id"
-									value={selectedEmployee}
-									onValueChange={handleEmployeeSelect}
-									placeholder="Select an employee"
-									multiple={false}
-									className="w-full"
-								/>
-							</div>
+							{/* Employee Selection - ONLY for Termination */}
+							{formData.category === "termination" && (
+								<div className="space-y-2">
+									<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
+										Select Employee *
+									</Label>
+									<EmployeeSearchableSelect
+										id="employee_id"
+										value={selectedEmployee}
+										onValueChange={handleEmployeeSelect}
+										placeholder="Select an employee"
+										multiple={false}
+										className="w-full"
+									/>
+								</div>
+							)}
+
+							{/* Info message for resignations */}
+							{formData.category === "resignation" && (
+								<div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+									<p className="text-sm text-blue-800">
+										<strong>Note:</strong> You are submitting your own resignation. The system will
+										automatically link this request to your employee profile.
+									</p>
+								</div>
+							)}
 
 							{/* Date and File Upload in Grid */}
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-								{/* Last Working Day - Changed from Effective Date */}
 								<div className="space-y-2">
 									<Label htmlFor="last_working_day" className="text-sm font-medium text-gray-800">
 										Last Working Day *
@@ -241,7 +252,6 @@ const ExitProcessCreate = () => {
 									/>
 								</div>
 
-								{/* Letter Upload */}
 								<div className="space-y-2">
 									<Label htmlFor="letter" className="text-sm font-medium text-gray-800">
 										{formData.category === "termination" ? "Termination" : "Resignation"} Letter *
@@ -258,7 +268,6 @@ const ExitProcessCreate = () => {
 								</div>
 							</div>
 
-							{/* Comments - Changed from Additional Notes */}
 							<div className="space-y-2">
 								<Label htmlFor="comments" className="text-sm font-medium text-gray-800">
 									Comments
@@ -273,7 +282,6 @@ const ExitProcessCreate = () => {
 								/>
 							</div>
 
-							{/* Action Buttons */}
 							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-gray-200">
 								<Button
 									type="button"
