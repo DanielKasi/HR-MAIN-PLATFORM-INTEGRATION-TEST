@@ -21,7 +21,10 @@ from institution.models import Institution
 from approval.models import Approval, BaseApprovableModel
 from django.core.validators import MinValueValidator, MaxValueValidator
 from dateutil.relativedelta import relativedelta
-
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 class EmployeeType(BaseApprovableModel):
     institution = models.ForeignKey(
@@ -382,8 +385,6 @@ class Employee(BaseApprovableModel):
         ).filter(specific_employees=self.user.profile)
         
         if existing_events.count() > 1:
-            # Handle duplicate events (log and delete extras)
-            print(f"Warning: Multiple birthday events found for {self.user.fullname}. Keeping the first one.")
             for event in existing_events[1:]:
                 event.delete()
             event = existing_events.first()
@@ -732,28 +733,137 @@ class DocumentRequest(BaseApprovableModel):
         return None
     
     def finish_workflow(self, approval: Approval):
+        from communication.models import Announcement
+        from employee.tasks import send_document_request_email_task
+        def get_salutation(employee):
+            """Get appropriate salutation based on employee gender"""
+            gender_salutations = {
+                'male': 'Mr.',
+                'female': 'Ms.',
+            }
+            gender = getattr(employee, 'gender', '').lower()
+            return gender_salutations.get(gender, 'Dear')
+        
         with transaction.atomic():
             if approval.status == "completed":
                 if approval.action.name == "create":
+                    print(f"[CREATE ACTION] Processing approval {approval.id} for document request {self.id}")
                     self.is_active = True
                     self.deleted_at = None
                     self.employee_requests.update(
-                        status="pending",  
+                        status="pending",
                         is_active=True
                     )
+                    # Create announcements for each employee
+                    employee_count = self.employees.count()
+                    print(f"[CREATE ACTION] Found {employee_count} employees to notify")
+                    
+                    for idx, employee in enumerate(self.employees.all(), 1):
+                        print(f"[CREATE ACTION] Processing employee {idx}/{employee_count}: {employee.id} - {employee.email}")
+                        
+                        title = f"Document Request: {self.document_type}"
+                        content = (
+                            f"You are requested to submit a {self.document_type} "
+                            f"in {self.document_format} format"
+                            f"{f' by {self.due_date}' if self.due_date else ''}. "
+                            f"{self.description if self.description else 'No additional details provided.'}"
+                        )
+                        announcement = Announcement.objects.create(
+                            title=title,
+                            content=content,
+                            requires_acknowledgment=True,
+                            is_active=True
+                        )
+                        announcement.target_employees.add(employee)
+                        print(f"[CREATE ACTION] Created announcement {announcement.id} for employee {employee.id}")
+                        
+                        # Queue email as a Celery task
+                        print(f"[CREATE ACTION] Queuing email task for {employee.email}")
+                        task = send_document_request_email_task.delay(
+                            employee_email=employee.email,
+                            employee_name=getattr(employee, 'first_name', '') or getattr(employee, 'name', 'Employee'),
+                            employee_gender=getattr(employee, 'gender', ''),
+                            document_type=self.document_type,
+                            document_format=self.document_format,
+                            due_date=self.due_date,
+                            description=self.description,
+                            is_update=False
+                        )
+                        print(f"[CREATE ACTION] Email task queued with task_id: {task.id} for {employee.email}")
+                    
+                    print(f"[CREATE ACTION] Completed processing for {employee_count} employees")
+                        
                 elif approval.action.name == "update":
+                    print(f"[UPDATE ACTION] Processing approval {approval.id} for document request {self.id}")
                     self.is_active = True
                     self.deleted_at = None
                     self.employee_requests.update(is_active=True)
+                    
+                    employee_count = self.employees.count()
+                    print(f"[UPDATE ACTION] Found {employee_count} employees to notify")
+                    
+                    # Recreate or update announcements for each employee
+                    for idx, employee in enumerate(self.employees.all(), 1):
+                        print(f"[UPDATE ACTION] Processing employee {idx}/{employee_count}: {employee.id} - {employee.email}")
+                        
+                        title = f"Document Request: {self.document_type}"
+                        content = (
+                            f"You are requested to submit a {self.document_type} "
+                            f"in {self.document_format} format"
+                            f"{f' by {self.due_date}' if self.due_date else ''}. "
+                            f"{self.description if self.description else 'No additional details provided.'}"
+                        )
+
+                        # Check for existing active announcement to avoid duplicates
+                        existing = Announcement.objects.filter(
+                            target_employees=employee,
+                            is_active=True,
+                            title=title
+                        ).first()
+                        if existing:
+                            existing.content = content
+                            existing.save()
+                            print(f"[UPDATE ACTION] Updated announcement {existing.id} for employee {employee.id}")
+                        else:
+                            announcement = Announcement.objects.create(
+                                title=title,
+                                content=content,
+                                requires_acknowledgment=True,
+                                is_active=True
+                            )
+                            announcement.target_employees.add(employee)
+                            print(f"[UPDATE ACTION] Created announcement {announcement.id} for employee {employee.id}")
+                        
+                        # Queue email as a Celery task
+                        print(f"[UPDATE ACTION] Queuing email task for {employee.email}")
+                        task = send_document_request_email_task.delay(
+                            employee_email=employee.email,
+                            employee_name=getattr(employee, 'first_name', '') or getattr(employee, 'name', 'Employee'),
+                            employee_gender=getattr(employee, 'gender', ''),
+                            document_type=self.document_type,
+                            document_format=self.document_format,
+                            due_date=self.due_date,
+                            description=self.description,
+                            is_update=True
+                        )
+                        print(f"[UPDATE ACTION] Email task queued with task_id: {task.id} for {employee.email}")
+                    
+                    print(f"[UPDATE ACTION] Completed processing for {employee_count} employees")
+                        
                 elif approval.action.name == "delete":
+                    print(f"[DELETE ACTION] Processing approval {approval.id} for document request {self.id}")
                     self.is_active = False
                     self.deleted_at = timezone.now()
                     self.employee_requests.update(
-                        status="rejected",  
+                        status="rejected",
                         is_active=False,
                         deleted_at=timezone.now()
-                    )   
+                    )
+                    print(f"[DELETE ACTION] Document request {self.id} marked as inactive")
+                    
             elif approval.status == "rejected":
+                print(f"[REJECTION] Processing rejected approval {approval.id} with action {approval.action.name}")
+                
                 if approval.action.name == "create":
                     self.is_active = False
                     self.deleted_at = timezone.now()
@@ -762,8 +872,12 @@ class DocumentRequest(BaseApprovableModel):
                         is_active=False,
                         deleted_at=timezone.now()
                     )
+                    print(f"[REJECTION] Create action rejected - document request {self.id} marked as inactive")
+                    
                 elif approval.action.name == "update":
-                    self.is_active = True  
+                    self.is_active = True
+                    print(f"[REJECTION] Update action rejected - document request {self.id} remains active")
+                    
                 elif approval.action.name == "delete":
                     self.is_active = True
                     self.deleted_at = None
@@ -771,7 +885,10 @@ class DocumentRequest(BaseApprovableModel):
                         is_active=True,
                         deleted_at=None
                     )
-            self.save()         
+                    print(f"[REJECTION] Delete action rejected - document request {self.id} restored to active")
+                    
+            self.save()
+            print(f"[WORKFLOW] Document request {self.id} saved successfully")
 
 class DocumentRequestEmployee(SoftDeletableTimeStampedModel):
 

@@ -217,7 +217,9 @@ export default function Dashboard() {
 						loading={loading}
 					/>
 				</div>
-				<EmployeeAttendance showingOnDashboard={true} scope={{ type: "default" }} />
+				<Card className="rounded-xl !border-none shadow-sm">
+					<EmployeeAttendance showingOnDashboard={true} scope={{ type: "default" }} />
+				</Card>
 			</div>
 		</div>
 	);

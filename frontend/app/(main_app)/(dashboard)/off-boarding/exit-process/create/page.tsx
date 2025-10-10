@@ -227,8 +227,8 @@ const ExitProcessCreate = () => {
 
 							{/* Info message for resignations */}
 							{formData.category === "resignation" && (
-								<div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-									<p className="text-sm text-blue-800">
+								<div className="p-4 bg-primary-50 border border-primary rounded-md">
+									<p className="text-sm text-gray-500">
 										<strong>Note:</strong> You are submitting your own resignation. The system will
 										automatically link this request to your employee profile.
 									</p>

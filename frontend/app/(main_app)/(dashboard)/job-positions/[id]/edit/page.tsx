@@ -43,9 +43,17 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import { getDepartments, getJobPositions, getJobPosition, updateJobPosition } from "@/lib/utils";
+import {
+	getDepartments,
+	getJobPositions,
+	getJobPosition,
+	updateJobPosition,
+	showErrorToast,
+} from "@/lib/utils";
 import { SearchableSelect } from "@/components/searchable-select";
 import { apiGet } from "@/lib/apiRequest";
+import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
+import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
 
 const VirtualizedEmployeeList: React.FC<{
 	employees: IEmployee[];
@@ -67,7 +75,7 @@ const VirtualizedEmployeeList: React.FC<{
 
 		return employees.filter(
 			(employee) =>
-				employee?.name.toLowerCase().includes(searchLower) ||
+				employee?.name?.toLowerCase().includes(searchLower) ||
 				employee.email.toLowerCase().includes(searchLower) ||
 				employee.department.name.toLowerCase().includes(searchLower),
 		);
@@ -172,7 +180,7 @@ const EmployeeSelectionModal: React.FC<{
 
 		return employees.filter(
 			(employee) =>
-				employee?.name.toLowerCase().includes(searchLower) ||
+				employee?.name?.toLowerCase().includes(searchLower) ||
 				employee.email.toLowerCase().includes(searchLower) ||
 				employee.department.name.toLowerCase().includes(searchLower),
 		);
@@ -458,8 +466,8 @@ export default function EditJobPositionPage() {
 		salary_max: "",
 		job_position_status: "inactive",
 	});
-	const [departments, setDepartments] = useState<IDepartment[]>([]);
-	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
+	// const [departments, setDepartments] = useState<IDepartment[]>([]);
+	// const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [errors, setErrors] = useState<Partial<Record<keyof JobPositionFormData, string>>>({});
@@ -502,10 +510,10 @@ export default function EditJobPositionPage() {
 
 		try {
 			setIsLoading(true);
-			const [fetchedJobPosition, fetchedDepartments, fetchedJobPositions] = await Promise.all([
+			const [fetchedJobPosition] = await Promise.all([
 				getJobPosition({ jobPositionId }),
-				getDepartments({ institutionId: selectedInstitution.id }),
-				getJobPositions({ institutionId: selectedInstitution.id }),
+				// getDepartments({ institutionId: selectedInstitution.id }),
+				// getJobPositions({ institutionId: selectedInstitution.id }),
 			]);
 
 			if (fetchedJobPosition) {
@@ -531,15 +539,16 @@ export default function EditJobPositionPage() {
 				return;
 			}
 
-			if (fetchedDepartments) {
-				setDepartments(fetchedDepartments);
-			}
-			if (fetchedJobPositions) {
-				setJobPositions(fetchedJobPositions.filter((pos) => pos.id !== jobPositionId));
-			}
+			// if (fetchedDepartments) {
+			// 	setDepartments(fetchedDepartments);
+			// }
+			// if (fetchedJobPositions) {
+			// 	setJobPositions(fetchedJobPositions.filter((pos) => pos.id !== jobPositionId));
+			// }
 		} catch (error) {
-			console.error("Error fetching initial data:", error);
-			toast.error("Failed to load job position/title data");
+			showErrorToast({ error, defaultMessage: "Failed to load job position/title data" });
+			// console.error("Error fetching initial data:", error);
+			// toast.error("");
 			router.push("/job-positions");
 		} finally {
 			setIsLoading(false);
@@ -863,247 +872,209 @@ export default function EditJobPositionPage() {
 							)}
 
 							{/* Form Fields */}
-							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-								{/* Job Position/ Title  Name */}
-								<div className="space-y-2">
-									<Label htmlFor="name" className="text-sm font-medium">
-										Job Position / Title Name *
-									</Label>
-									<Input
-										id="name"
-										type="text"
-										placeholder="e.g., Software Engineer, HR Manager, Sales Representative"
-										value={formData.name}
-										onChange={(e) => updateFormData("name", e.target.value)}
-										className={errors.name ? "border-destructive" : ""}
-									/>
-									{errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-								</div>
-
-								{/* <div className="space-y-2">
-                  <Label htmlFor="salary_min" className="text-sm font-medium">
-                    Salary Range *
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">From </span>
-                  <Input
-                    id="salary_min"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="50,000"
-                    value={salaryMinDisplay}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      const numeric = unformat(raw);
-
-                      if (!/^\d*$/.test(numeric)) return;
-
-                      setSalaryMinDisplay(formatWithCommas(numeric));
-                      updateFormData("salary_min", numeric);
-                    }}
-                    className={errors.salary_min ? "border-destructive" : ""}
-                  />
-                  {errors.salary_min && <p className="text-sm text-destructive">{errors.salary_min}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">To </span>
-                    <Input
-                    id="salary_max"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="75,000"
-                    value={salaryMaxDisplay}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      const numeric = unformat(raw);
-
-                      if (!/^\d*$/.test(numeric)) return;
-
-                      setSalaryMaxDisplay(formatWithCommas(numeric));
-                      updateFormData("salary_max", numeric);
-                    }}
-                    className={errors.salary_max ? "border-destructive" : ""}
-                  />
-                  {errors.salary_max && <p className="text-sm text-destructive">{errors.salary_max}</p>}
-                  </div>
-                  </div>
-                  
-                </div> */}
-								{/* Salary Range with Employee Selection */}
-								<div className="space-y-2">
-									<Label htmlFor="salary_min" className="text-sm font-medium">
-										Salary Range *{" "}
-										{isSalaryChanged && (
-											<span className="text-xs text-amber-600">(Changed - Select employees)</span>
-										)}
-									</Label>
-									<div className="grid grid-cols-2 gap-2">
-										<div className="relative flex items-center gap-2">
-											<span className="text-sm text-muted-foreground">From </span>
-											<Input
-												id="salary_min"
-												type="text"
-												inputMode="numeric"
-												placeholder="50,000"
-												value={
-													formData.salary_min !== undefined && formData.salary_min !== null
-														? Number(formData.salary_min).toLocaleString("en-US")
-														: ""
-												}
-												onChange={(e) => {
-													const rawValue = e.target.value.replace(/,/g, "");
-
-													if (/^\d*$/.test(rawValue)) {
-														updateFormData("salary_min", rawValue);
-													}
-												}}
-												className={`pr-10 ${errors.salary_min ? "border-destructive" : ""} ${
-													isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
-												}`}
-											/>
-										</div>
-										<div className="relative flex items-center gap-2">
-											<span className="text-sm text-muted-foreground">To </span>
-											<Input
-												id="salary_max"
-												type="text"
-												inputMode="numeric"
-												placeholder="75,000"
-												value={
-													formData.salary_max !== undefined && formData.salary_max !== null
-														? Number(formData.salary_max).toLocaleString("en-US")
-														: ""
-												}
-												onChange={(e) => {
-													const rawValue = e.target.value.replace(/,/g, "");
-
-													if (/^\d*$/.test(rawValue)) {
-														updateFormData("salary_max", rawValue);
-													}
-												}}
-												className={`pr-10 ${errors.salary_max ? "border-destructive" : ""} ${
-													isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
-												}`}
-											/>
-										</div>
+							<div className="space-y-6">
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+									{/* Job Position/ Title  Name */}
+									<div className="space-y-2">
+										<Label htmlFor="name" className="text-sm font-medium">
+											Job Position / Title Name *
+										</Label>
+										<Input
+											id="name"
+											type="text"
+											placeholder="e.g., Software Engineer, HR Manager, Sales Representative"
+											value={formData.name}
+											onChange={(e) => updateFormData("name", e.target.value)}
+											className={errors.name ? "border-destructive" : ""}
+										/>
+										{errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
 									</div>
 
-									{/* Simple Salary Update Detection */}
-									{isSalaryChanged && (
-										<div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-											<div className="flex items-center justify-between mb-3">
-												<span className="text-sm font-medium text-orange-800">
-													Salary Update Detected
-												</span>
-												<Button
-													type="button"
-													variant="ghost"
-													size="sm"
-													onClick={revertSalaryToOriginal}
-													className="text-xs text-myOrange hover:text-orange-700"
-												>
-													Revert
-												</Button>
-											</div>
+									{/* Salary Range with Employee Selection */}
+									<div className="space-y-2">
+										<Label htmlFor="salary_min" className="text-sm font-medium">
+											Salary Range *{" "}
+											{isSalaryChanged && (
+												<span className="text-xs text-amber-600">(Changed - Select employees)</span>
+											)}
+										</Label>
+										<div className="grid grid-cols-2 gap-2">
+											<div className="relative flex items-center gap-2">
+												<span className="text-sm text-muted-foreground">From </span>
+												<Input
+													id="salary_min"
+													type="text"
+													inputMode="numeric"
+													placeholder="50,000"
+													value={
+														formData.salary_min !== undefined && formData.salary_min !== null
+															? Number(formData.salary_min).toLocaleString("en-US")
+															: ""
+													}
+													onChange={(e) => {
+														const rawValue = e.target.value.replace(/,/g, "");
 
-											{/* Employee Selection */}
-											{employeesSelected && selectedEmployees.length > 0 ? (
-												<div className="space-y-2">
-													<div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
-														✓ {selectedEmployees.length} employee(s) selected for salary update
+														if (/^\d*$/.test(rawValue)) {
+															updateFormData("salary_min", rawValue);
+														}
+													}}
+													className={`pr-10 ${errors.salary_min ? "border-destructive" : ""} ${
+														isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+													}`}
+												/>
+											</div>
+											<div className="relative flex items-center gap-2">
+												<span className="text-sm text-muted-foreground">To </span>
+												<Input
+													id="salary_max"
+													type="text"
+													inputMode="numeric"
+													placeholder="75,000"
+													value={
+														formData.salary_max !== undefined && formData.salary_max !== null
+															? Number(formData.salary_max).toLocaleString("en-US")
+															: ""
+													}
+													onChange={(e) => {
+														const rawValue = e.target.value.replace(/,/g, "");
+
+														if (/^\d*$/.test(rawValue)) {
+															updateFormData("salary_max", rawValue);
+														}
+													}}
+													className={`pr-10 ${errors.salary_max ? "border-destructive" : ""} ${
+														isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+													}`}
+												/>
+											</div>
+										</div>
+
+										{/* Simple Salary Update Detection */}
+										{isSalaryChanged && (
+											<div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+												<div className="flex items-center justify-between mb-3">
+													<span className="text-sm font-medium text-orange-800">
+														Salary Update Detected
+													</span>
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														onClick={revertSalaryToOriginal}
+														className="text-xs text-myOrange hover:text-orange-700"
+													>
+														Revert
+													</Button>
+												</div>
+
+												{/* Employee Selection */}
+												{employeesSelected && selectedEmployees.length > 0 ? (
+													<div className="space-y-2">
+														<div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
+															✓ {selectedEmployees.length} employee(s) selected for salary update
+														</div>
+														<div className="flex gap-2">
+															<Button
+																type="button"
+																variant="outline"
+																size="sm"
+																onClick={handleReopenEmployeeSelection}
+																className="text-xs"
+															>
+																Change Selection
+															</Button>
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={() => {
+																	setSelectedEmployees([]);
+																	setEmployeesSelected(false);
+																}}
+																className="text-xs"
+															>
+																Clear
+															</Button>
+														</div>
 													</div>
-													<div className="flex gap-2">
+												) : (
+													<div className="space-y-2">
 														<Button
 															type="button"
 															variant="outline"
 															size="sm"
-															onClick={handleReopenEmployeeSelection}
-															className="text-xs"
+															onClick={handleSalaryFieldClick}
+															className="text-xs border-orange-300 text-orange-700"
 														>
-															Change Selection
+															Select Employees (Optional)
 														</Button>
-														<Button
-															type="button"
-															variant="ghost"
-															size="sm"
-															onClick={() => {
-																setSelectedEmployees([]);
-																setEmployeesSelected(false);
-															}}
-															className="text-xs"
-														>
-															Clear
-														</Button>
+														<p className="text-xs text-myOrange">
+															Skip to only update position base salary
+														</p>
 													</div>
-												</div>
-											) : (
-												<div className="space-y-2">
-													<Button
-														type="button"
-														variant="outline"
-														size="sm"
-														onClick={handleSalaryFieldClick}
-														className="text-xs border-orange-300 text-orange-700"
-													>
-														Select Employees (Optional)
-													</Button>
-													<p className="text-xs text-myOrange">
-														Skip to only update position base salary
-													</p>
-												</div>
-											)}
-										</div>
-									)}
+												)}
+											</div>
+										)}
 
-									{/* Show original salary when unchanged */}
-									{!isSalaryChanged && originalSalary && (
-										<p className="text-xs text-muted-foreground">
-											Current salary range: ${Number(originalSalary).toLocaleString()} - $
-											{Number(formData.salary_max || originalSalary).toLocaleString()}
-										</p>
-									)}
+										{/* Show original salary when unchanged */}
+										{!isSalaryChanged && originalSalary && (
+											<p className="text-xs text-muted-foreground">
+												Current salary range: ${Number(originalSalary).toLocaleString()} - $
+												{Number(formData.salary_max || originalSalary).toLocaleString()}
+											</p>
+										)}
 
-									{errors.salary_min && (
-										<p className="text-sm text-destructive">{errors.salary_min}</p>
-									)}
-									{errors.salary_max && (
-										<p className="text-sm text-destructive">{errors.salary_max}</p>
-									)}
+										{errors.salary_min && (
+											<p className="text-sm text-destructive">{errors.salary_min}</p>
+										)}
+										{errors.salary_max && (
+											<p className="text-sm text-destructive">{errors.salary_max}</p>
+										)}
+									</div>
 								</div>
 
-								{/* Department */}
-								<div className="space-y-2">
-									<Label htmlFor="department" className="text-sm font-medium">
-										Department *
-									</Label>
-									<SearchableSelect
-										items={departments.map((dept) => ({
-											id: dept.id,
-											label: dept.name,
-											value: dept.name.toLowerCase(),
-										}))}
-										selectedItems={formData.department ? [formData.department] : []}
-										placeholder="Select a department"
-										searchPlaceholder="Search departments..."
-										emptyMessage="No departments found."
-										onSelect={(itemId) => updateFormData("department", Number(itemId))}
-										multiple={false}
-										triggerClassName={errors.department ? "border-destructive" : ""}
-										popoverClassName="w-[400px]"
-									/>
-									{errors.department && (
-										<p className="text-sm text-destructive">{errors.department}</p>
-									)}
-								</div>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+									{/* Department */}
+									<div className="space-y-2">
+										<Label htmlFor="department" className="text-sm font-medium">
+											Department *
+										</Label>
 
-								{/* Reports To */}
-								<div className="space-y-2">
-									<Label htmlFor="reportsTo" className="text-sm font-medium">
-										Reports To (Optional)
-									</Label>
-									<SearchableSelect
+										<DepartmentSearchableSelect
+											value={formData.department ? [formData.department] : []}
+											onValueChange={(values) => {
+												if (values.length) {
+													updateFormData("department", Number(values[0]));
+												}
+											}}
+											placeholder="Departments..."
+											className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+											multiple={false}
+											showSelectedItems={true}
+										/>
+										{errors.department && (
+											<p className="text-sm text-destructive">{errors.department}</p>
+										)}
+									</div>
+
+									{/* Reports To */}
+									<div className="space-y-2">
+										<Label htmlFor="reportsTo" className="text-sm font-medium">
+											Reports To (Optional)
+										</Label>
+
+										<JobPositionSearchableSelect
+											value={formData.reports_to ? [formData.reports_to] : [0]}
+											onValueChange={(values) => {
+												if (values.length > 0) {
+													updateFormData(
+														"reports_to",
+														Number(values[0]) === 0 ? null : Number(values[0]),
+													);
+												}
+											}}
+										/>
+										{/* <SearchableSelect
 										items={[
 											{ id: 0, label: "None", value: "none" },
 											...jobPositions.map((position) => ({
@@ -1122,26 +1093,26 @@ export default function EditJobPositionPage() {
 										}
 										multiple={false}
 										popoverClassName="w-[500px]"
-									/>
+									/> */}
+									</div>
 								</div>
-							</div>
-
-							{/* Job Description */}
-							<div className="space-y-2">
-								<Label htmlFor="description" className="text-sm font-medium">
-									Job Description *
-								</Label>
-								<Textarea
-									id="description"
-									placeholder="Describe the job responsibilities, requirements, and qualifications..."
-									value={formData.description}
-									onChange={(e) => updateFormData("description", e.target.value)}
-									rows={4}
-									className={errors.description ? "border-destructive" : ""}
-								/>
-								{errors.description && (
-									<p className="text-sm text-destructive">{errors.description}</p>
-								)}
+								{/* Job Description */}
+								<div className="space-y-2">
+									<Label htmlFor="description" className="text-sm font-medium">
+										Job Description *
+									</Label>
+									<Textarea
+										id="description"
+										placeholder="Describe the job responsibilities, requirements, and qualifications..."
+										value={formData.description}
+										onChange={(e) => updateFormData("description", e.target.value)}
+										rows={4}
+										className={errors.description ? "border-destructive" : ""}
+									/>
+									{errors.description && (
+										<p className="text-sm text-destructive">{errors.description}</p>
+									)}
+								</div>
 							</div>
 
 							{/* Current Files Display */}
