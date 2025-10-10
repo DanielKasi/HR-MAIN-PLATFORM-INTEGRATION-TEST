@@ -159,8 +159,8 @@ const ExitProcessCreate = () => {
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="w-full">
 				{/* Main Card Container */}
-				<Card className="w-full shadow-lg border-0">
-					<CardHeader className="border-b border-gray-200 pb-6">
+				<Card className="w-full  border-0">
+					<CardHeader className="  pb-6">
 						<div className="flex items-center gap-2 sm:gap-3 md:gap-4">
 							<Button
 								variant="outline"
@@ -263,20 +263,20 @@ const ExitProcessCreate = () => {
 							</div>
 
 							{/* Action Buttons */}
-							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-gray-200">
+							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6  border-gray-200">
 								<Button
 									type="button"
 									variant="outline"
 									onClick={() => router.push("/off-boarding/exit-process")}
 									disabled={loading}
-									className="w-full sm:w-auto px-6 py-2 text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50"
+									className="w-full sm:w-auto px-6 py-2 text-sm font-medium  rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
 								>
 									Cancel
 								</Button>
 								<Button
 									type="submit"
 									disabled={loading}
-									className="w-full sm:w-auto px-6 py-2 text-sm font-medium bg-[#FF4D4D] hover:bg-[#E04444] text-white"
+									className="flex rounded-full w-full max-w-sm items-center gap-2 px-6 lg:px-8"
 								>
 									{loading ? (
 										<div className="flex items-center gap-2">
