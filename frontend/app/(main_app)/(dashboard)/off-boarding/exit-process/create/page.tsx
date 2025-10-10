@@ -16,9 +16,9 @@ import { apiPost } from "@/lib/apiRequest";
 
 interface FormData {
 	employee_id: number | null;
-	effective_date: string;
+	last_working_day: string; // Changed from effective_date
 	letter: File | null;
-	additional_notes: string;
+	comments: string; // Changed from additional_notes
 	category: "resignation" | "termination";
 	created_by: number | null;
 	updated_by: number | null;
@@ -37,9 +37,9 @@ const ExitProcessCreate = () => {
 
 	const [formData, setFormData] = useState<FormData>({
 		employee_id: null,
-		effective_date: new Date().toISOString().split("T")[0],
+		last_working_day: new Date().toISOString().split("T")[0], // Changed from effective_date
 		letter: null,
-		additional_notes: "",
+		comments: "", // Changed from additional_notes
 		category:
 			category && ["resignation", "termination"].includes(category) ? category : "resignation",
 		created_by: currentUserId,
@@ -114,32 +114,44 @@ const ExitProcessCreate = () => {
 			try {
 				setLoading(true);
 				const formPayload = new FormData();
-				formPayload.append("category", formData.category);
-				formPayload.append("effective_date", formData.effective_date);
-				if (formData.letter) {
-					formPayload.append(
-						formData.category === "termination" ? "termination_letter" : "resignation_letter",
-						formData.letter,
-					);
-				}
-				formPayload.append("additional_notes", formData.additional_notes);
-				if (formData.category === "termination" && formData.employee_id) {
+
+				// Add required fields for termination
+				if (category === "termination" && formData.employee_id) {
 					formPayload.append("employee_id", formData.employee_id.toString());
 				}
+
+				formPayload.append("last_working_day", formData.last_working_day); // Changed from effective_date
+				formPayload.append("comments", formData.comments); // Changed from additional_notes
+				formPayload.append("approval_status", "under_creation"); // Add default status
+				formPayload.append("initiation_status", "submitted"); // Add default status
+				formPayload.append("is_active", "true"); // Add is_active flag
+
+				// Add user tracking fields
+				formPayload.append("created_by", currentUserId.toString());
+				formPayload.append("updated_by", currentUserId.toString());
+
+				// Add the letter file
+				if (formData.letter) {
+					formPayload.append("termination_letter", formData.letter); // Use correct field name
+				}
+
 				if (category === "termination") {
 					await apiPost("/on-boarding/termination-initiations/", formPayload);
 				} else if (category === "resignation") {
+					// For resignation, adjust field names if needed
 					await apiPost("/on-boarding/resignation-requests/", formPayload);
 				}
-				showSuccessToast(`request submitted successfully`);
+
+				showSuccessToast(`${formData.category} request submitted successfully`);
 				router.push("/off-boarding/exit-process");
 			} catch (error: any) {
+				console.error("Submission error:", error);
 				showErrorToast({ error, defaultMessage: "Failed to submit request" });
 			} finally {
 				setLoading(false);
 			}
 		},
-		[formData, currentInstitution, currentUserId, router],
+		[formData, currentInstitution, currentUserId, router, category],
 	);
 
 	const handleBack = () => {
@@ -159,8 +171,8 @@ const ExitProcessCreate = () => {
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="w-full">
 				{/* Main Card Container */}
-				<Card className="w-full  border-0">
-					<CardHeader className="  pb-6">
+				<Card className="w-full border-0">
+					<CardHeader className="pb-6">
 						<div className="flex items-center gap-2 sm:gap-3 md:gap-4">
 							<Button
 								variant="outline"
@@ -197,7 +209,6 @@ const ExitProcessCreate = () => {
 
 						<form onSubmit={handleSubmit} className="space-y-6">
 							{/* Employee Selection - Only for Termination */}
-
 							<div className="space-y-2">
 								<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
 									Select Employee *
@@ -214,16 +225,16 @@ const ExitProcessCreate = () => {
 
 							{/* Date and File Upload in Grid */}
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-								{/* Effective Date */}
+								{/* Last Working Day - Changed from Effective Date */}
 								<div className="space-y-2">
-									<Label htmlFor="effective_date" className="text-sm font-medium text-gray-800">
-										Effective Date *
+									<Label htmlFor="last_working_day" className="text-sm font-medium text-gray-800">
+										Last Working Day *
 									</Label>
 									<Input
 										type="date"
-										id="effective_date"
-										name="effective_date"
-										value={formData.effective_date}
+										id="last_working_day"
+										name="last_working_day"
+										value={formData.last_working_day}
 										onChange={handleInputChange}
 										required
 										className="w-full bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400"
@@ -247,29 +258,29 @@ const ExitProcessCreate = () => {
 								</div>
 							</div>
 
-							{/* Additional Notes */}
+							{/* Comments - Changed from Additional Notes */}
 							<div className="space-y-2">
-								<Label htmlFor="additional_notes" className="text-sm font-medium text-gray-800">
-									Additional Notes
+								<Label htmlFor="comments" className="text-sm font-medium text-gray-800">
+									Comments
 								</Label>
 								<Textarea
-									id="additional_notes"
-									name="additional_notes"
-									value={formData.additional_notes}
+									id="comments"
+									name="comments"
+									value={formData.comments}
 									onChange={handleInputChange}
-									placeholder="Enter any additional notes or context for this process..."
+									placeholder="Enter any comments or context for this process..."
 									className="w-full min-h-[120px] resize-vertical bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400"
 								/>
 							</div>
 
 							{/* Action Buttons */}
-							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6  border-gray-200">
+							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-gray-200">
 								<Button
 									type="button"
 									variant="outline"
 									onClick={() => router.push("/off-boarding/exit-process")}
 									disabled={loading}
-									className="w-full sm:w-auto px-6 py-2 text-sm font-medium  rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
+									className="w-full sm:w-auto px-6 py-2 text-sm font-medium rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
 								>
 									Cancel
 								</Button>
