@@ -133,40 +133,12 @@ class InstitutionSeparationPolicySerializer(BaseApprovableSerializer):
 
 
 class EmployeeSeparationSerializer(serializers.ModelSerializer):
-    current_stage = serializers.SerializerMethodField()
     
     class Meta:
         model = EmployeeSeparation
         fields = "__all__"
     
-    def get_current_stage(self, instance):
-        """
-        Returns the current active stage or the next incomplete stage
-        """
-        # Get all stage progress records ordered by stage position
-        stage_progresses = instance.stage_progress.select_related('stage').order_by('stage__position')
-        
-        # Find the first incomplete stage (not_started or in_progress)
-        for progress in stage_progresses:
-            if progress.status in ['in_progress']:
-                return {
-                    'id': progress.stage.id,
-                    'stage_name': progress.stage.stage_name,
-                    'position': progress.stage.position,
-                    'status': progress.status,
-                }
-        
-        # If all stages are completed, return the last stage
-        last_progress = stage_progresses.last()
-        if last_progress:
-            return {
-                'id': last_progress.stage.id,
-                'stage_name': last_progress.stage.stage_name,
-                'position': last_progress.stage.position,
-                'status': last_progress.status,
-            }
-        
-        return None
+
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -178,6 +150,11 @@ class EmployeeSeparationSerializer(serializers.ModelSerializer):
         representation["employee"] = (
             EmployeeSerializer(instance.employee, context=self.context).data
             if instance.employee
+            else None
+        )
+        representation["employee_separation_type"] = (
+            InstitutionEmployeeSeparationTypesSerializer(instance.employee_separation_type, context=self.context).data
+            if instance.employee_separation_type
             else None
         )
         return representation
@@ -557,6 +534,8 @@ class EmployeeSeparationWithStagesSerializer(serializers.ModelSerializer):
     employee_separation_type = InstitutionEmployeeSeparationTypesSerializer(read_only=True)
     initiated_by = ProfileSerializer(read_only=True)
     stages = SeparationStageProgressSerializer(many=True, read_only=True)
+    current_stage = serializers.SerializerMethodField()
+
 
     class Meta:
         model = EmployeeSeparation
@@ -571,7 +550,54 @@ class EmployeeSeparationWithStagesSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "stages",
+            "current_stage",
         ]
+
+    def get_current_stage(self, instance):
+        """
+        Returns the current active stage or the next incomplete stage
+        """
+        # Get all stage progress records ordered by position
+        stage_progresses = instance.stages.select_related('stage').order_by('position')
+        
+        # Find the first incomplete stage (not_started or in_progress)
+        for progress in stage_progresses:
+            if progress.status in ['not_started', 'in_progress']:
+                return {
+                    'stage_name': progress.stage.stage_name,
+                    'position': progress.position,
+                    'status': progress.status,
+                }
+        
+        # If all stages are completed or skipped, return the last stage
+        last_progress = stage_progresses.last()
+        if last_progress:
+            return {
+                'stage_name': last_progress.stage.stage_name,
+                'position': last_progress.position,
+                'status': last_progress.status,
+            }
+        
+        return None  
+
+    def get_initiated_by(self, instance):
+        initiated_by = instance.initiated_by
+        if not initiated_by:
+            return None
+
+        return {
+            "name": initiated_by.user.fullname,
+        }
+    
+    def get_employee_separation_type(self, instance):
+        employee_separation_type = instance.employee_separation_type
+        if not employee_separation_type:
+            return None
+
+        return {
+            "name": employee_separation_type.category,
+        }
+
 
     def get_employee(self, obj):
         """Return only the employee's name and position."""
