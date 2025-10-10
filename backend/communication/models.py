@@ -55,39 +55,37 @@ class Announcement(BaseApprovableModel):
                 return job_position.department.institution
 
     def save(self, *args, skip_notifications=False, **kwargs):
-        is_new = self.pk is None
-        # Check if announcement was previously inactive
-        was_inactive = False
-        if not is_new:
-            try:
-                existing = Announcement.objects.get(pk=self.pk)
-                was_inactive = not existing.is_active and self.is_active
-            except Announcement.DoesNotExist:
-                pass
 
-        super().save(*args, **kwargs)  # Call the parent save method
+        is_new = self.pk is None
+
+        
+
+        super().save(*args, **kwargs)  # Save the announcement
 
         if skip_notifications:
             return
 
-        # Send notifications if new or just became active
         if not self.is_active:
             return
 
-        target_employees = self.get_target_employees()
         message = f"New announcement: {self.title}" if is_new else f"Updated announcement: {self.title}"
 
+        target_employees = self.get_target_employees()
+
         from .views import add_notification
+
         for employee in target_employees:
+
             if employee.user:
                 try:
-                    # Check if an unread notification already exists
-                    if not Notification.objects.filter(
+                    existing_notification = Notification.objects.filter(
                         user_id=employee.user,
                         model_name="Announcement",
                         object_id=str(self.pk),
                         is_read=False
-                    ).exists():
+                    ).exists()
+
+                    if not existing_notification:
                         add_notification(
                             user_id=employee.user,
                             message=message,
@@ -95,11 +93,15 @@ class Announcement(BaseApprovableModel):
                             object_id=str(self.pk),
                             requires_acknowledgment=self.requires_acknowledgment
                         )
-                    
+                    else:
+                        print(f"⚠️ Notification already exists for user {employee.user.id}, skipping.")
+
                 except Exception as e:
-                    print(f"Failed to send notification to employee {employee.id} (user {employee.user.id}): {str(e)}")
+                    print(f"❌ Failed to send notification to employee {employee.id} (user {employee.user.id}): {str(e)}")
             else:
-                print(f"Employee {employee.id} has no linked user, skipping notification")
+                print(f"⚠️ Employee {employee.id} has no linked user. Skipping notification.")
+
+
 
 class EmployeeAnnouncementAcknowledgment(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
