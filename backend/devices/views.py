@@ -18,7 +18,6 @@ from rest_framework import serializers
 
 
 
-
 class DeviceListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
     allowed_ordering_fields = ['serial_number', 'status', 'created_at']
@@ -40,9 +39,15 @@ class DeviceListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
+        print("\n=== Incoming Device Creation Request ===")
+        print(f"User: {request.user}")
+        print(f"Request Data: {request.data}")
+
         try:
             institution = request.user.profile.institution
+            print(f"Institution: {institution}")
         except (AttributeError, Institution.DoesNotExist):
+            print("User is not associated with an institution.")
             return Response(
                 {"detail": "User is not associated with an institution."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -58,28 +63,40 @@ class DeviceListCreateView(APIView, SortableAPIMixin):
             instance.confirm_create()
 
             external_data = {
-                "serial_number": instance.serial_number,
+                "serialnumber": instance.serial_number,
             }
 
-            external_api_url = config('DEVICE_REG_API')
-            api_key = config('API_KEY')
+            external_api_url = config('DEVICE_REG_API', default='')
+            api_key = config('API_KEY', default='')
+
+            masked_key = api_key[:4] + "****" if api_key else "NOT SET"
+
+            print("\n=== Sending to External API ===")
+            print(f"External API URL: {external_api_url}")
+            print(f"API Key (masked): {masked_key}")
+            print(f"Payload: {external_data}")
 
             try:
                 response = requests.post(
                     external_api_url,
                     json=external_data,
-                    headers={"API-KEY": api_key},
-                    timeout=10  
+                    headers={"X-API-KEY": api_key},
+                    timeout=10
                 )
-                response.raise_for_status()  
+                print(f"External API Response Status: {response.status_code}")
+                print(f"External API Response Text: {response.text}")
+                response.raise_for_status()
             except requests.exceptions.RequestException as e:
+                print(f"External API registration failed: {str(e)}")
                 return Response(
                     {"detail": f"External API registration failed: {str(e)}"},
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 
+            print(f"✅ Device created successfully: {instance.serial_number}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        print("❌ Validation Errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -219,8 +236,8 @@ class DeviceDetailView(APIView):
     
 class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
-    allowed_ordering_fields = ['enroll_id', 'created_at']
-    default_ordering = ['enroll_id']
+    allowed_ordering_fields = ['created_at']
+    default_ordering = ['created_at']
 
     @extend_schema(
         request=DeviceEmployeeAttachmentSerializer,
@@ -238,16 +255,26 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
+        print("\n=== Incoming Employee Attachment Request ===")
+        print(f"Request Data: {request.data}")
+
         serializer = DeviceEmployeeAttachmentSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save()
-
             employee = instance.employee
+
+            print(f"Employee: {employee}")
+            print(f"Device Serial: {instance.device.serial_number}")
+            print(f"Institution: {instance.device.institution}")
+
+            # Check if employee already synced
             is_employee_synced = DeviceEmployeeAttachment.objects.filter(
                 employee=employee,
                 device__institution=instance.device.institution,
                 is_synced=True
             ).exists()
+
+            print(f"Is Employee Already Synced? {is_employee_synced}")
 
             payload = {"cmd": "addUser"}
             if not is_employee_synced:
@@ -258,27 +285,47 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
             url = external_api_url % instance.device.serial_number
             api_key = config('API_KEY')
 
+            masked_key = api_key[:4] + "****" if api_key else "NOT SET"
+
+            print("\n=== Sending to External API ===")
+            print(f"External API URL: {url}")
+            print(f"API Key (masked): {masked_key}")
+            print(f"Payload: {payload}")
+
             try:
                 response = requests.post(
-                    external_api_url,
+                    url,
                     json=payload,
-                    headers={"API-KEY": api_key},
+                    headers={"X-API-KEY": api_key},
                     timeout=5
                 )
+
+                print(f"External API Response Status: {response.status_code}")
+                print(f"External API Response Text: {response.text}")
+
                 if response.status_code != 200:
+                    print("❌ Failed to register employee. Rolling back instance.")
                     instance.delete()
                     return Response(
                         {"detail": f"Failed to register employee with external system: {response.text}"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
+
             except requests.RequestException as e:
+                print(f"❌ Error communicating with device system: {str(e)}")
+                print("Rolling back instance.")
                 instance.delete()
                 return Response(
                     {"detail": f"Error communicating with device system: {str(e)}"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+            print(f"✅ Employee attached successfully to device {instance.device.serial_number}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        print("❌ Validation Errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
     @extend_schema(
         parameters=[
