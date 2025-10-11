@@ -119,7 +119,7 @@ export default function ConcernViewPage() {
 								<span className="text-sm">
 									{typeof concern.created_at === "string"
 										? formatDateTime(concern.created_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 							<div className="flex justify-between mt-5">
@@ -127,7 +127,7 @@ export default function ConcernViewPage() {
 								<span className="text-sm">
 									{typeof concern.updated_at === "string"
 										? formatDateTime(concern.updated_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 						</CardContent>

@@ -15,10 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { capitalizeEachWord } from "@/lib/helpers";
-import apiRequest, { apiDelete } from "@/lib/apiRequest";
-import { AttendanceAPI, EMPLOYEE_API } from "@/lib/utils";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import { apiDelete } from "@/lib/apiRequest";
+import { EMPLOYEE_API } from "@/lib/utils";
+
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function UserProfilePage() {
@@ -28,9 +27,7 @@ export default function UserProfilePage() {
 	const [employee, setEmployee] = useState<IEmployee | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
-	const [activeTab, setActiveTab] = useState("branches");
-
-	// console.log("Employee", employee)
+	const [activeTab, setActiveTab] = useState<"branches" | "permissions">("branches");
 
 	const fetchUserDetails = async () => {
 		setLoading(true);
@@ -155,16 +152,6 @@ export default function UserProfilePage() {
 								>
 									Permissions / role details
 								</button>
-								<button
-									className={`px-6 py-3 text-sm font-medium ${
-										activeTab === "attendance"
-											? "border-b-2 border-primary text-primary"
-											: "text-[#666]"
-									}`}
-									onClick={() => setActiveTab("attendance")}
-								>
-									Attendance
-								</button>
 							</div>
 
 							{activeTab === "branches" && (
@@ -252,130 +239,6 @@ export default function UserProfilePage() {
 										</div>
 									) : (
 										<div className="text-center py-4 text-[#666]">No roles assigned</div>
-									)}
-								</div>
-							)}
-
-							{activeTab === "attendance" && (
-								<div className="p-6">
-									<h3 className="text-lg font-medium mb-4">Attendance Records</h3>
-									{employee ? (
-										<PaginatedTableWrapper<IAttendance>
-											fetchFirstPage={async () => {
-												return await AttendanceAPI.fetchAttendanceRecordsByEmployee({
-													employee_id: employee.id,
-													page: 1,
-												});
-											}}
-											fetchFromUrl={({ url }) => AttendanceAPI.fetchAttendanceRecordsFromUrl(url)}
-											deps={[employee.id]}
-											className=""
-											footerClassName="pt-4"
-										>
-											{({ data: attendanceData, loading: attendanceLoading, refresh }) => {
-												if (attendanceLoading) {
-													return (
-														<div className="flex items-center justify-center h-32">
-															<div className="text-center text-[#666]">
-																Loading attendance records...
-															</div>
-														</div>
-													);
-												}
-
-												if (!attendanceData?.results || attendanceData.results.length === 0) {
-													return (
-														<div className="text-center py-8 text-[#666]">
-															No attendance records found
-														</div>
-													);
-												}
-
-												return (
-													<>
-														<div className="overflow-x-auto">
-															<table className="w-full border-collapse">
-																<thead>
-																	<tr className="bg-[#f9f9f9] text-[#666]">
-																		<th className="text-left p-3 border-b border-[#e5e7eb]">
-																			Date
-																		</th>
-																		<th className="text-left p-3 border-b border-[#e5e7eb]">
-																			Check In
-																		</th>
-																		<th className="text-left p-3 border-b border-[#e5e7eb]">
-																			Check Out
-																		</th>
-																		<th className="text-left p-3 border-b border-[#e5e7eb]">
-																			Status
-																		</th>
-																		<th className="text-left p-3 border-b border-[#e5e7eb]">
-																			Overtime
-																		</th>
-																	</tr>
-																</thead>
-																<tbody>
-																	{attendanceData.results.map((record) => (
-																		<tr key={record.id} className="border-b border-[#e5e7eb]">
-																			<td className="p-3">
-																				{new Date(record.date).toLocaleDateString("en-US", {
-																					day: "numeric",
-																					month: "short",
-																					year: "numeric",
-																				})}
-																			</td>
-																			<td className="p-3">
-																				{record.check_in_time
-																					? new Date(
-																							`${new Date().toISOString().split("T")[0]}T${record.check_in_time}`,
-																						).toLocaleTimeString("en-US", {
-																							hour: "numeric",
-																							minute: "2-digit",
-																							hour12: true,
-																						})
-																					: "-"}
-																			</td>
-																			<td className="p-3">
-																				{record.check_out_time
-																					? new Date(
-																							`${new Date().toISOString().split("T")[0]}T${record.check_out_time}`,
-																						).toLocaleTimeString("en-US", {
-																							hour: "numeric",
-																							minute: "2-digit",
-																							hour12: true,
-																						})
-																					: "-"}
-																			</td>
-																			<td className="p-3">
-																				<Badge
-																					className={
-																						record.status === "approved"
-																							? "bg-[#10b981] text-white"
-																							: record.status === "rejected"
-																								? "bg-[#ef4444] text-white"
-																								: "bg-[#f59e0b] text-white"
-																					}
-																				>
-																					{record.status.charAt(0).toUpperCase() +
-																						record.status.slice(1)}
-																				</Badge>
-																			</td>
-																			<td className="p-3">
-																				{record.overtime_hours ? `${record.overtime_hours}h` : "-"}
-																			</td>
-																		</tr>
-																	))}
-																</tbody>
-															</table>
-														</div>
-													</>
-												);
-											}}
-										</PaginatedTableWrapper>
-									) : (
-										<div className="text-center py-8 text-[#666]">
-											No employee record found for this user
-										</div>
 									)}
 								</div>
 							)}

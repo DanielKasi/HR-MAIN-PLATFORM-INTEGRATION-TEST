@@ -6,7 +6,7 @@ from .models import (
 from recruitment.models import JobPositionAdvert
 
 REPORT_CONFIG = {
-    'leave types': LeaveType,
-    'leave balances': LeaveBalance,
-    'leave application': LeaveApplication,
+    'Leave Types': LeaveType,
+    'Leave Balances': LeaveBalance,
+    'Leave Applications': LeaveApplication,
 }

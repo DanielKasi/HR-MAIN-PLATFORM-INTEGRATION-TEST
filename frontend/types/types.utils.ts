@@ -19,6 +19,24 @@ export interface ContextItem {
 	description?: string;
 }
 
+export interface Stage {
+	id: number;
+	stage_name: string;
+	status: "not_started" | "in_progress" | "completed" | "skipped";
+	notes: string;
+	position: number;
+	created_at: string;
+	updated_at: string;
+	isOpen: boolean;
+}
+
+export interface StageReorderProps {
+	separationId: number;
+	stages: Stage[];
+	onReorderSuccess?: (updatedStages: Stage[]) => void;
+	onCancel?: () => void;
+}
+
 export interface CreateDepartmentData {
 	name: string;
 	description: string;
@@ -63,6 +81,67 @@ export interface IDepartment {
 	institution: number;
 	institution_details?: IUserInstitution | null;
 	job_positions?: { id: number; name: string; description: string; department_id: number }[];
+}
+
+export interface IEmployeeS {
+	id: number;
+	name: string;
+	email: string;
+	employee_id?: string;
+	date_of_birth?: string;
+	gender?: string;
+	phone_number?: string;
+	department?: {
+		id: number;
+		name: string;
+		institution_id: number;
+	};
+	position?: {
+		id: number;
+		name: string;
+		department_id?: number;
+	};
+}
+
+export interface IEmployeeSeparation {
+	id: number;
+	employee: IEmployee | null;
+	employee_separation_type: {
+		id: number;
+		separation_type: string;
+		description: string;
+		category: "resignation" | "termination" | "retirement" | "contract_end" | "other";
+		approval_status: string;
+	};
+	initiated_by: {
+		id: number;
+		user: {
+			fullname: string;
+			email: string;
+		};
+	} | null;
+	effective_date: string;
+	additional_notes: string;
+	separation_status: "planned" | "completed" | "cancelled";
+	created_at: string;
+	updated_at: string;
+	stages: Array<{
+		id: number;
+		stage_name: string;
+		status: "not_started" | "in_progress" | "completed" | "skipped";
+		notes: string;
+		position: number;
+		created_at: string;
+		updated_at: string;
+		isOpen: boolean;
+	}>;
+}
+
+export interface IPaginatedResponse<T> {
+	count: number;
+	next: string | null;
+	previous: string | null;
+	results: T[];
 }
 
 export type OffboardingData = {
@@ -334,6 +413,30 @@ export interface ICompanyEmail {
 	email: string;
 	provider: string;
 	status: string;
+}
+
+// export interface ISeparationType {
+// 	id: number;
+// 	separation_type: string;
+// 	description: string;
+// 	category: "resignation" | "termination" | "retirement" | "contract_end" | "other";
+// 	approval_status: string;
+// 	approvals: string;
+// 	supported_stages: number[];
+// 	created_at: string;
+// 	updated_at: string;
+// 	deleted_at: string | null;
+// 	is_active: boolean;
+// 	created_by: number;
+// 	updated_by: number;
+// 	institution: number;
+// }
+
+export interface IPaginatedResponse<T> {
+	count: number;
+	next: string | null;
+	previous: string | null;
+	results: T[];
 }
 
 export interface IEmployee {
@@ -610,7 +713,7 @@ export interface IApiPosition {
 	updated_at: string;
 }
 
-export type IGender = "male" | "female" | "other";
+export type IGender = "male" | "female" | "other" | "all";
 export type IMaritalStatus = "single" | "married" | "divorced" | "widowed";
 
 // Base interfaces for nested objects
@@ -1069,17 +1172,27 @@ export interface IDisciplinaryAction extends IBaseApprovable {
 	updated_at: string;
 	notes: string;
 }
+export type ILeaveTypeCategory =
+	| "annual"
+	| "sick"
+	| "personal"
+	| "maternity"
+	| "paternity"
+	| "emergency"
+	| "unpaid";
+export type ILeaveTypeGender = "male" | "female" | "all";
 
 export interface ILeaveTypeFormData {
 	name: string;
-	category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+	category: ILeaveTypeCategory;
 	description: string;
 	max_days_per_year: number;
 	carry_forward_allowed: boolean;
 	max_carry_forward_days: number;
-	is_active: boolean;
+	is_active?: boolean;
 	requires_document: boolean;
-	gender_specific: "male" | "female" | "all" | null;
+	gender_specific: ILeaveTypeGender | null;
+	is_paid: boolean;
 }
 
 export interface ILeaveType {
@@ -1087,14 +1200,15 @@ export interface ILeaveType {
 	created_at?: string;
 	updated_at?: string;
 	name: string;
-	category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+	category: ILeaveTypeCategory;
 	description: string;
 	max_days_per_year: number;
 	carry_forward_allowed: boolean;
 	max_carry_forward_days: number;
 	is_active: boolean;
 	requires_document: boolean;
-	gender_specific: "male" | "female" | "all" | null;
+	gender_specific: ILeaveTypeGender | null;
+	is_paid: boolean;
 }
 
 export interface ILeaveBalance {
@@ -1496,16 +1610,6 @@ export type ApprovalStep = {
 export type TerminationInitiationStatus = "submitted" | "under_review" | "approved" | "rejected";
 export type SeparationStatus = "planned" | "completed" | "cancelled";
 
-export interface IEmployeeSeparation {
-	id: number;
-	effective_date: string;
-	additional_notes: string | null;
-	separation_status: SeparationStatus;
-	employee_separation_type: number;
-	employee: IEmployee;
-	initiated_by: UserProfile;
-}
-
 export interface ITermination {
 	id: number;
 	separation: IEmployeeSeparation;
@@ -1537,7 +1641,7 @@ export interface ISeparationType {
 	institution: number;
 	separation_type: string;
 	description: string;
-	supported_stages: number[] | IOffboardingStage[];
+	supported_stages: IOffboardingStage[];
 	category: SeparationCategory;
 	is_active: boolean;
 	created_at: string;

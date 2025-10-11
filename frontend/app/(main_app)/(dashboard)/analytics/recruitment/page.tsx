@@ -103,7 +103,7 @@ export default function RecruitmentDashboard() {
 	return (
 		<main className="space-y-6 p-6 min-h-screen bg-background">
 			{/* Header */}
-			<div className="flex flex-col items-center justify-between gap-8 w-full">
+			<div className="flex flex-col md:flex-row items-center justify-between gap-8 w-full">
 				<h1 className="flex-grow text-3xl font-bold tracking-tight text-slate-900">
 					Recruitment Analytics
 				</h1>

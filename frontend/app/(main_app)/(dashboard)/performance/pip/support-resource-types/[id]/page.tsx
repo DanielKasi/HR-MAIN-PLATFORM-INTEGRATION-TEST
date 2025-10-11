@@ -120,7 +120,7 @@ export default function ResourceTypeViewPage() {
 								<span className="text-sm">
 									{typeof resourceType.created_at === "string"
 										? formatDateTime(resourceType.created_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 							<div className="flex justify-between mt-5">
@@ -128,7 +128,7 @@ export default function ResourceTypeViewPage() {
 								<span className="text-sm">
 									{typeof resourceType.updated_at === "string"
 										? formatDateTime(resourceType.updated_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 						</CardContent>

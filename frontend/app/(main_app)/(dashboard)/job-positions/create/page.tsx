@@ -25,6 +25,8 @@ import {
 import { PERMISSION_CODES } from "@/constants";
 import { RichTextEditor } from "@/components/common/rich-editor";
 import ProtectedComponent from "@/components/ProtectedComponent";
+import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
+import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
 
 function formatWithCommas(value: string) {
 	const num = value.replace(/,/g, "");
@@ -88,17 +90,17 @@ export default function CreateJobPositionPage() {
 
 		try {
 			setIsLoading(true);
-			const [fetchedDepartments, fetchedJobPositions] = await Promise.all([
+			const [fetchedDepartments] = await Promise.all([
 				getDepartments({ institutionId: selectedInstitution.id }),
-				getJobPositions({ institutionId: selectedInstitution.id }),
+				// getJobPositions({ institutionId: selectedInstitution.id }),
 			]);
 
 			if (fetchedDepartments) {
 				setDepartments(fetchedDepartments);
 			}
-			if (fetchedJobPositions) {
-				setJobPositions(fetchedJobPositions);
-			}
+			// if (fetchedJobPositions) {
+			// 	setJobPositions(fetchedJobPositions);
+			// }
 		} catch (error) {
 			toast.error("Failed to load departments and job position/titles ");
 		} finally {
@@ -263,159 +265,146 @@ export default function CreateJobPositionPage() {
 					</CardHeader>
 					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_POSITIONS}>
 						<CardContent>
-							<form onSubmit={handleSubmit} className="space-y-6">
-								{/* Form Fields - Two-Column Grid */}
-								<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-									{/* Job Position/ Title  Name */}
-									<div className="space-y-2">
-										<Label htmlFor="name" className="text-sm font-medium">
-											Job Position / Title Name *
-										</Label>
-										<Input
-											id="name"
-											type="text"
-											placeholder="e.g., Software Engineer, HR Manager, Sales Representative"
-											value={formData.name}
-											onChange={(e) => updateFormData("name", e.target.value)}
-											className={errors.name ? "border-destructive" : ""}
-										/>
-										{errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-									</div>
+							<form onSubmit={handleSubmit} className="">
+								<div className="space-y-6">
+									<div className="grid grid-cols-1 md:grid-cols-2 items-end gap-6">
+										<div className="space-y-2">
+											<Label htmlFor="name" className="text-sm font-medium">
+												Job Position / Title Name *
+											</Label>
+											<Input
+												id="name"
+												type="text"
+												placeholder="e.g., Software Engineer, HR Manager, Sales Representative"
+												value={formData.name}
+												onChange={(e) => updateFormData("name", e.target.value)}
+												className={errors.name ? "border-destructive" : ""}
+											/>
+											{errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+										</div>
+										<div className="space-y-2">
+											<Label htmlFor="salary_min" className="text-sm font-medium">
+												Salary Range *
+											</Label>
+											<div className="grid grid-cols-2 gap-2">
+												<div className="flex items-center gap-2">
+													<span className="text-sm text-muted-foreground">From </span>
+													<Input
+														id="salary_min"
+														type="text"
+														inputMode="numeric"
+														placeholder="50,000"
+														value={salaryMinDisplay}
+														onChange={(e) => {
+															const raw = e.target.value;
+															const numeric = unformat(raw);
 
-									<div className="space-y-2">
-										<Label htmlFor="salary_min" className="text-sm font-medium">
-											Salary Range *
-										</Label>
-										<div className="grid grid-cols-2 gap-2">
-											<div className="flex items-center gap-2">
-												<span className="text-sm text-muted-foreground">From </span>
-												<Input
-													id="salary_min"
-													type="text"
-													inputMode="numeric"
-													placeholder="50,000"
-													value={salaryMinDisplay}
-													onChange={(e) => {
-														const raw = e.target.value;
-														const numeric = unformat(raw);
+															if (!/^\d*$/.test(numeric)) return;
 
-														if (!/^\d*$/.test(numeric)) return;
+															setSalaryMinDisplay(formatWithCommas(numeric));
+															updateFormData("salary_min", numeric);
+														}}
+														className={errors.salary_min ? "border-destructive" : ""}
+													/>
+													{errors.salary_min && (
+														<p className="text-sm text-destructive">{errors.salary_min}</p>
+													)}
+												</div>
+												<div className="flex items-center gap-2">
+													<span className="text-sm text-muted-foreground">To </span>
+													<Input
+														id="salary_max"
+														type="text"
+														inputMode="numeric"
+														placeholder="75,000"
+														value={salaryMaxDisplay}
+														onChange={(e) => {
+															const raw = e.target.value;
+															const numeric = unformat(raw);
 
-														setSalaryMinDisplay(formatWithCommas(numeric));
-														updateFormData("salary_min", numeric);
-													}}
-													className={errors.salary_min ? "border-destructive" : ""}
-												/>
-												{errors.salary_min && (
-													<p className="text-sm text-destructive">{errors.salary_min}</p>
-												)}
-											</div>
-											<div className="flex items-center gap-2">
-												<span className="text-sm text-muted-foreground">To </span>
-												<Input
-													id="salary_max"
-													type="text"
-													inputMode="numeric"
-													placeholder="75,000"
-													value={salaryMaxDisplay}
-													onChange={(e) => {
-														const raw = e.target.value;
-														const numeric = unformat(raw);
+															if (!/^\d*$/.test(numeric)) return;
 
-														if (!/^\d*$/.test(numeric)) return;
-
-														setSalaryMaxDisplay(formatWithCommas(numeric));
-														updateFormData("salary_max", numeric);
-													}}
-													className={errors.salary_max ? "border-destructive" : ""}
-												/>
-												{errors.salary_max && (
-													<p className="text-sm text-destructive">{errors.salary_max}</p>
-												)}
+															setSalaryMaxDisplay(formatWithCommas(numeric));
+															updateFormData("salary_max", numeric);
+														}}
+														className={errors.salary_max ? "border-destructive" : ""}
+													/>
+													{errors.salary_max && (
+														<p className="text-sm text-destructive">{errors.salary_max}</p>
+													)}
+												</div>
 											</div>
 										</div>
 									</div>
+									<div className="grid grid-cols-1 md:grid-cols-2 items-end gap-6">
+										{/* Department */}
+										<div className="space-y-2">
+											<div className="flex items-center justify-start gap-8">
+												<Label htmlFor="department" className="text-sm font-medium">
+													Department *
+												</Label>
+												<CreateDepartmentDialog
+													trigger={
+														<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+															<Plus className="h-4 w-4" />
+														</Button>
+													}
+													onDepartmentCreated={(newDepartment) => {
+														setDepartments((prev) => [...prev, newDepartment]);
+														updateFormData("department", newDepartment.id);
+													}}
+												/>
+											</div>
+											<DepartmentSearchableSelect
+												value={formData.department ? [formData.department] : []}
+												onValueChange={(values) => {
+													if (values.length) {
+														updateFormData("department", Number(values[0]));
+													}
+												}}
+												placeholder="Departments..."
+												className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+												multiple={false}
+												showSelectedItems={true}
+											/>
 
-									{/* Department */}
-									<div className="space-y-2">
-										<div className="flex items-center justify-between">
-											<Label htmlFor="department" className="text-sm font-medium">
-												Department *
+											{errors.department && (
+												<p className="text-sm text-destructive">{errors.department}</p>
+											)}
+										</div>
+
+										<div className="space-y-2">
+											<Label htmlFor="reportsTo" className="text-sm font-medium">
+												Reports To (Optional)
 											</Label>
-											<CreateDepartmentDialog
-												trigger={
-													<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
-														<Plus className="h-4 w-4" />
-													</Button>
-												}
-												onDepartmentCreated={(newDepartment) => {
-													setDepartments((prev) => [...prev, newDepartment]);
-													updateFormData("department", newDepartment.id);
+											<JobPositionSearchableSelect
+												value={formData.reports_to ? [formData.reports_to] : [0]}
+												onValueChange={(values) => {
+													if (values.length > 0) {
+														updateFormData(
+															"reports_to",
+															Number(values[0]) === 0 ? null : Number(values[0]),
+														);
+													}
 												}}
 											/>
 										</div>
-										<SearchableSelect
-											items={departments.map((dept) => ({
-												id: dept.id,
-												label: dept.name,
-												value: dept.name.toLowerCase(),
-											}))}
-											selectedItems={formData.department ? [formData.department] : []}
-											placeholder="Select a department"
-											searchPlaceholder="Search departments..."
-											emptyMessage="No departments found."
-											onSelect={(itemId) => updateFormData("department", Number(itemId))}
-											multiple={false}
-											triggerClassName={errors.department ? "border-destructive" : ""}
-											popoverClassName="w-[400px]"
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="description" className="text-sm font-medium">
+											Job Description *
+										</Label>
+										<RichTextEditor
+											id="description"
+											placeholder="Describe the job responsibilities, requirements, and qualifications..."
+											value={formData.description}
+											onChange={(value) => updateFormData("description", value)}
+											className={errors.description ? "border-destructive" : ""}
 										/>
-										{errors.department && (
-											<p className="text-sm text-destructive">{errors.department}</p>
+										{errors.description && (
+											<p className="text-sm text-destructive">{errors.description}</p>
 										)}
 									</div>
-
-									{/* Reports To */}
-									<div className="space-y-2">
-										<Label htmlFor="reportsTo" className="text-sm font-medium">
-											Reports To (Optional)
-										</Label>
-										<SearchableSelect
-											items={[
-												{ id: 0, label: "None", value: "none" },
-												...jobPositions.map((position) => ({
-													id: position.id,
-													label: `${position.name} - ${position.department_details?.name}`,
-													value:
-														`${position.name} ${position.department_details?.name}`.toLowerCase(),
-												})),
-											]}
-											selectedItems={formData.reports_to ? [formData.reports_to] : [0]}
-											placeholder="Select a position (optional)"
-											searchPlaceholder="Search positions..."
-											emptyMessage="No positions found."
-											onSelect={(itemId) =>
-												updateFormData("reports_to", Number(itemId) === 0 ? null : Number(itemId))
-											}
-											multiple={false}
-											popoverClassName="w-[500px]"
-										/>
-									</div>
-								</div>
-								{/* Job Description */}
-								<div className="space-y-2">
-									<Label htmlFor="description" className="text-sm font-medium">
-										Job Description *
-									</Label>
-									<RichTextEditor
-										id="description"
-										placeholder="Describe the job responsibilities, requirements, and qualifications..."
-										value={formData.description}
-										onChange={(value) => updateFormData("description", value)}
-										className={errors.description ? "border-destructive" : ""}
-									/>
-									{errors.description && (
-										<p className="text-sm text-destructive">{errors.description}</p>
-									)}
 								</div>
 
 								{/* Form Actions */}

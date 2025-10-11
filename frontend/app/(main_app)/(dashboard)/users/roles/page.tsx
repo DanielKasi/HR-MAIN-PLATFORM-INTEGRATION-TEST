@@ -1,5 +1,5 @@
 "use client";
-import type { Role } from "@/types";
+import { Role } from "@/types/user.types";
 
 import { Search, Plus, Eye, Trash2, ArrowLeft, Edit, MoreVertical } from "lucide-react";
 import { useEffect, useState } from "react";

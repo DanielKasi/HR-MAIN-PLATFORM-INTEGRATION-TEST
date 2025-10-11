@@ -155,11 +155,15 @@ const FAQDetailPage = () => {
 								</div>
 								<div className="space-y-1">
 									<Label className="text-xs text-gray-500">Created Date</Label>
-									<p className="text-sm">{faq.created_at ? formatDate(faq.created_at) : "N/A"}</p>
+									<p className="text-sm">
+										{faq.created_at ? formatDate(faq.created_at) : "Unknown"}
+									</p>
 								</div>
 								<div className="space-y-1">
 									<Label className="text-xs text-gray-500">Last Updated</Label>
-									<p className="text-sm">{faq.updated_at ? formatDate(faq.updated_at) : "N/A"}</p>
+									<p className="text-sm">
+										{faq.updated_at ? formatDate(faq.updated_at) : "Unknown"}
+									</p>
 								</div>
 							</div>
 						</div>

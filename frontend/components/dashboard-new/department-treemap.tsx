@@ -124,17 +124,17 @@ export function DepartmentTreemap({ data, onRefresh, loading }: DepartmentTreema
 				</div>
 			</CardHeader>
 			<CardContent>
-				<div ref={colorRef} className="bg-primary hidden" />
+				<div ref={colorRef} className="bg-primary hidden " />
 				{loading ? (
-					<div className="h-48 flex items-center justify-center text-muted-foreground">
+					<div className="h-80 flex items-center justify-center text-muted-foreground">
 						Loading...
 					</div>
 				) : sortedData.length === 0 ? (
-					<div className="h-48 flex items-center justify-center text-muted-foreground">
+					<div className="h-80 flex items-center justify-center text-muted-foreground">
 						No data available
 					</div>
 				) : (
-					<ApexChart options={chartOptions} series={chartSeries} type="treemap" height={250} />
+					<ApexChart options={chartOptions} series={chartSeries} type="treemap" height={320} />
 				)}
 			</CardContent>
 		</Card>

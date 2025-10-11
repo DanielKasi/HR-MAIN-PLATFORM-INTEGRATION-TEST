@@ -155,13 +155,13 @@ export default function LocationComparisonConfigDetailPage() {
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Created Date:</span>
 									<p className="text-sm">
-										{config.created_at ? formatDate(config.created_at) : "N/A"}
+										{config.created_at ? formatDate(config.created_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Last Updated:</span>
 									<p className="text-sm">
-										{config.updated_at ? formatDate(config.updated_at) : "N/A"}
+										{config.updated_at ? formatDate(config.updated_at) : "Unknown"}
 									</p>
 								</div>
 							</div>

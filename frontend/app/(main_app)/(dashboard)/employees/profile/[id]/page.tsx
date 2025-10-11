@@ -72,6 +72,7 @@ import { CheckOutModal } from "@/components/checkout-modal";
 import SingleEmployeeAttendance from "@/components/attendance/single-employee-attendance";
 import EmployeeDocumentRequestsTable from "../../_components/employee-document-requests-table";
 import EmployeeSignatures from "@/components/employee/employee-signature";
+import EmployeeDevices from "../../_components/employee-devices";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -94,6 +95,7 @@ export default function EmployeeProfile() {
 		| "general_info"
 		| "performance"
 		| "company_email"
+		| "devices"
 	>("general_info");
 	const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
 	const [attendancePage, setAttendancePage] = useState(1);
@@ -372,17 +374,18 @@ export default function EmployeeProfile() {
 	// Tab configuration with lazy loading indicators
 	const tabConfig: Array<{ id: typeof activeTab; label: string; hasData: boolean }> = useMemo(
 		() => [
-			{ id: "general_info", label: "General Information", hasData: true }, // Component handles own loading
+			{ id: "general_info", label: "General Information", hasData: true },
 			{ id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance },
-			{ id: "discipline", label: "Discipline", hasData: true }, // Component handles own loading
-			{ id: "leave", label: "Leave", hasData: true }, // Component handles own loading
-			{ id: "assets", label: "Assets", hasData: true }, // Component handles own loading
-			{ id: "payroll", label: "Payroll", hasData: true }, // Component handles own loading
-			{ id: "documents", label: "Documents", hasData: true }, // Component handles own loading
-			{ id: "spotchecks", label: "Spotchecks", hasData: true }, // Component handles own loading
-			{ id: "penalties", label: "Penalties", hasData: true }, // Component handles own loading
-			{ id: "shifts", label: "Shifts", hasData: true }, // Component handles own loading
+			{ id: "discipline", label: "Discipline", hasData: true },
+			{ id: "leave", label: "Leave", hasData: true },
+			{ id: "assets", label: "Assets", hasData: true },
+			{ id: "payroll", label: "Payroll", hasData: true },
+			{ id: "documents", label: "Documents", hasData: true },
+			{ id: "spotchecks", label: "Spotchecks", hasData: true },
+			{ id: "penalties", label: "Penalties", hasData: true },
+			{ id: "shifts", label: "Shifts", hasData: true },
 			{ id: "performance", label: "Performance", hasData: true },
+			{ id: "devices", label: "Devices", hasData: true },
 		],
 		[tabDataCache],
 	);
@@ -1508,9 +1511,9 @@ export default function EmployeeProfile() {
 													<EmployeeBonusPointsTable employee={employee} />
 												)}
 
-												{/* {activeTab === "company_email" && employee && (
-
-											)} */}
+												{activeTab === "devices" && employee && (
+													<EmployeeDevices employee={employee} />
+												)}
 											</CardContent>
 										</Card>
 									</div>

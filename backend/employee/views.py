@@ -699,7 +699,6 @@ class EmployeeCreateAPIView(APIView):
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
 
-        print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Final parsed data: {final_data}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
         return final_data
 
     @extend_schema(
@@ -859,7 +858,6 @@ class EmployeeCreateAPIView(APIView):
         site = get_current_site(request)
         institution = getattr(request.user.profile, "institution", None)
         if not institution:
-            # print("No institution associated with the requesting user.")
             return Response(
                 {
                     "detail": "No institution associated with the requesting user.",
@@ -875,7 +873,6 @@ class EmployeeCreateAPIView(APIView):
         file_extension = file.name.split(".")[-1].lower()
 
         if file_extension not in ["csv", "xlsx"]:
-            # print(f"Invalid file format: {file_extension}. Only CSV or Excel files are supported.")
             return Response(
                 {
                     "detail": "Invalid file format. Only CSV or Excel files are supported.",
@@ -940,7 +937,6 @@ class EmployeeCreateAPIView(APIView):
                 "salary": pd.Int64Dtype(),
             }
 
-            # print("Reading file with dtype enforcement")
             if file_extension == "csv":
                 df = pd.read_csv(
                     file,
@@ -1000,18 +996,11 @@ class EmployeeCreateAPIView(APIView):
                 "salary": "salary",
             }
 
-            # print("Mapping user-friendly column names to internal names")
             df = df.rename(columns={k: v for k, v in column_mapping.items() if k in df.columns})
-            # print(f"Columns after mapping: {list(df.columns)}")
 
-            # print(f"Processed file loaded with {len(df)} rows and columns: {list(df.columns)}")
-            # print(f"Processed column dtypes:\n{df.dtypes.to_dict()}")
-            # print(f"Processed null counts:\n{df.isna().sum().to_dict()}")
-            # print(f"Processed first 5 rows:\n{df.head(5).to_dict(orient='records')}")
 
             if "employee_id" in df.columns:
                 df["employee_id"] = df["employee_id"].replace("", pd.NA)
-                # print(f"employee_id after replacement: {df['employee_id'].tolist()}")
 
             for col in dtype_dict.keys():
                 if col in df.columns and col != "employee_id" and dtype_dict[col] == pd.StringDtype():
@@ -1019,13 +1008,11 @@ class EmployeeCreateAPIView(APIView):
 
             empty_columns = [col for col in df.columns if df[col].isna().all() or (df[col] == "").all()]
             if empty_columns:
-                # print(f"Dropping empty columns: {empty_columns}")
                 df = df.drop(columns=empty_columns)
 
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
-                # print(f"Missing required columns: {', '.join(missing_columns)}")
                 return Response(
                     {
                         "detail": f"Missing required columns: {', '.join(missing_columns)}",

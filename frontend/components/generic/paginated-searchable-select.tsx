@@ -1,17 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, Check, X } from "lucide-react";
+import { ChevronDown, X, Minus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IPaginatedResponse } from "@/types/types.utils";
 import { toast } from "sonner";
@@ -88,6 +78,8 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 	const [search, setSearch] = React.useState("");
 	const [hasMore, setHasMore] = React.useState(true);
 	const listRef = React.useRef<HTMLDivElement>(null);
+	const dropdownRef = React.useRef<HTMLDivElement>(null);
+	const searchInputRef = React.useRef<HTMLInputElement>(null);
 	const [sentinelNode, setSentinelNode] = React.useState<HTMLDivElement | null>(null);
 	const [selectedItem, setSelectedItem] = React.useState<T | null>(null);
 	const sentinelRef = React.useCallback((node: HTMLDivElement | null) => {
@@ -111,6 +103,25 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			setParentItems(data.results);
 		}
 	}, [data, setParentItems]);
+
+	// Close dropdown when clicking outside
+	React.useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+				setOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
+
+	// Focus search input when dropdown opens
+	React.useEffect(() => {
+		if (open && searchInputRef.current) {
+			searchInputRef.current.focus();
+		}
+	}, [open]);
 
 	// Fetch first page for paginated mode
 	React.useEffect(() => {
@@ -165,6 +176,54 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		return () => observer.disconnect();
 	}, [paginated, data?.next, fetchFromUrl, loading, sentinelNode, hasMore]);
 
+	// Helper functions for organizing items
+	const getOrderedItems = () => {
+		if (!data?.results) return [];
+		const allItems = data.results;
+		const selectedFilteredItems = allItems.filter(
+			(item) =>
+				selectedItems.includes(getItemId(item)) || selectedItems.includes(String(getItemId(item))),
+		);
+		const unselectedFilteredItems = allItems.filter(
+			(item) =>
+				!selectedItems.includes(getItemId(item)) &&
+				!selectedItems.includes(String(getItemId(item))),
+		);
+		return [...selectedFilteredItems, ...unselectedFilteredItems];
+	};
+
+	// Select all functionality
+	const handleSelectAll = () => {
+		if (!data?.results) return;
+		console.log("\n\n Selecting all with data results : ", data.results);
+		const allItems = data.results;
+		const allSelected = allItems.every(
+			(item) =>
+				selectedItems.includes(getItemId(item)) || selectedItems.includes(String(getItemId(item))),
+		);
+
+		if (allSelected) {
+			// Deselect all visible items
+			allItems.forEach((item) => {
+				const itemId = getItemId(item);
+				if (
+					onRemove &&
+					(selectedItems.includes(itemId) || selectedItems.includes(String(itemId)))
+				) {
+					onRemove(itemId, item);
+				}
+			});
+		} else {
+			// Select all visible items
+			allItems.forEach((item) => {
+				const itemId = getItemId(item);
+				if (!selectedItems.includes(itemId) && !selectedItems.includes(String(itemId))) {
+					onSelect(itemId, item);
+				}
+			});
+		}
+	};
+
 	const handleSelect = (itemId: string | number) => {
 		const item = data?.results.find((i) => getItemId(i) === itemId);
 		if (!item) return;
@@ -176,117 +235,142 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		}
 	};
 
-	return (
-		<div className={cn("relative", className)}>
-			<div className="py-1">
-				{showSelectedItems && (
-					<div className="flex items-center justify-start gap-2 flex-wrap">
-						{!defaultLabel ? (
-							<>
-								{data?.results
-									.filter((resItem) =>
-										selectedItems.find((item) => String(item) === String(getItemId(resItem))),
-									)
-									.map((itemData, idx) => {
-										const isSelected =
-											selectedItems.includes(getItemId(itemData)) ||
-											selectedItems.includes(String(getItemId(itemData)));
-										return (
-											<span
-												key={idx}
-												className="px-2 rounded-full text-sm inline-flex bg-primary/20 text-primary py-1 w-fit items-center gap-1"
-											>
-												<span className="max-w-40 truncate">{getItemLabel(itemData)}</span>
+	// Clear all selections
+	const clearAll = () => {
+		selectedItems.forEach((itemId) => {
+			const item = data?.results.find((i) => getItemId(i) === itemId);
+			if (item && onRemove) {
+				onRemove(itemId, item);
+			}
+		});
+	};
 
-												{isSelected && onRemove && (
-													<button
-														className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
-														type="button"
-														onClick={(e) => {
-															e.stopPropagation();
-															onRemove(getItemId(itemData), itemData);
-														}}
-													>
-														<X className="!h-3 !w-3 text-red-500" />
-													</button>
-												)}
-											</span>
-										);
-									})}
-							</>
-						) : (
-							<span className="px-2 rounded-full text-sm inline-flex bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs">
-								{defaultLabel}
+	// Check selection state
+	const allVisibleSelected = data?.results
+		? data.results.every(
+				(item) =>
+					selectedItems.includes(getItemId(item)) ||
+					selectedItems.includes(String(getItemId(item))),
+			)
+		: false;
+	const someVisibleSelected = data?.results
+		? data.results.some(
+				(item) =>
+					selectedItems.includes(getItemId(item)) ||
+					selectedItems.includes(String(getItemId(item))),
+			)
+		: false;
+
+	const orderedItems = getOrderedItems();
+
+	return (
+		<div className={cn("relative w-full", className)} ref={dropdownRef}>
+			{/* Trigger button */}
+			<div
+				className={cn(
+					"relative flex items-center justify-between w-full px-3 py-2 min-h-12 text-sm bg-background border border-input rounded-2xl cursor-pointer hover:bg-accent/50 transition-colors",
+					disabled && "opacity-50 cursor-not-allowed",
+					triggerClassName,
+				)}
+				onClick={() => !disabled && setOpen(!open)}
+			>
+				<input
+					ref={searchInputRef}
+					type="text"
+					placeholder={placeholder}
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className="flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground"
+					onClick={(e) => e.stopPropagation()}
+					disabled={disabled}
+				/>
+
+				<div className="flex items-center gap-2">
+					{selectedItems.length > 0 && (
+						<div className="flex items-center gap-1">
+							<span className="bg-primary text-primary-foreground text-xs px-4 py-1 rounded-md font-medium">
+								{selectedItems.length}
 							</span>
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									clearAll();
+								}}
+								className="text-muted-foreground hover:text-foreground transition-colors"
+								disabled={disabled}
+							>
+								<X className="h-4 w-4" />
+							</button>
+						</div>
+					)}
+					<ChevronDown
+						className={cn(
+							"h-4 w-4 text-muted-foreground transition-transform",
+							open && "rotate-180",
+						)}
+					/>
+				</div>
+			</div>
+
+			{/* Dropdown content */}
+			{open && (
+				<div
+					className={cn(
+						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-hidden",
+						popoverClassName,
+					)}
+				>
+					{/* Select All option - only show for multiple selection */}
+					{multiple && (
+						<div
+							className="flex items-center gap-3 px-3 py-2 hover:bg-accent cursor-pointer border-b border-border"
+							onClick={handleSelectAll}
+						>
+							<div className="flex items-center justify-center w-4 h-4 border border-input rounded-sm bg-background">
+								{allVisibleSelected ? (
+									<Check className="h-3 w-3 text-primary" />
+								) : someVisibleSelected ? (
+									<Minus className="h-3 w-3 text-primary" />
+								) : null}
+							</div>
+							<span className="text-sm font-medium">Select All</span>
+						</div>
+					)}
+
+					{/* Items list */}
+					<div ref={listRef} className="max-h-48 overflow-y-auto">
+						{loading && orderedItems.length === 0 ? (
+							<div className="px-3 py-2 text-sm text-muted-foreground">Loading...</div>
+						) : orderedItems.length === 0 ? (
+							<div className="px-3 py-2 text-sm text-muted-foreground">{emptyMessage}</div>
+						) : (
+							orderedItems.map((item) => {
+								const isSelected =
+									selectedItems.includes(getItemId(item)) ||
+									selectedItems.includes(String(getItemId(item)));
+								return (
+									<div
+										key={getItemId(item)}
+										className="flex items-center gap-3 px-3 py-2 hover:bg-accent cursor-pointer transition-colors"
+										onClick={() => handleSelect(getItemId(item))}
+									>
+										<div className="flex items-center justify-center w-4 h-4 border border-input rounded-sm bg-background">
+											{isSelected && <Check className="h-3 w-3 text-primary" />}
+										</div>
+										<span className={cn("text-sm", isSelected && "font-medium")}>
+											{getItemLabel(item)}
+										</span>
+									</div>
+								);
+							})
+						)}
+						{paginated && hasMore && <div ref={sentinelRef} className="h-3" />}
+						{loading && orderedItems.length > 0 && (
+							<div className="text-center py-2 text-xs text-gray-500">Loading more...</div>
 						)}
 					</div>
-				)}
-			</div>
-			<Popover open={open} onOpenChange={setOpen}>
-				<PopoverTrigger asChild>
-					<Button
-						type="button"
-						aria-expanded={open}
-						className={cn("w-full min-w-40 justify-between h-12 rounded-2xl", triggerClassName)}
-						disabled={disabled}
-						role="combobox"
-						variant="outline"
-					>
-						<span className="max-w-40 truncate">
-							{!multiple && selectedItem ? getItemLabel(selectedItem) : placeholder}
-						</span>
-
-						<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent id={id || ""} className={cn("w-full p-0", popoverClassName)}>
-					<Command shouldFilter={false}>
-						<CommandInput
-							placeholder={searchPlaceholder}
-							value={search}
-							onValueChange={setSearch}
-						/>
-						<CommandEmpty>{loading ? "Loading..." : emptyMessage}</CommandEmpty>
-						<CommandGroup>
-							<CommandList ref={listRef} style={{ maxHeight: 300, overflowY: "auto" }}>
-								{data?.results.map((item) => {
-									const isSelected =
-										selectedItems.includes(getItemId(item)) ||
-										selectedItems.includes(String(getItemId(item)));
-									return (
-										<CommandItem
-											key={getItemId(item)}
-											value={getItemValue(item) || getItemLabel(item)}
-											onSelect={() => handleSelect(getItemId(item))}
-										>
-											<Check
-												className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
-											/>
-											{getItemLabel(item)}
-											{multiple && isSelected && onRemove && (
-												<button
-													type="button"
-													className="rounded-full ml-auto !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
-													onClick={(e) => {
-														e.stopPropagation();
-														onRemove(getItemId(item), item);
-													}}
-												>
-													<X className="!h-3 !w-3 text-red-500" />
-												</button>
-											)}
-										</CommandItem>
-									);
-								})}
-								{paginated && hasMore && <div ref={sentinelRef} className="h-3" />}
-								{loading && (
-									<div className="text-center py-2 text-xs text-gray-500">Loading more...</div>
-								)}
-							</CommandList>
-						</CommandGroup>
-					</Command>
-				</PopoverContent>
-			</Popover>
+				</div>
+			)}
 		</div>
 	);
 }

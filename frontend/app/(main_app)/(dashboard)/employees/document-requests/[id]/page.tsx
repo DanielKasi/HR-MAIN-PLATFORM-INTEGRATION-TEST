@@ -118,7 +118,7 @@ export default function DocumentRequestViewPage() {
 								<span className="text-sm">
 									{typeof request.created_at === "string"
 										? formatDateTime(request.created_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 						</CardContent>

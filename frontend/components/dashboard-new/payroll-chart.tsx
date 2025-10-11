@@ -79,7 +79,7 @@ export function PayrollChart({
 				</div>
 			</CardHeader>
 			<CardContent>
-				<div className="h-64">
+				<div className="h-80">
 					<ResponsiveContainer width="100%" height="100%">
 						<LineChart data={data?.current || []}>
 							<XAxis
