@@ -241,6 +241,41 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
         serializer = DeviceEmployeeAttachmentSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save()
+
+            employee = instance.employee
+            is_employee_synced = DeviceEmployeeAttachment.objects.filter(
+                employee=employee,
+                device__institution=instance.device.institution,
+                is_synced=True
+            ).exists()
+
+            payload = {"cmd": "addUser"}
+            if not is_employee_synced:
+                payload["name"] = employee.name or employee.user.fullname
+                payload["external_user_id"] = employee.employee_id
+
+            external_api_url = config('DEVICE_USER_REG_API')
+            api_key = config('API_KEY')
+
+            try:
+                response = requests.post(
+                    external_api_url,
+                    json=payload,
+                    headers={"API-KEY": api_key},
+                    timeout=5
+                )
+                if response.status_code != 200:
+                    instance.delete()
+                    return Response(
+                        {"detail": f"Failed to register employee with external system: {response.text}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except requests.RequestException as e:
+                instance.delete()
+                return Response(
+                    {"detail": f"Error communicating with device system: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -390,8 +425,8 @@ class DeviceCallbackView(APIView):
     def post(self, request):
         payload = request.data
         event_type = payload.get("event_type")
-        device_sn = payload.get("device_sn")
-        status_str = payload.get("status")
+        # device_sn = payload.get("device_sn")
+        # status_str = payload.get("status")
 
         if not event_type:
             return Response(
@@ -400,13 +435,10 @@ class DeviceCallbackView(APIView):
             )
 
         try:
-            # Example event handling
             if event_type == "send_log":
-                # Process log callback
                 pass
 
             elif event_type == "reg":
-                # Process registration callback
                 pass
 
             else:
