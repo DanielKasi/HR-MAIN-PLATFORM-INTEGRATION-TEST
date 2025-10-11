@@ -255,6 +255,7 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
                 payload["external_user_id"] = employee.employee_id
 
             external_api_url = config('DEVICE_USER_REG_API')
+            url = external_api_url % instance.device.serial_number
             api_key = config('API_KEY')
 
             try:
