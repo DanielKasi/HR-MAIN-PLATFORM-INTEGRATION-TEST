@@ -6,6 +6,7 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, inline_serializer
+from employee.models import Employee
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
 from .models import Device, DeviceStatus, DeviceEmployeeAttachment
@@ -329,9 +330,8 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
 
     @extend_schema(
         parameters=[
-            {"name": "search", "type": "str", "description": "Search by enroll_id"},
             {"name": "created_at", "type": "date", "description": "Filter by creation date"},
-            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'enroll_id,created_at')"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'created_at')"},
         ],
         responses={
             200: OpenApiResponse(
@@ -360,8 +360,6 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
             device__institution=institution, deleted_at__isnull=True
         )
 
-        if search_query:
-            attachments = attachments.filter(enroll_id__icontains=search_query)
 
         if created_at:
             attachments = attachments.filter(created_at=created_at)
@@ -509,3 +507,233 @@ class DeviceCallbackView(APIView):
             )
 
                     
+class CopyUserToDevice(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=inline_serializer(
+            name="CopyUserToDeviceRequest",
+            fields={
+                "device_id": serializers.IntegerField(),
+                "employee_id": serializers.CharField(),
+            }
+        ),
+        responses={
+            201: OpenApiResponse(
+                response=DeviceEmployeeAttachmentSerializer,
+                description="Employee successfully copied to device and registered with external system."
+            ),
+            400: OpenApiResponse(
+                description="Invalid request, employee not synced, or failed to register with external system."
+            ),
+            404: OpenApiResponse(
+                description="Device or employee not found, or employee not synced with any device."
+            ),
+        },
+        tags=["Device Mgt"],
+        description="Copy an existing synced employee to another device in the external device system."
+    )
+    @transaction.atomic()
+    def post(self, request):
+        print("\n=== Incoming CopyUserToDevice Request ===")
+        print(f"Request Data: {request.data}")
+        print(f"User: {request.user}")
+
+        device_id = request.data.get("device_id")
+        employee_id = request.data.get("employee_id")
+
+        # Validate inputs
+        if not device_id or not employee_id:
+            print("❌ Missing required fields: device_id or employee_id")
+            return Response(
+                {"detail": "device_id and employee_id are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print(f"Looking up Device ID: {device_id} and Employee ID: {employee_id}")
+
+        # Check device and employee existence
+        try:
+            device = Device.objects.get(id=device_id, institution=request.user.profile.institution)
+            employee = Employee.objects.get(
+                employee_id=employee_id,
+                department__institution=request.user.profile.institution
+            )
+            print(f"✅ Device found: {device.serial_number}")
+            print(f"✅ Employee found: {employee.name}")
+
+        except Device.DoesNotExist:
+            print("❌ Device not found or not part of user's institution.")
+            return Response(
+                {"detail": "Device not found or not in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Employee.DoesNotExist:
+            print("❌ Employee not found in user's institution.")
+            return Response(
+                {"detail": "Employee not found in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Call external device system
+        external_api_url = config('DEVICE_USER_REG_API', default='')
+        url = external_api_url % device.serial_number
+        api_key = config('API_KEY', default='')
+
+        payload = {
+            "cmd": "copyUserToDevice",
+            "external_user_id": employee.employee_id
+        }
+
+        masked_key = api_key[:4] + "****" if api_key else "NOT SET"
+
+        print("\n=== Sending to External API ===")
+        print(f"External API URL: {url}")
+        print(f"API Key (masked): {masked_key}")
+        print(f"Payload: {payload}")
+
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers={"X-API-KEY": api_key},
+                timeout=5
+            )
+
+            print(f"External API Response Status: {response.status_code}")
+            print(f"External API Response Text: {response.text}")
+
+            if response.status_code != 200:
+                print("❌ Failed to copy employee to device.")
+                return Response(
+                    {"detail": f"Failed to copy employee to device: {response.text}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except requests.RequestException as e:
+            print(f"❌ Error communicating with external device system: {str(e)}")
+            return Response(
+                {"detail": f"Error communicating with device system: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print(f"✅ Successfully copied Employee '{employee.name}' to Device '{device.serial_number}'")
+        return Response(
+            {"detail": f"Employee {employee.name} successfully copied to device {device.serial_number}."},
+            status=status.HTTP_201_CREATED
+        )
+    
+class CaptureFingerPrint(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=inline_serializer(
+            name="CaptureFingerPrintRequest",
+            fields={
+                "device_id": serializers.IntegerField(),
+                "employee_id": serializers.CharField(),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="Fingerprint capture initiated successfully."
+            ),
+            400: OpenApiResponse(
+                description="Invalid request, employee not synced with device, or failed to communicate with external system."
+            ),
+            404: OpenApiResponse(
+                description="Device, employee, or device-employee attachment not found."
+            ),
+        },
+        tags=["Device Mgt"],
+        description="Initiate fingerprint capture for an existing synced employee on a specific device."
+    )
+    def post(self, request):
+        print("\n=== CaptureFingerPrint API CALLED ===")
+        print("Incoming request data:", request.data)
+        print("Authenticated user:", request.user)
+
+        device_id = request.data.get("device_id")
+        employee_id = request.data.get("employee_id")
+        print(f"Extracted device_id={device_id}, employee_id={employee_id}")
+
+        # Validate inputs
+        if not device_id or not employee_id:
+            print("❌ Missing device_id or employee_id")
+            return Response(
+                {"detail": "device_id and employee_id are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check device and employee existence
+        try:
+            print("Checking if device exists for this user’s institution...")
+            device = Device.objects.get(
+                id=device_id,
+                institution=request.user.profile.institution
+            )
+            print("✅ Device found:", device)
+
+            print("Checking if employee exists in institution...")
+            employee = Employee.objects.get(
+                employee_id=employee_id,
+                department__institution=request.user.profile.institution
+            )
+            print("✅ Employee found:", employee)
+
+        except Device.DoesNotExist:
+            print("❌ Device not found or not in user's institution.")
+            return Response(
+                {"detail": "Device not found or not in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Employee.DoesNotExist:
+            print("❌ Employee not found in user's institution.")
+            return Response(
+                {"detail": "Employee not found in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Call external device system
+        external_api_url = config('DEVICE_USER_REG_API')
+        url = external_api_url % device.serial_number
+        api_key = config('API_KEY', default='')
+        payload = {
+            "cmd": "captureFingerPrint",
+            "external_user_id": employee.employee_id
+        }
+
+        print("Preparing to call external API...")
+        print(f"External API URL: {url}")
+        print(f"Payload: {payload}")
+        print(f"API Key: {'[HIDDEN]' if api_key else 'None'}")
+
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers={"X-API-KEY": api_key},
+                timeout=5
+            )
+            print("External API Response Code:", response.status_code)
+            print("External API Response Text:", response.text)
+
+            if response.status_code != 200:
+                print("❌ Failed to initiate fingerprint capture.")
+                return Response(
+                    {"detail": f"Failed to initiate fingerprint capture: {response.text}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except requests.RequestException as e:
+            print("❌ RequestException occurred:", str(e))
+            return Response(
+                {"detail": f"Error communicating with device system: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print("✅ Fingerprint capture initiated successfully.")
+        return Response(
+            {"detail": "Fingerprint capture initiated successfully."},
+            status=status.HTTP_200_OK
+        )
+ 
