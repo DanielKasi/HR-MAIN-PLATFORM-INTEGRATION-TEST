@@ -7150,7 +7150,7 @@ export const showErrorToast = ({
 	error,
 	defaultMessage,
 }: {
-	error: any;
+	error?: any;
 	defaultMessage?: string;
 }) => {
 	const errorMessage =

@@ -15,7 +15,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { showErrorToast } from "@/lib/utils";
-import { useDocumentTitle } from "@/hooks/use-document-title";
 import apiRequest from "@/lib/apiRequest";
 
 import type {
