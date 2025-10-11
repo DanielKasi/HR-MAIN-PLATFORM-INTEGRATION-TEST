@@ -43,6 +43,7 @@ class DeviceEmployeeAttachment(SoftDeletableTimeStampedModel):
     enroll_id = models.CharField(
         max_length=50, unique=True, help_text="Unique identifier for employee on this device (e.g., biometric ID)"
     )
+    is_synced = models.BooleanField(default=False)  
     is_admin = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.employee.name} on {self.device.serial_number}"
