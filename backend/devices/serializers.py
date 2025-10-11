@@ -68,12 +68,21 @@ class DeviceEmployeeAttachmentSerializer(serializers.ModelSerializer):
     # employee_details = serializers.SerializerMethodField()
     device_details = serializers.SerializerMethodField()
     employee_id = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), source='employee', write_only=True
+        queryset=Employee.objects.all(), source='employee', write_only=True, required=False
     )
 
     class Meta:
         model = DeviceEmployeeAttachment
-        fields = '__all__'
+        fields = [
+            'id',
+            'device',
+            'device_details',
+            'employee_id',
+            'is_synced',
+            'is_admin',
+            'created_at',
+            'updated_at'
+        ]
         read_only_fields = ['created_at', 'updated_at']
 
     # def get_employee_details(self, obj):
