@@ -33,9 +33,14 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 			cell: (device) => device.serial_number,
 		},
 		{
+			key: "device_name",
+			header: "Device Name",
+			cell: (device) => device.name || "",
+		},
+		{
 			key: "description",
 			header: "Description",
-			cell: (device) => device.description || "N/A",
+			cell: (device) => <p className=" line-clamp-3">{device.description || ""}</p>,
 		},
 		{
 			key: "status",
@@ -45,9 +50,8 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 		{
 			key: "branch",
 			header: "Branch",
-			cell: (device) => device.branch?.name || "N/A",
+			cell: (device) => device.branch?.name || "",
 		},
-		// Add actions if needed, e.g., detach
 	];
 
 	return (

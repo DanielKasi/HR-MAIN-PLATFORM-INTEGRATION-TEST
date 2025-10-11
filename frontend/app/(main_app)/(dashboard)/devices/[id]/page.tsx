@@ -126,6 +126,9 @@ export default function DeviceDetailsPage() {
 									<b>Serial Number:</b> {device.serial_number || ""}
 								</p>
 								<p>
+									<b>Device name:</b> {device.serial_number || ""}
+								</p>
+								<p>
 									<b>Description:</b> {device.description || ""}
 								</p>
 							</div>

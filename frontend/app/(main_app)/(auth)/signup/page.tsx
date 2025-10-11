@@ -24,6 +24,7 @@ import { handleApiError } from "@/lib/apiErrorHandler";
 import { USER_GENDER } from "@/types/user.types";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { logoutStart } from "@/store/auth/actions";
+import { showErrorToast } from "@/lib/utils";
 
 const GENDER_LABELS: Record<USER_GENDER, string> = {
 	[USER_GENDER.MALE]: "Male",
@@ -129,7 +130,7 @@ export default function SignupPage() {
 				router.push(`verify-otp?email=${encodeURIComponent(email)}`);
 			}
 		} catch (error: any) {
-			handleApiError(error);
+			showErrorToast({ error, defaultMessage: "Something went wrong, this operation failed" });
 		} finally {
 			setIsSubmitting(false);
 		}
