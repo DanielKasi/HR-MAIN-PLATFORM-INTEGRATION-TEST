@@ -28,6 +28,7 @@ import { DEVICES_API } from "@/lib/api/devices.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useSelector } from "react-redux";
 import BranchSearchableSelect from "@/components/selects/branch-searchable-select";
+import { showErrorToast } from "@/lib/utils";
 
 const STATUS_CHOICES: Array<{ value: IDeviceStatus; label: string }> = [
 	{ value: "active", label: "Active" },
@@ -56,6 +57,7 @@ export const DeviceFormDialog = ({
 		serial_number: "",
 		description: "",
 		status: "active",
+		name: "",
 	});
 
 	const isEditMode = !!editingDevice;
@@ -69,6 +71,7 @@ export const DeviceFormDialog = ({
 					serial_number: editingDevice.serial_number,
 					description: editingDevice.description || "",
 					status: editingDevice.status,
+					name: editingDevice.name || "",
 				});
 			} else {
 				// Reset form for create mode
@@ -77,6 +80,7 @@ export const DeviceFormDialog = ({
 					serial_number: "",
 					description: "",
 					status: "active",
+					name: "",
 				});
 			}
 		}
@@ -115,7 +119,7 @@ export const DeviceFormDialog = ({
 				onSuccess(result);
 			}
 		} catch (error: any) {
-			toast.error(error.message || "Failed to save device");
+			showErrorToast({ error, defaultMessage: "Failed to save device" });
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -157,6 +161,19 @@ export const DeviceFormDialog = ({
 								value={formData.serial_number}
 								onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
 								placeholder="Enter serial number"
+								disabled={isSubmitting}
+								className="h-10 rounded-xl"
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="name" className="text-sm font-medium text-gray-700">
+								Name
+							</Label>
+							<Input
+								id="name"
+								value={formData.name}
+								onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+								placeholder="Enter a name"
 								disabled={isSubmitting}
 								className="h-10 rounded-xl"
 							/>

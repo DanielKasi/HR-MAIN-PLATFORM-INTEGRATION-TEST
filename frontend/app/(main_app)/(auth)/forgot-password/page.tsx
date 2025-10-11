@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { forgotPassword } from "@/lib/utils";
+import { forgotPassword, showErrorToast } from "@/lib/utils";
 import { handleApiError } from "@/lib/apiErrorHandler";
 import { Card } from "@/components/ui/card";
 
@@ -32,8 +32,7 @@ export default function EmailRequest() {
 			toast.success("Email sent. Check your email for a password reset link");
 			router.push(`/forgot-password/email-sent?email=${encodeURIComponent(email)}`);
 		} catch (error: any) {
-			toast.error("Failed to send reset email. Please try again.");
-			handleApiError(error);
+			showErrorToast({ error, defaultMessage: "Failed to send reset email. Please try again." });
 		} finally {
 			setIsLoading(false);
 		}

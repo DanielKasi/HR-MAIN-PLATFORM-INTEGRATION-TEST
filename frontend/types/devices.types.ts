@@ -2,6 +2,7 @@ export type IDeviceStatus = "active" | "inactive" | "maintenance" | "faulty";
 
 export interface IDevice {
 	id: number;
+	name?: string | null;
 	institution: { id: number; name: string } | null;
 	branch: { id: number; name: string } | null;
 	serial_number: string;
@@ -13,6 +14,7 @@ export interface IDevice {
 export interface IDeviceFormData {
 	branch?: number | null;
 	serial_number: string;
+	name: string;
 	description: string;
 	status: IDeviceStatus;
 }
