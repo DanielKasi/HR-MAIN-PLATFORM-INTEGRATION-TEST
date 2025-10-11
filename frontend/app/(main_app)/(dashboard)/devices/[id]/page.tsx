@@ -78,11 +78,6 @@ export default function DeviceDetailsPage() {
 			cell: (attachment) => attachment.employee.name,
 		},
 		{
-			key: "enroll_id",
-			header: "Enroll ID",
-			cell: (attachment) => attachment.enroll_id,
-		},
-		{
 			key: "actions",
 			header: "Actions",
 			cell: (attachment) => (

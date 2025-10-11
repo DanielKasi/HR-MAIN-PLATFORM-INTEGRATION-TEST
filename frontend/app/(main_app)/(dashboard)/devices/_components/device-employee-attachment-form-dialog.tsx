@@ -45,7 +45,6 @@ export const DeviceEmployeeAttachmentFormDialog = ({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const [formData, setFormData] = useState<IDeviceEmployeeAttachmentFormData>({
-		enroll_id: "",
 		is_admin: false,
 	});
 
@@ -57,14 +56,12 @@ export const DeviceEmployeeAttachmentFormDialog = ({
 				setFormData({
 					device: editingAttachment.device.id,
 					employee_id: editingAttachment.employee.id,
-					enroll_id: editingAttachment.enroll_id,
 					is_admin: editingAttachment.is_admin,
 				});
 			} else {
 				setFormData({
 					device: fixedDevice,
 					employee_id: fixedEmployee,
-					enroll_id: "",
 					is_admin: false,
 				});
 			}
@@ -72,7 +69,7 @@ export const DeviceEmployeeAttachmentFormDialog = ({
 	}, [isOpen, editingAttachment, fixedDevice, fixedEmployee]);
 
 	const handleSubmit = async () => {
-		if (!formData.enroll_id || !formData.device || !formData.employee_id) {
+		if (!formData.device || !formData.employee_id) {
 			toast.error("Please fill in all required fields");
 			return;
 		}
@@ -140,19 +137,6 @@ export const DeviceEmployeeAttachmentFormDialog = ({
 							/>
 						</div>
 					)}
-					<div className="space-y-2">
-						<Label htmlFor="enroll_id" className="text-sm font-medium text-gray-700">
-							Enrollment ID *
-						</Label>
-						<Input
-							id="enroll_id"
-							value={formData.enroll_id}
-							onChange={(e) => setFormData({ ...formData, enroll_id: e.target.value })}
-							placeholder="Enter enroll ID (e.g., biometric ID)"
-							disabled={isSubmitting}
-							className="h-10 rounded-xl"
-						/>
-					</div>
 				</div>
 				<DialogFooter>
 					<Button onClick={handleSubmit} disabled={isSubmitting} className="w-full rounded-full">

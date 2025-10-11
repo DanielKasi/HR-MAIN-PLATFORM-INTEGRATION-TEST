@@ -68,6 +68,7 @@ export default function DevicesPage({}: DevicesPageProps) {
 		toast.success(`Device ${editingDevice ? "updated" : "created"} successfully`);
 		setShowCreateDialog(false);
 		setEditingDevice(null);
+		refreshTableRef.current?.();
 	};
 
 	const columns: ColumnDef<IDevice>[] = [

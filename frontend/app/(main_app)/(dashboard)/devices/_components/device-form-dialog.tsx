@@ -53,7 +53,6 @@ export const DeviceFormDialog = ({
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	const [formData, setFormData] = useState<IDeviceFormData>({
-		branch: 0,
 		serial_number: "",
 		description: "",
 		status: "active",
@@ -66,7 +65,7 @@ export const DeviceFormDialog = ({
 		if (isOpen) {
 			if (editingDevice) {
 				setFormData({
-					branch: editingDevice.branch?.id || 0,
+					branch: editingDevice.branch?.id,
 					serial_number: editingDevice.serial_number,
 					description: editingDevice.description || "",
 					status: editingDevice.status,
@@ -74,7 +73,7 @@ export const DeviceFormDialog = ({
 			} else {
 				// Reset form for create mode
 				setFormData({
-					branch: 0,
+					branch: undefined,
 					serial_number: "",
 					description: "",
 					status: "active",
@@ -85,7 +84,7 @@ export const DeviceFormDialog = ({
 
 	const handleSubmit = async () => {
 		// Validation
-		if (!formData.serial_number || !formData.branch) {
+		if (!formData.serial_number) {
 			toast.error("Please fill in all required fields");
 			return;
 		}
@@ -137,7 +136,7 @@ export const DeviceFormDialog = ({
 					<div className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="branch" className="text-sm font-medium text-gray-700">
-								Branch
+								Branch (Optional)
 							</Label>
 							<BranchSearchableSelect
 								value={formData.branch ? [formData.branch] : []}

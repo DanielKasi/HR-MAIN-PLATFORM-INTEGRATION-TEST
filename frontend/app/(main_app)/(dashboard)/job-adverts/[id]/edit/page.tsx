@@ -28,18 +28,20 @@ import {
 } from "@/lib/utils";
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { RichTextEditor } from "@/components/common/rich-editor";
+import EmployeeTypeSearchableSelect from "../../../employees/employee-types/_components/employee-type-searchable-select";
+import WorkTypeSearchableSelect from "../../../employees/work-types/_components/work-type-searchable-select";
 
 export default function EditJobAdvertPage() {
 	const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null);
-	const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null);
+	// const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null);
 	const [formData, setFormData] = useState<JobPositionAdvertFormData>({
 		job_position: 0,
 		job_position_advert_status: "active" as JobAdvertStatus,
 		expiry_date: "",
 		number_of_employees_expected: 1,
 		extra_information: "",
-		level: 0, // Provide a default value
-		interviewers: [], // Provide a default value
+		level: 0,
+		interviewers: [],
 	});
 
 	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
@@ -91,10 +93,9 @@ export default function EditJobAdvertPage() {
 
 			setJobAdvert(fetchedJobAdvert);
 
-			const [fetchedJobPositionsResponse, fetchedJobPosition] = await Promise.all([
-				getJobPositions({ institutionId: selectedInstitution.id }),
-				getJobPosition({ jobPositionId: fetchedJobAdvert.job_position }),
-			]);
+			const fetchedJobPositionsResponse = await getJobPositions({
+				institutionId: selectedInstitution.id,
+			});
 
 			// Handle paginated job positions/titles response
 			if (
@@ -109,20 +110,14 @@ export default function EditJobAdvertPage() {
 				setJobPositions([]);
 			}
 
-			if (fetchedJobPosition) {
-				setJobPosition(fetchedJobPosition);
-			}
-
-			const expiryDate = fetchedJobAdvert.expiry_date
-				? new Date(fetchedJobAdvert.expiry_date).toISOString().split("T")[0]
-				: "";
-
 			const formDataToSet: JobPositionAdvertFormData = {
-				job_position: 0,
-				job_position_advert_status: "active",
+				job_position: fetchedJobAdvert.job_position_details.id,
+				job_position_advert_status: fetchedJobAdvert.job_position_details.job_position_status,
 				expiry_date: "",
-				number_of_employees_expected: 1,
-				extra_information: "",
+				work_type: fetchedJobAdvert.work_type?.id,
+				employee_type: fetchedJobAdvert.employee_type?.id,
+				number_of_employees_expected: fetchedJobAdvert.number_of_employees_expected || 0,
+				extra_information: fetchedJobAdvert.extra_information || "",
 				level: 0,
 				interviewers: [],
 			};
@@ -234,6 +229,8 @@ export default function EditJobAdvertPage() {
 				expiry_date: formData.expiry_date,
 				number_of_employees_expected: formData.number_of_employees_expected || undefined,
 				extra_information: formData.extra_information || undefined,
+				work_type: formData.work_type,
+				employee_type: formData.employee_type,
 			};
 
 			const updatedJobAdvert = await updateJobPositionAdvert({
@@ -448,7 +445,36 @@ export default function EditJobAdvertPage() {
 								</div>
 							</div>
 
-							{/* Extra Information - Full Width */}
+							<div>
+								<label className="block text-xs sm:text-sm md:text-base font-normal text-gray-800 mb-2">
+									Work Type (Optional)
+								</label>
+								<WorkTypeSearchableSelect
+									value={formData.work_type ? [formData.work_type] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											setFormData((prev) => ({ ...prev, work_type: Number(values[0]) }));
+										}
+									}}
+									multiple={false}
+								/>
+							</div>
+
+							<div>
+								<label className="block text-xs sm:text-sm md:text-base font-normal text-gray-800 mb-2">
+									Employee Type (Optional)
+								</label>
+								<EmployeeTypeSearchableSelect
+									value={formData.employee_type ? [formData.employee_type] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											setFormData((prev) => ({ ...prev, employee_type: Number(values[0]) }));
+										}
+									}}
+									multiple={false}
+								/>
+							</div>
+
 							<div>
 								<Label htmlFor="extra_information" className="text-sm font-medium">
 									Job Description (Optional)
