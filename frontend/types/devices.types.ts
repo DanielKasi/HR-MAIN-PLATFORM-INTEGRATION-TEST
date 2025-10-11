@@ -11,7 +11,7 @@ export interface IDevice {
 }
 
 export interface IDeviceFormData {
-	branch: number;
+	branch?: number | null;
 	serial_number: string;
 	description: string;
 	status: IDeviceStatus;

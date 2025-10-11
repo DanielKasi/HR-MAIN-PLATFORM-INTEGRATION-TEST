@@ -68,6 +68,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import WorkTypeSearchableSelect from "../../employees/work-types/_components/work-type-searchable-select";
+import EmployeeTypeSearchableSelect from "../../employees/employee-types/_components/employee-type-searchable-select";
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -139,14 +141,6 @@ export default function JobAdvertsPage() {
 		interviewers: [],
 		required_documents: [],
 	});
-
-	// Separate form data for interview stages
-	// const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
-	//   name: "",
-	//   level: 1,
-	//   interviewers: [],
-	//   job_position_advert: 0,
-	// })
 
 	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -239,6 +233,23 @@ export default function JobAdvertsPage() {
 		}
 		fetchJobPositions();
 	}, [selectedInstitution, selectedBranch, router]);
+
+	// useEffect(() => {
+	// 	// Save complete form data to Redux including interview stages
+	// 	const completeFormData: JobAdvertCompleteFormData = {
+	// 		...formData,
+	// 		stages,
+	// 		newStageName,
+	// 		selectedInterviewers,
+	// 		newFeedbackFieldName,
+	// 		newFeedbackFieldType,
+	// 	};
+
+	// 	const interval = setInterval(() => {
+	// 		dispatch(saveJobAdvertForm(completeFormData));
+	// 	}, 1000);
+	// 	return () => clearInterval(interval);
+	// }, [formData]);
 
 	// Helper to format job position label
 	const getPositionLabel = useCallback((position: IJobPosition): string => {
@@ -387,40 +398,15 @@ export default function JobAdvertsPage() {
 		field: keyof Exclude<JobPositionAdvertFormData, "job_position_advert_status">,
 		value: any,
 	) => {
-		const updatedFormData = { ...formData, [field]: value };
+		const updatedFormData = { ...formData };
 
-		setFormData(updatedFormData);
-
-		// Save complete form data to Redux including interview stages
-		const completeFormData: JobAdvertCompleteFormData = {
-			...updatedFormData,
-			stages,
-			newStageName,
-			selectedInterviewers,
-			newFeedbackFieldName,
-			newFeedbackFieldType,
-		};
-
-		dispatch(saveJobAdvertForm(completeFormData));
+		setFormData((prev) => ({ ...prev, [field]: value }));
 
 		// Clear error when user starts typing
 		if (errors[field]) {
 			setErrors((prev) => ({ ...prev, [field]: undefined }));
 		}
 	};
-
-	// Function to save complete form data to Redux
-	// const saveCompleteFormToRedux = () => {
-	//   const completeFormData: JobAdvertCompleteFormData = {
-	//     ...formData,
-	//     stages,
-	//     newStageName,
-	//     selectedInterviewers,
-	//     newFeedbackFieldName,
-	//     newFeedbackFieldType,
-	//   }
-	//   dispatch(saveJobAdvertForm(completeFormData))
-	// }
 
 	const validateForm = (): boolean => {
 		const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {};
@@ -487,9 +473,9 @@ export default function JobAdvertsPage() {
 				level: formData.level,
 				interviewers: formData.interviewers,
 				required_documents: requiredDocuments.map(({ id, ...doc }) => doc),
+				work_type: formData.work_type,
+				employee_type: formData.employee_type,
 			};
-
-			console.log("Sending payload:", createData); // to debug
 
 			const response = await createJobPositionAdvert({
 				institutionId: selectedInstitution.id,
@@ -519,7 +505,7 @@ export default function JobAdvertsPage() {
 
 		const documentToAdd: RequiredDocument = {
 			...newDocument,
-			id: Date.now().toString(),
+			id: Date.now(),
 		};
 
 		setRequiredDocuments((prev) => [...prev, documentToAdd]);
@@ -530,7 +516,7 @@ export default function JobAdvertsPage() {
 		});
 	};
 
-	const removeDocument = (documentId: string) => {
+	const removeDocument = (documentId: number) => {
 		setRequiredDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
 	};
 
@@ -646,6 +632,7 @@ export default function JobAdvertsPage() {
 		// Save to Redux
 		const completeFormData: JobAdvertCompleteFormData = {
 			...formData,
+			required_documents: formData.required_documents,
 			stages,
 			newStageName,
 			selectedInterviewers: updatedSelectedInterviewers,
@@ -687,7 +674,7 @@ export default function JobAdvertsPage() {
 	if (isLoading) {
 		return (
 			<div className="p-2 space-y-6">
-				<Card className="h-[calc(100vh-2rem)] shadow-lg">
+				<Card className="h-[calc(100vh-2rem)] shadow-none border-none overflow-hidden">
 					<CardHeader className="border-b">
 						<div className="flex justify-between gap-8 items-center">
 							<div className="flex items-center justify-start gap-4">
@@ -878,6 +865,36 @@ export default function JobAdvertsPage() {
 								{errors.advert_type && (
 									<p className="text-xs sm:text-sm text-destructive mt-1">{errors.advert_type}</p>
 								)}
+							</div>
+
+							<div>
+								<label className="block text-xs sm:text-sm md:text-base font-normal text-gray-800 mb-2">
+									Work Type (Optional)
+								</label>
+								<WorkTypeSearchableSelect
+									value={formData.work_type ? [formData.work_type] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											setFormData((prev) => ({ ...prev, work_type: Number(values[0]) }));
+										}
+									}}
+									multiple={false}
+								/>
+							</div>
+
+							<div>
+								<label className="block text-xs sm:text-sm md:text-base font-normal text-gray-800 mb-2">
+									Employee Type (Optional)
+								</label>
+								<EmployeeTypeSearchableSelect
+									value={formData.employee_type ? [formData.employee_type] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											setFormData((prev) => ({ ...prev, employee_type: Number(values[0]) }));
+										}
+									}}
+									multiple={false}
+								/>
 							</div>
 
 							{/* Number of Employees Required */}
@@ -1257,7 +1274,7 @@ export default function JobAdvertsPage() {
 							setIsCreateStageDialogOpen(open);
 							if (!open) setEditingInterviewStage(null);
 						}}
-						jobPositionId={createdJobOpening.id}
+						jobPositionAdvertId={createdJobOpening.id}
 						jobPositionName={createdJobOpening.job_position_details.name}
 						existingStagesCount={createdJobOpening.interview_stages.length}
 						editingStage={editingInterviewStage}
