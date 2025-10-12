@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -6,7 +7,7 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, inline_serializer
-from employee.models import Employee
+from employee.models import Employee, EmployeeAttendance
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
 from .models import Device, DeviceStatus, DeviceEmployeeAttachment
@@ -453,58 +454,102 @@ class DeviceCallbackView(APIView):
         request=inline_serializer(
             name="DeviceCallbackRequest",
             fields={
-                "event_type": serializers.CharField(),
-                "device_sn": serializers.CharField(),
-                "status": serializers.CharField(),
+                "event": serializers.CharField(),
+                "records": serializers.ListField(
+                    child=inline_serializer(
+                        name="Record",
+                        fields={
+                            "serial_number": serializers.CharField(),
+                            "internal_user_id": serializers.CharField(required=False),
+                            "external_user_id": serializers.CharField(),
+                            "record_reference": serializers.CharField(),
+                            "datetime": serializers.DateTimeField()
+                        }
+                    ),
+                    required=False
+                ),
+                "device_sn": serializers.CharField(required=False),
+                "external_user_id": serializers.CharField(required=False),
+                "status": serializers.CharField(required=False),
             }
         ),
         responses={
             200: OpenApiResponse(description="Callback received and processed successfully."),
             400: OpenApiResponse(description="Invalid payload or unknown event type."),
-            403: OpenApiResponse(description="Invalid callback secret."),
-            404: OpenApiResponse(description="Device not found in HR system."),
+            404: OpenApiResponse(description="Device or employee not found in HR system."),
             500: OpenApiResponse(description="Internal error processing callback."),
         },
         tags=["Device Mgt"],
-        description="Endpoint to handle device callback events (e.g., registration, logs).",
+        description="Endpoint to handle device callback events (e.g., registration, logs, employee enrollment, fingerprint capture).",
     )
     def post(self, request):
-        payload = request.data
-        event_type = payload.get("event_type")
-        # device_sn = payload.get("device_sn")
-        # status_str = payload.get("status")
+        # Parse payload
+        try:
+            payload = request.data
+            event = payload.get("event")
+            device_sn = payload.get("device_sn")
+            external_user_id = payload.get("external_user_id")
+            status_str = payload.get("status")
+        except json.JSONDecodeError:
+            return Response({"detail": "Invalid JSON payload."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not event_type:
-            return Response(
-                {"detail": "Missing event_type in payload."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if not event:
+            return Response({"detail": "Missing event in payload."}, status=status.HTTP_400_BAD_REQUEST)
+
 
         try:
-            if event_type == "send_log":
-                pass
+            if event == "log":
+                if not payload.get("records"):
+                    return Response({"detail": "Missing records for log event."}, status=status.HTTP_400_BAD_REQUEST)
 
-            elif event_type == "reg":
-                pass
+                for record in payload["records"]:
+                    serial_number = record.get("serial_number")
+                    external_user_id = record.get("external_user_id")
+                    record_reference = record.get("record_reference")
+                    datetime_str = record.get("datetime")
+
+                    if not all([serial_number, external_user_id, record_reference, datetime_str]):
+                        return Response(
+                            {"detail": "Missing required fields in record: serial_number, external_user_id, record_reference, datetime."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    device = Device.objects.get(serial_number=serial_number)
+                    employee = Employee.objects.get(employee_id=external_user_id)
+
+                    # Parse datetime and extract date and time
+                    record_datetime = datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+                    record_date = record_datetime.date()
+                    record_time = record_datetime.time()
+
+                    # Check for existing attendance record for the employee and date
+                    attendance, created = EmployeeAttendance.objects.get_or_create(
+                        employee=employee,
+                        date=record_date,
+                        defaults={
+                            'check_in_time': record_time,
+                            'status': 'pending',
+                            'attendance_status': 'pending'
+                        }
+                    )
+                    if not created and not attendance.check_out_time:
+                        # Update check_out_time if not set
+                        attendance.check_out_time = record_time
+                        attendance.save()
 
             else:
-                return Response(
-                    {"detail": f"Unknown event_type: {event_type}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"detail": f"Unknown event: {event}"}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({"detail": "Callback received successfully."}, status=status.HTTP_200_OK)
 
         except Device.DoesNotExist:
-            return Response(
-                {"detail": "Device not found in HR system."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Device not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
+        except Employee.DoesNotExist:
+            return Response({"detail": "Employee not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
+        except DeviceEmployeeAttachment.DoesNotExist:
+            return Response({"detail": "Employee attachment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response(
-                {"detail": f"Internal error: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"detail": f"Internal error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                     
 class CopyUserToDevice(APIView):
