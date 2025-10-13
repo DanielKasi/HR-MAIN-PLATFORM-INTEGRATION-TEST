@@ -27,7 +27,9 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
     try:
         intent_url = f"{settings.FRONTEND_URL}spot-checks/?intent=spot_check&intent_id={spotcheck.id}"
         subject = "Spot Check"
-        plain_message = f"Please confirm your spotcheck by clicking the link: {intent_url}"
+        plain_message = (
+            f"Please confirm your spotcheck by clicking the link: {intent_url}"
+        )
         html_message = render_to_string(
             "emails/spotcheck_email.html",
             context={
@@ -144,6 +146,64 @@ def get_employee_spotchecks_late_starts_after_minutes(employee: Employee) -> int
     raise ValueError("No late start threshold found for employee")
 
 
+# def create_spotchecks_for_today(employee: Employee):
+#     max_spotchecks = get_employee_maximum_spotchecks_to_send_in_a_day(employee)
+#     min_spotchecks = get_employee_minimum_spotchecks_to_send_in_a_day(employee)
+
+#     today = timezone.localdate()
+#     weekday_str = today.strftime("%a").upper()
+#     system_day = SystemDay.objects.get(day_code=weekday_str)
+
+#     work_start_time: time = get_employee_day_working_start_time(employee, system_day)
+#     work_end_time: time = get_employee_day_working_end_time(employee, system_day)
+
+
+#     work_start = datetime.combine(today, work_start_time)
+#     work_end = datetime.combine(today, work_end_time)
+
+#     if timezone.is_naive(work_start):
+#         work_start = timezone.make_aware(work_start)
+#     if timezone.is_naive(work_end):
+#         work_end = timezone.make_aware(work_end)
+
+#     now = timezone.now()
+#     num_spotchecks = random.randint(min_spotchecks, max_spotchecks)
+
+#     delta_seconds = int((work_end - work_start).total_seconds())
+#     scheduled_times = sorted(
+#         [
+#             work_start + timedelta(seconds=random.randint(0, delta_seconds))
+#             for _ in range(num_spotchecks)
+#         ]
+#     )
+
+#     status_pending, _ = SpotCheckStatus.objects.get_or_create(status_name="PENDING")
+#     status_missed, _ = SpotCheckStatus.objects.get_or_create(
+#         status_name="HAD_NOT_YET_CHECKED_IN"
+#     )
+
+#     future_spotchecks = []
+
+#     for scheduled_time in scheduled_times:
+#         if scheduled_time <= now:
+#             status = status_missed
+#         else:
+#             status = status_pending
+#             future_spotchecks.append(scheduled_time)
+
+#         EmployeeSpotCheck.objects.create(
+#             employee=employee,
+#             spotcheck_time=scheduled_time,
+#             status=status,
+#             initiated_by="system",
+#         )
+
+#     if future_spotchecks:
+#         initiate_next_spotcheck_for_an_employee.apply_async(
+#             args=[employee.id], eta=future_spotchecks[0]
+#         )
+
+
 def create_spotchecks_for_today(employee: Employee):
     max_spotchecks = get_employee_maximum_spotchecks_to_send_in_a_day(employee)
     min_spotchecks = get_employee_minimum_spotchecks_to_send_in_a_day(employee)
@@ -155,22 +215,24 @@ def create_spotchecks_for_today(employee: Employee):
     work_start_time: time = get_employee_day_working_start_time(employee, system_day)
     work_end_time: time = get_employee_day_working_end_time(employee, system_day)
 
+    work_start = timezone.make_aware(
+        datetime.combine(today, work_start_time), timezone.get_current_timezone()
+    )
+    work_end = timezone.make_aware(
+        datetime.combine(today, work_end_time), timezone.get_current_timezone()
+    )
 
-    work_start = datetime.combine(today, work_start_time)
-    work_end = datetime.combine(today, work_end_time)
+    now = timezone.localtime(timezone.now())
 
-    if timezone.is_naive(work_start):
-        work_start = timezone.make_aware(work_start)
-    if timezone.is_naive(work_end):
-        work_end = timezone.make_aware(work_end)
-
-    now = timezone.now()
     num_spotchecks = random.randint(min_spotchecks, max_spotchecks)
-
     delta_seconds = int((work_end - work_start).total_seconds())
+
     scheduled_times = sorted(
         [
-            work_start + timedelta(seconds=random.randint(0, delta_seconds))
+            timezone.make_aware(
+                work_start + timedelta(seconds=random.randint(0, delta_seconds)),
+                timezone.get_current_timezone(),
+            )
             for _ in range(num_spotchecks)
         ]
     )
