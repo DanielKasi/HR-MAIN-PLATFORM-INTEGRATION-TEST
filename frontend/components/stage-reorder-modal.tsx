@@ -216,7 +216,6 @@ export default function StageReorderModal({
 											size="sm"
 											className="rounded-full"
 										>
-											<X className="h-4 w-4 mr-2" />
 											Cancel
 										</Button>
 										<Button
@@ -225,7 +224,6 @@ export default function StageReorderModal({
 											size="sm"
 											className="flex rounded-full w-full max-w-sm items-center gap-2 px-6 lg:px-8"
 										>
-											<Save className="h-4 w-4 mr-2" />
 											{saving ? "Saving..." : "Save Order"}
 										</Button>
 									</div>
@@ -306,28 +304,6 @@ export default function StageReorderModal({
 										</p>
 									</div>
 								)}
-							</CardContent>
-						</Card>
-
-						{/* Instructions */}
-						<Card>
-							<CardContent className="p-4">
-								<h4 className="font-medium mb-2">How to reorder stages:</h4>
-								<ul className="text-sm text-muted-foreground space-y-1">
-									<li>
-										• <strong>Drag & Drop:</strong> Click and drag a stage to move it to a new
-										position
-									</li>
-									<li>
-										• <strong>Arrow Buttons:</strong> Use ▲ and ▼ buttons to move stages up or down
-									</li>
-									<li>
-										• <strong>Save:</strong> Click "Save Order" to apply changes
-									</li>
-									<li>
-										• <strong>Cancel:</strong> Click "Cancel" to discard changes and close
-									</li>
-								</ul>
 							</CardContent>
 						</Card>
 					</div>
