@@ -158,13 +158,13 @@ const PenaltyDetailPage = () => {
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Created Date:</span>
 									<p className="text-sm">
-										{penalty.created_at ? formatDate(penalty.created_at) : "N/A"}
+										{penalty.created_at ? formatDate(penalty.created_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Last Updated:</span>
 									<p className="text-sm">
-										{penalty.updated_at ? formatDate(penalty.updated_at) : "N/A"}
+										{penalty.updated_at ? formatDate(penalty.updated_at) : "Unknown"}
 									</p>
 								</div>
 							</div>

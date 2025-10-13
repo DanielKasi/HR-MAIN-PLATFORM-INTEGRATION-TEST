@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { useMobile } from "@/hooks/use-mobile";
 import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
-import { NavItem } from "@/types";
+import { NavItem } from "@/types/other";
 
 export const NavItemComponent = ({
 	item,

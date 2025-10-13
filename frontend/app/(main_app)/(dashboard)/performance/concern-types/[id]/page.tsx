@@ -120,7 +120,7 @@ export default function ConcernTypeViewPage() {
 								<span className="text-sm">
 									{typeof performance.created_at === "string"
 										? formatDateTime(performance.created_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 							<div className="flex justify-between mt-5">
@@ -128,7 +128,7 @@ export default function ConcernTypeViewPage() {
 								<span className="text-sm">
 									{typeof performance.updated_at === "string"
 										? formatDateTime(performance.updated_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 						</CardContent>

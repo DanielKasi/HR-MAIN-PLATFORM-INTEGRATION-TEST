@@ -6,6 +6,7 @@ import dj_database_url
 from corsheaders.defaults import default_headers
 from urllib.parse import urlparse
 import base64
+from decouple import config
 
 load_dotenv()
 
@@ -74,6 +75,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'helpdesk',
     'reports',
+    'devices'
     
 ]
 
@@ -233,6 +235,7 @@ DEFAULT_FROM_EMAIL = os.environ.get("RESPONSE_EMAIL", None)
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 parsed_redis_url = urlparse(REDIS_URL)
+
 
 # Channel layers configuration
 CHANNEL_LAYERS = {

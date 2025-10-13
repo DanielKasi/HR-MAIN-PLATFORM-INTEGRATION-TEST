@@ -352,7 +352,7 @@ const LeaveAssignmentDetailPage = () => {
 									<p className="text-sm">
 										{leaveApplication.created_at
 											? formatDateTime(leaveApplication.created_at)
-											: "N/A"}
+											: "Unknown"}
 									</p>
 								</div>
 

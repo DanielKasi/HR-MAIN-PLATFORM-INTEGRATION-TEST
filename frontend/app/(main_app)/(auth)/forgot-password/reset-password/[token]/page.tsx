@@ -10,7 +10,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { resetPassword, verifyResetToken, validatePasswordStrength } from "@/lib/utils";
+import {
+	resetPassword,
+	verifyResetToken,
+	validatePasswordStrength,
+	showErrorToast,
+} from "@/lib/utils";
 import { handleApiError } from "@/lib/apiErrorHandler";
 
 export default function ChangePassword({ params }: { params: { token: string } }) {
@@ -74,7 +79,7 @@ export default function ChangePassword({ params }: { params: { token: string } }
 			await resetPassword(token, password);
 			router.push("/forgot-password/success");
 		} catch (error: any) {
-			handleApiError(error);
+			showErrorToast({ error, defaultMessage: "Failed to change password" });
 		} finally {
 			setIsLoading(false);
 		}

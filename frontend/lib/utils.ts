@@ -196,6 +196,7 @@ import { IUser, Role, UserProfile } from "@/types/user.types";
 import { MAIN_DOMAIN_URL } from "@/constants";
 import keys from "@/components/projects/tasks/keys";
 import { number } from "zod";
+import { Branch } from "@/types/branch.types";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -441,7 +442,7 @@ export const getPaginatedJobPositions = async ({
 		page: page?.toString() || "1",
 	});
 
-	params.append("page", page.toString());
+	// params.append("page", page.toString());
 	if (search) {
 		params.append("search", search);
 	}
@@ -7149,7 +7150,7 @@ export const showErrorToast = ({
 	error,
 	defaultMessage,
 }: {
-	error: any;
+	error?: any;
 	defaultMessage?: string;
 }) => {
 	const errorMessage =
@@ -7868,6 +7869,19 @@ export const penaltiesAPI = {
 };
 
 export const branchesAPI = {
+	getPaginated: async (args: { search?: string; page?: number; page_size?: number }) => {
+		const params = new URLSearchParams();
+
+		Object.entries(args).forEach(([key, value]) => {
+			if (value !== undefined && value !== null) {
+				params.append(key, value.toString());
+			}
+		});
+
+		const response = await apiRequest.get(`/institution/branch?${params.toString()}`);
+
+		return response.data as IPaginatedResponse<Branch>;
+	},
 	WORKING_DAYS: {
 		getAll: async ({ branchId }: { branchId: number }): Promise<IBranchWorkingDays | null> => {
 			const response = await apiRequest.get(

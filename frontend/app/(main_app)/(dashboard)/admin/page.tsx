@@ -190,6 +190,8 @@ export default function AdminPage() {
 									</Link>
 								</div>
 
+								{/* <Icon icon="hugeicons:biometric-device" width="24" height="24" /> */}
+
 								<div className="">
 									<Link
 										href="/job-positions"
@@ -207,6 +209,15 @@ export default function AdminPage() {
 									>
 										<LampDesk className="w-5 h-5 text-gray-500" />
 										<span>Working days</span>
+									</Link>
+								</div>
+								<div className="">
+									<Link
+										href="/devices"
+										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+									>
+										<Icon icon="hugeicons:biometric-device" className="!w-5 !h-5" />
+										<span>Devices</span>
 									</Link>
 								</div>
 							</div>

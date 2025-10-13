@@ -6,8 +6,8 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { ANNOUNCEMENTS_API } from "@/lib/api/announcements.utils";
-import { IAnnouncement } from "@/types/announcements.types";
+import { ACKNOWLEDGMENTS_API } from "@/lib/api/announcements.utils";
+import { IAcknowledgment } from "@/types/announcements.types";
 import { showErrorToast } from "@/lib/utils";
 import CardSkeleton from "@/components/common/skeletons/card-skeleton";
 import { useRouter } from "next/navigation";
@@ -15,24 +15,24 @@ import { formatDate } from "@/lib/helpers";
 
 const AnnouncementCarousel: React.FC = () => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [announcements, setAnnouncements] = useState<IAnnouncement[]>([]);
+	// const [announcements, setAnnouncements] = useState<IAnnouncement[]>([]);
+	const [acknowledgmentAnnouncements, setAcknowledgmentAnnouncements] = useState<IAcknowledgment[]>(
+		[],
+	);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
 
 	useEffect(() => {
-		const fetchAnnouncements = async () => {
+		const fetchAcknowlegmentAnnouncements = async () => {
 			if (!currentInstitution) return;
 			try {
 				setLoading(true);
-				const response = await ANNOUNCEMENTS_API.getPaginated({
+				const response = await ACKNOWLEDGMENTS_API.getPaginated({
 					page: 1,
-					search: undefined,
-					ordering: "-created_at",
-					page_size: 3,
 				});
-				setAnnouncements(response.results);
+				setAcknowledgmentAnnouncements(response.results);
 			} catch (err) {
 				showErrorToast({ error: err, defaultMessage: "Failed to fetch announcements" });
 			} finally {
@@ -40,12 +40,12 @@ const AnnouncementCarousel: React.FC = () => {
 			}
 		};
 
-		fetchAnnouncements();
+		fetchAcknowlegmentAnnouncements();
 	}, [currentInstitution]);
 
 	// Auto-cycle announcements every 10 seconds
 	useEffect(() => {
-		const displayedAnnouncements = announcements.slice(0, 3);
+		const displayedAnnouncements = acknowledgmentAnnouncements.slice(0, 3);
 		if (displayedAnnouncements.length <= 1) return;
 
 		intervalRef.current = setInterval(() => {
@@ -55,13 +55,13 @@ const AnnouncementCarousel: React.FC = () => {
 		return () => {
 			if (intervalRef.current) clearInterval(intervalRef.current);
 		};
-	}, [announcements]);
+	}, [acknowledgmentAnnouncements]);
 
 	const handleDotClick = (index: number) => {
 		setCurrentIndex(index);
 		if (intervalRef.current) clearInterval(intervalRef.current);
 		intervalRef.current = setInterval(() => {
-			setCurrentIndex((prev) => (prev + 1) % announcements.slice(0, 3).length);
+			setCurrentIndex((prev) => (prev + 1) % acknowledgmentAnnouncements.slice(0, 3).length);
 		}, 10000);
 	};
 
@@ -73,7 +73,7 @@ const AnnouncementCarousel: React.FC = () => {
 		);
 	}
 
-	if (announcements.length === 0) {
+	if (acknowledgmentAnnouncements.length === 0) {
 		return (
 			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full">
 				<CardHeader className="flex flex-row items-center justify-between py-2">
@@ -97,26 +97,30 @@ const AnnouncementCarousel: React.FC = () => {
 			</CardHeader>
 			<div
 				className="relative overflow-hidden cursor-pointer h-full max-h-[calc(100%-5.5rem)]"
-				onClick={() => router.push(`/announcements/${announcements[currentIndex].id}`)}
+				onClick={() =>
+					router.push(`/announcements/${acknowledgmentAnnouncements[currentIndex].announcement.id}`)
+				}
 			>
 				<div
 					className="flex transition-transform duration-500 ease-in-out "
 					style={{ transform: `translateX(-${currentIndex * 100}%)` }}
 				>
-					{announcements.map((announcement) => (
-						<div key={announcement.id} className="min-w-full px-6 text-sm">
+					{acknowledgmentAnnouncements.map((acknowledgement) => (
+						<div key={acknowledgement.id} className="min-w-full px-6 text-sm">
 							<p className="flex items-center justify-between gap-4 mb-4">
 								<span className="truncate text-gray-600">
-									<strong>{announcement.title}</strong>
+									<strong>{acknowledgement.announcement.title}</strong>
 								</span>
 							</p>
 							<div className="min-h-[4rem]">
-								<p className="text-sm text-gray-600 line-clamp-3">{announcement.content}</p>
+								<p className="text-sm text-gray-600 line-clamp-3">
+									{acknowledgement.announcement.content}
+								</p>
 							</div>
-							{announcement.created_at && (
+							{acknowledgement.announcement.created_at && (
 								<div className="flex items-center justify-between gap-4 mt-4">
 									<span className="text-xs text-gray-600">
-										{formatDate(announcement.created_at)}
+										{formatDate(acknowledgement.announcement.created_at)}
 									</span>
 								</div>
 							)}
@@ -124,9 +128,9 @@ const AnnouncementCarousel: React.FC = () => {
 					))}
 				</div>
 			</div>
-			{announcements.length && (
+			{acknowledgmentAnnouncements.length && (
 				<div className="flex items-center justify-center min-h-10 z-100 gap-2 mt-2 mb-2">
-					{announcements.slice(0, 3).map((_, index) => (
+					{acknowledgmentAnnouncements.slice(0, 3).map((_, index) => (
 						<button
 							key={index}
 							onClick={() => handleDotClick(index)}

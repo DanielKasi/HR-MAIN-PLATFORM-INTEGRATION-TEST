@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import DeviceEmployeeAttachment, Device
 
-# Register your models here.
+admin.site.register(DeviceEmployeeAttachment)
+admin.site.register(Device)

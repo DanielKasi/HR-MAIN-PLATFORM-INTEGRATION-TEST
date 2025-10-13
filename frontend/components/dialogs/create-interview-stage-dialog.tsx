@@ -20,11 +20,12 @@ import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type { IInterviewStage, IInterviewStageFormData } from "@/types/types.utils";
 import { FeedbackFieldsModal } from "./feedback-fields-modal";
+import JobPositionAdvertSearchableSelectSelect from "@/app/(main_app)/(dashboard)/job-adverts/_components/job-position-advert-searchable-select";
 
 interface CreateInterviewStageDialogProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
-	jobPositionId: number;
+	jobPositionAdvertId?: number;
 	editingStage?: IInterviewStage | null;
 	jobPositionName?: string;
 	existingStagesCount?: number;
@@ -38,7 +39,7 @@ interface CreateInterviewStageDialogProps {
 export function CreateInterviewStageDialog({
 	isOpen,
 	onOpenChange,
-	jobPositionId,
+	jobPositionAdvertId,
 	editingStage,
 	jobPositionName,
 	existingStagesCount = 0,
@@ -54,7 +55,7 @@ export function CreateInterviewStageDialog({
 		name: "",
 		level: 1,
 		interviewers: [],
-		job_position_advert: jobPositionId,
+		job_position_advert: jobPositionAdvertId || 0,
 		feedback_fields: [],
 	});
 	const [errors, setErrors] = useState<any>({});
@@ -66,15 +67,13 @@ export function CreateInterviewStageDialog({
 			setFormData((prev) => ({
 				...prev,
 				level: nextLevel,
-				job_position_advert: jobPositionId,
 			}));
 			setErrors({});
 		}
-	}, [isOpen, existingStagesCount, jobPositionId]);
+	}, [isOpen, existingStagesCount]);
 
 	useEffect(() => {
 		if (editingStage) {
-			console.log("\n\n Editing stage with values : ", editingStage);
 			setFormData((prev) => ({
 				...prev,
 				job_position_advert: editingStage.job_position_advert,
@@ -145,13 +144,13 @@ export function CreateInterviewStageDialog({
 			}
 
 			if (newStage) {
-				setFormData({
+				setFormData((prev) => ({
 					name: "",
 					level: existingStagesCount + 1,
 					interviewers: [],
-					job_position_advert: jobPositionId,
+					job_position_advert: jobPositionAdvertId || prev.job_position_advert || 0,
 					feedback_fields: [],
-				});
+				}));
 				setErrors({});
 				onOpenChange(false);
 				toast.success("Interview stage created successfully!");
@@ -192,7 +191,7 @@ export function CreateInterviewStageDialog({
 							<>
 								{editingStage
 									? `Edit interview stage ${editingStage.name}`
-									: `Create a new interview stage${jobPositionName ? `for ${jobPositionName}` : ""}`}
+									: `Create a new interview stage ${jobPositionName ? `for ${jobPositionName}` : ""}`}
 							</>
 						)}
 					</DialogDescription>
@@ -215,7 +214,7 @@ export function CreateInterviewStageDialog({
 						<Label htmlFor="stage_interviewer">Interviewers *</Label>
 						<div className="w-full max-w-full overflow-hidden">
 							<EmployeeSearchableSelect
-								value={formData.interviewers.map((id) => id.toString())}
+								value={formData.interviewers}
 								onValueChange={(values) => {
 									const numberValues = Array.isArray(values)
 										? values.map((v) => Number(v))
@@ -234,6 +233,29 @@ export function CreateInterviewStageDialog({
 							<p className="text-sm text-destructive">{errors.interviewers}</p>
 						)}
 					</div>
+
+					{!jobPositionAdvertId && (
+						<div className="space-y-2">
+							<Label>Job position advert *</Label>
+							<div className="w-full max-w-full overflow-hidden">
+								<JobPositionAdvertSearchableSelectSelect
+									value={formData.job_position_advert ? [formData.job_position_advert] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											updateFormData("job_position_advert", Number(values[0]));
+										}
+									}}
+									disabled={isCreating}
+									placeholder="Search and select job adverts"
+									multiple={false}
+								/>
+							</div>
+							{errors.interviewers && (
+								<p className="text-sm text-destructive">{errors.interviewers}</p>
+							)}
+						</div>
+					)}
+
 					<div className="space-y-2 mt-8">
 						<div className="flex items-center justify-between">
 							<Label>Custom Feedback Fields</Label>

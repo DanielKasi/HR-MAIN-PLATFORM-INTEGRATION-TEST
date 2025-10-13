@@ -76,6 +76,14 @@ class JobPosition(BaseApprovableModel):
         blank=True,
         null=True,
     )
+    reports_to_employee = models.ForeignKey(
+        "employee.Employee",
+        on_delete=models.SET_NULL,
+        related_name="subordinate_positions",
+        blank=True,
+        null=True,
+        help_text="The specific employee this job position reports to",
+    )
     contract_template = models.ForeignKey(
         "documents.DocumentTemplate",
         on_delete=models.SET_NULL,
@@ -97,9 +105,15 @@ class JobPosition(BaseApprovableModel):
             if self.salary_max < self.salary_min:
                 raise ValidationError(
                     {
-                        "salary_max": "Maximum salary must be greater than or equal to minimum salary."
+                        "error": "Maximum salary must be greater than or equal to minimum salary."
                     }
                 )
+            
+        if self.reports_to_employee and self.reports_to:
+            if self.reports_to_employee.position != self.reports_to:
+                raise ValidationError({
+                    "error": "The selected employee must belong to the job position specified in 'Reports to'."
+                })    
 
     def save(self, *args, **kwargs):
         """Override save to call clean validation"""

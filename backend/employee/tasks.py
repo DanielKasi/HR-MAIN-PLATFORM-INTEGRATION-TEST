@@ -18,6 +18,7 @@ from datetime import date
 import time
 from django.core.signing import TimestampSigner
 from django.contrib.admin.models import LogEntry
+from django.utils.html import strip_tags
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -338,3 +339,48 @@ def send_birthday_notifications():
             model_name='Event',
             object_id=str(event.id)
         )
+
+@shared_task
+def send_document_request_email_task(employee_email, employee_name, employee_gender, document_type, document_format, due_date, description, is_update=False):
+    """Send document request email to employee as a Celery task"""
+    if not employee_email:
+        return
+    
+    try:
+        # Get appropriate salutation based on employee gender
+        gender_salutations = {
+            'male': 'Mr.',
+            'female': 'Ms.',
+            'other': 'Mx.',
+        }
+        salutation = gender_salutations.get(employee_gender.lower(), 'Dear')
+        employee_name = employee_name or 'Employee'
+        
+        context = {
+            'salutation': salutation,
+            'employee_name': employee_name,
+            'document_type': document_type,
+            'document_format': document_format,
+            'due_date': due_date,
+            'description': description,
+            'is_update': is_update,
+        }
+        
+        # Render HTML email
+        html_message = render_to_string('emails/document_request.html', context)
+        # Create plain text version
+        plain_message = strip_tags(html_message)
+        
+        subject = f"{'Updated: ' if is_update else ''}Document Request - {document_type}"
+        
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[employee_email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        print(f"Sent email to {employee_email}")
+    except Exception as e:
+        print(f"Failed to send email to {employee_email}: {str(e)}")

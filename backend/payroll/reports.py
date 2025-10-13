@@ -10,11 +10,11 @@ from .models import (
 from employee.models import EmployeeContract
 
 REPORT_CONFIG = {
-    'employee allowance': EmployeeAllowance,
-    'employee deductions': EmployeeDeduction,
-    'employee tax': EmployeeTax,
-    'employee penalties': EmployeePenalty,
-    'payroll periods': PayrollPeriod,
-    'payslips': Payslip,
-    'contracts': EmployeeContract,
+    'Employee Allowance': EmployeeAllowance,
+    'Employee Deductions': EmployeeDeduction,
+    'Employee Tax': EmployeeTax,
+    'Employee Penalties': EmployeePenalty,
+    'Payroll Periods': PayrollPeriod,
+    'Payslips': Payslip,
+    'Contracts': EmployeeContract,
 }

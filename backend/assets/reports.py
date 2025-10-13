@@ -8,11 +8,11 @@ from .models import (
 )
 
 REPORT_CONFIG = {
-    'asset categories': AssetCategory,
-    'assets': Asset,
-    'asset requests': AssetRequest,
-    'asset allocations': AssetAllocation,
-    'asset returns': AssetReturn,
-    'asset history': AssetHistory,
+    'Asset Categories': AssetCategory,
+    'Assets': Asset,
+    'Asset Requests': AssetRequest,
+    'Asset Allocations': AssetAllocation,
+    'Asset Returns': AssetReturn,
+    'Asset History': AssetHistory,
 }
 

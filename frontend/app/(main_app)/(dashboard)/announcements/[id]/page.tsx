@@ -119,7 +119,7 @@ export default function AnnouncementDetailsPage() {
 							<div className="flex justify-between">
 								<span>Type</span>
 								<span className="font-medium capitalize">
-									{announcement.content_type_name || "N/A"}
+									{announcement.content_type_name || "Unknown"}
 								</span>
 							</div>
 							<div className="flex justify-between">

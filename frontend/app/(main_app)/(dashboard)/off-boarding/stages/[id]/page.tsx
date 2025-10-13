@@ -116,7 +116,7 @@ export default function ConcernTypeViewPage() {
 								<span className="text-sm">
 									{typeof stages.created_at === "string"
 										? formatDateTime(stages.created_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 							<div className="flex justify-between mt-5">
@@ -124,7 +124,7 @@ export default function ConcernTypeViewPage() {
 								<span className="text-sm">
 									{typeof stages.updated_at === "string"
 										? formatDateTime(stages.updated_at)
-										: "N/A"}
+										: "Unknown"}
 								</span>
 							</div>
 						</CardContent>

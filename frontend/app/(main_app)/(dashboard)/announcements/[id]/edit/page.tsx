@@ -175,7 +175,7 @@ export default function AnnouncementEditPage() {
 						/>
 					</div>
 
-					<div className="space-y-2 flex items-end justify-start gap-8 py-4 pt-4 md:pt-8">
+					{/* <div className="space-y-2 flex items-end justify-start gap-8 py-4 pt-4 md:pt-8">
 						<Switch
 							checked={formData.requires_acknowledgment}
 							onCheckedChange={(checked) =>
@@ -183,7 +183,7 @@ export default function AnnouncementEditPage() {
 							}
 						/>
 						<Label>Requires Acknowledgment</Label>
-					</div>
+					</div> */}
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-8 ">

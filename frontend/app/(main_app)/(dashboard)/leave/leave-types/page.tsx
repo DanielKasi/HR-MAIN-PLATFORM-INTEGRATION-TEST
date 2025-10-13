@@ -1,6 +1,11 @@
 "use client";
 
-import type { ILeaveType, ILeaveTypeFormData } from "@/types/types.utils";
+import type {
+	ILeaveTypeGender,
+	ILeaveType,
+	ILeaveTypeCategory,
+	ILeaveTypeFormData,
+} from "@/types/types.utils";
 
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
@@ -32,11 +37,9 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -52,19 +55,21 @@ import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import FormatNumberInput from "@/components/format-number-input";
 import { LeaveTypeDetailsDialog } from "@/components/dialogs/leave-type-details-dilaog";
+import { LeaveTypeFormDialog } from "@/components/dialogs/leave-type-form-dialog";
 import { useRouter } from "next/navigation";
+import { Switch } from "@/components/ui/switch";
 
-const LEAVE_CATEGORIES = [
+const LEAVE_CATEGORIES: Array<{ value: ILeaveTypeCategory; label: string }> = [
 	{ value: "annual", label: "Annual Leave" },
 	{ value: "sick", label: "Sick Leave" },
 	{ value: "maternity", label: "Maternity Leave" },
 	{ value: "paternity", label: "Paternity Leave" },
-	{ value: "compassionate", label: "Compassionate Leave" },
-	{ value: "study", label: "Study Leave" },
+	// { value: "compassionate", label: "Compassionate Leave" },
+	// { value: "study", label: "Study Leave" },
 	{ value: "unpaid", label: "Unpaid Leave" },
 ];
 
-const GENDER_CHOICES = [
+const GENDER_CHOICES: Array<{ value: ILeaveTypeGender; label: string }> = [
 	{ value: "all", label: "All" },
 	{ value: "male", label: "Male" },
 	{ value: "female", label: "Female" },
@@ -97,8 +102,7 @@ const formatDate = (dateString: string) => {
 };
 
 const LeaveTypesPage = () => {
-	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [editingLeaveType, setEditingLeaveType] = useState<ILeaveType | null>(null);
 	const [deletingLeaveType, setDeletingLeaveType] = useState<ILeaveType | null>(null);
@@ -113,145 +117,14 @@ const LeaveTypesPage = () => {
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const router = useRouter();
 
-	const [formData, setFormData] = useState<{
-		name: string;
-		category: string;
-		description: string;
-		max_days_per_year: string;
-		carry_forward_allowed: boolean;
-		max_carry_forward_days: string;
-		requires_document: boolean;
-		gender_specific: string;
-	}>({
-		name: "",
-		category: "annual",
-		description: "",
-		max_days_per_year: "",
-		carry_forward_allowed: false,
-		max_carry_forward_days: "",
-		requires_document: false,
-		gender_specific: "all",
-	});
-
-	const resetFormData = () => {
-		setFormData({
-			name: "",
-			category: "annual",
-			description: "",
-			max_days_per_year: "",
-			carry_forward_allowed: false,
-			max_carry_forward_days: "",
-			requires_document: false,
-			gender_specific: "all",
-		});
-	};
-
-	const handleCreateSuccess = (newLeaveType: ILeaveType) => {
-		toast.success("Leave type created successfully");
+	const handleFormSuccess = (leaveType: ILeaveType) => {
 		refreshTableRef.current?.();
-	};
-
-	const handleUpdateSuccess = (updatedLeaveType: ILeaveType) => {
-		toast.success("Leave type updated successfully");
-		refreshTableRef.current?.();
+		setEditingLeaveType(null);
 	};
 
 	const handleDeleteSuccess = () => {
 		toast.success("Leave type deleted successfully");
 		refreshTableRef.current?.();
-	};
-
-	const handleAddLeaveType = async () => {
-		if (!formData.name || !formData.description || !formData.max_days_per_year) {
-			toast.error("Please fill in all required fields");
-
-			return;
-		}
-
-		if (selectedInstitution?.id === undefined) {
-			toast.error("Institution is not selected");
-
-			return;
-		}
-
-		setIsSubmitting(true);
-		try {
-			const leaveTypeData: ILeaveTypeFormData = {
-				name: formData.name,
-				category: formData.category as any,
-				description: formData.description,
-				max_days_per_year: Number.parseInt(formData.max_days_per_year),
-				carry_forward_allowed: formData.carry_forward_allowed,
-				max_carry_forward_days: Number.parseInt(formData.max_carry_forward_days) || 0,
-				is_active: true,
-				requires_document: formData.requires_document,
-				gender_specific:
-					formData.gender_specific === "all" ? null : (formData.gender_specific as any),
-			};
-
-			const newLeaveType = await LeaveTypesAPI.create({
-				institutionId: selectedInstitution.id,
-				leaveTypeData,
-			});
-
-			if (newLeaveType) {
-				handleCreateSuccess(newLeaveType);
-				resetFormData();
-				setIsAddDialogOpen(false);
-			} else {
-				toast.error("Failed to create leave type");
-			}
-		} catch (error: any) {
-			console.error("Error creating leave type:", error);
-			toast.error(error.message || "An error occurred while creating the leave type");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleUpdateLeaveType = async () => {
-		if (!editingLeaveType) return;
-
-		if (!formData.name || !formData.description || !formData.max_days_per_year) {
-			toast.error("Please fill in all required fields");
-
-			return;
-		}
-
-		setIsSubmitting(true);
-		try {
-			const leaveTypeData: ILeaveTypeFormData = {
-				name: formData.name,
-				category: formData.category as any,
-				description: formData.description,
-				max_days_per_year: Number.parseInt(formData.max_days_per_year),
-				carry_forward_allowed: formData.carry_forward_allowed,
-				max_carry_forward_days: Number.parseInt(formData.max_carry_forward_days) || 0,
-				is_active: true,
-				requires_document: formData.requires_document,
-				gender_specific:
-					formData.gender_specific === "all" ? null : (formData.gender_specific as any),
-			};
-
-			const updatedLeaveType = await LeaveTypesAPI.update({
-				leaveTypeId: editingLeaveType.id,
-				leaveTypeData,
-			});
-
-			if (updatedLeaveType) {
-				handleUpdateSuccess(updatedLeaveType);
-				resetFormData();
-				setIsEditDialogOpen(false);
-				setEditingLeaveType(null);
-			} else {
-				toast.error("Failed to update leave type");
-			}
-		} catch (error: any) {
-			console.error("Error updating leave type:", error);
-			toast.error(error.message || "An error occurred while updating the leave type");
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	const handleDeleteLeaveType = async () => {
@@ -278,17 +151,19 @@ const LeaveTypesPage = () => {
 
 	const handleEditLeaveType = (leaveType: ILeaveType) => {
 		setEditingLeaveType(leaveType);
-		setFormData({
-			name: leaveType.name,
-			category: leaveType.category,
-			description: leaveType.description,
-			max_days_per_year: leaveType.max_days_per_year.toString(),
-			carry_forward_allowed: leaveType.carry_forward_allowed,
-			max_carry_forward_days: leaveType.max_carry_forward_days.toString(),
-			requires_document: leaveType.requires_document,
-			gender_specific: leaveType.gender_specific || "all",
-		});
-		setIsEditDialogOpen(true);
+		setIsFormDialogOpen(true);
+	};
+
+	const handleCreateLeaveType = () => {
+		setEditingLeaveType(null);
+		setIsFormDialogOpen(true);
+	};
+
+	const handleFormDialogClose = (open: boolean) => {
+		setIsFormDialogOpen(open);
+		if (!open) {
+			setEditingLeaveType(null);
+		}
 	};
 
 	const clearFilters = () => {
@@ -385,225 +260,14 @@ const LeaveTypesPage = () => {
 						</div>
 						<div className="flex items-center gap-2">
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
-								<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-									<DialogTrigger asChild>
-										<Button className="flex items-center gap-2 text-xs sm:text-sm rounded-[12px]">
-											<Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-											<span className="hidden sm:inline">Create Leave Type</span>
-											<span className="sm:hidden">Create</span>
-										</Button>
-									</DialogTrigger>
-									<DialogContent className="sm:max-w-[900px] w-[95vw] sm:w-full rounded-2xl border-0 shadow-2xl overflow-y-auto max-h-[90vh]">
-										<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-											<DialogTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-												Add Leave Type
-											</DialogTitle>
-											<DialogDescription className="text-sm sm:text-base text-gray-600">
-												Create a new leave type to manage employee leave requests efficiently.
-											</DialogDescription>
-										</DialogHeader>
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 py-4 sm:py-6">
-											<div className="space-y-3">
-												<Label
-													htmlFor="name"
-													className="text-xs sm:text-sm font-semibold text-gray-800"
-												>
-													Name *
-												</Label>
-												<Input
-													id="name"
-													value={formData.name}
-													onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-													placeholder="e.g., Annual Leave, Sick Leave"
-													disabled={isSubmitting}
-													className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label
-													htmlFor="category"
-													className="text-xs sm:text-sm font-semibold text-gray-800"
-												>
-													Category *
-												</Label>
-												<Select
-													value={formData.category}
-													onValueChange={(value) => setFormData({ ...formData, category: value })}
-													disabled={isSubmitting}
-												>
-													<SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">
-														<SelectValue placeholder="Select a category" />
-													</SelectTrigger>
-													<SelectContent>
-														{LEAVE_CATEGORIES.map((category) => (
-															<SelectItem
-																key={category.value}
-																value={category.value}
-																className="text-sm sm:text-base"
-															>
-																{category.label}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-											</div>
-											<div className="space-y-3 md:col-span-2">
-												<Label
-													htmlFor="description"
-													className="text-xs sm:text-sm font-semibold text-gray-800"
-												>
-													Description *
-												</Label>
-												<Textarea
-													id="description"
-													value={formData.description}
-													onChange={(e) =>
-														setFormData({ ...formData, description: e.target.value })
-													}
-													rows={4}
-													placeholder="Provide a detailed description of this leave type..."
-													disabled={isSubmitting}
-													className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base resize-none"
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label
-													htmlFor="max_days_per_year"
-													className="text-xs sm:text-sm font-semibold text-gray-800"
-												>
-													Max Days Per Year *
-												</Label>
-												<FormatNumberInput
-													id="max_days_per_year"
-													value={formData.max_days_per_year?.toString() || ""}
-													onChange={(formatted, numeric) =>
-														setFormData({ ...formData, max_days_per_year: numeric.toString() })
-													}
-													placeholder="e.g., 20"
-													disabled={isSubmitting}
-													className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label
-													htmlFor="max_carry_forward_days"
-													className="text-xs sm:text-sm font-semibold text-gray-800"
-												>
-													Max Carry Forward Days
-												</Label>
-												<FormatNumberInput
-													id="max_carry_forward_days"
-													value={formData.max_carry_forward_days?.toString() || ""}
-													onChange={(formatted, numeric) =>
-														setFormData({ ...formData, max_carry_forward_days: numeric.toString() })
-													}
-													placeholder="e.g., 5"
-													disabled={isSubmitting}
-													className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label
-													htmlFor="gender_specific"
-													className="text-xs sm:text-sm font-semibold text-gray-800"
-												>
-													Gender Specific
-												</Label>
-												<Select
-													value={formData.gender_specific}
-													onValueChange={(value) =>
-														setFormData({ ...formData, gender_specific: value })
-													}
-													disabled={isSubmitting}
-												>
-													<SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">
-														<SelectValue placeholder="Select gender" />
-													</SelectTrigger>
-													<SelectContent>
-														{GENDER_CHOICES.map((gender) => (
-															<SelectItem
-																key={gender.value}
-																value={gender.value}
-																className="text-sm sm:text-base"
-															>
-																{gender.label}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-											</div>
-											<div className="bg-gray-50 rounded-xl p-3 sm:p-4 space-y-4 md:col-span-2">
-												<h4 className="text-xs sm:text-sm font-semibold text-gray-800 mb-3">
-													Configuration Options
-												</h4>
-												<div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-													<div className="flex items-center space-x-3">
-														<input
-															type="checkbox"
-															id="carry_forward_allowed"
-															checked={formData.carry_forward_allowed}
-															onChange={(e) =>
-																setFormData({
-																	...formData,
-																	carry_forward_allowed: e.target.checked,
-																})
-															}
-															disabled={isSubmitting}
-															className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500/20"
-														/>
-														<Label
-															htmlFor="carry_forward_allowed"
-															className="text-xs sm:text-sm font-medium text-gray-700"
-														>
-															Carry Forward Allowed
-														</Label>
-													</div>
-													<div className="flex items-center space-x-3">
-														<input
-															type="checkbox"
-															id="requires_document"
-															checked={formData.requires_document}
-															onChange={(e) =>
-																setFormData({
-																	...formData,
-																	requires_document: e.target.checked,
-																})
-															}
-															disabled={isSubmitting}
-															className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500/20"
-														/>
-														<Label
-															htmlFor="requires_document"
-															className="text-xs sm:text-sm font-medium text-gray-700"
-														>
-															Requires Document
-														</Label>
-													</div>
-												</div>
-											</div>
-										</div>
-										<DialogFooter className="flex flex-col sm:flex-row gap-3">
-											<Button
-												variant="outline"
-												onClick={() => setIsAddDialogOpen(false)}
-												disabled={isSubmitting}
-												className="w-full sm:w-auto text-xs sm:text-sm"
-											>
-												Cancel
-											</Button>
-											<Button onClick={handleAddLeaveType} disabled={isSubmitting}>
-												{isSubmitting ? (
-													<>
-														<Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-														Creating...
-													</>
-												) : (
-													"Create Leave Type"
-												)}
-											</Button>
-										</DialogFooter>
-									</DialogContent>
-								</Dialog>
+								<Button
+									className="flex items-center gap-2 text-xs sm:text-sm rounded-[12px]"
+									onClick={handleCreateLeaveType}
+								>
+									<Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+									<span className="hidden sm:inline">Create Leave Type</span>
+									<span className="sm:hidden">Create</span>
+								</Button>
 							</ProtectedComponent>
 						</div>
 					</div>
@@ -859,6 +523,16 @@ const LeaveTypesPage = () => {
 				</CardContent>
 			</div>
 
+			{/* Form Dialog */}
+			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
+				<LeaveTypeFormDialog
+					isOpen={isFormDialogOpen}
+					onOpenChange={handleFormDialogClose}
+					editingLeaveType={editingLeaveType}
+					onSuccess={handleFormSuccess}
+				/>
+			</ProtectedComponent>
+
 			{/* View Dialog */}
 			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
 				<LeaveTypeDetailsDialog
@@ -874,228 +548,6 @@ const LeaveTypesPage = () => {
 					instanceApprovalStatus={viewingLeaveType?.approval_status}
 					onRefresh={() => refreshTableRef.current?.()}
 				/>
-			</ProtectedComponent>
-
-			{/* Edit Dialog */}
-			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
-				<Dialog
-					open={isEditDialogOpen}
-					onOpenChange={(open) => {
-						setIsEditDialogOpen(open);
-						if (!open) {
-							resetFormData();
-							setEditingLeaveType(null);
-						}
-					}}
-				>
-					<DialogContent className="sm:max-w-[900px] w-[95vw] sm:w-full rounded-2xl border-0 shadow-2xl overflow-y-auto max-h-[90vh]">
-						<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-							<DialogTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-								Edit Leave Type
-							</DialogTitle>
-							<DialogDescription className="text-sm sm:text-base text-gray-600">
-								Make changes to the existing leave type configuration.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 py-4 sm:py-6">
-							<div className="space-y-3">
-								<Label
-									htmlFor="edit-name"
-									className="text-xs sm:text-sm font-semibold text-gray-800"
-								>
-									Name *
-								</Label>
-								<Input
-									id="edit-name"
-									value={formData.name}
-									onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-									placeholder="e.g., Annual Leave, Sick Leave"
-									disabled={isSubmitting}
-									className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
-								/>
-							</div>
-							<div className="space-y-3">
-								<Label
-									htmlFor="edit-category"
-									className="text-xs sm:text-sm font-semibold text-gray-800"
-								>
-									Category *
-								</Label>
-								<Select
-									value={formData.category}
-									onValueChange={(value) => setFormData({ ...formData, category: value })}
-									disabled={isSubmitting}
-								>
-									<SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">
-										<SelectValue placeholder="Select a category" />
-									</SelectTrigger>
-									<SelectContent>
-										{LEAVE_CATEGORIES.map((category) => (
-											<SelectItem
-												key={category.value}
-												value={category.value}
-												className="text-sm sm:text-base"
-											>
-												{category.label}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="space-y-3 md:col-span-2">
-								<Label
-									htmlFor="edit-description"
-									className="text-xs sm:text-sm font-semibold text-gray-800"
-								>
-									Description *
-								</Label>
-								<Textarea
-									id="edit-description"
-									value={formData.description}
-									onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-									rows={4}
-									placeholder="Provide a detailed description of this leave type..."
-									disabled={isSubmitting}
-									className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base resize-none"
-								/>
-							</div>
-							<div className="space-y-3">
-								<Label
-									htmlFor="edit-max_days_per_year"
-									className="text-xs sm:text-sm font-semibold text-gray-800"
-								>
-									Max Days Per Year *
-								</Label>
-								<FormatNumberInput
-									id="edit-max_days_per_year"
-									type="number"
-									value={formData.max_days_per_year?.toString() || ""}
-									onChange={(formatted, numeric) =>
-										setFormData({ ...formData, max_days_per_year: numeric.toString() })
-									}
-									placeholder="e.g., 20"
-									disabled={isSubmitting}
-									className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
-								/>
-							</div>
-							<div className="space-y-3">
-								<Label
-									htmlFor="edit-max_carry_forward_days"
-									className="text-xs sm:text-sm font-semibold text-gray-800"
-								>
-									Max Carry Forward Days
-								</Label>
-								<FormatNumberInput
-									id="edit-max_carry_forward_days"
-									value={formData.max_carry_forward_days?.toString() || ""}
-									onChange={(formatted, numeric) =>
-										setFormData({ ...formData, max_carry_forward_days: numeric.toString() })
-									}
-									placeholder="e.g., 5"
-									disabled={isSubmitting}
-									className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
-								/>
-							</div>
-							<div className="space-y-3">
-								<Label
-									htmlFor="edit-gender_specific"
-									className="text-xs sm:text-sm font-semibold text-gray-800"
-								>
-									Gender Specific
-								</Label>
-								<Select
-									value={formData.gender_specific}
-									onValueChange={(value) => setFormData({ ...formData, gender_specific: value })}
-									disabled={isSubmitting}
-								>
-									<SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">
-										<SelectValue placeholder="Select gender" />
-									</SelectTrigger>
-									<SelectContent>
-										{GENDER_CHOICES.map((gender) => (
-											<SelectItem
-												key={gender.value}
-												value={gender.value}
-												className="text-sm sm:text-base"
-											>
-												{gender.label}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="bg-gray-50 rounded-xl p-3 sm:p-4 space-y-4 md:col-span-2">
-								<h4 className="text-xs sm:text-sm font-semibold text-gray-800 mb-3">
-									Configuration Options
-								</h4>
-								<div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-									<div className="flex items-center space-x-3">
-										<input
-											type="checkbox"
-											id="edit-carry_forward_allowed"
-											checked={formData.carry_forward_allowed}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													carry_forward_allowed: e.target.checked,
-												})
-											}
-											disabled={isSubmitting}
-											className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500/20"
-										/>
-										<Label
-											htmlFor="edit-carry_forward_allowed"
-											className="text-xs sm:text-sm font-medium text-gray-700"
-										>
-											Carry Forward Allowed
-										</Label>
-									</div>
-									<div className="flex items-center space-x-3">
-										<input
-											type="checkbox"
-											id="edit-requires_document"
-											checked={formData.requires_document}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													requires_document: e.target.checked,
-												})
-											}
-											disabled={isSubmitting}
-											className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500/20"
-										/>
-										<Label
-											htmlFor="edit-requires_document"
-											className="text-xs sm:text-sm font-medium text-gray-700"
-										>
-											Requires Document
-										</Label>
-									</div>
-								</div>
-							</div>
-						</div>
-						<DialogFooter className="flex flex-col sm:flex-row gap-3">
-							<Button
-								variant="outline"
-								onClick={() => setIsEditDialogOpen(false)}
-								disabled={isSubmitting}
-								className="w-full sm:w-auto text-xs sm:text-sm"
-							>
-								Cancel
-							</Button>
-							<Button onClick={handleUpdateLeaveType} disabled={isSubmitting}>
-								{isSubmitting ? (
-									<>
-										<Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-										Updating...
-									</>
-								) : (
-									"Update Leave Type"
-								)}
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
 			</ProtectedComponent>
 
 			{/* Delete Confirmation Dialog */}

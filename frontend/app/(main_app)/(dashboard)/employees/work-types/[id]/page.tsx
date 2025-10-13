@@ -136,7 +136,7 @@ const EmployeeTypeDetailPage = () => {
 								</div>
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Code:</span>
-									<span className="text-sm">{workType.code || "N/A"}</span>
+									<span className="text-sm">{workType.code || "Unknown"}</span>
 								</div>
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Status:</span>
@@ -170,13 +170,13 @@ const EmployeeTypeDetailPage = () => {
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Created Date:</span>
 									<p className="text-sm">
-										{workType.created_at ? formatDate(workType.created_at) : "N/A"}
+										{workType.created_at ? formatDate(workType.created_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Last Updated:</span>
 									<p className="text-sm">
-										{workType.updated_at ? formatDate(workType.updated_at) : "N/A"}
+										{workType.updated_at ? formatDate(workType.updated_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">

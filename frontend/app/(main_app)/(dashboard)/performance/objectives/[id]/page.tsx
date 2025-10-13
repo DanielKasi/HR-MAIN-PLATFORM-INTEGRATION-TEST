@@ -139,7 +139,7 @@ const ObjectivesDetailPage = () => {
 								<div className="flex justify-between">
 									<span className="text-sm font-medium">Duration:</span>
 									<span className="text-sm">
-										{objective.duration || "N/A"} {objective.duration_unit}
+										{objective.duration || "Unknown"} {objective.duration_unit}
 									</span>
 								</div>
 								<div className="flex justify-between">
@@ -179,19 +179,21 @@ const ObjectivesDetailPage = () => {
 							<div className="space-y-4">
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Start Date:</span>
-									<p className="text-sm">{objective.date ? formatDate(objective.date) : "N/A"}</p>
+									<p className="text-sm">
+										{objective.date ? formatDate(objective.date) : "Unknown"}
+									</p>
 								</div>
 								<Separator />
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Created Date:</span>
 									<p className="text-sm">
-										{objective.created_at ? formatDate(objective.created_at) : "N/A"}
+										{objective.created_at ? formatDate(objective.created_at) : "Unknown"}
 									</p>
 								</div>
 								<div className="space-y-2">
 									<span className="text-sm font-medium">Last Updated:</span>
 									<p className="text-sm">
-										{objective.updated_at ? formatDate(objective.updated_at) : "N/A"}
+										{objective.updated_at ? formatDate(objective.updated_at) : "Unknown"}
 									</p>
 								</div>
 							</div>

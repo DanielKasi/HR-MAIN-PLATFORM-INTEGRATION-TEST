@@ -9,7 +9,7 @@ import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { IEmployee } from "@/types/types.utils";
 
-export interface EmployeeSearchableSelectProps {
+interface EmployeeSearchableSelectProps {
 	value: (string | number)[];
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
