@@ -344,6 +344,8 @@ export interface JobPositionAdvert {
 	job_position: number;
 	// job_position_advert_status: JobAdvertStatus;
 	published_date: string;
+	work_type?: { id: number; name: string } | null;
+	employee_type?: { id: number; name: string } | null;
 	expiry_date: string;
 	number_of_employees_expected?: number | null;
 	extra_information?: string | null;
@@ -356,18 +358,16 @@ export interface JobPositionAdvert {
 // For creating/updating job openings
 export interface JobPositionAdvertFormData {
 	level: number;
-	interviewers: any;
+	interviewers: number[];
 	job_position: number;
+	work_type?: number | null;
+	employee_type?: number | null;
 	job_position_advert_status?: JobAdvertStatus;
 	expiry_date: string;
 	number_of_employees_expected?: number;
 	extra_information?: string;
 	advert_type?: JobAdvertTypes;
-	required_documents?: Array<{
-		document_name: string;
-		description?: string;
-		is_optional: boolean;
-	}>;
+	required_documents?: Array<RequiredDocumentFormData>;
 }
 
 export interface JobApplicationDocument {
@@ -404,7 +404,7 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 	}>;
 	newFeedbackFieldName: string;
 	newFeedbackFieldType: string;
-	required_documents?: RequiredDocument[];
+	required_documents?: RequiredDocumentFormData[];
 }
 
 export interface ICompanyEmail {
@@ -644,6 +644,13 @@ export interface IInterview {
 
 export interface RequiredDocument {
 	id: number;
+	document_name: string;
+	description?: string;
+	is_optional: boolean;
+	content_object?: string;
+}
+
+export interface RequiredDocumentFormData {
 	document_name: string;
 	description?: string;
 	is_optional: boolean;

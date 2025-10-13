@@ -65,25 +65,34 @@ class DeviceSerializer(serializers.ModelSerializer):
     
 class DeviceEmployeeAttachmentSerializer(serializers.ModelSerializer):
     device = serializers.PrimaryKeyRelatedField(queryset=Device.objects.all())
-    employee_details = serializers.SerializerMethodField()
+    # employee_details = serializers.SerializerMethodField()
     device_details = serializers.SerializerMethodField()
     employee_id = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), source='employee', write_only=True
+        queryset=Employee.objects.all(), source='employee', write_only=True, required=False
     )
 
     class Meta:
         model = DeviceEmployeeAttachment
-        fields = '__all__'
+        fields = [
+            'id',
+            'device',
+            'device_details',
+            'employee_id',
+            'is_synced',
+            'is_admin',
+            'created_at',
+            'updated_at'
+        ]
         read_only_fields = ['created_at', 'updated_at']
 
-    def get_employee_details(self, obj):
-        if obj.employee:
-            return {
-                'id': obj.employee.id,
-                'name': obj.employee.name,
-                'employee_id': obj.employee.employee_id
-            }
-        return None
+    # def get_employee_details(self, obj):
+    #     if obj.employee:
+    #         return {
+    #             'id': obj.employee.id,
+    #             'name': obj.employee.name,
+    #             'employee_id': obj.employee.employee_id
+    #         }
+    #     return None
     
     def get_device_details(self, obj):
         if obj.device:
@@ -102,9 +111,9 @@ class DeviceEmployeeAttachmentSerializer(serializers.ModelSerializer):
             }
         return None    
 
-    def validate_enroll_id(self, value):
-        """Ensure enroll_id is unique for the device."""
-        device = self.initial_data.get('device')
-        if DeviceEmployeeAttachment.objects.filter(enroll_id=value, device=device).exists():
-            raise serializers.ValidationError("This enroll_id is already used for this device.")
-        return value    
+    # def validate_enroll_id(self, value):
+    #     """Ensure enroll_id is unique for the device."""
+    #     device = self.initial_data.get('device')
+    #     if DeviceEmployeeAttachment.objects.filter(enroll_id=value, device=device).exists():
+    #         raise serializers.ValidationError("This enroll_id is already used for this device.")
+    #     return value    

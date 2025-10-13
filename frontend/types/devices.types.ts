@@ -2,6 +2,7 @@ export type IDeviceStatus = "active" | "inactive" | "maintenance" | "faulty";
 
 export interface IDevice {
 	id: number;
+	name?: string | null;
 	institution: { id: number; name: string } | null;
 	branch: { id: number; name: string } | null;
 	serial_number: string;
@@ -11,8 +12,9 @@ export interface IDevice {
 }
 
 export interface IDeviceFormData {
-	branch: number;
+	branch?: number | null;
 	serial_number: string;
+	name: string;
 	description: string;
 	status: IDeviceStatus;
 }
@@ -21,7 +23,6 @@ export interface IDeviceEmployeeAttachment {
 	id: number;
 	device: { id: number; serial_number: string };
 	employee: { id: number; name: string; employee_id: string };
-	enroll_id: string;
 	is_admin: boolean;
 	created_at: string;
 	updated_at: string;
@@ -30,6 +31,5 @@ export interface IDeviceEmployeeAttachment {
 export interface IDeviceEmployeeAttachmentFormData {
 	device?: number;
 	employee_id?: number;
-	enroll_id: string;
 	is_admin: boolean;
 }

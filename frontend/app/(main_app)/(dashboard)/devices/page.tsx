@@ -68,6 +68,7 @@ export default function DevicesPage({}: DevicesPageProps) {
 		toast.success(`Device ${editingDevice ? "updated" : "created"} successfully`);
 		setShowCreateDialog(false);
 		setEditingDevice(null);
+		refreshTableRef.current?.();
 	};
 
 	const columns: ColumnDef<IDevice>[] = [
@@ -77,9 +78,14 @@ export default function DevicesPage({}: DevicesPageProps) {
 			cell: (device) => device.serial_number,
 		},
 		{
+			key: "device_name",
+			header: "Device Name",
+			cell: (device) => device.name || "",
+		},
+		{
 			key: "description",
 			header: "Description",
-			cell: (device) => device.description || "No description",
+			cell: (device) => <p className=" line-clamp-3">{device.description || ""}</p>,
 		},
 		{
 			key: "status",

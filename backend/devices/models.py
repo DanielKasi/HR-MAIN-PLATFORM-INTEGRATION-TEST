@@ -15,6 +15,7 @@ class Device(BaseApprovableModel):
     branch = models.ForeignKey(
         'institution.Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='devices'
     )
+    name = models.CharField(null=True, blank=True, max_length=255)
     serial_number = models.CharField(max_length=100, unique=True)
     description = models.TextField(max_length=255, blank=True)
     attached_employees = models.ManyToManyField('employee.Employee', through='DeviceEmployeeAttachment', related_name='devices', null=True, blank=True)
@@ -38,11 +39,8 @@ class Device(BaseApprovableModel):
         return self.institution
     
 class DeviceEmployeeAttachment(SoftDeletableTimeStampedModel):
-    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='device_employee_attachments')
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='device_employee_attachments', null=True, blank=True)
     employee = models.ForeignKey('employee.Employee', on_delete=models.CASCADE, related_name='device_employee_attachments')
-    enroll_id = models.CharField(
-        max_length=50, unique=True, help_text="Unique identifier for employee on this device (e.g., biometric ID)"
-    )
     is_synced = models.BooleanField(default=False)  
     is_admin = models.BooleanField(default=False)
     def __str__(self):

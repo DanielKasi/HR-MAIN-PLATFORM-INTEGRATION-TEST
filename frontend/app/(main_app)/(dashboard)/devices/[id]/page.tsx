@@ -78,11 +78,6 @@ export default function DeviceDetailsPage() {
 			cell: (attachment) => attachment.employee.name,
 		},
 		{
-			key: "enroll_id",
-			header: "Enroll ID",
-			cell: (attachment) => attachment.enroll_id,
-		},
-		{
 			key: "actions",
 			header: "Actions",
 			cell: (attachment) => (
@@ -129,6 +124,9 @@ export default function DeviceDetailsPage() {
 							<div className=" flex flex-col gap-4">
 								<p>
 									<b>Serial Number:</b> {device.serial_number || ""}
+								</p>
+								<p>
+									<b>Device name:</b> {device.serial_number || ""}
 								</p>
 								<p>
 									<b>Description:</b> {device.description || ""}

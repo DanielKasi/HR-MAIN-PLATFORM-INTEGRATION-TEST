@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { DEVICES_API } from "@/lib/api/devices.utils";
@@ -18,11 +18,12 @@ interface EmployeeDevicesProps {
 
 export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 	const [showAttachmentDialog, setShowAttachmentDialog] = useState(false);
+	const refreshFunctionRef = useRef<(() => void) | null>(null);
 
 	const handleAttachmentSuccess = () => {
 		toast.success("Attachment created successfully");
 		setShowAttachmentDialog(false);
-		// Refresh table
+		refreshFunctionRef.current?.();
 	};
 
 	const columns: ColumnDef<IDevice>[] = [
@@ -32,9 +33,14 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 			cell: (device) => device.serial_number,
 		},
 		{
+			key: "device_name",
+			header: "Device Name",
+			cell: (device) => device.name || "",
+		},
+		{
 			key: "description",
 			header: "Description",
-			cell: (device) => device.description || "N/A",
+			cell: (device) => <p className=" line-clamp-3">{device.description || ""}</p>,
 		},
 		{
 			key: "status",
@@ -44,9 +50,8 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 		{
 			key: "branch",
 			header: "Branch",
-			cell: (device) => device.branch?.name || "N/A",
+			cell: (device) => device.branch?.name || "",
 		},
-		// Add actions if needed, e.g., detach
 	];
 
 	return (
@@ -66,6 +71,7 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 				}
 				fetchFromUrl={(url) => getPaginatedFromUrl<IDevice>(url)}
 				deps={[employee.id]}
+				refreshRef={refreshFunctionRef}
 				columns={columns}
 				skeletonRows={5}
 				emptyState={
