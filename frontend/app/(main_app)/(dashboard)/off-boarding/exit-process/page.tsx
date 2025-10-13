@@ -17,6 +17,7 @@ import {
 	XCircle,
 	ArrowLeft,
 	ArrowUpDown,
+	Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,6 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast } from "@/lib/utils";
 import StageReorderModal from "@/components/stage-reorder-modal";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { IEmployeeSeparation, ISeparationType, IPaginatedResponse } from "@/types/types.utils";
 
@@ -55,11 +55,16 @@ export default function ExitProcessPage() {
 	const [categoryFilter, setCategoryFilter] = useState("all");
 	const [reorderModalOpen, setReorderModalOpen] = useState(false);
 	const [separationToReorder, setSeparationToReorder] = useState<IEmployeeSeparation | null>(null);
+	const [separations, setSeparations] = useState<IEmployeeSeparation[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [hasMore, setHasMore] = useState(true);
+	const [nextUrl, setNextUrl] = useState<string | null>(null);
+	const [initialLoad, setInitialLoad] = useState(true);
 
-	const refreshTableRef = useRef<(() => void) | null>(null);
+	const observerRef = useRef<IntersectionObserver | null>(null);
+	const loadMoreRef = useRef<HTMLDivElement | null>(null);
 	const hasFetchedSeparationTypesRef = useRef(false);
 
-	// Fetch separation types
 	const fetchSeparationTypes = async () => {
 		if (!currentInstitution) return;
 
@@ -88,24 +93,58 @@ export default function ExitProcessPage() {
 		}
 	};
 
-	const fetchSeparations = useCallback(async () => {
-		if (!currentInstitution) throw new Error("No institution selected");
+	const fetchSeparations = useCallback(
+		async (isInitial = false) => {
+			if (!currentInstitution) return;
+			if (loading) return;
+			if (!isInitial && !hasMore) return;
 
-		const params = new URLSearchParams();
-		if (searchTerm) params.append("search", searchTerm);
-		if (statusFilter !== "all") params.append("separation_status", statusFilter);
-		if (categoryFilter !== "all") params.append("category", categoryFilter);
+			try {
+				setLoading(true);
 
-		const response = await apiRequest.get(
-			`/on-boarding/employee-separations/?${params.toString()}`,
-		);
-		return response.data as IPaginatedResponse<IEmployeeSeparation>;
-	}, [currentInstitution, searchTerm, statusFilter, categoryFilter]);
+				let url: string;
+				if (isInitial || !nextUrl) {
+					const params = new URLSearchParams();
+					if (searchTerm) params.append("search", searchTerm);
+					if (statusFilter !== "all") params.append("separation_status", statusFilter);
+					if (categoryFilter !== "all") params.append("category", categoryFilter);
+					url = `/on-boarding/employee-separations/?${params.toString()}`;
+				} else {
+					url = nextUrl;
+				}
 
-	const fetchSeparationsFromUrl = useCallback(async (args: { url: string }) => {
-		const response = await apiRequest.get(args.url);
-		return response.data as IPaginatedResponse<IEmployeeSeparation>;
-	}, []);
+				const response = await apiRequest.get(url);
+				const data = response.data as IPaginatedResponse<IEmployeeSeparation>;
+
+				if (isInitial) {
+					setSeparations(data.results);
+				} else {
+					setSeparations((prev) => [...prev, ...data.results]);
+				}
+
+				setNextUrl(data.next);
+				setHasMore(!!data.next);
+			} catch (err) {
+				console.error("Error fetching separations:", err);
+				showErrorToast({ error: err, defaultMessage: "Failed to fetch separations" });
+			} finally {
+				setLoading(false);
+				setInitialLoad(false);
+			}
+		},
+		[currentInstitution, searchTerm, statusFilter, categoryFilter, loading, hasMore, nextUrl],
+	);
+
+	useEffect(() => {
+		if (currentInstitution) {
+			setSeparations([]);
+			setNextUrl(null);
+			setHasMore(true);
+			setInitialLoad(true);
+			fetchSeparations(true);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentInstitution?.id, searchTerm, statusFilter, categoryFilter]);
 
 	useEffect(() => {
 		if (currentInstitution && !hasFetchedSeparationTypesRef.current) {
@@ -113,6 +152,31 @@ export default function ExitProcessPage() {
 			fetchSeparationTypes();
 		}
 	}, [currentInstitution?.id]);
+
+	// Infinite scroll observer
+	useEffect(() => {
+		if (loading || !hasMore) return;
+
+		observerRef.current = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting && hasMore && !loading) {
+					fetchSeparations(false);
+				}
+			},
+			{ threshold: 0.1 },
+		);
+
+		const currentLoadMoreRef = loadMoreRef.current;
+		if (currentLoadMoreRef) {
+			observerRef.current.observe(currentLoadMoreRef);
+		}
+
+		return () => {
+			if (observerRef.current && currentLoadMoreRef) {
+				observerRef.current.unobserve(currentLoadMoreRef);
+			}
+		};
+	}, [loading, hasMore, fetchSeparations]);
 
 	const handleCreateNewExitProcess = useCallback(
 		(separationType: ISeparationType) => {
@@ -124,8 +188,11 @@ export default function ExitProcessPage() {
 
 	const handleReorderSuccess = useCallback(() => {
 		if (!separationToReorder) return;
-		refreshTableRef.current?.();
-	}, [separationToReorder]);
+		setSeparations([]);
+		setNextUrl(null);
+		setHasMore(true);
+		fetchSeparations(true);
+	}, [separationToReorder, fetchSeparations]);
 
 	const getStatusColor = useCallback((status: string) => {
 		switch (status) {
@@ -168,166 +235,6 @@ export default function ExitProcessPage() {
 		}
 	}, []);
 
-	const renderTableContent = useCallback(
-		({
-			data,
-			loading,
-			refresh,
-		}: {
-			data: IPaginatedResponse<IEmployeeSeparation> | null;
-			loading: boolean;
-			refresh: () => void;
-		}) => {
-			React.useEffect(() => {
-				refreshTableRef.current = refresh;
-			}, [refresh]);
-
-			if (loading && (!data || data.results.length === 0)) {
-				return <TableSkeleton rows={5} columns={1} />;
-			}
-
-			if (!data?.results || data.results.length === 0) {
-				return (
-					<div className="text-center py-12">
-						<FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-						<p className="text-muted-foreground">No exit processes found</p>
-					</div>
-				);
-			}
-
-			return (
-				<div className="grid grid-cols-1 gap-4">
-					{data.results.map((separation) => (
-						<Card key={separation.id} className="hover:shadow-md transition-shadow">
-							<CardContent className="p-6">
-								<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-									<div className="flex-1 space-y-3">
-										<div className="flex items-start justify-between">
-											<div>
-												<h3 className="font-semibold text-lg">
-													{separation.employee?.name || "Unknown Employee"}
-												</h3>
-												<p className="text-sm text-muted-foreground">
-													{separation.employee_separation_type?.separation_type || "No type"}
-												</p>
-											</div>
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-														<MoreVertical className="h-4 w-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end">
-													<DropdownMenuItem
-														onClick={() => router.push(`/exit-process/${separation.id}`)}
-													>
-														<Eye className="h-4 w-4 mr-2" />
-														View Details
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														onClick={() => router.push(`/exit-process/${separation.id}/edit`)}
-													>
-														<Edit className="h-4 w-4 mr-2" />
-														Edit
-													</DropdownMenuItem>
-													{separation.stages && separation.stages.length > 0 && (
-														<>
-															<DropdownMenuSeparator />
-															<DropdownMenuItem
-																onClick={() => {
-																	setSeparationToReorder(separation);
-																	setReorderModalOpen(true);
-																}}
-															>
-																<ArrowUpDown className="h-4 w-4 mr-2" />
-																Reorder Stages
-															</DropdownMenuItem>
-														</>
-													)}
-												</DropdownMenuContent>
-											</DropdownMenu>
-										</div>
-
-										<div className="flex flex-wrap gap-2">
-											<Badge className={getStatusColor(separation.separation_status)}>
-												{separation.separation_status}
-											</Badge>
-											<Badge
-												className={getCategoryColor(
-													separation.employee_separation_type?.category || "unknown",
-												)}
-											>
-												{separation.employee_separation_type?.category || "unknown"}
-											</Badge>
-										</div>
-
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-											<div className="flex items-center gap-2">
-												<Calendar className="h-4 w-4 text-muted-foreground" />
-												<span className="text-muted-foreground">Effective Date:</span>
-												<span className="font-medium">
-													{new Date(separation.effective_date).toLocaleDateString()}
-												</span>
-											</div>
-											<div className="flex items-center gap-2">
-												<Users className="h-4 w-4 text-muted-foreground" />
-												<span className="text-muted-foreground">Initiated by:</span>
-												<span className="font-medium">
-													{separation.initiated_by?.user?.fullname || "N/A"}
-												</span>
-											</div>
-										</div>
-
-										{separation.stages && separation.stages.length > 0 && (
-											<div className="mt-4">
-												<p className="text-sm font-medium mb-2">Exit Stages:</p>
-												<div className="space-y-2">
-													{separation.stages
-														.sort((a, b) => a.position - b.position)
-														.slice(0, 3)
-														.map((stage) => (
-															<div key={stage.id} className="flex items-center gap-2 text-sm">
-																{getStageStatusIcon(stage.status)}
-																<span
-																	className={stage.status === "completed" ? "text-green-600" : ""}
-																>
-																	{stage.stage_name}
-																</span>
-																<Badge variant="outline" className="ml-auto text-xs">
-																	{stage.status
-																		.replace(/_/g, " ")
-																		.replace(/\b\w/g, (l) => l.toUpperCase())}
-																</Badge>
-															</div>
-														))}
-													{separation.stages.length > 3 && (
-														<p className="text-xs text-muted-foreground">
-															+{separation.stages.length - 3} more stages
-														</p>
-													)}
-												</div>
-											</div>
-										)}
-
-										{separation.additional_notes && (
-											<div className="mt-3 p-3 bg-gray-50 rounded-md">
-												<p className="text-sm text-muted-foreground">
-													{separation.additional_notes.substring(0, 150)}
-													{separation.additional_notes.length > 150 ? "..." : ""}
-												</p>
-											</div>
-										)}
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			);
-		},
-		[getStatusColor, getCategoryColor, getStageStatusIcon, router],
-	);
-
 	return (
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
@@ -335,7 +242,7 @@ export default function ExitProcessPage() {
 					size="sm"
 					variant="outline"
 					className="rounded-full aspect-square"
-					onClick={() => router.push("/admin")}
+					onClick={() => router.push("/analytics/offboarding")}
 				>
 					<ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
 				</Button>
@@ -387,7 +294,6 @@ export default function ExitProcessPage() {
 				</div>
 			</div>
 
-			{/* Filters */}
 			<div className="flex flex-col sm:flex-row gap-4 mb-6">
 				<div className="relative sm:w-[500px]">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -424,18 +330,159 @@ export default function ExitProcessPage() {
 				</div>
 			</div>
 
-			{/* Separations List with PaginatedTableWrapper */}
-			<PaginatedTableWrapper<IEmployeeSeparation>
-				fetchFirstPage={fetchSeparations}
-				fetchFromUrl={fetchSeparationsFromUrl}
-				deps={[currentInstitution?.id, searchTerm, statusFilter, categoryFilter]}
-				className="space-y-4"
-				footerClassName="pt-4"
-			>
-				{renderTableContent}
-			</PaginatedTableWrapper>
+			{/* Content */}
+			<div className="space-y-4">
+				{initialLoad && loading ? (
+					<TableSkeleton rows={5} columns={1} />
+				) : separations.length === 0 ? (
+					<div className="text-center py-12">
+						<FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+						<p className="text-muted-foreground">No exit processes found</p>
+					</div>
+				) : (
+					<>
+						<div className="grid grid-cols-1 gap-4">
+							{separations.map((separation) => (
+								<Card key={separation.id} className="hover:shadow-md transition-shadow">
+									<CardContent className="p-6">
+										<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+											<div className="flex-1 space-y-3">
+												<div className="flex items-start justify-between">
+													<div>
+														<h3 className="font-semibold text-lg">
+															{separation.employee?.name || "Unknown Employee"}
+														</h3>
+														<p className="text-sm text-muted-foreground">
+															{separation.employee_separation_type?.separation_type || "No type"}
+														</p>
+													</div>
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+																<MoreVertical className="h-4 w-4" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => router.push(`/exit-process/${separation.id}`)}
+															>
+																<Eye className="h-4 w-4 mr-2" />
+																View Details
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																onClick={() => router.push(`/exit-process/${separation.id}/edit`)}
+															>
+																<Edit className="h-4 w-4 mr-2" />
+																Edit
+															</DropdownMenuItem>
+															{separation.stages && separation.stages.length > 0 && (
+																<>
+																	<DropdownMenuSeparator />
+																	<DropdownMenuItem
+																		onClick={() => {
+																			setSeparationToReorder(separation);
+																			setReorderModalOpen(true);
+																		}}
+																	>
+																		<ArrowUpDown className="h-4 w-4 mr-2" />
+																		Reorder Stages
+																	</DropdownMenuItem>
+																</>
+															)}
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
 
-			{/* Stage Reorder Modal */}
+												<div className="flex flex-wrap gap-2">
+													<Badge className={getStatusColor(separation.separation_status)}>
+														{separation.separation_status}
+													</Badge>
+													<Badge
+														className={getCategoryColor(
+															separation.employee_separation_type?.category || "unknown",
+														)}
+													>
+														{separation.employee_separation_type?.category || "unknown"}
+													</Badge>
+												</div>
+
+												<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+													<div className="flex items-center gap-2">
+														<Calendar className="h-4 w-4 text-muted-foreground" />
+														<span className="text-muted-foreground">Effective Date:</span>
+														<span className="font-medium">
+															{new Date(separation.effective_date).toLocaleDateString()}
+														</span>
+													</div>
+													<div className="flex items-center gap-2">
+														<Users className="h-4 w-4 text-muted-foreground" />
+														<span className="text-muted-foreground">Initiated by:</span>
+														<span className="font-medium">
+															{separation.initiated_by?.user?.fullname || "N/A"}
+														</span>
+													</div>
+												</div>
+
+												{separation.stages && separation.stages.length > 0 && (
+													<div className="mt-4">
+														<p className="text-sm font-medium mb-2">Exit Stages:</p>
+														<div className="space-y-2">
+															{separation.stages
+																.sort((a, b) => a.position - b.position)
+																.slice(0, 3)
+																.map((stage) => (
+																	<div key={stage.id} className="flex items-center gap-2 text-sm">
+																		{getStageStatusIcon(stage.status)}
+																		<span
+																			className={
+																				stage.status === "completed" ? "text-green-600" : ""
+																			}
+																		>
+																			{stage.stage_name}
+																		</span>
+																		<Badge variant="outline" className="ml-auto text-xs">
+																			{stage.status
+																				.replace(/_/g, " ")
+																				.replace(/\b\w/g, (l) => l.toUpperCase())}
+																		</Badge>
+																	</div>
+																))}
+															{separation.stages.length > 3 && (
+																<p className="text-xs text-muted-foreground">
+																	+{separation.stages.length - 3} more stages
+																</p>
+															)}
+														</div>
+													</div>
+												)}
+
+												{separation.additional_notes && (
+													<div className="mt-3 p-3 bg-gray-50 rounded-md">
+														<p className="text-sm text-muted-foreground">
+															{separation.additional_notes.substring(0, 150)}
+															{separation.additional_notes.length > 150 ? "..." : ""}
+														</p>
+													</div>
+												)}
+											</div>
+										</div>
+									</CardContent>
+								</Card>
+							))}
+						</div>
+
+						<div ref={loadMoreRef} className="flex justify-center py-4">
+							{loading && (
+								<div className="flex items-center gap-2 text-muted-foreground">
+									<Loader2 className="h-5 w-5 animate-spin" />
+									<span>Loading more...</span>
+								</div>
+							)}
+						</div>
+					</>
+				)}
+			</div>
+
 			{separationToReorder && (
 				<StageReorderModal
 					isOpen={reorderModalOpen}
