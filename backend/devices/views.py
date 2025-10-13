@@ -579,7 +579,6 @@ class DeviceCallbackView(APIView):
 
                     previous_date = record_date - timedelta(days=1)
                     if len(times) >= 1:  # Only process check-out if we have records
-                        # Get the latest log time for the previous day from the database
                         last_log = EmployeeLogs.objects.filter(
                             employee=employee,
                             date=previous_date
