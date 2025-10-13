@@ -1,28 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { GripVertical, CheckCircle, Clock, XCircle, AlertCircle, Save, X } from "lucide-react";
+import { GripVertical, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
-
-interface Stage {
-	id: number;
-	stage_name: string;
-	status: string;
-	position: number;
-	notes?: string;
-}
-
-interface StageReorderModalProps {
-	isOpen: boolean;
-	separationId: number;
-	stages: Stage[];
-	employeeName: string;
-	onClose: () => void;
-	onSuccess: (updatedStages: Stage[]) => void;
-}
+import { Stage, StageReorderModalProps } from "@/types/types.utils";
 
 export default function StageReorderModal({
 	isOpen,
@@ -37,7 +21,6 @@ export default function StageReorderModal({
 	const [hasChanges, setHasChanges] = useState(false);
 	const [saving, setSaving] = useState(false);
 
-	// Initialize and sort stages
 	useEffect(() => {
 		if (isOpen) {
 			const sorted = [...initialStages].sort((a, b) => a.position - b.position);
@@ -97,7 +80,6 @@ export default function StageReorderModal({
 		newStages.splice(draggedIndex, 1);
 		newStages.splice(targetIndex, 0, draggedStage);
 
-		// Update positions
 		const updatedStages = newStages.map((stage, index) => ({
 			...stage,
 			position: index + 1,
@@ -127,7 +109,6 @@ export default function StageReorderModal({
 		const [movedStage] = newStages.splice(currentIndex, 1);
 		newStages.splice(newIndex, 0, movedStage);
 
-		// Update positions
 		const updatedStages = newStages.map((stage, index) => ({
 			...stage,
 			position: index + 1,
@@ -143,26 +124,85 @@ export default function StageReorderModal({
 		setSaving(true);
 
 		try {
-			// Prepare the update data - send all stages with their new positions
-			const updatePromises = stages.map((stage) =>
-				apiRequest.patch(`/on-boarding/offboarding-stages/${stage.id}/`, {
-					position: stage.position,
-				}),
-			);
+			const originalPositions = new Map();
+			initialStages.forEach((stage) => {
+				originalPositions.set(stage.id, stage.position);
+			});
 
-			await Promise.all(updatePromises);
+			let sourceStageId = null;
+			let targetStageId = null;
 
-			showSuccessToast("Stages reordered successfully!");
-			setHasChanges(false);
+			for (let i = 0; i < stages.length; i++) {
+				const currentStage = stages[i];
+				const originalPosition = originalPositions.get(currentStage.id);
 
-			if (onSuccess) {
-				onSuccess(stages);
+				if (originalPosition !== i + 1) {
+					sourceStageId = currentStage.id;
+
+					if (i > 0) {
+						targetStageId = stages[i - 1].id;
+					} else if (i < stages.length - 1) {
+						targetStageId = stages[i + 1].id;
+					}
+					break;
+				}
 			}
 
-			// Close modal after successful save
-			setTimeout(() => {
-				onClose();
-			}, 500);
+			if (sourceStageId && !targetStageId) {
+				const otherStage = stages.find((stage) => stage.id !== sourceStageId);
+				if (otherStage) {
+					targetStageId = otherStage.id;
+				}
+			}
+
+			if (sourceStageId && targetStageId && sourceStageId !== targetStageId) {
+				await apiRequest.post(`/on-boarding/employee-separations/${separationId}/stage-reorder/`, {
+					source_stage_id: sourceStageId,
+					target_stage_id: targetStageId,
+				});
+
+				showSuccessToast("Stages reordered successfully!");
+				setHasChanges(false);
+
+				if (onSuccess) {
+					onSuccess(stages);
+				}
+
+				setTimeout(() => {
+					onClose();
+				}, 500);
+			} else {
+				console.warn("Using fallback reorder logic");
+
+				const firstStage = stages[0];
+				const secondStage = stages[1];
+
+				if (firstStage && secondStage) {
+					await apiRequest.post(
+						`/on-boarding/employee-separations/${separationId}/stage-reorder/`,
+						{
+							source_stage_id: firstStage.id,
+							target_stage_id: secondStage.id,
+						},
+					);
+
+					showSuccessToast("Stages reordered successfully!");
+					setHasChanges(false);
+
+					if (onSuccess) {
+						onSuccess(stages);
+					}
+
+					setTimeout(() => {
+						onClose();
+					}, 500);
+				} else {
+					showErrorToast({
+						error: new Error("Cannot determine stage order changes"),
+						defaultMessage: "No valid stage movement detected.",
+					});
+				}
+			}
 		} catch (error) {
 			console.error("Error reordering stages:", error);
 			showErrorToast({
@@ -182,19 +222,17 @@ export default function StageReorderModal({
 			if (!confirmed) return;
 		}
 
-		// Reset stages to original
 		const sorted = [...initialStages].sort((a, b) => a.position - b.position);
 		setStages(sorted);
 		setHasChanges(false);
 
-		// Close the modal
 		onClose();
 	};
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-				<DialogHeader>
+			<DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden">
+				<DialogHeader className="">
 					<DialogTitle>Reorder Exit Stages - {employeeName}</DialogTitle>
 				</DialogHeader>
 
@@ -204,8 +242,9 @@ export default function StageReorderModal({
 							<CardHeader>
 								<div className="flex items-center justify-between">
 									<div>
+										<CardTitle className="text-lg">Stage Reordering</CardTitle>
 										<p className="text-sm text-muted-foreground">
-											Drag and drop stages to change their execution order
+											Drag stages to change their execution order
 										</p>
 									</div>
 									<div className="flex gap-2">
@@ -214,9 +253,8 @@ export default function StageReorderModal({
 											onClick={handleCancel}
 											disabled={saving}
 											size="sm"
-											className="rounded-full"
+											className="rounded-full focus-visible:ring-0 focus-visible:ring-offset-0"
 										>
-											<X className="h-4 w-4 mr-2" />
 											Cancel
 										</Button>
 										<Button
@@ -225,7 +263,6 @@ export default function StageReorderModal({
 											size="sm"
 											className="flex rounded-full w-full max-w-sm items-center gap-2 px-6 lg:px-8"
 										>
-											<Save className="h-4 w-4 mr-2" />
 											{saving ? "Saving..." : "Save Order"}
 										</Button>
 									</div>
@@ -248,20 +285,16 @@ export default function StageReorderModal({
 												${hasChanges ? "bg-blue-50" : "bg-white"}
 											`}
 										>
-											{/* Drag Handle */}
 											<div className="flex-shrink-0">
 												<GripVertical className="h-5 w-5 text-gray-400" />
 											</div>
 
-											{/* Position Number */}
 											<div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-semibold text-sm">
 												{index + 1}
 											</div>
 
-											{/* Stage Icon */}
 											<div className="flex-shrink-0">{getStageStatusIcon(stage.status)}</div>
 
-											{/* Stage Info */}
 											<div className="flex-1 min-w-0">
 												<div className="flex items-center gap-2 mb-1">
 													<h4 className="font-medium truncate">{stage.stage_name}</h4>
@@ -302,32 +335,10 @@ export default function StageReorderModal({
 								{hasChanges && (
 									<div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
 										<p className="text-sm text-yellow-800 font-medium">
-											You have unsaved changes. Click "Save Order" to apply the new stage order.
+											Click "Save Order" to apply the new stage order.
 										</p>
 									</div>
 								)}
-							</CardContent>
-						</Card>
-
-						{/* Instructions */}
-						<Card>
-							<CardContent className="p-4">
-								<h4 className="font-medium mb-2">How to reorder stages:</h4>
-								<ul className="text-sm text-muted-foreground space-y-1">
-									<li>
-										• <strong>Drag & Drop:</strong> Click and drag a stage to move it to a new
-										position
-									</li>
-									<li>
-										• <strong>Arrow Buttons:</strong> Use ▲ and ▼ buttons to move stages up or down
-									</li>
-									<li>
-										• <strong>Save:</strong> Click "Save Order" to apply changes
-									</li>
-									<li>
-										• <strong>Cancel:</strong> Click "Cancel" to discard changes and close
-									</li>
-								</ul>
 							</CardContent>
 						</Card>
 					</div>
