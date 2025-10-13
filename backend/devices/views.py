@@ -283,44 +283,47 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
                 payload["name"] = employee.name or employee.user.fullname
                 payload["external_user_id"] = employee.employee_id
 
-            external_api_url = config('DEVICE_USER_REG_API')
-            url = external_api_url % instance.device.serial_number
-            api_key = config('API_KEY')
+                external_api_url = config('DEVICE_USER_REG_API')
+                url = external_api_url % instance.device.serial_number
+                api_key = config('API_KEY')
 
-            masked_key = api_key[:4] + "****" if api_key else "NOT SET"
+                masked_key = api_key[:4] + "****" if api_key else "NOT SET"
 
-            print("\n=== Sending to External API ===")
-            print(f"External API URL: {url}")
-            print(f"API Key (masked): {masked_key}")
-            print(f"Payload: {payload}")
+                print("\n=== Sending to External API ===")
+                print(f"External API URL: {url}")
+                print(f"API Key (masked): {masked_key}")
+                print(f"Payload: {payload}")
 
-            try:
-                response = requests.post(
-                    url,
-                    json=payload,
-                    headers={"X-API-KEY": api_key},
-                    timeout=5
-                )
-
-                print(f"External API Response Status: {response.status_code}")
-                print(f"External API Response Text: {response.text}")
-
-                if response.status_code != 200:
-                    print("❌ Failed to register employee. Rolling back instance.")
-                    instance.delete()
-                    return Response(
-                        {"detail": f"Failed to register employee with external system: {response.text}"},
-                        status=status.HTTP_400_BAD_REQUEST
+                try:
+                    response = requests.post(
+                        url,
+                        json=payload,
+                        headers={"X-API-KEY": api_key},
+                        timeout=5
                     )
 
-            except requests.RequestException as e:
-                print(f"❌ Error communicating with device system: {str(e)}")
-                print("Rolling back instance.")
-                instance.delete()
-                return Response(
-                    {"detail": f"Error communicating with device system: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                    print(f"External API Response Status: {response.status_code}")
+                    print(f"External API Response Text: {response.text}")
+
+                    if response.status_code != 200:
+                        print("❌ Failed to register employee. Rolling back instance.")
+                        instance.delete()
+                        return Response(
+                            {"detail": f"Failed to register employee with external system: {response.text}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    instance.is_synced = True
+                    instance.save()
+
+                except requests.RequestException as e:
+                    print(f"❌ Error communicating with device system: {str(e)}")
+                    print("Rolling back instance.")
+                    instance.delete()
+                    return Response(
+                        {"detail": f"Error communicating with device system: {str(e)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
             print(f"✅ Employee attached successfully to device {instance.device.serial_number}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)

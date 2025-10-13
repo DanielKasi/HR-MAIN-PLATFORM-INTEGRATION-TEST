@@ -211,15 +211,6 @@ export default function AdminPage() {
 										<span>Working days</span>
 									</Link>
 								</div>
-								<div className="">
-									<Link
-										href="/devices"
-										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-									>
-										<Icon icon="hugeicons:biometric-device" className="!w-5 !h-5" />
-										<span>Devices</span>
-									</Link>
-								</div>
 							</div>
 						</div>
 
@@ -302,6 +293,22 @@ export default function AdminPage() {
 									<BookAIcon className="w-5 h-5 text-gray-500" />
 									<span>Document Templates</span>
 								</Link>
+							</div>
+						</div>
+						<div>
+							<h2 className="text-lg font-semibold mb-6">Device Management</h2>
+							<Separator className="my-6" />
+
+							<div className="space-y-4">
+								<div className="">
+									<Link
+										href="/devices"
+										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+									>
+										<Icon icon="hugeicons:biometric-device" className="!w-5 !h-5" />
+										<span>Devices</span>
+									</Link>
+								</div>
 							</div>
 						</div>
 					</div>

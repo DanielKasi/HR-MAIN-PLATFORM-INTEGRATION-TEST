@@ -1669,3 +1669,14 @@ class EmployeeContract(BaseApprovableModel):
             self.status = "NOT_MATCHED_NEEDS_REVIEW"
 
         super().save(*args, **kwargs)
+
+class EmployeeeLogs(SoftDeletableTimeStampedModel):
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='logs')
+    record_data = models.JSONField(help_text="JSON data of the log record")
+
+    class Meta:
+        verbose_name = "Employee Log"
+        verbose_name_plural = "Employee Logs"
+
+    def __str__(self):
+        return f"Log for {self.employee} at {self.created_at}"
