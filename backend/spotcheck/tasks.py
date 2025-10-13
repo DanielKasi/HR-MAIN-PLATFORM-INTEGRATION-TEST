@@ -106,10 +106,7 @@ def initiate_spotcheck_responses_from_attendance_records(
                 minutes=expires_after_minutes
             )
 
-            if (
-                spot_check_start <= log_datetime <= spot_check_end
-                and not spot_check.responded_at
-            ):
+            if spot_check_start <= log_datetime <= spot_check_end:
                 # Update spot check as responded / checked in
                 spot_check.responded_at = log_datetime
                 spot_check.status = valid_status
