@@ -309,6 +309,15 @@ export default function AdminPage() {
 										<span>Devices</span>
 									</Link>
 								</div>
+								<div className="">
+									<Link
+										href="/employees/logs"
+										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+									>
+										<Icon icon="hugeicons:layers-logo" className="!w-5 !h-5" />
+										<span>Employee Logs</span>
+									</Link>
+								</div>
 							</div>
 						</div>
 					</div>

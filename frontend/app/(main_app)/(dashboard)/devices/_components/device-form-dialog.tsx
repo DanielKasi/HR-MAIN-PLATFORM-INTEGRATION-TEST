@@ -162,7 +162,7 @@ export const DeviceFormDialog = ({
 								onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
 								placeholder="Enter serial number"
 								disabled={isSubmitting}
-								className="h-10 rounded-xl"
+								className=" rounded-2xl"
 							/>
 						</div>
 						<div className="space-y-2">
@@ -175,7 +175,7 @@ export const DeviceFormDialog = ({
 								onChange={(e) => setFormData({ ...formData, name: e.target.value })}
 								placeholder="Enter a name"
 								disabled={isSubmitting}
-								className="h-10 rounded-xl"
+								className="rounded-2xl"
 							/>
 						</div>
 						<div className="space-y-2">
@@ -188,7 +188,7 @@ export const DeviceFormDialog = ({
 								onChange={(e) => setFormData({ ...formData, description: e.target.value })}
 								placeholder="Enter description (optional)"
 								disabled={isSubmitting}
-								className="h-20 rounded-xl"
+								className="h-20 rounded-2xl"
 							/>
 						</div>
 						{editingDevice && (
@@ -203,7 +203,7 @@ export const DeviceFormDialog = ({
 									}
 									disabled={isSubmitting}
 								>
-									<SelectTrigger className="h-10 rounded-xl">
+									<SelectTrigger className=" rounded-2xl">
 										<SelectValue placeholder="Select status" />
 									</SelectTrigger>
 									<SelectContent>

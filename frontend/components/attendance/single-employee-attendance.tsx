@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import { useSelector } from "react-redux";
 
-import { AttendanceAPI, fetchAttendanceData, showErrorToast } from "@/lib/utils";
+import { AttendanceAPI, showErrorToast } from "@/lib/utils";
 import { IAttendance, IEmployee } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { AttendanceRecordsTable } from "@/components/attendance/_components/attendance-records-table";
@@ -13,8 +13,6 @@ import { getCurrentUserLocation, isToday } from "@/lib/helpers";
 import { toast } from "sonner";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import Link from "next/link";
 
 interface SingleEmployeeAttendanceProps {
 	searchTerm?: string;
@@ -50,12 +48,6 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 		await getCurrentUserLocation(handlePositionChange);
 	};
 
-	const handleFetchAttendanceRecords = async () => {
-		try {
-			const response = await fetchAttendanceData({ target_employees: [employee.id] });
-		} catch (error) {}
-	};
-
 	const handleCheckIn = async (_date: string, checkInTime: string) => {
 		if (!employee) return;
 		if (!currentUserlocation) {
@@ -64,17 +56,18 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 			return;
 		}
 		try {
-			await AttendanceAPI.createAttendanceRecord({
+			const response = await AttendanceAPI.createAttendanceRecord({
 				employee: employee.id,
 				check_in_time: checkInTime,
 				check_in_latitude: currentUserlocation.coords.latitude,
 				check_in_longitude: currentUserlocation.coords.longitude,
 				status: "approved",
 			});
-
+			setSelectedAttendanceRecord(response);
 			await attendanceRefreshRef.current?.();
+			setCheckInModalOpen(false);
 		} catch (error: any) {
-			showErrorToast({ error, defaultMessage: "Failed to selectedAttendanceRecord check-in!" });
+			showErrorToast({ error, defaultMessage: "Failed to check in!" });
 		}
 	};
 
@@ -103,7 +96,7 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 
 			await attendanceRefreshRef.current?.();
 		} catch (error: any) {
-			showErrorToast({ error, defaultMessage: "Failed to selectedAttendanceRecord check-in!" });
+			showErrorToast({ error, defaultMessage: "Failed to check out!" });
 		}
 	};
 
@@ -158,29 +151,11 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 						</div>
 					</div>
 
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Date</TableHead>
-								<TableHead>Checkin Time</TableHead>
-								<TableHead>Checkout Time</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{
-								<TableRow key={employee.id} className="hover:bg-gray-50">
-									<TableCell>{selectedDate}</TableCell>
+					<AttendanceRecordsTable
+						attendanceRefreshRef={attendanceRefreshRef}
+						scope={{ type: "employee", employee }}
+					/>
 
-									<TableCell className="min-w-[6rem]">
-										<span>{selectedAttendanceRecord?.check_in_time}</span>
-									</TableCell>
-									<TableCell className="min-w-[6rem]">
-										<span>{selectedAttendanceRecord?.check_out_time}</span>
-									</TableCell>
-								</TableRow>
-							}
-						</TableBody>
-					</Table>
 					<CheckInModal
 						isOpen={checkInModalOpen}
 						onClose={() => setCheckInModalOpen(false)}

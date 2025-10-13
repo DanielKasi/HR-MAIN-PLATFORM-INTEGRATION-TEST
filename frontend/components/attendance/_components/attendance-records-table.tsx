@@ -17,19 +17,19 @@ import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { IAttendance, IEmployee } from "@/types/types.utils";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 interface AttendanceRecordsTableProps {
-	institutionId: number;
 	selectedDate?: string;
 	setSelectedDate?: (date: string) => void;
 	searchTerm?: string;
 	scope: { type: "default" } | { type: "employee"; employee: IEmployee };
-	attendanceRefreshRef?: RefObject<() => void | null>;
+	attendanceRefreshRef?: RefObject<(() => Promise<void>) | null>;
 	showingOnDashboard?: boolean;
 }
 
 export function AttendanceRecordsTable({
-	institutionId,
 	searchTerm,
 	scope,
 	attendanceRefreshRef: attendanceRef,
@@ -37,7 +37,7 @@ export function AttendanceRecordsTable({
 }: AttendanceRecordsTableProps) {
 	const [search, setSearch] = useState(searchTerm);
 	const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
-
+	const currentInstitution = useSelector(selectSelectedInstitution);
 	useEffect(() => {
 		setSearch(searchTerm);
 	}, [searchTerm]);
@@ -52,7 +52,7 @@ export function AttendanceRecordsTable({
 						date: selectedDate,
 						search,
 						page: 1,
-						institutionId,
+						institutionId: currentInstitution?.id,
 					});
 				}
 
@@ -61,7 +61,7 @@ export function AttendanceRecordsTable({
 					date: selectedDate,
 					search,
 					page: 1,
-					institutionId,
+					institutionId: currentInstitution?.id,
 				});
 			}}
 			fetchFromUrl={({ url }) => AttendanceAPI.fetchAttendanceRecordsFromUrl(url)}
