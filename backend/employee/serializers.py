@@ -1127,7 +1127,7 @@ class EmployeeLogsSerializer(serializers.ModelSerializer):
     def get_employee(self, obj):
         return {
             'id': obj.employee.id,
-            'name': obj.employee.name,
+            'name': obj.employee.name if obj.employee.name else obj.employee.user.fullname,
             'employee_id': obj.employee.employee_id,
             'position': obj.employee.position.name if obj.employee.position else None
         }
@@ -1139,4 +1139,7 @@ class EmployeeLogsSerializer(serializers.ModelSerializer):
             'name': obj.device.name,
             'serial_number': obj.device.serial_number,
         }
+
+
+      
 

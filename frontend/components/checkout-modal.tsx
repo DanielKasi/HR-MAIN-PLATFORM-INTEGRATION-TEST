@@ -7,7 +7,7 @@ import { getCurrentDateTime } from "./checkin-modal";
 interface CheckOutModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onConfirm: (date: string, time: string) => void;
+	onConfirm: (date: string, time: string) => Promise<void>;
 	employeeName: string;
 	checkInTime: string | null;
 }
@@ -25,11 +25,11 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
 
 	if (!isOpen) return null;
 
-	const handleConfirm = () => {
+	const handleConfirm = async () => {
 		// Combine date and time to create the check-out time string
 		const checkOutTime = `${selectedTime}:00`; // Add seconds
 
-		onConfirm(selectedDate, checkOutTime);
+		await onConfirm(selectedDate, checkOutTime);
 		onClose();
 	};
 

@@ -303,17 +303,25 @@ def send_birthday_email(employee_id):
         ).select_related('user', 'department').first()
 
         if not employee:
-            print(f"No valid employee found for ID {employee_id}")
             return f"No valid employee found for ID {employee_id}"
 
         today = timezone.now().date()
         if (employee.date_of_birth.month != today.month or 
             employee.date_of_birth.day != today.day):
-            print(f"Task for employee ID {employee_id} triggered on wrong date")
             return f"Wrong date for employee ID {employee_id}"
 
+        # Determine salutation based on gender
+        name = employee.name or employee.user.fullname
+        if employee.gender == 'female':
+            salutation = f"Ms {name}"
+        elif employee.gender == 'male':
+            salutation = f"Mr {name}"
+        else:
+            salutation = name  # Neutral salutation for 'other' or unspecified gender
+
         context = {
-            'employee_name': employee.name or employee.user.fullname,
+            'employee_name': name,
+            'salutation': salutation,
             'institution_name': employee.get_institution().institution_name,
             'current_year': today.year,
         }
@@ -321,7 +329,7 @@ def send_birthday_email(employee_id):
         html_message = render_to_string('emails/birthday_email.html', context)
 
         send_mail(
-            subject=f"Happy Birthday, {employee.name or employee.user.fullname}!",
+            subject=f"Happy Birthday, {salutation}!",
             message="Please view this email in an HTML-compatible email client.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[employee.user.email],
@@ -330,7 +338,7 @@ def send_birthday_email(employee_id):
         )
        
 
-        notification_message = f"Happy Birthday, {employee.name or employee.user.fullname}! We celebrate you today! 🎂"
+        notification_message = f"Happy Birthday, {salutation}! We celebrate you today! 🎂"
         add_notification(
             user_id=employee.user.id,
             message=notification_message,
