@@ -1,8 +1,6 @@
 from django.db import models
-from users.models import CustomUser
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-
 
 class AuditLog(models.Model):
     ACTION_CHOICES = [
@@ -17,7 +15,11 @@ class AuditLog(models.Model):
 
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     user = models.ForeignKey(
-        CustomUser, on_delete=models.SET_NULL, null=True, blank=True
+        'users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True
+    )
+    institution = models.ForeignKey(
+        'institution.Institution', on_delete=models.SET_NULL, null=True, blank=True,
+        help_text="Institution associated with this audit log."
     )
     timestamp = models.DateTimeField(auto_now_add=True)
     changes = models.JSONField(
@@ -29,6 +31,9 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=['institution', 'timestamp']),
+        ]
 
     def __str__(self):
         return f"{self.action} on {self.content_type.model} (ID: {self.object_id}) by {self.user} at {self.timestamp}"
