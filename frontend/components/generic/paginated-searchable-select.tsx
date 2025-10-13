@@ -126,7 +126,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 	// Fetch first page for paginated mode
 	React.useEffect(() => {
 		if (!fetchFirstPage || (!paginated && data?.results)) return;
-		if (data && data.next && !search) return; // Skip if we have a next page and no search
+		if (data && data.next && !search) return;
 		setLoading(true);
 		fetchFirstPage({ search, ...query } as Q)
 			.then((res) => {
@@ -274,19 +274,45 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 				)}
 				onClick={() => !disabled && setOpen(!open)}
 			>
-				<input
-					ref={searchInputRef}
-					type="text"
-					placeholder={placeholder}
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground"
-					onClick={(e) => e.stopPropagation()}
-					disabled={disabled}
-				/>
+				{
+					// If single-select (multiple=false), dropdown is closed, and there's a selected item, show its label
+					!multiple && !open && selectedItems.length > 0 && selectedItem ? (
+						<input
+							readOnly
+							value={getItemLabel(selectedItem)}
+							className="flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground"
+							onClick={(e) => e.stopPropagation()}
+						/>
+					) : (
+						// Otherwise show the search input so users can type to filter
+						<input
+							ref={searchInputRef}
+							type="text"
+							placeholder={placeholder}
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							className="flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground"
+							onClick={(e) => e.stopPropagation()}
+							disabled={disabled}
+						/>
+					)
+				}
 
 				<div className="flex items-center gap-2 absolute right-1">
-					{selectedItems.length > 0 && (
+					{!multiple && selectedItems.length === 1 && selectedItem && (
+						// Clear button for single-select
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								clearAll();
+							}}
+							className="text-muted-foreground hover:text-foreground transition-colors"
+							disabled={disabled}
+						>
+							<X className="h-4 w-4" />
+						</button>
+					)}
+					{selectedItems.length > 1 && (
 						<div className="flex items-center gap-1">
 							<span className="bg-primary text-primary-foreground text-xs px-4 py-1 rounded-md font-medium">
 								{selectedItems.length}
@@ -316,7 +342,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			{open && (
 				<div
 					className={cn(
-						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg !z-[160] max-h-64 overflow-hidden",
+						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg !z-[0] max-h-64 overflow-hidden",
 						popoverClassName,
 					)}
 				>
