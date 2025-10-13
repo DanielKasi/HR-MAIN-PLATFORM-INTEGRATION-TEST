@@ -504,6 +504,9 @@ class DeviceCallbackView(APIView):
             if event == "log":
                 if not payload.get("records"):
                     return Response({"detail": "Missing records for log event."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                rcords_by_employee_date = {}
+                logs_to_create = []
 
                 for record in payload["records"]:
                     serial_number = record.get("serial_number")
@@ -536,7 +539,8 @@ class DeviceCallbackView(APIView):
                             employee=employee,
                             device=device,
                             date=record_date,
-                            time=record_time
+                            time=record_time,
+                            record_reference=record_reference,
                         )
 
                     # Check for existing attendance record for the employee and date
@@ -559,12 +563,6 @@ class DeviceCallbackView(APIView):
 
             return Response({"message": "Callback received successfully."}, status=status.HTTP_200_OK)
 
-        # except Device.DoesNotExist:
-        #     return Response({"detail": "Device not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
-        # except Employee.DoesNotExist:
-        #     return Response({"detail": "Employee not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
-        # except DeviceEmployeeAttachment.DoesNotExist:
-        #     return Response({"detail": "Employee attachment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": f"Internal error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -799,3 +797,116 @@ class CaptureFingerPrint(APIView):
             status=status.HTTP_200_OK
         )
  
+class CaptureFace(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=inline_serializer(
+            name="CaptureFaceRequest",
+            fields={
+                "device_id": serializers.IntegerField(),
+                "employee_id": serializers.CharField(),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="Face capture initiated successfully."
+            ),
+            400: OpenApiResponse(
+                description="Invalid request, employee not synced with device, or failed to communicate with external system."
+            ),
+            404: OpenApiResponse(
+                description="Device, employee, or device-employee attachment not found."
+            ),
+        },
+        tags=["Device Mgt"],
+        description="Initiate face capture for an existing synced employee on a specific device."
+    )
+    def post(self, request):
+        print("\n=== CaptureFace API CALLED ===")
+        print("Incoming request data:", request.data)
+        print("Authenticated user:", request.user)
+
+        device_id = request.data.get("device_id")
+        employee_id = request.data.get("employee_id")
+        print(f"Extracted device_id={device_id}, employee_id={employee_id}")
+
+        # Validate inputs
+        if not device_id or not employee_id:
+            print("❌ Missing device_id or employee_id")
+            return Response(
+                {"detail": "device_id and employee_id are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check device and employee existence
+        try:
+            print("Checking if device exists for this user’s institution...")
+            device = Device.objects.get(
+                id=device_id,
+                institution=request.user.profile.institution
+            )
+            print("✅ Device found:", device)
+
+            print("Checking if employee exists in institution...")
+            employee = Employee.objects.get(
+                employee_id=employee_id,
+                department__institution=request.user.profile.institution
+            )
+            print("✅ Employee found:", employee)
+
+        except Device.DoesNotExist:
+            print("❌ Device not found or not in user's institution.")
+            return Response(
+                {"detail": "Device not found or not in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Employee.DoesNotExist:
+            print("❌ Employee not found in user's institution.")
+            return Response(
+                {"detail": "Employee not found in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Call external device system
+        external_api_url = config('DEVICE_USER_REG_API')
+        url = external_api_url % device.serial_number
+        api_key = config('API_KEY', default='')
+        payload = {
+            "cmd": "captureFace",
+            "external_user_id": employee.employee_id
+        }
+
+        print("Preparing to call external API...")
+        print(f"External API URL: {url}")
+        print(f"Payload: {payload}")
+        print(f"API Key: {'[HIDDEN]' if api_key else 'None'}")
+
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers={"X-API-KEY": api_key},
+                timeout=5
+            )
+            print("External API Response Code:", response.status_code)
+            print("External API Response Text:", response.text)
+
+            if response.status_code != 200:
+                print("❌ Failed to initiate face capture.")
+                return Response(
+                    {"detail": f"Failed to initiate face capture: {response.text}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except requests.RequestException as e:
+            print("❌ RequestException occurred:", str(e))
+            return Response(
+                {"detail": f"Error communicating with device system: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print("✅ Face capture initiated successfully.")
+        return Response(
+            {"detail": "Face capture initiated successfully."},
+            status=status.HTTP_200_OK
+        )
