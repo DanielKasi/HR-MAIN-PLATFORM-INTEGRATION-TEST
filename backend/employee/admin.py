@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import (
     Employee,
+    EmployeeLogs,
     WorkType,
     EmployeeType,
     EmployeeAttendance,
@@ -85,3 +86,4 @@ admin.site.register(DocumentRequestEmployee)
 admin.site.register(RequestedDocument)
 admin.site.register(Employee)
 admin.site.register(EmployeeBirthdayTask)
+admin.site.register(EmployeeLogs)
