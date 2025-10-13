@@ -37,7 +37,6 @@ export default function StageReorderModal({
 	const [hasChanges, setHasChanges] = useState(false);
 	const [saving, setSaving] = useState(false);
 
-	// Initialize and sort stages
 	useEffect(() => {
 		if (isOpen) {
 			const sorted = [...initialStages].sort((a, b) => a.position - b.position);
@@ -97,7 +96,6 @@ export default function StageReorderModal({
 		newStages.splice(draggedIndex, 1);
 		newStages.splice(targetIndex, 0, draggedStage);
 
-		// Update positions
 		const updatedStages = newStages.map((stage, index) => ({
 			...stage,
 			position: index + 1,
@@ -127,7 +125,6 @@ export default function StageReorderModal({
 		const [movedStage] = newStages.splice(currentIndex, 1);
 		newStages.splice(newIndex, 0, movedStage);
 
-		// Update positions
 		const updatedStages = newStages.map((stage, index) => ({
 			...stage,
 			position: index + 1,
@@ -143,13 +140,11 @@ export default function StageReorderModal({
 		setSaving(true);
 
 		try {
-			// Create a map of original positions for quick lookup
 			const originalPositions = new Map();
 			initialStages.forEach((stage) => {
 				originalPositions.set(stage.id, stage.position);
 			});
 
-			// Find which stage changed position
 			let sourceStageId = null;
 			let targetStageId = null;
 
@@ -157,24 +152,18 @@ export default function StageReorderModal({
 				const currentStage = stages[i];
 				const originalPosition = originalPositions.get(currentStage.id);
 
-				// If this stage has moved from its original position
 				if (originalPosition !== i + 1) {
 					sourceStageId = currentStage.id;
 
-					// Find a target stage that is different from the source
-					// Use the stage that was displaced by this move
 					if (i > 0) {
-						// Use the stage before the current position
 						targetStageId = stages[i - 1].id;
 					} else if (i < stages.length - 1) {
-						// Use the stage after the current position if at beginning
 						targetStageId = stages[i + 1].id;
 					}
 					break;
 				}
 			}
 
-			// If we couldn't find a proper target, use the first available different stage
 			if (sourceStageId && !targetStageId) {
 				const otherStage = stages.find((stage) => stage.id !== sourceStageId);
 				if (otherStage) {
@@ -199,11 +188,8 @@ export default function StageReorderModal({
 					onClose();
 				}, 500);
 			} else {
-				// Fallback: If we can't determine proper source/target, save the entire new order
-				// This handles edge cases where the logic above fails
 				console.warn("Using fallback reorder logic");
 
-				// Find any two different stages to use for the API call
 				const firstStage = stages[0];
 				const secondStage = stages[1];
 
@@ -252,12 +238,10 @@ export default function StageReorderModal({
 			if (!confirmed) return;
 		}
 
-		// Reset stages to original
 		const sorted = [...initialStages].sort((a, b) => a.position - b.position);
 		setStages(sorted);
 		setHasChanges(false);
 
-		// Close the modal
 		onClose();
 	};
 
@@ -317,20 +301,16 @@ export default function StageReorderModal({
 												${hasChanges ? "bg-blue-50" : "bg-white"}
 											`}
 										>
-											{/* Drag Handle */}
 											<div className="flex-shrink-0">
 												<GripVertical className="h-5 w-5 text-gray-400" />
 											</div>
 
-											{/* Position Number */}
 											<div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-semibold text-sm">
 												{index + 1}
 											</div>
 
-											{/* Stage Icon */}
 											<div className="flex-shrink-0">{getStageStatusIcon(stage.status)}</div>
 
-											{/* Stage Info */}
 											<div className="flex-1 min-w-0">
 												<div className="flex items-center gap-2 mb-1">
 													<h4 className="font-medium truncate">{stage.stage_name}</h4>
