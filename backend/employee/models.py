@@ -1699,11 +1699,14 @@ class EmployeeContract(BaseApprovableModel):
 
 class EmployeeeLogs(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='logs')
-    record_data = models.JSONField(help_text="JSON data of the log record")
+    device = models.ForeignKey('devices.Device', on_delete=models.CASCADE, related_name='logs', help_text="Device from which the log originates", null=True, blank=True)
+    record_reference = models.CharField(max_length=100, unique=True, help_text="Unique log record reference", null=True, blank=True)
+    date = models.DateField(help_text="Date of the log event", null=True, blank=True)
+    time = models.TimeField(help_text="Time of the log event", null=True, blank=True)
 
     class Meta:
         verbose_name = "Employee Log"
         verbose_name_plural = "Employee Logs"
 
     def __str__(self):
-        return f"Log for {self.employee} at {self.created_at}"
+        return f"Log {self.record_reference} for {self.employee} on device {self.device.serial_number} at {self.date} {self.time}"

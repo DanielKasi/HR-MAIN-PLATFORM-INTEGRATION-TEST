@@ -7,7 +7,7 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, inline_serializer
-from employee.models import Employee, EmployeeAttendance
+from employee.models import Employee, EmployeeAttendance, EmployeeeLogs
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
 from .models import Device, DeviceStatus, DeviceEmployeeAttachment
@@ -517,8 +517,7 @@ class DeviceCallbackView(APIView):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    # device = Device.objects.get(serial_number=serial_number)
-                    # The device is not being used yet, so it is redundant to check for it here.
+                    device = Device.objects.get(serial_number=serial_number)
 
                     try:
                         employee = Employee.objects.get(employee_id=external_user_id)
@@ -531,6 +530,14 @@ class DeviceCallbackView(APIView):
                     record_datetime = datetime.fromisoformat(datetime_str)
                     record_date = record_datetime.date()
                     record_time = record_datetime.time()
+
+                    with transaction.atomic():
+                        EmployeeeLogs.objects.create(
+                            employee=employee,
+                            device=device,
+                            date=record_date,
+                            time=record_time
+                        )
 
                     # Check for existing attendance record for the employee and date
                     attendance, created = EmployeeAttendance.objects.get_or_create(
