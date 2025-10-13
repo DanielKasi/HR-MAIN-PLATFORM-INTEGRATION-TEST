@@ -417,7 +417,9 @@ export default function ExitProcessPage() {
 																	{stage.stage_name}
 																</span>
 																<Badge variant="outline" className="ml-auto text-xs">
-																	{stage.status}
+																	{stage.status
+																		.replace(/_/g, " ")
+																		.replace(/\b\w/g, (l) => l.toUpperCase())}
 																</Badge>
 															</div>
 														))}
@@ -446,7 +448,6 @@ export default function ExitProcessPage() {
 				)}
 			</div>
 
-			{/* Load More */}
 			{hasMore && separations.length > 0 && (
 				<div className="flex justify-center py-4">
 					<Button
