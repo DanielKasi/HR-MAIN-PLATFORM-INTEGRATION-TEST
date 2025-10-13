@@ -129,20 +129,42 @@ class Command(BaseCommand):
             for tax_data_item in taxes:
                 tax_name = tax_data_item["tax_name"]
                 tax_status = tax_data_item["tax_status"]
-                
-                tax_obj, tax_created = InstitutionTax.objects.update_or_create(
-                    institution=institution,
-                    tax_name=tax_name,
-                    defaults={"tax_status": tax_status}
-                )
-                
+
+                try:
+                    tax_obj, tax_created = InstitutionTax.objects.update_or_create(
+                        institution=institution,
+                        tax_name=tax_name,
+                        defaults={"tax_status": tax_status}
+                    )
+                except InstitutionTax.MultipleObjectsReturned:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"Multiple InstitutionTax records found for institution '{institution}' and tax_name '{tax_name}'. Using the first one."
+                        )
+                    )
+                    tax_obj = InstitutionTax.objects.filter(
+                        institution=institution,
+                        tax_name=tax_name
+                    ).first()
+                    if tax_obj:
+                        tax_obj.tax_status = tax_status
+                        tax_obj.save()
+                        tax_created = False
+                    else:
+                        tax_obj = InstitutionTax.objects.create(
+                            institution=institution,
+                            tax_name=tax_name,
+                            tax_status=tax_status
+                        )
+                        tax_created = True
+
                 if tax_created:
                     total_taxes_created += 1
-                    self.stdout.write(self.style.SUCCESS(f"  ✅ Created tax: {tax_name}"))
+                    self.stdout.write(self.style.SUCCESS(f"  ✅ Created tax: {tax_name} (Institution: {institution})"))
                 else:
                     total_taxes_updated += 1
-                    self.stdout.write(self.style.NOTICE(f"  ♻️ Updated tax: {tax_name}"))
-                
+                    self.stdout.write(self.style.NOTICE(f"  ♻️ Updated tax: {tax_name} (Institution: {institution})"))
+
                 rules = tax_data_item.get("rules", [])
                 rule_created_count = 0
                 rule_updated_count = 0
@@ -152,11 +174,11 @@ class Command(BaseCommand):
                         if category_code:
                             category, _ = TaxRuleCategory.objects.get_or_create(
                                 code=category_code,
-                                defaults={"name": category_code}  
+                                defaults={"name": category_code}
                             )
                         else:
                             category = None
-                        
+
                         rule_obj, rule_created = InstitutionTaxRule.objects.update_or_create(
                             institution_tax=tax_obj,
                             tax_rule_name=rule_data["tax_rule_name"],
@@ -168,20 +190,20 @@ class Command(BaseCommand):
                                 "salary_from": rule_data.get("salary_from"),
                                 "salary_to": rule_data.get("salary_to"),
                                 "tax_rule_category": category,
-                                "taxable_income_source": rule_data.get("taxable_income_source"),  # Optional, if in JSON
+                                "taxable_income_source": rule_data.get("taxable_income_source"),
                             }
                         )
-                        
+
                         if rule_created:
                             rule_created_count += 1
                             total_rules_created += 1
                         else:
                             rule_updated_count += 1
                             total_rules_updated += 1
-                            
+
                     except Exception as e:
                         self.stdout.write(self.style.ERROR(f"    ❌ Error creating rule '{rule_data.get('tax_rule_name', 'Unknown')}': {str(e)}"))
-                
+
                 self.stdout.write(
                     self.style.NOTICE(
                         f"    └─ Rules for {tax_name}: Created {rule_created_count}, Updated {rule_updated_count}"
