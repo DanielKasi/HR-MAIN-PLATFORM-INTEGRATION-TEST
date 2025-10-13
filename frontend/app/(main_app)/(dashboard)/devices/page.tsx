@@ -21,6 +21,10 @@ import { DeviceFormDialog } from "./_components/device-form-dialog";
 import { showErrorToast } from "@/lib/utils";
 import { Icon } from "@iconify/react";
 import { getPaginatedFromUrl } from "@/lib/api/_api.utils";
+import { DialogSkeleton } from "@/components/dialogs/dialog-skeleton";
+import { Label } from "@/components/ui/label";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
+import DeviceEmployeeCopyDialog from "./_components/device-employee-copy-dialog";
 
 interface DevicesPageProps {}
 
@@ -31,6 +35,8 @@ export default function DevicesPage({}: DevicesPageProps) {
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [editingDevice, setEditingDevice] = useState<IDevice | null>(null);
 	const refreshTableRef = useRef<() => void | null>(null);
+	const [showEmployeeToDeviceCopyDialog, setShowEmployeeToDeviceCopyDialog] = useState(false);
+	const [employeeCopyDevice, setEmployeeCopyDevice] = useState<IDevice | null>(null);
 
 	const router = useRouter();
 	const handleDelete = async (device: IDevice) => {
@@ -113,15 +119,23 @@ export default function DevicesPage({}: DevicesPageProps) {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
-						<DropdownMenuItem
-							onClick={() => openPath(`/devices/${device.id}`)} // Assuming view page exists
-						>
+						<DropdownMenuItem onClick={() => openPath(`/devices/${device.id}`)}>
 							<Eye className="h-4 w-4 mr-2" />
 							View
 						</DropdownMenuItem>
+
 						<DropdownMenuItem onClick={() => handleEdit(device)}>
 							<Edit className="h-4 w-4 mr-2" />
 							Edit
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() => {
+								setShowEmployeeToDeviceCopyDialog(true);
+								setEmployeeCopyDevice(device);
+							}}
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							Copy (Add) employee
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() => setDeviceToDelete(device)}
@@ -154,14 +168,14 @@ export default function DevicesPage({}: DevicesPageProps) {
 				</div>
 				<div className="flex justify-between items-center mb-4">
 					<div className="flex items-center gap-4">
-						<div className="relative">
+						<div className="relative w-full">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
 								type="text"
 								placeholder="Search by serial number or description..."
 								value={searchQuery}
 								onChange={(e) => handleSearch(e.target.value)}
-								className="max-w-sm md:max-w-lg lg:max-w-xl rounded-xl pl-10"
+								className="min-w-[18rem] md:min-w-[24rem] lg:min-w-[36rem] w-full rounded-xl pl-10"
 							/>
 						</div>
 					</div>
@@ -208,13 +222,22 @@ export default function DevicesPage({}: DevicesPageProps) {
 					/>
 				)}
 
-				{/* Create/Edit Dialog */}
 				<DeviceFormDialog
 					isOpen={showCreateDialog}
 					onOpenChange={setShowCreateDialog}
 					editingDevice={editingDevice}
 					onSuccess={handleDialogSuccess}
 				/>
+
+				{employeeCopyDevice && (
+					<DeviceEmployeeCopyDialog
+						isOpen={showEmployeeToDeviceCopyDialog}
+						onClose={() => {
+							setShowEmployeeToDeviceCopyDialog(false);
+						}}
+						device={employeeCopyDevice}
+					/>
+				)}
 			</div>
 		</div>
 	);

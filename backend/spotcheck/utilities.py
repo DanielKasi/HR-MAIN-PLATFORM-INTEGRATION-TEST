@@ -27,7 +27,9 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
     try:
         intent_url = f"{settings.FRONTEND_URL}spot-checks/?intent=spot_check&intent_id={spotcheck.id}"
         subject = "Spot Check"
-        plain_message = f"Please confirm your spotcheck by clicking the link: {intent_url}"
+        plain_message = (
+            f"Please confirm your spotcheck by clicking the link: {intent_url}"
+        )
         html_message = render_to_string(
             "emails/spotcheck_email.html",
             context={
@@ -154,7 +156,6 @@ def create_spotchecks_for_today(employee: Employee):
 
     work_start_time: time = get_employee_day_working_start_time(employee, system_day)
     work_end_time: time = get_employee_day_working_end_time(employee, system_day)
-
 
     work_start = datetime.combine(today, work_start_time)
     work_end = datetime.combine(today, work_end_time)

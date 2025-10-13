@@ -23,6 +23,7 @@ interface EmployeeSearchableSelectProps {
 	showSelectedItems?: boolean;
 	id?: string;
 	employees_under?: number;
+	getIdByCustomEmployeeId?: boolean;
 }
 
 export const EmployeeSearchableSelect = memo(
@@ -38,6 +39,7 @@ export const EmployeeSearchableSelect = memo(
 		hideSelectedFromList = false,
 		employees_under,
 		id,
+		getIdByCustomEmployeeId,
 	}: EmployeeSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
 		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
@@ -93,7 +95,7 @@ export const EmployeeSearchableSelect = memo(
 					paginated
 					fetchFirstPage={fetchFirstPage}
 					fetchFromUrl={fetchFromUrl}
-					getItemId={(emp) => emp.id}
+					getItemId={(emp) => (getIdByCustomEmployeeId ? emp.employee_id : emp.id)}
 					getItemLabel={(emp) => emp.user?.fullname || ""}
 					getItemValue={(emp) => emp.id.toString()}
 					selectedItems={selectedItems}
