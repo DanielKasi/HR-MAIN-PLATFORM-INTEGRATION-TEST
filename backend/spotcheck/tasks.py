@@ -1,10 +1,11 @@
 # app/tasks.py
 from celery import shared_task
 from django.utils import timezone
-from employee.models import Employee
+from employee.models import Employee, EmployeeLogs
 from payroll.models import EmployeePenalty
 from .models import EmployeeSpotCheck, SpotCheckStatus
 from django.db import IntegrityError
+from datetime import datetime, timedelta
 
 
 @shared_task
@@ -13,7 +14,6 @@ def initiate_next_spotcheck_for_an_employee(employee_id):
     from spotcheck.utilities import (
         send_spotcheck_email,
     )
-
 
     employee = Employee.objects.get(id=employee_id)
     now = timezone.now()
@@ -66,19 +66,63 @@ def initiate_next_spotcheck_for_an_employee(employee_id):
 
 @shared_task
 def check_spotcheck_response(spotcheck_id):
-    
+
     spotcheck = EmployeeSpotCheck.objects.get(id=spotcheck_id)
 
     if not spotcheck.responded_at:
         missed_status, _ = SpotCheckStatus.objects.get_or_create(status_name="MISSED")
         spotcheck.status = missed_status
         spotcheck.save()
-        EmployeePenalty.create_from_spotcheck(spotcheck, 'no_response_spotcheck')
+        EmployeePenalty.create_from_spotcheck(spotcheck, "no_response_spotcheck")
         return "missed"
     return "responded"
 
 
-
 @shared_task
-def initiate_spotcheck_responses_from_attendance_records(attendance_records):
-    pass
+def initiate_spotcheck_responses_from_attendance_records(
+    attendance_records: list[EmployeeLogs],
+):
+    from spotcheck.utilities import get_employee_spotchecks_expires_after_minutes
+
+    valid_status, _ = SpotCheckStatus.objects.get_or_create(
+        status_name="CHECKED_IN"
+    )  # TODO: Have a resusable function for this
+
+    for log in attendance_records:
+        employee = log.employee
+        log_datetime = timezone.make_aware(datetime.combine(log.date, log.time))
+
+        spot_checks = EmployeeSpotCheck.objects.filter(
+            employee=employee,
+            responded_at__isnull=True,
+        )
+
+        for spot_check in spot_checks:
+            expires_after_minutes = get_employee_spotchecks_expires_after_minutes(
+                employee
+            )
+            spot_check_start = spot_check.spotcheck_time
+            spot_check_end = spot_check.spotcheck_time + timedelta(
+                minutes=expires_after_minutes
+            )
+
+            if spot_check_start <= log_datetime <= spot_check_end:
+                # Update spot check as responded / checked in
+                spot_check.responded_at = log_datetime
+                spot_check.status = valid_status
+                spot_check.notes = (
+                    f"Automatically marked checked in from log {log.record_reference}"
+                )
+                spot_check.save()
+
+                # Cancel any penalties associated with this spotcheck
+                penalties = EmployeePenalty.objects.filter(
+                    employee=employee, spot_check=spot_check, status="applied"
+                )
+                for penalty in penalties:
+                    penalty.status = "system_cancelled"
+                    penalty.notes = (
+                        (penalty.notes or "")
+                        + f" | Cancelled because employee was on time according to log {log.record_reference}"
+                    )
+                    penalty.save()
