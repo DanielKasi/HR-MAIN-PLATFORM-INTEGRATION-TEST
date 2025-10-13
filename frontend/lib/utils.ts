@@ -5428,7 +5428,7 @@ export const AttendanceAPI = {
 	createAttendanceRecord: async (data: IAttendanceFormData) => {
 		const response = await apiRequest.post(`/employee/${data.employee}/attendance/`, data);
 
-		return response.data;
+		return response.data as IAttendance;
 	},
 
 	fetchAttendanceRecords: async ({

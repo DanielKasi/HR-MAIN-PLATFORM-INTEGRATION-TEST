@@ -10,7 +10,7 @@ import { AttendanceRecordsTable } from "@/components/attendance/_components/atte
 interface EmployeeAttendanceProps {
 	searchTerm?: string;
 	scope: { type: "default" } | { type: "employee"; employee: IEmployee };
-	attendanceRefreshRef?: RefObject<() => void | null>;
+	attendanceRefreshRef?: RefObject<(() => Promise<void>) | null>;
 	showingOnDashboard?: boolean;
 }
 
@@ -26,7 +26,6 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
 			{selectedInstitution ? (
 				<AttendanceRecordsTable
 					showingOnDashboard={showingOnDashboard}
-					institutionId={selectedInstitution.id}
 					searchTerm={searchTerm}
 					attendanceRefreshRef={attendanceRefreshRef}
 					scope={scope}

@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { IEmployee } from "@/types/types.utils";
 import { getPaginatedFromUrl } from "@/lib/api/_api.utils";
@@ -13,12 +13,14 @@ interface EmployeeDevicesLogsProps {
 	employee?: IEmployee;
 	device?: number;
 	refreshRef?: RefObject<(() => void) | null>;
+	search?: string;
 }
 
 export default function EmployeeDevicesLogs({
 	employee,
 	device,
 	refreshRef,
+	search,
 }: EmployeeDevicesLogsProps) {
 	const refreshFunctionRef = refreshRef || useRef<(() => void) | null>(null);
 	const [columns, setColumns] = useState<ColumnDef<IEmployeeLog>[]>([
@@ -62,6 +64,8 @@ export default function EmployeeDevicesLogs({
 		},
 	]);
 
+	const memoizedDeps = useMemo(() => [employee, device, search], [employee, device, search]);
+
 	return (
 		<div>
 			<PaginatedTable<IEmployeeLog>
@@ -70,10 +74,11 @@ export default function EmployeeDevicesLogs({
 						page: 1,
 						employee_id: employee?.id,
 						device_id: device,
+						search,
 					})
 				}
 				fetchFromUrl={(url) => getPaginatedFromUrl<IEmployeeLog>(url)}
-				deps={[employee?.id, device]}
+				deps={memoizedDeps}
 				refreshRef={refreshFunctionRef}
 				columns={columns}
 				skeletonRows={5}

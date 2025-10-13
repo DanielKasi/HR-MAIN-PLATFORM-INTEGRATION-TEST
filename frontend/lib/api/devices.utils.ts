@@ -103,6 +103,11 @@ export const DEVICES_API = {
 		});
 		return response.data as { detail: string };
 	},
+
+	// THis employee id param is the 'employee_id' field on the employee object and not the id of the employee object itself
+	addEmployee: async ({ device_id, employee_id }: { device_id: number; employee_id: string }) => {
+		return await apiRequest.post(`devices/copy-user-to-device/`, { device_id, employee_id });
+	},
 };
 
 export const DEVICE_EMPLOYEE_ATTACHMENTS_API = {
