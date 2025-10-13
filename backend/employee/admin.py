@@ -20,6 +20,7 @@ from .models import (
     DocumentRequest,
     DocumentRequestEmployee,
     RequestedDocument,
+    EmployeeBirthdayTask,
 )
 
 class EmployeeAdmin(admin.ModelAdmin):
@@ -83,3 +84,4 @@ admin.site.register(DocumentRequest)
 admin.site.register(DocumentRequestEmployee)
 admin.site.register(RequestedDocument)
 admin.site.register(Employee)
+admin.site.register(EmployeeBirthdayTask)

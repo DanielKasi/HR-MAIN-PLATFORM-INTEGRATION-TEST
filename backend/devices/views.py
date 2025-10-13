@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -7,7 +7,8 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, inline_serializer
-from employee.models import Employee, EmployeeAttendance
+from employee.models import Employee, EmployeeAttendance, EmployeeLogs
+from spotcheck.tasks import initiate_spotcheck_responses_from_attendance_records
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
 from .models import Device, DeviceStatus, DeviceEmployeeAttachment
@@ -283,44 +284,47 @@ class DeviceEmployeeAttachmentListCreateView(APIView, SortableAPIMixin):
                 payload["name"] = employee.name or employee.user.fullname
                 payload["external_user_id"] = employee.employee_id
 
-            external_api_url = config('DEVICE_USER_REG_API')
-            url = external_api_url % instance.device.serial_number
-            api_key = config('API_KEY')
+                external_api_url = config('DEVICE_USER_REG_API')
+                url = external_api_url % instance.device.serial_number
+                api_key = config('API_KEY')
 
-            masked_key = api_key[:4] + "****" if api_key else "NOT SET"
+                masked_key = api_key[:4] + "****" if api_key else "NOT SET"
 
-            print("\n=== Sending to External API ===")
-            print(f"External API URL: {url}")
-            print(f"API Key (masked): {masked_key}")
-            print(f"Payload: {payload}")
+                print("\n=== Sending to External API ===")
+                print(f"External API URL: {url}")
+                print(f"API Key (masked): {masked_key}")
+                print(f"Payload: {payload}")
 
-            try:
-                response = requests.post(
-                    url,
-                    json=payload,
-                    headers={"X-API-KEY": api_key},
-                    timeout=5
-                )
-
-                print(f"External API Response Status: {response.status_code}")
-                print(f"External API Response Text: {response.text}")
-
-                if response.status_code != 200:
-                    print("❌ Failed to register employee. Rolling back instance.")
-                    instance.delete()
-                    return Response(
-                        {"detail": f"Failed to register employee with external system: {response.text}"},
-                        status=status.HTTP_400_BAD_REQUEST
+                try:
+                    response = requests.post(
+                        url,
+                        json=payload,
+                        headers={"X-API-KEY": api_key},
+                        timeout=5
                     )
 
-            except requests.RequestException as e:
-                print(f"❌ Error communicating with device system: {str(e)}")
-                print("Rolling back instance.")
-                instance.delete()
-                return Response(
-                    {"detail": f"Error communicating with device system: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                    print(f"External API Response Status: {response.status_code}")
+                    print(f"External API Response Text: {response.text}")
+
+                    if response.status_code != 200:
+                        print("❌ Failed to register employee. Rolling back instance.")
+                        instance.delete()
+                        return Response(
+                            {"detail": f"Failed to register employee with external system: {response.text}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    instance.is_synced = True
+                    instance.save()
+
+                except requests.RequestException as e:
+                    print(f"❌ Error communicating with device system: {str(e)}")
+                    print("Rolling back instance.")
+                    instance.delete()
+                    return Response(
+                        {"detail": f"Error communicating with device system: {str(e)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
             print(f"✅ Employee attached successfully to device {instance.device.serial_number}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -496,13 +500,16 @@ class DeviceCallbackView(APIView):
         if not event:
             return Response({"detail": "Missing event in payload."}, status=status.HTTP_400_BAD_REQUEST)
 
-
         try:
             if event == "log":
                 if not payload.get("records"):
                     return Response({"detail": "Missing records for log event."}, status=status.HTTP_400_BAD_REQUEST)
 
+                records_by_employee_date = {}
+                logs_to_create = []
+
                 for record in payload["records"]:
+                    # Validate required fields
                     serial_number = record.get("serial_number")
                     external_user_id = record.get("external_user_id")
                     record_reference = record.get("record_reference")
@@ -514,47 +521,117 @@ class DeviceCallbackView(APIView):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    # device = Device.objects.get(serial_number=serial_number)
-                    # The device is not being used yet, so it is redundant to check for it here.
+                    # Retrieve device
+                    try:
+                        device = Device.objects.get(serial_number=serial_number)
+                    except Device.DoesNotExist:
+                        return Response(
+                            {"detail": f"Device with serial number {serial_number} not found."},
+                            status=status.HTTP_404_NOT_FOUND
+                        )
 
+                    # Retrieve employee
                     try:
                         employee = Employee.objects.get(employee_id=external_user_id)
                     except Employee.DoesNotExist:
-                        # we will handle this gracefully by skipping the record for now and later discuss  on what to do
                         print(f"Employee with ID {external_user_id} not found. Skipping record.")
                         continue
 
-                    # Parse datetime and extract date and time
-                    record_datetime = datetime.fromisoformat(datetime_str)
-                    record_date = record_datetime.date()
-                    record_time = record_datetime.time()
+                    # Parse datetime
+                    try:
+                        record_datetime = datetime.fromisoformat(datetime_str)
+                        record_date = record_datetime.date()
+                        record_time = record_datetime.time()
+                    except ValueError:
+                        return Response(
+                            {"detail": f"Invalid datetime format: {datetime_str}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
 
-                    # Check for existing attendance record for the employee and date
-                    attendance, created = EmployeeAttendance.objects.get_or_create(
-                        employee=employee,
-                        date=record_date,
-                        defaults={
-                            'check_in_time': record_time,
-                            'status': 'pending',
-                            'attendance_status': 'pending'
-                        }
+                    # Validate datetime is not in the future
+                    if record_datetime > datetime.now():
+                        return Response(
+                            {"detail": f"Future datetime not allowed: {datetime_str}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # Store log for creation
+                    logs_to_create.append(
+                        EmployeeLogs(
+                            employee=employee,
+                            device=device,
+                            record_reference=record_reference,
+                            date=record_date,
+                            time=record_time
+                        )
                     )
-                    if not created and not attendance.check_out_time:
-                        # Update check_out_time if not set
-                        attendance.check_out_time = record_time
-                        attendance.save()
+
+                    # Group records by employee and date
+                    key = (employee.id, record_date)
+                    if key not in records_by_employee_date:
+                        records_by_employee_date[key] = []
+                    records_by_employee_date[key].append(record_time)
+
+                with transaction.atomic():
+                    # Bulk create EmployeeLogs
+                    created_logs = EmployeeLogs.objects.bulk_create(logs_to_create)
+
+                    # Process attendance for each employee-date pair
+                    for (employee_id, record_date), times in sorted(records_by_employee_date.items(), key=lambda x: x[0][1]):
+                        employee = Employee.objects.get(id=employee_id)
+                        # Find earliest time for check-in
+                        check_in_time = min(times)
+
+                        # Create or update attendance record for current date (check-in)
+                        attendance, created = EmployeeAttendance.objects.get_or_create(
+                            employee=employee,
+                            date=record_date,
+                            defaults={
+                                'check_in_time': check_in_time,
+                                'status': 'pending',
+                                'attendance_status': 'pending'
+                            }
+                        )
+                        if not created and (not attendance.check_in_time or check_in_time < attendance.check_in_time):
+                            # Update check-in time if new time is earlier
+                            attendance.check_in_time = check_in_time
+                            attendance.save()
+
+                        # Update check-out for previous day
+                        previous_date = record_date - timedelta(days=1)
+                        last_log = EmployeeLogs.objects.filter(
+                            employee=employee,
+                            date=previous_date
+                        ).order_by('-time').first()
+
+                        if last_log:
+                            # Only update if previous day has a check-in
+                            if EmployeeLogs.objects.filter(employee=employee, date=previous_date).exists():
+                                prev_attendance, prev_created = EmployeeAttendance.objects.get_or_create(
+                                    employee=employee,
+                                    date=previous_date,
+                                    defaults={
+                                        'check_out_time': last_log.time,
+                                        'status': 'pending',
+                                        'attendance_status': 'pending'
+                                    }
+                                )
+                                if not prev_created and (not prev_attendance.check_out_time or last_log.time > prev_attendance.check_out_time):
+                                    # Update check-out time if new time is later
+                                    prev_attendance.check_out_time = last_log.time
+                                    prev_attendance.save()
+                            else:
+                                print(f"No check-in logs for {employee} on {previous_date}. Skipping check-out update.")
+                        else:
+                            print(f"No logs found for {employee} on {previous_date}. Skipping check-out update.")
+                
+                initiate_spotcheck_responses_from_attendance_records.delay(created_logs)
 
             else:
                 return Response({"detail": f"Unknown event: {event}"}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({"message": "Callback received successfully."}, status=status.HTTP_200_OK)
 
-        # except Device.DoesNotExist:
-        #     return Response({"detail": "Device not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
-        # except Employee.DoesNotExist:
-        #     return Response({"detail": "Employee not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
-        # except DeviceEmployeeAttachment.DoesNotExist:
-        #     return Response({"detail": "Employee attachment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": f"Internal error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -789,3 +866,116 @@ class CaptureFingerPrint(APIView):
             status=status.HTTP_200_OK
         )
  
+class CaptureFace(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=inline_serializer(
+            name="CaptureFaceRequest",
+            fields={
+                "device_id": serializers.IntegerField(),
+                "employee_id": serializers.CharField(),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="Face capture initiated successfully."
+            ),
+            400: OpenApiResponse(
+                description="Invalid request, employee not synced with device, or failed to communicate with external system."
+            ),
+            404: OpenApiResponse(
+                description="Device, employee, or device-employee attachment not found."
+            ),
+        },
+        tags=["Device Mgt"],
+        description="Initiate face capture for an existing synced employee on a specific device."
+    )
+    def post(self, request):
+        print("\n=== CaptureFace API CALLED ===")
+        print("Incoming request data:", request.data)
+        print("Authenticated user:", request.user)
+
+        device_id = request.data.get("device_id")
+        employee_id = request.data.get("employee_id")
+        print(f"Extracted device_id={device_id}, employee_id={employee_id}")
+
+        # Validate inputs
+        if not device_id or not employee_id:
+            print("❌ Missing device_id or employee_id")
+            return Response(
+                {"detail": "device_id and employee_id are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check device and employee existence
+        try:
+            print("Checking if device exists for this user’s institution...")
+            device = Device.objects.get(
+                id=device_id,
+                institution=request.user.profile.institution
+            )
+            print("✅ Device found:", device)
+
+            print("Checking if employee exists in institution...")
+            employee = Employee.objects.get(
+                employee_id=employee_id,
+                department__institution=request.user.profile.institution
+            )
+            print("✅ Employee found:", employee)
+
+        except Device.DoesNotExist:
+            print("❌ Device not found or not in user's institution.")
+            return Response(
+                {"detail": "Device not found or not in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Employee.DoesNotExist:
+            print("❌ Employee not found in user's institution.")
+            return Response(
+                {"detail": "Employee not found in your institution."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Call external device system
+        external_api_url = config('DEVICE_USER_REG_API')
+        url = external_api_url % device.serial_number
+        api_key = config('API_KEY', default='')
+        payload = {
+            "cmd": "captureFace",
+            "external_user_id": employee.employee_id
+        }
+
+        print("Preparing to call external API...")
+        print(f"External API URL: {url}")
+        print(f"Payload: {payload}")
+        print(f"API Key: {'[HIDDEN]' if api_key else 'None'}")
+
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers={"X-API-KEY": api_key},
+                timeout=5
+            )
+            print("External API Response Code:", response.status_code)
+            print("External API Response Text:", response.text)
+
+            if response.status_code != 200:
+                print("❌ Failed to initiate face capture.")
+                return Response(
+                    {"detail": f"Failed to initiate face capture: {response.text}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except requests.RequestException as e:
+            print("❌ RequestException occurred:", str(e))
+            return Response(
+                {"detail": f"Error communicating with device system: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print("✅ Face capture initiated successfully.")
+        return Response(
+            {"detail": "Face capture initiated successfully."},
+            status=status.HTTP_200_OK
+        )

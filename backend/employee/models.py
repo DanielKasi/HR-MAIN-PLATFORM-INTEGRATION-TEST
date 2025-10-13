@@ -5,7 +5,7 @@ from django.utils import timezone
 import requests
 from calendar2.models import Calendar, Event
 from django.db import models
-from datetime import datetime
+from datetime import datetime, time
 from settings.models import EmailProviderConfig
 from institution.models import Branch, InstitutionBankType, UserBranch
 from datetime import date, datetime
@@ -23,10 +23,10 @@ from institution.models import Institution
 from approval.models import Approval, BaseApprovableModel
 from django.core.validators import MinValueValidator, MaxValueValidator
 from dateutil.relativedelta import relativedelta
-from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from celery import uuid
 
 class EmployeeType(BaseApprovableModel):
     institution = models.ForeignKey(
@@ -163,6 +163,12 @@ class WorkExperience(SoftDeletableTimeStampedModel):
         return f"{self.employee.user.fullname} - {self.company}"
 
 
+
+class EmployeeBirthdayTask(models.Model):
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE)
+    task_id = models.CharField(max_length=255)
+    scheduled_date = models.DateField()
+
 class Employee(BaseApprovableModel):
     """
     Employee model to store employee details in the system.
@@ -172,6 +178,9 @@ class Employee(BaseApprovableModel):
         verbose_name = "Employee"
         verbose_name_plural = "Employees"
         ordering = ["user__fullname"]
+        indexes = [
+            models.Index(fields=['date_of_birth']),
+        ]
 
     choices = (
         ("single", "Single"),
@@ -193,7 +202,6 @@ class Employee(BaseApprovableModel):
     )
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
-    # TODO: Make position non-nullable in future. There is no way to track employee's institution without position or department
     position = models.ForeignKey(
         "recruitment.JobPosition",
         on_delete=models.CASCADE,
@@ -206,7 +214,6 @@ class Employee(BaseApprovableModel):
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
         default="other",
     )
-    # TODO: Make department non-nullable in future
     department = models.ForeignKey(
         "institution.Department",
         on_delete=models.SET_NULL,
@@ -223,14 +230,14 @@ class Employee(BaseApprovableModel):
     )
     date_of_birth = models.DateField(blank=True, null=True)
     work_type = models.ForeignKey(
-        WorkType,
+        'employee.WorkType',
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="employees",
     )
     employee_type = models.ForeignKey(
-        EmployeeType,
+        'employee.EmployeeType',
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -279,42 +286,13 @@ class Employee(BaseApprovableModel):
             'gender',
             'marital_status',
             'salary'
-        ))    
-
-    # class Meta:
-    #     constraints = [
-    #         UniqueConstraint(
-    #             fields=["department", "user"],
-    #             condition=Q(deleted_at__isnull=True),
-    #             name="unique_active_employee_user_per_department_institution",
-    #         ),
-    #         UniqueConstraint(
-    #             fields=["department", "email"],
-    #             condition=Q(deleted_at__isnull=True),
-    #             name="unique_active_employee_email_per_department_institution",
-    #         ),
-    #         UniqueConstraint(
-    #             fields=["department", "nin"],
-    #             condition=Q(deleted_at__isnull=True),
-    #             name="unique_active_employee_nin_per_department_institution",
-    #         ),
-    #     ]
+        ))
 
     def clean(self):
         """Custom validation for the Employee model"""
         super().clean()
 
-        # 🚫 Enforce unique phone number only if provided
-        # if self.phone_number:
-        # existing = Employee.objects.filter(phone_number=self.phone_number)
-        #     if self.pk:
-        #         existing = existing.exclude(pk=self.pk)
-        #     if existing.exists():
-        #         raise ValidationError(
-        #             {"error": f"An employee with this phone number already exists."}
-        #         )
-
-        # ✅ Validate minimum age of 18 years
+        # Validate minimum age of 18 years
         if self.date_of_birth:
             today = date.today()
             age = (
@@ -380,7 +358,6 @@ class Employee(BaseApprovableModel):
         if birthday_date < date.today():
             birthday_date = birthday_date.replace(year=current_year + 1)
         
-        # Check for existing event with specific_employees
         existing_events = Event.objects.filter(
             is_birthday=True,
             institution=institution
@@ -395,7 +372,6 @@ class Employee(BaseApprovableModel):
             event = existing_events.first()
             created = False
         else:
-            # Create new event
             event = Event.objects.create(
                 is_birthday=True,
                 institution=institution,
@@ -410,7 +386,6 @@ class Employee(BaseApprovableModel):
             )
             created = True
         
-        # Update or set event details
         if created:
             event.specific_employees.add(self.user.profile)
         else:
@@ -424,17 +399,64 @@ class Employee(BaseApprovableModel):
         event._add_event_to_calendar()
         calendar.events.add(event)
 
+    def schedule_birthday_email(self):
+        from employee.tasks import send_birthday_email
+
+        """
+        Schedule a Celery task to send a birthday email on the employee's next birthday.
+        """
+        if not self.date_of_birth or not self.is_active or not self.user or not self.user.email:
+            print(f"Skipping birthday email scheduling for employee ID {self.id}: missing required data")
+            return
+
+        # Cancel existing task if it exists
+        existing_task = EmployeeBirthdayTask.objects.filter(employee=self).first()
+        if existing_task:
+            try:
+                from celery import app
+                app.control.revoke(existing_task.task_id)
+                existing_task.delete()
+                print(f"Revoked and deleted previous birthday task for employee ID {self.id}")
+            except Exception as e:
+                print(f"Failed to revoke task for employee ID {self.id}: {str(e)}")
+
+        today = timezone.now().date()
+        current_year = today.year
+        birthday_this_year = self.date_of_birth.replace(year=current_year)
+        if birthday_this_year < today:
+            birthday_this_year = birthday_this_year.replace(year=current_year + 1)
+
+        birthday_time = datetime.combine(birthday_this_year, time(hour=8, minute=0))
+        if timezone.is_naive(birthday_time):
+            birthday_time = timezone.make_aware(birthday_time)
+
+        task_id = uuid()
+        result = send_birthday_email.apply_async(
+            args=[self.id],
+            eta=birthday_time,
+            task_id=task_id
+        )
+
+        EmployeeBirthdayTask.objects.create(
+            employee=self,
+            task_id=task_id,
+            scheduled_date=birthday_this_year
+        )
+        print(f"Scheduled birthday email for employee ID {self.id} on {birthday_this_year}")
+
     def save(self, *args, **kwargs):
         self.full_clean()
         is_new = self._state.adding
         old_instance = None
         if not is_new:
             old_instance = Employee.objects.filter(pk=self.pk).first()
+
         if not is_new and old_instance and old_instance.date_of_birth != self.date_of_birth:
             Event.objects.filter(
                 is_birthday=True,
                 specific_employees=old_instance.user.profile
             ).delete()
+
         is_new_employee = self.pk is None
         old_department = None
         old_gender = None
@@ -444,15 +466,20 @@ class Employee(BaseApprovableModel):
             old_department = old_employee.department
             old_gender = old_employee.gender
             old_is_active = old_employee.is_active
+
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
         if self.position and hasattr(self.position, "salary_min") and not self.salary:
             self.salary = self.position.salary_min
         if not self.employee_id:
             self.employee_id = self.generate_employee_id()
+
         super().save(*args, **kwargs)
-        if self.date_of_birth and self.is_active:
+
+        if self.date_of_birth and self.is_active and self.user and self.user.email:
+            self.schedule_birthday_email()
             self.create_birthday_event()
+
         should_initialize = (
             is_new_employee and self.is_active and self.department
         ) or (
@@ -1149,7 +1176,7 @@ class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=timezone.now)
     check_in_time = models.TimeField(null=True, blank=True)
     check_out_time = models.TimeField(null=True, blank=True)
     check_in_latitude = models.FloatField(null=True, blank=True)
@@ -1669,3 +1696,17 @@ class EmployeeContract(BaseApprovableModel):
             self.status = "NOT_MATCHED_NEEDS_REVIEW"
 
         super().save(*args, **kwargs)
+
+class EmployeeLogs(SoftDeletableTimeStampedModel):
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='logs')
+    device = models.ForeignKey('devices.Device', on_delete=models.CASCADE, related_name='logs', help_text="Device from which the log originates", null=True, blank=True)
+    record_reference = models.CharField(max_length=100, unique=True, help_text="Unique log record reference", null=True, blank=True)
+    date = models.DateField(help_text="Date of the log event", null=True, blank=True)
+    time = models.TimeField(help_text="Time of the log event", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Employee Log"
+        verbose_name_plural = "Employee Logs"
+
+    def __str__(self):
+        return f"Log {self.record_reference} for {self.employee} on device {self.device.serial_number} at {self.date} {self.time}"

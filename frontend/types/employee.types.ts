@@ -46,3 +46,12 @@ export interface IWorkHourCount {
 	total_absent_days: number;
 	employee: IEmployee;
 }
+
+export interface IEmployeeLog {
+	id: number;
+	employee: { id: number; name: string; position: string; employee_id: string };
+	device: { id: number; name: string };
+	record_reference: string;
+	date: string;
+	time: string;
+}

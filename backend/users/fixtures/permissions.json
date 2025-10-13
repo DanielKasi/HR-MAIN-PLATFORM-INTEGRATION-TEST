@@ -354,6 +354,24 @@
 
 ],
 
+"Device Management":[
+  {
+    "code": "can_view_devices",
+    "name": "Can View Devices",
+    "description": "Allows viewing devices"
+  },
+  {
+    "code": "can_edit_devices",
+    "name": "Can Edit Devices",
+    "description": "Allows editing devices"
+  },
+  {
+    "code": "can_view_employee_logs",
+    "name": "Can View Employee Logs",
+    "description": "Allows viewing employee logs"
+  }
+],
+
 
   "Leave Management": [
     {

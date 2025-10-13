@@ -9,16 +9,18 @@ from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.http import HttpRequest
 from communication.views import add_notification
-from employee.models import Employee
+from employee.models import Employee, EmployeeBirthdayTask
 from settings.models import EmailProviderConfig
 from calendar2.models import Event, EventOccurrence
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from datetime import date
+from datetime import date, datetime
 import time
 from django.core.signing import TimestampSigner
 from django.contrib.admin.models import LogEntry
 from django.utils.html import strip_tags
+from uuid import uuid4
+import socket
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -286,59 +288,83 @@ def send_email_task(employee_id, email, password, config_id, is_welcome_email):
         raise ValidationError(f"Failed to send email: {str(e)}")
     
 
-@shared_task
-def send_birthday_notifications():
+@shared_task(max_retries=3, default_retry_delay=300)
+def send_birthday_email(employee_id):
     """
-    Celery task to check for birthdays and send styled HTML emails and SSE notifications.
+    Celery task to send a birthday email to an employee and schedule the next year's birthday email.
     """
-    today = date.today()
-    birthday_occurrences = EventOccurrence.objects.filter(
-        event__is_birthday=True,
-        date=today
-    ).select_related('event__specific_employees__user')
-
-    for occurrence in birthday_occurrences:
-        event = occurrence.event
-        profile = event.specific_employees.first()
-        if not profile or not profile.user.email:
-            continue
-
+    try:
         employee = Employee.objects.filter(
-            user=profile.user,
+            id=employee_id,
+            is_active=True,
             deleted_at__isnull=True,
-            is_active=True
-        ).first()
-        if not employee:
-            continue
+            user__isnull=False,
+            user__email__isnull=False
+        ).select_related('user', 'department').first()
 
-        # Prepare context for email template
+        if not employee:
+            print(f"No valid employee found for ID {employee_id}")
+            return f"No valid employee found for ID {employee_id}"
+
+        today = timezone.now().date()
+        if (employee.date_of_birth.month != today.month or 
+            employee.date_of_birth.day != today.day):
+            print(f"Task for employee ID {employee_id} triggered on wrong date")
+            return f"Wrong date for employee ID {employee_id}"
+
         context = {
-            'employee_name': employee.name,
+            'employee_name': employee.name or employee.user.fullname,
             'institution_name': employee.get_institution().institution_name,
             'current_year': today.year,
         }
 
-        # Render HTML email content
         html_message = render_to_string('emails/birthday_email.html', context)
 
-        # Send styled HTML email
         send_mail(
-            subject=f"Happy Birthday, {employee.name}!",
+            subject=f"Happy Birthday, {employee.name or employee.user.fullname}!",
             message="Please view this email in an HTML-compatible email client.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[employee.user.email],
             html_message=html_message,
-            fail_silently=True,
+            fail_silently=False,
+        )
+       
+
+        notification_message = f"Happy Birthday, {employee.name or employee.user.fullname}! We celebrate you today! 🎂"
+        add_notification(
+            user_id=employee.user.id,
+            message=notification_message,
+            model_name='Employee',
+            object_id=str(employee.id)
         )
 
-        # Send SSE notification
-        notification_message = f"Happy Birthday, {employee.name}! We celebrate you today! 🎂"
-        add_notification(
-            user_id=employee.user,
-            message=notification_message,
-            model_name='Event',
-            object_id=str(event.id)
+        print(f"Birthday email sent to {employee.user.email} (ID: {employee_id})")
+
+        next_birthday = employee.date_of_birth.replace(year=today.year + 1)
+        next_birthday_time = datetime.combine(next_birthday, time(hour=8, minute=0))
+        if timezone.is_naive(next_birthday_time):
+            next_birthday_time = timezone.make_aware(next_birthday_time)
+
+        task_id = str(uuid4())
+        result = send_birthday_email.apply_async(
+            args=[employee.id],
+            eta=next_birthday_time,
+            task_id=task_id
         )
+
+        EmployeeBirthdayTask.objects.create(
+            employee=employee,
+            task_id=task_id,
+            scheduled_date=next_birthday
+        )
+
+        print(f"Scheduled next birthday email for {employee.user.email} on {next_birthday}")
+
+        return f"Birthday email sent for employee ID {employee_id}"
+
+    except Exception as e:
+        print(f"Failed to send birthday email for employee ID {employee_id}: {str(e)}")
+        raise
 
 @shared_task
 def send_document_request_email_task(employee_email, employee_name, employee_gender, document_type, document_format, due_date, description, is_update=False):

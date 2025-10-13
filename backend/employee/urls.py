@@ -12,6 +12,7 @@ from .views import (
     EmployeeListAPIView,
     EmployeeDetailAPIView,
     EmployeeCreateAPIView,
+    EmployeeLogListCreateView,
     EmployeeMonthlyHourAccountListCreateView,
     EmployeeTypeDetailAPIView,
     EmployeeTypeListCreateAPIView,
@@ -183,4 +184,5 @@ urlpatterns = [
     path("document-requests/employee/<int:request_employee_id>/upload/", DocumentUploadView.as_view(), name="document_upload"),
     path('employees/<int:employee_id>/deactivate/', DeactivateEmployeeView.as_view(), name='deactivate-employee'),
     path('employees/<int:employee_id>/activate/', ActivateEmployeeView.as_view(), name='activate-employee'),
+    path('employee-logs/', EmployeeLogListCreateView.as_view(), name='employee-logs'),
 ]
