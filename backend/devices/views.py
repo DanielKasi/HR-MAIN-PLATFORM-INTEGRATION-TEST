@@ -574,7 +574,7 @@ class DeviceCallbackView(APIView):
 
                 with transaction.atomic():
                     # Bulk create EmployeeLogs
-                    EmployeeLogs.objects.bulk_create(logs_to_create)
+                    created_logs = EmployeeLogs.objects.bulk_create(logs_to_create)
 
                     # Process attendance for each employee-date pair
                     for (employee_id, record_date), times in sorted(records_by_employee_date.items(), key=lambda x: x[0][1]):
@@ -625,7 +625,7 @@ class DeviceCallbackView(APIView):
                         else:
                             print(f"No logs found for {employee} on {previous_date}. Skipping check-out update.")
                 
-                initiate_spotcheck_responses_from_attendance_records.delay(logs_to_create)
+                initiate_spotcheck_responses_from_attendance_records.delay(created_logs)
 
             else:
                 return Response({"detail": f"Unknown event: {event}"}, status=status.HTTP_400_BAD_REQUEST)
