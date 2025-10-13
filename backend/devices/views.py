@@ -514,11 +514,18 @@ class DeviceCallbackView(APIView):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    device = Device.objects.get(serial_number=serial_number)
-                    employee = Employee.objects.get(employee_id=external_user_id)
+                    # device = Device.objects.get(serial_number=serial_number)
+                    # The device is not being used yet, so it is redundant to check for it here.
+
+                    try:
+                        employee = Employee.objects.get(employee_id=external_user_id)
+                    except Employee.DoesNotExist:
+                        # we will handle this gracefully by skipping the record for now and later discuss  on what to do
+                        print(f"Employee with ID {external_user_id} not found. Skipping record.")
+                        continue
 
                     # Parse datetime and extract date and time
-                    record_datetime = datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+                    record_datetime = datetime.fromisoformat(datetime_str)
                     record_date = record_datetime.date()
                     record_time = record_datetime.time()
 
@@ -540,14 +547,14 @@ class DeviceCallbackView(APIView):
             else:
                 return Response({"detail": f"Unknown event: {event}"}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({"detail": "Callback received successfully."}, status=status.HTTP_200_OK)
+            return Response({"message": "Callback received successfully."}, status=status.HTTP_200_OK)
 
-        except Device.DoesNotExist:
-            return Response({"detail": "Device not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
-        except Employee.DoesNotExist:
-            return Response({"detail": "Employee not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
-        except DeviceEmployeeAttachment.DoesNotExist:
-            return Response({"detail": "Employee attachment not found."}, status=status.HTTP_404_NOT_FOUND)
+        # except Device.DoesNotExist:
+        #     return Response({"detail": "Device not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
+        # except Employee.DoesNotExist:
+        #     return Response({"detail": "Employee not found in HR system."}, status=status.HTTP_404_NOT_FOUND)
+        # except DeviceEmployeeAttachment.DoesNotExist:
+        #     return Response({"detail": "Employee attachment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": f"Internal error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
