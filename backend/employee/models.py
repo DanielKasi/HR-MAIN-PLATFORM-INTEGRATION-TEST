@@ -1366,10 +1366,13 @@ class EmployeeAttendance(BaseApprovableModel):
         Uses the branch-specific radius from BranchLocationComaparisonConfig if available,
         otherwise falls back to a default of 100 meters.
         """
+        print("\n\n Checking location ...")
         attached_branches = self.employee.get_all_branches()
         if not attached_branches.exists():
+            print("\n\n No attached branches found")
             return False
 
+        print("\n\n Entering for loop, ...")
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
@@ -1381,6 +1384,7 @@ class EmployeeAttendance(BaseApprovableModel):
                 # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
                 threshold_meters = 100
 
+            print("Comparing provided locations : (lat, lon): ", latitude, longitude, "\n\n With existing lat, lon", (branch.branch_latitude, branch.branch_longitude))
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )

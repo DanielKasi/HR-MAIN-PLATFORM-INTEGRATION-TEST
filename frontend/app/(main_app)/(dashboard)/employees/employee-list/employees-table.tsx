@@ -159,7 +159,7 @@ export function EmployeesTable({
 					<span>Name</span>
 				</div>
 			),
-			cell: (employee) => employee?.user?.fullname || "Unknown",
+			cell: (employee) => employee.name || employee?.user?.fullname || "Unknown",
 		},
 		{
 			key: "email",
@@ -178,7 +178,7 @@ export function EmployeesTable({
 					</Button>
 				</div>
 			),
-			cell: (employee) => employee.email,
+			cell: (employee) => employee.email || employee.user?.email || "",
 		},
 		{
 			key: "department",
