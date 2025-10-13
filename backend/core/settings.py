@@ -70,7 +70,6 @@ INSTALLED_APPS = [
     "approval",
     "spotcheck",
     "django_celery_beat",
-    "easyaudit",
     "communication",
     'django.contrib.sites',
     'helpdesk',
@@ -89,7 +88,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "easyaudit.middleware.easyaudit.EasyAuditMiddleware",
+    "audit.signals.RequestMiddleware",
     "communication.middleware.AcknowledgmentMiddleware",
 ]
 

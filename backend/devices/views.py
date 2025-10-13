@@ -526,9 +526,9 @@ class DeviceCallbackView(APIView):
         try:
             payload = request.data
             event = payload.get("event")
-            device_sn = payload.get("device_sn")
+            # device_sn = payload.get("device_sn")
             external_user_id = payload.get("external_user_id")
-            status_str = payload.get("status")
+            # status_str = payload.get("status")
         except json.JSONDecodeError:
             return Response(
                 {"detail": "Invalid JSON payload."}, status=status.HTTP_400_BAD_REQUEST

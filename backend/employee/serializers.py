@@ -1140,3 +1140,6 @@ class EmployeeLogsSerializer(serializers.ModelSerializer):
             'serial_number': obj.device.serial_number,
         }
 
+
+      
+
