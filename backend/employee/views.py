@@ -95,6 +95,8 @@ import json
 from .utilities import activate_employee, create_company_email, deactivate_employee, delete_company_email, generate_email, generate_employee_excel, reset_email_password
 from collections import defaultdict
 from django.contrib.sites.shortcuts import get_current_site
+from django.contrib.auth.decorators import permission_required
+from django.utils.decorators import method_decorator
 
 
 class QualificationAwardListCreateAPIView(APIView):
@@ -243,6 +245,7 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
 
 
 class EmployeeListAPIView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
     allowed_ordering_fields = ["user", "email", "department", "is_active", "position", "date_of_joining", "salary"]
     default_ordering = ["user"]
 
@@ -270,6 +273,7 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
             OpenApiParameter(name="age_max", type=OpenApiTypes.INT, description="Maximum age filter")
         ]
     )
+    @method_decorator(permission_required('can_view_employees', raise_exception=True))
     def get(self, request, institution_id):
         try:
             # Base queryset
@@ -446,6 +450,7 @@ class EmployeeDetailAPIView(APIView):
             ),
         ],
     )
+    @method_decorator(permission_required('can_view_employees', raise_exception=True))
     def get(self, request, employee_id):
         """
         Retrieve details of a specific employee.
@@ -758,6 +763,7 @@ class EmployeeCreateAPIView(APIView):
             ),
         ],
     )
+    @method_decorator(permission_required('can_create_employees', raise_exception=True))
     def post(self, request):
         site = get_current_site(request)
 
@@ -2176,6 +2182,7 @@ class EmployeeUpdateAPIView(APIView):
             ),
         ],
     )
+    @method_decorator(permission_required('can_edit_employees', raise_exception=True))
     def patch(self, request, employee_id):
         try:
             employee = Employee.objects.get(pk=employee_id)
@@ -2243,6 +2250,7 @@ class EmployeeDeleteAPIView(APIView):
         summary="Delete Employee",
         tags=["Employee Management"],
     )
+    @method_decorator(permission_required('can_delete_employees', raise_exception=True))
     def delete(self, request, institution_id, employee_id):
         try:
             employee = Employee.objects.get(
@@ -2702,6 +2710,7 @@ class EmployeeAttendanceListCreateAPIView(APIView, SortableAPIMixin):
         responses=EmployeeAttendanceSerializer(many=True),
         description="Retrieve all attendance records or for a specific employee if employee_id is provided either in path or query param.",
     )
+    @method_decorator(permission_required('can_view_attendance_records', raise_exception=True))
     def get(self, request, employee_id=None):
         user = request.user.profile
         search_query = request.query_params.get("search", None)
@@ -2809,6 +2818,7 @@ class EmployeeAttendanceDetailAPIView(APIView):
         responses=EmployeeAttendanceSerializer,
         description="Retrieve an attendance record by ID",
     )
+    @method_decorator(permission_required('can_view_attendance_records', raise_exception=True))
     def get(self, request, pk):
         record = self.get_object(pk)
         serializer = EmployeeAttendanceSerializer(record)
@@ -2819,6 +2829,7 @@ class EmployeeAttendanceDetailAPIView(APIView):
         responses=EmployeeAttendanceSerializer,
         description="Update an attendance record by ID",
     )
+    @method_decorator(permission_required('can_edit_attendance_records', raise_exception=True))
     def patch(self, request, pk):
         record = self.get_object(pk)
         record.approval_status = "under_update"

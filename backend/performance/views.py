@@ -41,6 +41,7 @@ class PeriodListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_create_period', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = PeriodSerializer(data=request.data, context={"request": request})
@@ -161,6 +162,7 @@ class ObjectivesListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Performance Management"],
     )
+    @method_decorator(permission_required('can_create_objectives', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = ObjectivesSerializer(data=request.data, context={"request": request})
