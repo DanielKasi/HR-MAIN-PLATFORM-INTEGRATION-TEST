@@ -80,15 +80,18 @@ def check_spotcheck_response(spotcheck_id):
 
 @shared_task
 def initiate_spotcheck_responses_from_attendance_records(
-    attendance_records: list[EmployeeLogs],
+    attendance_record_ids
 ):
     from spotcheck.utilities import get_employee_spotchecks_expires_after_minutes
 
+    attendance_records = EmployeeLogs.objects.filter(id__in=attendance_record_ids)
     valid_status, _ = SpotCheckStatus.objects.get_or_create(
         status_name="CHECKED_IN"
     )  # TODO: Have a resusable function for this
 
     for log in attendance_records:
+        print(f"Processing attendance log ID: {log.id} for employee ID: {log.employee.name}")
+
         employee = log.employee
         log_datetime = timezone.make_aware(datetime.combine(log.date, log.time))
 
@@ -98,6 +101,8 @@ def initiate_spotcheck_responses_from_attendance_records(
         )
 
         for spot_check in spot_checks:
+
+            print(f"Checking against spotcheck ID: {spot_check.id} scheduled at {spot_check.spotcheck_time}")
             expires_after_minutes = get_employee_spotchecks_expires_after_minutes(
                 employee
             )
