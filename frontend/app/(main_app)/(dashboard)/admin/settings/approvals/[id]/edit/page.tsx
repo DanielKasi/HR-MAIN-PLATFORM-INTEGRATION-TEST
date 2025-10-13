@@ -429,7 +429,6 @@ export default function ApprovalEditPage() {
 				onSave={handleSaveLevel}
 			/>
 
-			{/* Confirmation Dialog */}
 			<ConfirmationDialog
 				isOpen={deleteConfirmOpen}
 				onClose={cancelDeleteLevel}

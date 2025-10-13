@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Fingerprint } from "lucide-react";
+import { Plus, Fingerprint, MoreHorizontal } from "lucide-react";
 import { DEVICES_API } from "@/lib/api/devices.utils";
 import { IDevice } from "@/types/devices.types";
 import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
@@ -19,6 +19,14 @@ import { DeviceEmployeeAttachmentFormDialog } from "../../devices/_components/de
 import { IEmployee } from "@/types/types.utils";
 import { getPaginatedFromUrl } from "@/lib/api/_api.utils";
 import { Icon } from "@iconify/react";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { showErrorToast } from "@/lib/utils";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EmployeeDevicesProps {
 	employee: IEmployee;
@@ -27,7 +35,10 @@ interface EmployeeDevicesProps {
 export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 	const [showAttachmentDialog, setShowAttachmentDialog] = useState(false);
 	const [loadingFingerprint, setLoadingFingerprint] = useState<number | null>(null);
-	const [showConfirmDialog, setShowConfirmDialog] = useState<number | null>(null);
+	const [loadingFace, setLoadingFace] = useState<number | null>(null);
+	const [showFingerprintConfirmDialog, setShowFingerprintConfirmDialog] = useState(false);
+	const [showFaceConfirmDialog, setShowFaceConfirmDialog] = useState(false);
+	const [selectedDevice, setSelectedDevice] = useState<number | null>(null);
 	const refreshFunctionRef = useRef<(() => void) | null>(null);
 
 	const handleAttachmentSuccess = () => {
@@ -36,20 +47,42 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 		refreshFunctionRef.current?.();
 	};
 
-	const initiateFingerprintCapture = async (deviceId: number) => {
-		setLoadingFingerprint(deviceId);
+	const initiateFingerprintCapture = async () => {
+		if (!selectedDevice) {
+			return;
+		}
+		setLoadingFingerprint(selectedDevice);
 		try {
 			const response = await DEVICES_API.captureFingerprint({
-				deviceId,
+				deviceId: selectedDevice,
 				employeeId: employee.employee_id,
 			});
 			toast.success(response.detail);
 		} catch (error: any) {
-			const errorMessage = error.response?.data?.detail || "Failed to initiate fingerprint capture";
-			toast.error(errorMessage);
+			showErrorToast({ error, defaultMessage: "Failed to initiate fingerprint capture" });
 		} finally {
 			setLoadingFingerprint(null);
-			setShowConfirmDialog(null);
+			setShowFingerprintConfirmDialog(false);
+		}
+	};
+
+	const initiateFaceCapture = async () => {
+		if (!selectedDevice) {
+			return;
+		}
+		setLoadingFace(selectedDevice);
+		try {
+			const response = await DEVICES_API.captureFace({
+				deviceId: selectedDevice,
+				employeeId: employee.employee_id,
+			});
+
+			toast.success(response.detail);
+		} catch (error: any) {
+			showErrorToast({ error, defaultMessage: "Failed to initiate face capture" });
+		} finally {
+			setLoadingFace(null);
+			setShowFaceConfirmDialog(false);
 		}
 	};
 
@@ -79,33 +112,49 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 			header: "Branch",
 			cell: (device) => device.branch?.name || "",
 		},
-		// {
-		//     key: "is_synced",
-		//     header: "Sync Status",
-		//     cell: (device) => (
-		//         <span className={device.is_synced ? "text-green-600" : "text-red-600"}>
-		//             {device.is_synced ? "Synced" : "Not Synced"}
-		//         </span>
-		//     ),
-		// },
 		{
 			key: "actions",
 			header: "Actions",
 			cell: (device) => (
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => setShowConfirmDialog(device.id)}
-					disabled={loadingFingerprint === device.id}
-					className="flex items-center gap-2"
-				>
-					{loadingFingerprint === device.id ? (
-						<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-					) : (
-						<Fingerprint className="h-4 w-4" />
-					)}
-					Capture Fingerprint
-				</Button>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant={"ghost"} size={"icon"}>
+							<MoreHorizontal />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent>
+						<DropdownMenuItem
+							onClick={() => {
+								setSelectedDevice(device.id);
+								setShowFingerprintConfirmDialog(true);
+							}}
+							disabled={loadingFingerprint === device.id}
+							className="flex items-center gap-2"
+						>
+							{loadingFingerprint === device.id ? (
+								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+							) : (
+								<Icon icon="hugeicons:biometric-device" className="h-4 w-4" />
+							)}
+							Capture Fingerprint
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() => {
+								setSelectedDevice(device.id);
+								setShowFaceConfirmDialog(true);
+							}}
+							disabled={loadingFace === device.id}
+							className="flex items-center gap-2"
+						>
+							{loadingFace === device.id ? (
+								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+							) : (
+								<Icon icon="hugeicons:face-id" className="h-4 w-4" />
+							)}
+							Capture Face
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 			),
 		},
 	];
@@ -146,43 +195,33 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 				fixedEmployee={employee.id}
 				onSuccess={handleAttachmentSuccess}
 			/>
-			<Dialog open={!!showConfirmDialog} onOpenChange={() => setShowConfirmDialog(null)}>
-				<DialogContent className="sm:max-w-[400px] rounded-2xl border-0 shadow-2xl">
-					<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-						<DialogTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-							<Fingerprint className="w-6 h-6 text-gray-600" />
-							Confirm Fingerprint Capture
-						</DialogTitle>
-						<DialogDescription className="text-gray-600 text-base">
-							Are you sure you want to initiate fingerprint capture for {employee.name} on this
-							device?
-						</DialogDescription>
-					</DialogHeader>
-					<DialogFooter className="flex gap-3 pt-6">
-						<Button
-							variant="outline"
-							onClick={() => setShowConfirmDialog(null)}
-							className="flex-1 rounded-full"
-						>
-							Cancel
-						</Button>
-						<Button
-							onClick={() => showConfirmDialog && initiateFingerprintCapture(showConfirmDialog)}
-							disabled={loadingFingerprint !== null}
-							className="flex-1 rounded-full bg-primary text-white"
-						>
-							{loadingFingerprint !== null ? (
-								<>
-									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-									Initiating...
-								</>
-							) : (
-								"Confirm"
-							)}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			{/* <ConfirmationDialog/> */}
+
+			<ConfirmationDialog
+				description={`Are you sure you want to initiate fingerprint capture for ${employee.name} on this
+							device.`}
+				isOpen={!!showFingerprintConfirmDialog}
+				disabled={!!loadingFingerprint}
+				title={`Confirm Fingerprint Capture`}
+				onConfirm={initiateFingerprintCapture}
+				onClose={() => {
+					setShowFingerprintConfirmDialog(false);
+					setSelectedDevice(null);
+				}}
+			/>
+
+			<ConfirmationDialog
+				description={`Are you sure you want to initiate face capture for ${employee.name} on this
+							device.`}
+				isOpen={!!showFaceConfirmDialog}
+				disabled={!!loadingFace}
+				title={`Confirm Face Capture`}
+				onConfirm={initiateFaceCapture}
+				onClose={() => {
+					setShowFaceConfirmDialog(false);
+					setSelectedDevice(null);
+				}}
+			/>
 		</div>
 	);
 }

@@ -90,6 +90,19 @@ export const DEVICES_API = {
 		});
 		return response.data as { detail: string };
 	},
+	captureFace: async ({
+		deviceId,
+		employeeId,
+	}: {
+		deviceId: number;
+		employeeId: string;
+	}): Promise<{ detail: string }> => {
+		const response = await apiRequest.post(`devices/capture-face/`, {
+			device_id: deviceId,
+			employee_id: employeeId,
+		});
+		return response.data as { detail: string };
+	},
 };
 
 export const DEVICE_EMPLOYEE_ATTACHMENTS_API = {
