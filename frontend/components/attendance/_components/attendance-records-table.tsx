@@ -139,7 +139,7 @@ export function AttendanceRecordsTable({
 												attendanceData?.results.map((att, idx) => {
 													return (
 														<TableRow key={idx} className="hover:bg-gray-50">
-															<TableCell className="min-w-[6rem] bg-red-200">
+															<TableCell className="min-w-[6rem]">
 																<div className="flex flex-col">
 																	<Link
 																		href={`/employees/attendance/${att.employee.id}`}

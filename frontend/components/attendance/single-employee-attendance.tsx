@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 
-import { AttendanceAPI, showErrorToast } from "@/lib/utils";
+import { AttendanceAPI, fetchAttendanceData, showErrorToast } from "@/lib/utils";
 import { IAttendance, IEmployee } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { AttendanceRecordsTable } from "@/components/attendance/_components/attendance-records-table";
@@ -13,6 +13,9 @@ import { getCurrentUserLocation, isToday } from "@/lib/helpers";
 import { toast } from "sonner";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import Link from "next/link";
+import { PaginatedTable } from "../PaginatedTable";
 
 interface SingleEmployeeAttendanceProps {
 	searchTerm?: string;
@@ -31,9 +34,16 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 	const [selectedAttendanceRecord, setSelectedAttendanceRecord] = useState<IAttendance | null>(
 		null,
 	);
+	const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
 	const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-	const attendanceRefreshRef = useRef<(() => Promise<void>) | null>(null);
+	useEffect(() => {
+		if (employee) {
+			handleFetchAttendanceRecords();
+		}
+	}, [employee]);
+
+	// const attendanceRefreshRef = useRef<(() => Promise<void>) | null>(null);
 	const handlePositionChange = (position: GeolocationPosition) => {
 		setCurrentUserLocation(position);
 	};
@@ -46,6 +56,15 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 	const openCheckOutModal = async () => {
 		setCheckOutModalOpen(true);
 		await getCurrentUserLocation(handlePositionChange);
+	};
+
+	const handleFetchAttendanceRecords = async () => {
+		try {
+			const response = await AttendanceAPI.fetchAttendanceRecordsByEmployee({
+				employee_id: employee.id,
+			});
+			setAttendanceRecords(response.results);
+		} catch (error) {}
 	};
 
 	const handleCheckIn = async (_date: string, checkInTime: string) => {
@@ -64,7 +83,7 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 				status: "approved",
 			});
 			setSelectedAttendanceRecord(response);
-			await attendanceRefreshRef.current?.();
+			await handleFetchAttendanceRecords();
 			setCheckInModalOpen(false);
 		} catch (error: any) {
 			showErrorToast({ error, defaultMessage: "Failed to check in!" });
@@ -94,7 +113,7 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 				status: "approved",
 			});
 
-			await attendanceRefreshRef.current?.();
+			await handleFetchAttendanceRecords();
 		} catch (error: any) {
 			showErrorToast({ error, defaultMessage: "Failed to check out!" });
 		}
@@ -151,11 +170,29 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 						</div>
 					</div>
 
-					<AttendanceRecordsTable
-						attendanceRefreshRef={attendanceRefreshRef}
-						scope={{ type: "employee", employee }}
-					/>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Date</TableHead>
+								<TableHead>Checkin Time</TableHead>
+								<TableHead>Checkout Time</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{attendanceRecords.map((record, idx) => (
+								<TableRow key={record.id} className="hover:bg-gray-50">
+									<TableCell>{record.date}</TableCell>
 
+									<TableCell className="min-w-[6rem]">
+										<span>{record?.check_in_time}</span>
+									</TableCell>
+									<TableCell className="min-w-[6rem]">
+										<span>{record?.check_out_time}</span>
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
 					<CheckInModal
 						isOpen={checkInModalOpen}
 						onClose={() => setCheckInModalOpen(false)}
