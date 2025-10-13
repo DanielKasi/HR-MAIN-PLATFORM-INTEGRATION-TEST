@@ -6,10 +6,8 @@ import { useSelector } from "react-redux";
 import {
 	Search,
 	Plus,
-	Filter,
 	Eye,
 	Edit,
-	Trash2,
 	MoreVertical,
 	Calendar,
 	Users,
@@ -38,17 +36,24 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
-import { showErrorToast, showSuccessToast } from "@/lib/utils";
+import { showErrorToast } from "@/lib/utils";
 import StageReorderModal from "@/components/stage-reorder-modal";
-import {
-	IEmployeeS,
-	IEmployeeSeparation,
-	ISeparationType,
-	IPaginatedResponse,
-} from "@/types/types.utils";
+import { IEmployeeSeparation, ISeparationType, IPaginatedResponse } from "@/types/types.utils";
+
+// Status formatting utility
+const formatStageStatus = (status: string) => {
+	const statusMap: Record<string, string> = {
+		not_started: "Not Started",
+		in_progress: "In Progress",
+		completed: "Completed",
+		skipped: "Skipped",
+		cancelled: "Cancelled",
+	};
+
+	return statusMap[status] || status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+};
 
 export default function ExitProcessPage() {
 	const router = useRouter();
@@ -63,14 +68,8 @@ export default function ExitProcessPage() {
 	const [categoryFilter, setCategoryFilter] = useState("all");
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
-	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-
-	const [deleting, setDeleting] = useState(false);
-
 	const [reorderModalOpen, setReorderModalOpen] = useState(false);
 	const [separationToReorder, setSeparationToReorder] = useState<IEmployeeSeparation | null>(null);
-
-	//
 
 	const fetchSeparationTypes = useCallback(async () => {
 		if (!currentInstitution) return;
@@ -102,7 +101,7 @@ export default function ExitProcessPage() {
 
 	const fetchSeparations = useCallback(
 		async (currentPage: number, isNewSearch: boolean = false) => {
-			if (!currentInstitution || loading) return;
+			if (!currentInstitution) return;
 
 			try {
 				setLoading(true);
@@ -128,7 +127,7 @@ export default function ExitProcessPage() {
 				setLoading(false);
 			}
 		},
-		[currentInstitution, searchTerm, statusFilter, categoryFilter],
+		[currentInstitution, searchTerm, statusFilter, categoryFilter], // REMOVED loading from dependencies
 	);
 
 	useEffect(() => {
@@ -148,13 +147,13 @@ export default function ExitProcessPage() {
 		}, 500);
 
 		return () => clearTimeout(timeout);
-	}, [searchTerm, statusFilter, categoryFilter]);
+	}, [searchTerm, statusFilter, categoryFilter, currentInstitution]);
 
 	useEffect(() => {
 		if (page > 1 && currentInstitution) {
 			fetchSeparations(page, false);
 		}
-	}, [page]);
+	}, [page, currentInstitution]);
 
 	const handleCreateNewExitProcess = (separationType: ISeparationType) => {
 		const basePath = "/off-boarding/exit-process/create";
@@ -213,7 +212,7 @@ export default function ExitProcessPage() {
 	};
 
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg">
 			{/* Header */}
 			<div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
 				<Button
@@ -417,9 +416,7 @@ export default function ExitProcessPage() {
 																	{stage.stage_name}
 																</span>
 																<Badge variant="outline" className="ml-auto text-xs">
-																	{stage.status
-																		.replace(/_/g, " ")
-																		.replace(/\b\w/g, (l) => l.toUpperCase())}
+																	{formatStageStatus(stage.status)}
 																</Badge>
 															</div>
 														))}
