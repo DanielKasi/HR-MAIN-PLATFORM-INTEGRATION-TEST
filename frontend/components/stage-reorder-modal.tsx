@@ -1,28 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { GripVertical, CheckCircle, Clock, XCircle, AlertCircle, Save, X } from "lucide-react";
+import { GripVertical, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
-
-interface Stage {
-	id: number;
-	stage_name: string;
-	status: string;
-	position: number;
-	notes?: string;
-}
-
-interface StageReorderModalProps {
-	isOpen: boolean;
-	separationId: number;
-	stages: Stage[];
-	employeeName: string;
-	onClose: () => void;
-	onSuccess: (updatedStages: Stage[]) => void;
-}
+import { Stage, StageReorderModalProps } from "@/types/types.utils";
 
 export default function StageReorderModal({
 	isOpen,
@@ -247,8 +231,8 @@ export default function StageReorderModal({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-				<DialogHeader>
+			<DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden">
+				<DialogHeader className="">
 					<DialogTitle>Reorder Exit Stages - {employeeName}</DialogTitle>
 				</DialogHeader>
 
@@ -260,7 +244,7 @@ export default function StageReorderModal({
 									<div>
 										<CardTitle className="text-lg">Stage Reordering</CardTitle>
 										<p className="text-sm text-muted-foreground">
-											Drag and drop stages to change their execution order
+											Drag stages to change their execution order
 										</p>
 									</div>
 									<div className="flex gap-2">
@@ -269,7 +253,7 @@ export default function StageReorderModal({
 											onClick={handleCancel}
 											disabled={saving}
 											size="sm"
-											className="rounded-full"
+											className="rounded-full focus-visible:ring-0 focus-visible:ring-offset-0"
 										>
 											Cancel
 										</Button>

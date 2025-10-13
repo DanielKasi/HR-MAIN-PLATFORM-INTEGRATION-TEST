@@ -241,7 +241,7 @@ export default function ExitProcessPage() {
 				<Button
 					size="sm"
 					variant="outline"
-					className="rounded-full aspect-square"
+					className="rounded-full aspect-square focus-visible:ring-0 focus-visible:ring-offset-0"
 					onClick={() => router.push("/analytics/offboarding")}
 				>
 					<ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -255,7 +255,7 @@ export default function ExitProcessPage() {
 				<div className="ml-auto">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button className="rounded-xl px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base">
+							<Button className="rounded-xl px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base focus-visible:ring-0 focus-visible:ring-offset-0">
 								<Plus className="h-4 w-4 mr-2" />
 								New Exit Process
 							</Button>
@@ -275,7 +275,7 @@ export default function ExitProcessPage() {
 									<DropdownMenuItem
 										key={type.id}
 										onClick={() => handleCreateNewExitProcess(type)}
-										className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50"
+										className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
 									>
 										<div className="flex items-center justify-between w-full">
 											<span className="font-medium text-sm">{type.separation_type}</span>
@@ -298,7 +298,7 @@ export default function ExitProcessPage() {
 				<div className="relative sm:w-[500px]">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
-						className="pl-9"
+						className="pl-9 focus-visible:ring-0 focus-visible:ring-offset-0"
 						placeholder="Search by employee name..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
@@ -306,7 +306,7 @@ export default function ExitProcessPage() {
 				</div>
 				<div className="flex gap-4 ms-auto">
 					<Select value={statusFilter} onValueChange={setStatusFilter}>
-						<SelectTrigger className="w-full sm:w-[180px]">
+						<SelectTrigger className="w-full sm:w-[180px] focus-visible:ring-0 focus-visible:ring-offset-0">
 							<SelectValue placeholder="Status" />
 						</SelectTrigger>
 						<SelectContent>
@@ -317,7 +317,7 @@ export default function ExitProcessPage() {
 						</SelectContent>
 					</Select>
 					<Select value={categoryFilter} onValueChange={setCategoryFilter}>
-						<SelectTrigger className="w-full sm:w-[180px]">
+						<SelectTrigger className="w-full sm:w-[180px] focus-visible:ring-0 focus-visible:ring-offset-0">
 							<SelectValue placeholder="Category" />
 						</SelectTrigger>
 						<SelectContent>
@@ -358,19 +358,25 @@ export default function ExitProcessPage() {
 													</div>
 													<DropdownMenu>
 														<DropdownMenuTrigger asChild>
-															<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+															<Button
+																variant="ghost"
+																size="sm"
+																className="h-8 w-8 p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+															>
 																<MoreVertical className="h-4 w-4" />
 															</Button>
 														</DropdownMenuTrigger>
 														<DropdownMenuContent align="end">
 															<DropdownMenuItem
-																onClick={() => router.push(`/exit-process/${separation.id}`)}
+																onClick={() => router.push(``)}
+																className="focus-visible:ring-0 focus-visible:ring-offset-0"
 															>
 																<Eye className="h-4 w-4 mr-2" />
 																View Details
 															</DropdownMenuItem>
 															<DropdownMenuItem
-																onClick={() => router.push(`/exit-process/${separation.id}/edit`)}
+																onClick={() => router.push(``)}
+																className="focus-visible:ring-0 focus-visible:ring-offset-0"
 															>
 																<Edit className="h-4 w-4 mr-2" />
 																Edit
@@ -383,6 +389,7 @@ export default function ExitProcessPage() {
 																			setSeparationToReorder(separation);
 																			setReorderModalOpen(true);
 																		}}
+																		className="focus-visible:ring-0 focus-visible:ring-offset-0"
 																	>
 																		<ArrowUpDown className="h-4 w-4 mr-2" />
 																		Reorder Stages
