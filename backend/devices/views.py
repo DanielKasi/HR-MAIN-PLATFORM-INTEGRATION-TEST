@@ -491,25 +491,25 @@ class DeviceCallbackView(APIView):
         try:
             payload = request.data
             event = payload.get("event")
-            # device_sn = payload.get("device_sn")
+            device_sn = payload.get("device_sn")
             external_user_id = payload.get("external_user_id")
-            # status_str = payload.get("status")
+            status_str = payload.get("status")
         except json.JSONDecodeError:
             return Response({"detail": "Invalid JSON payload."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not event:
             return Response({"detail": "Missing event in payload."}, status=status.HTTP_400_BAD_REQUEST)
 
-
         try:
             if event == "log":
                 if not payload.get("records"):
                     return Response({"detail": "Missing records for log event."}, status=status.HTTP_400_BAD_REQUEST)
-                
+
                 records_by_employee_date = {}
                 logs_to_create = []
 
                 for record in payload["records"]:
+                    # Validate required fields
                     serial_number = record.get("serial_number")
                     external_user_id = record.get("external_user_id")
                     record_reference = record.get("record_reference")
@@ -521,20 +521,41 @@ class DeviceCallbackView(APIView):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    device = Device.objects.get(serial_number=serial_number)
+                    # Retrieve device
+                    try:
+                        device = Device.objects.get(serial_number=serial_number)
+                    except Device.DoesNotExist:
+                        return Response(
+                            {"detail": f"Device with serial number {serial_number} not found."},
+                            status=status.HTTP_404_NOT_FOUND
+                        )
 
+                    # Retrieve employee
                     try:
                         employee = Employee.objects.get(employee_id=external_user_id)
                     except Employee.DoesNotExist:
-                        # we will handle this gracefully by skipping the record for now and later discuss  on what to do
                         print(f"Employee with ID {external_user_id} not found. Skipping record.")
                         continue
 
-                    # Parse datetime and extract date and time
-                    record_datetime = datetime.fromisoformat(datetime_str)
-                    record_date = record_datetime.date()
-                    record_time = record_datetime.time()
+                    # Parse datetime
+                    try:
+                        record_datetime = datetime.fromisoformat(datetime_str)
+                        record_date = record_datetime.date()
+                        record_time = record_datetime.time()
+                    except ValueError:
+                        return Response(
+                            {"detail": f"Invalid datetime format: {datetime_str}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
 
+                    # Validate datetime is not in the future
+                    if record_datetime > datetime.now():
+                        return Response(
+                            {"detail": f"Future datetime not allowed: {datetime_str}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # Store log for creation
                     logs_to_create.append(
                         EmployeeLogs(
                             employee=employee,
@@ -552,7 +573,7 @@ class DeviceCallbackView(APIView):
                     records_by_employee_date[key].append(record_time)
 
                 with transaction.atomic():
-                    # Bulk create EmployeeeLogs
+                    # Bulk create EmployeeLogs
                     EmployeeLogs.objects.bulk_create(logs_to_create)
 
                     # Process attendance for each employee-date pair
@@ -561,45 +582,48 @@ class DeviceCallbackView(APIView):
                         # Find earliest time for check-in
                         check_in_time = min(times)
 
-                    # Check for existing attendance record for the employee and date
-                    attendance, created = EmployeeAttendance.objects.get_or_create(
-                        employee=employee,
-                        date=record_date,
-                        defaults={
-                            'check_in_time': record_time,
-                            'status': 'pending',
-                            'attendance_status': 'pending'
-                        }
-                    )
+                        # Create or update attendance record for current date (check-in)
+                        attendance, created = EmployeeAttendance.objects.get_or_create(
+                            employee=employee,
+                            date=record_date,
+                            defaults={
+                                'check_in_time': check_in_time,
+                                'status': 'pending',
+                                'attendance_status': 'pending'
+                            }
+                        )
+                        if not created and (not attendance.check_in_time or check_in_time < attendance.check_in_time):
+                            # Update check-in time if new time is earlier
+                            attendance.check_in_time = check_in_time
+                            attendance.save()
 
-                    #to be looked into
-                    # if not created and (not attendance.check_in_time or check_in_time < attendance.check_in_time):
-                    #     # Update check-in time if new time is earlier
-                    #     attendance.check_in_time = check_in_time
-                    #     attendance.save().
-
-                    previous_date = record_date - timedelta(days=1)
-                    if len(times) >= 1:  # Only process check-out if we have records
+                        # Update check-out for previous day
+                        previous_date = record_date - timedelta(days=1)
                         last_log = EmployeeLogs.objects.filter(
                             employee=employee,
                             date=previous_date
                         ).order_by('-time').first()
 
                         if last_log:
-                            # Update or create attendance record for previous day
-                            prev_attendance, prev_created = EmployeeAttendance.objects.get_or_create(
-                                employee=employee,
-                                date=previous_date,
-                                defaults={
-                                    'check_out_time': last_log.time,
-                                    'status': 'pending',
-                                    'attendance_status': 'pending'
-                                }
-                            )
-                            if not prev_created and (not prev_attendance.check_out_time or last_log.time > prev_attendance.check_out_time):
-                                # Update check-out time if new time is later
-                                prev_attendance.check_out_time = last_log.time
-                                prev_attendance.save()
+                            # Only update if previous day has a check-in
+                            if EmployeeLogs.objects.filter(employee=employee, date=previous_date).exists():
+                                prev_attendance, prev_created = EmployeeAttendance.objects.get_or_create(
+                                    employee=employee,
+                                    date=previous_date,
+                                    defaults={
+                                        'check_out_time': last_log.time,
+                                        'status': 'pending',
+                                        'attendance_status': 'pending'
+                                    }
+                                )
+                                if not prev_created and (not prev_attendance.check_out_time or last_log.time > prev_attendance.check_out_time):
+                                    # Update check-out time if new time is later
+                                    prev_attendance.check_out_time = last_log.time
+                                    prev_attendance.save()
+                            else:
+                                print(f"No check-in logs for {employee} on {previous_date}. Skipping check-out update.")
+                        else:
+                            print(f"No logs found for {employee} on {previous_date}. Skipping check-out update.")
                 
                 initiate_spotcheck_responses_from_attendance_records.delay(logs_to_create)
 
