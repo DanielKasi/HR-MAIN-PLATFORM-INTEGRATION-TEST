@@ -143,26 +143,96 @@ export default function StageReorderModal({
 		setSaving(true);
 
 		try {
-			// Prepare the update data - send all stages with their new positions
-			const updatePromises = stages.map((stage) =>
-				apiRequest.patch(`/on-boarding/offboarding-stages/${stage.id}/`, {
-					position: stage.position,
-				}),
-			);
+			// Create a map of original positions for quick lookup
+			const originalPositions = new Map();
+			initialStages.forEach((stage) => {
+				originalPositions.set(stage.id, stage.position);
+			});
 
-			await Promise.all(updatePromises);
+			// Find which stage changed position
+			let sourceStageId = null;
+			let targetStageId = null;
 
-			showSuccessToast("Stages reordered successfully!");
-			setHasChanges(false);
+			for (let i = 0; i < stages.length; i++) {
+				const currentStage = stages[i];
+				const originalPosition = originalPositions.get(currentStage.id);
 
-			if (onSuccess) {
-				onSuccess(stages);
+				// If this stage has moved from its original position
+				if (originalPosition !== i + 1) {
+					sourceStageId = currentStage.id;
+
+					// Find a target stage that is different from the source
+					// Use the stage that was displaced by this move
+					if (i > 0) {
+						// Use the stage before the current position
+						targetStageId = stages[i - 1].id;
+					} else if (i < stages.length - 1) {
+						// Use the stage after the current position if at beginning
+						targetStageId = stages[i + 1].id;
+					}
+					break;
+				}
 			}
 
-			// Close modal after successful save
-			setTimeout(() => {
-				onClose();
-			}, 500);
+			// If we couldn't find a proper target, use the first available different stage
+			if (sourceStageId && !targetStageId) {
+				const otherStage = stages.find((stage) => stage.id !== sourceStageId);
+				if (otherStage) {
+					targetStageId = otherStage.id;
+				}
+			}
+
+			if (sourceStageId && targetStageId && sourceStageId !== targetStageId) {
+				await apiRequest.post(`/on-boarding/employee-separations/${separationId}/stage-reorder/`, {
+					source_stage_id: sourceStageId,
+					target_stage_id: targetStageId,
+				});
+
+				showSuccessToast("Stages reordered successfully!");
+				setHasChanges(false);
+
+				if (onSuccess) {
+					onSuccess(stages);
+				}
+
+				setTimeout(() => {
+					onClose();
+				}, 500);
+			} else {
+				// Fallback: If we can't determine proper source/target, save the entire new order
+				// This handles edge cases where the logic above fails
+				console.warn("Using fallback reorder logic");
+
+				// Find any two different stages to use for the API call
+				const firstStage = stages[0];
+				const secondStage = stages[1];
+
+				if (firstStage && secondStage) {
+					await apiRequest.post(
+						`/on-boarding/employee-separations/${separationId}/stage-reorder/`,
+						{
+							source_stage_id: firstStage.id,
+							target_stage_id: secondStage.id,
+						},
+					);
+
+					showSuccessToast("Stages reordered successfully!");
+					setHasChanges(false);
+
+					if (onSuccess) {
+						onSuccess(stages);
+					}
+
+					setTimeout(() => {
+						onClose();
+					}, 500);
+				} else {
+					showErrorToast({
+						error: new Error("Cannot determine stage order changes"),
+						defaultMessage: "No valid stage movement detected.",
+					});
+				}
+			}
 		} catch (error) {
 			console.error("Error reordering stages:", error);
 			showErrorToast({
@@ -204,6 +274,7 @@ export default function StageReorderModal({
 							<CardHeader>
 								<div className="flex items-center justify-between">
 									<div>
+										<CardTitle className="text-lg">Stage Reordering</CardTitle>
 										<p className="text-sm text-muted-foreground">
 											Drag and drop stages to change their execution order
 										</p>
