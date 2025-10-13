@@ -131,6 +131,15 @@ class EmployeeSpotCheck(TimeStampedModel):
 
         self.save()
 
+    def confirm_attendance(self, responded_at, notes=""):
+        self.responded_at = responded_at
+        self.notes = notes
+        valid_status, _ = SpotCheckStatus.objects.get_or_create(
+            status_name="CHECKED_IN"
+        )
+        self.status = valid_status
+        self.save()
+
     def save(self, *args, **kwargs):
         from spotcheck.tasks import check_spotcheck_response
         from spotcheck.utilities import get_employee_spotchecks_expires_after_minutes
@@ -149,4 +158,3 @@ class EmployeeSpotCheck(TimeStampedModel):
 
             check_spotcheck_response.apply_async(args=[self.id], eta=send_time)
 
-        

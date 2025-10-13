@@ -440,6 +440,8 @@ class EmployeeSpotCheckInView(APIView):
         tags=["Employee spot check Management"],
     )
     def patch(self, request, spotcheck_id):
+
+        # TODO: Confirm whether we still need this or we should remove it. @Mugisa, Jamil & Prosper
         """Record Spot check record when an employee responds to a spot check prompt."""
         try:
             spotcheck = SpotCheckModels.EmployeeSpotCheck.objects.get(id=spotcheck_id)

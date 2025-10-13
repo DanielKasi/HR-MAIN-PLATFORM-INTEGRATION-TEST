@@ -23,6 +23,7 @@ from .models import (
     EmployeeCompanyEmail,
     EmployeeMonthlyHourAccount,
     EmployeeType,
+    EmployeeLogs,
     NextOfKin,
     WorkType,
     EmployeeWorkingDays,
@@ -37,6 +38,7 @@ from .serializers import (
     EmployeeMonthlyHourAccountSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
+    EmployeeLogsSerializer,
     QualificationAwardSerializer,
     RequestedDocumentSerializer,
     WorkTypeSerializer,
@@ -4834,4 +4836,97 @@ class ActivateEmployeeView(APIView):
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
-            )    
+            ) 
+
+class EmployeeLogListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['employee__name', 'device__serial_number', 'record_reference', 'date', 'time', 'created_at']
+    default_ordering = ['date', 'time']
+
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={
+            201: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Employee logs processed successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Institution, device, or employee not found.",
+            ),
+        },
+        tags=["Employee Logs"],
+    )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="search", type=str, description="Search by employee name, device serial number, or record reference"),
+            OpenApiParameter(name="date", type=str, description="Filter by log date (YYYY-MM-DD)"),
+            OpenApiParameter(name="employee_id", type=str, description="Filter by employee external ID"),
+            OpenApiParameter(name="ordering", type=str, description="Sort by fields (e.g., 'employee__name,-date,time,created_at')"),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=EmployeeLogsSerializer(many=True),
+                description="List of employee logs.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field or date format."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Employee Logs"],
+    )
+    @method_decorator(permission_required('can_view_employee_logs', raise_exception=True))
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        date = request.query_params.get("date", None)
+        employee = request.query_params.get("employee", None)
+        device = request.query_params.get("device", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        logs = EmployeeLogs.objects.filter(
+            device__institution=institution, deleted_at__isnull=True
+        )
+
+        if search_query:
+            logs = logs.filter(
+                Q(employee__name__icontains=search_query) |
+                Q(device__serial_number__icontains=search_query) |
+                Q(record_reference__icontains=search_query)
+            )
+
+        if date:
+            try:
+                logs = logs.filter(date=date)
+            except ValueError:
+                return Response(
+                    {"detail": "Invalid date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        if employee:
+            logs = logs.filter(employee__id=employee)
+
+        if device:
+            logs = logs.filter(device__id=device)    
+
+        try:
+            logs = self.apply_sorting(logs, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(logs, request)
+        serializer = EmployeeLogsSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)

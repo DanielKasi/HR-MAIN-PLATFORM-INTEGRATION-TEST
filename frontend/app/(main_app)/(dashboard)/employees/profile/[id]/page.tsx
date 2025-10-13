@@ -73,6 +73,7 @@ import SingleEmployeeAttendance from "@/components/attendance/single-employee-at
 import EmployeeDocumentRequestsTable from "../../_components/employee-document-requests-table";
 import EmployeeSignatures from "@/components/employee/employee-signature";
 import EmployeeDevices from "../../_components/employee-devices";
+import EmployeeDevicesLogs from "../../_components/employee-device-logs";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -106,9 +107,10 @@ export default function EmployeeProfile() {
 	const [documentsSubTab, setDocumentsSubTab] = useState<
 		"contracts" | "document_requests" | "signatures"
 	>("contracts");
+
 	const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
 	const [spotcheckSubTab, setSpotcheckSubTab] = useState<"spotchecks" | "configs">("spotchecks");
-	const [statusFilter, setStatusFilter] = useState("all");
+	const [devicesSubTab, setDevicesSubTab] = useState<"devices" | "logs">("devices");
 
 	// Spotcheck Configuration state
 	const [spotcheckSetting, setSpotcheckSetting] = useState<IEmployeeSpotCheckSetting | null>(null);
@@ -1512,8 +1514,53 @@ export default function EmployeeProfile() {
 												)}
 
 												{activeTab === "devices" && employee && (
-													<EmployeeDevices employee={employee} />
+													<div className="space-y-6">
+														<div className="border-b border-[#e8e8f2]">
+															<div className="flex gap-8">
+																<button
+																	onClick={() => setDevicesSubTab("devices")}
+																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																		devicesSubTab === "devices"
+																			? "text-gray-800 font-semibold"
+																			: "text-[#848496] hover:text-gray-800"
+																	}`}
+																>
+																	<div className="flex items-center gap-2">
+																		<Clock className="w-4 h-4" />
+																		Devices
+																	</div>
+																	{devicesSubTab === "devices" && (
+																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																	)}
+																</button>
+																<button
+																	onClick={() => setDevicesSubTab("logs")}
+																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																		devicesSubTab === "logs"
+																			? "text-gray-800 font-semibold"
+																			: "text-[#848496] hover:text-gray-800"
+																	}`}
+																>
+																	<div className="flex items-center gap-2">
+																		<Settings className="w-4 h-4" />
+																		Logs
+																	</div>
+																	{devicesSubTab === "logs" && (
+																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																	)}
+																</button>
+															</div>
+														</div>
+
+														{/* Spotcheck Sub-tab Content */}
+														{devicesSubTab === "devices" && <EmployeeDevices employee={employee} />}
+														{devicesSubTab === "logs" && (
+															<EmployeeDevicesLogs employee={employee} />
+														)}
+													</div>
 												)}
+
+												{/* EmployeeDevicesLogs */}
 											</CardContent>
 										</Card>
 									</div>

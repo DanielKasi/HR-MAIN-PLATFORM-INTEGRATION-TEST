@@ -11,6 +11,7 @@ from .models import (
     EmployeeCompanyEmail,
     EmployeeMonthlyHourAccount,
     EmployeeType,
+    EmployeeLogs,
     NextOfKin,
     QualificationAward,
     RequestedDocument,
@@ -1112,4 +1113,30 @@ class DocumentRequestSerializer(BaseApprovableSerializer):
                     status="pending"
                 )
         return instance   
+
+
+class EmployeeLogsSerializer(serializers.ModelSerializer):
+    employee = serializers.SerializerMethodField()
+    device = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EmployeeLogs
+        fields = '__all__'
+        read_only_fields = ['id', 'employee', 'device', 'created_at', 'updated_at']
+
+    def get_employee(self, obj):
+        return {
+            'id': obj.employee.id,
+            'name': obj.employee.name if obj.employee.name else obj.employee.user.fullname,
+            'employee_id': obj.employee.employee_id,
+            'position': obj.employee.position.name if obj.employee.position else None
+        }
+
+    def get_device(self, obj):
+        if obj.device is None:
+            return None
+        return {
+            'name': obj.device.name,
+            'serial_number': obj.device.serial_number,
+        }
 
