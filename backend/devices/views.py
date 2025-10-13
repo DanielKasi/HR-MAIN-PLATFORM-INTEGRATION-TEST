@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, inline_serializer
 from employee.models import Employee, EmployeeAttendance, EmployeeLogs
+from spotcheck.tasks import initiate_spotcheck_responses_from_attendance_records
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
 from .models import Device, DeviceStatus, DeviceEmployeeAttachment
@@ -490,9 +491,9 @@ class DeviceCallbackView(APIView):
         try:
             payload = request.data
             event = payload.get("event")
-            device_sn = payload.get("device_sn")
+            # device_sn = payload.get("device_sn")
             external_user_id = payload.get("external_user_id")
-            status_str = payload.get("status")
+            # status_str = payload.get("status")
         except json.JSONDecodeError:
             return Response({"detail": "Invalid JSON payload."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -599,6 +600,8 @@ class DeviceCallbackView(APIView):
                                 # Update check-out time if new time is later
                                 prev_attendance.check_out_time = last_log.time
                                 prev_attendance.save()
+                
+                initiate_spotcheck_responses_from_attendance_records.delay(logs_to_create)
 
             else:
                 return Response({"detail": f"Unknown event: {event}"}, status=status.HTTP_400_BAD_REQUEST)

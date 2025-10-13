@@ -76,3 +76,9 @@ def check_spotcheck_response(spotcheck_id):
         EmployeePenalty.create_from_spotcheck(spotcheck, 'no_response_spotcheck')
         return "missed"
     return "responded"
+
+
+
+@shared_task
+def initiate_spotcheck_responses_from_attendance_records(attendance_records):
+    pass
