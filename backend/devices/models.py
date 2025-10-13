@@ -43,6 +43,7 @@ class DeviceEmployeeAttachment(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey('employee.Employee', on_delete=models.CASCADE, related_name='device_employee_attachments')
     is_synced = models.BooleanField(default=False)  
     is_admin = models.BooleanField(default=False)
+    
     def __str__(self):
         return f"{self.employee.name} on {self.device.serial_number}"
     
