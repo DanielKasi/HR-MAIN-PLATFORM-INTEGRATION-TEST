@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import {
@@ -57,7 +57,9 @@ export default function ExitProcessPage() {
 	const [separationToReorder, setSeparationToReorder] = useState<IEmployeeSeparation | null>(null);
 
 	const refreshTableRef = useRef<(() => void) | null>(null);
+	const hasFetchedSeparationTypesRef = useRef(false);
 
+	// Fetch separation types
 	const fetchSeparationTypes = async () => {
 		if (!currentInstitution) return;
 
@@ -86,7 +88,7 @@ export default function ExitProcessPage() {
 		}
 	};
 
-	const fetchSeparations = async () => {
+	const fetchSeparations = useCallback(async () => {
 		if (!currentInstitution) throw new Error("No institution selected");
 
 		const params = new URLSearchParams();
@@ -98,30 +100,34 @@ export default function ExitProcessPage() {
 			`/on-boarding/employee-separations/?${params.toString()}`,
 		);
 		return response.data as IPaginatedResponse<IEmployeeSeparation>;
-	};
+	}, [currentInstitution, searchTerm, statusFilter, categoryFilter]);
 
-	const fetchSeparationsFromUrl = async (url: string) => {
-		const response = await apiRequest.get(url);
+	const fetchSeparationsFromUrl = useCallback(async (args: { url: string }) => {
+		const response = await apiRequest.get(args.url);
 		return response.data as IPaginatedResponse<IEmployeeSeparation>;
-	};
+	}, []);
 
 	useEffect(() => {
-		if (currentInstitution) {
+		if (currentInstitution && !hasFetchedSeparationTypesRef.current) {
+			hasFetchedSeparationTypesRef.current = true;
 			fetchSeparationTypes();
 		}
-	}, [currentInstitution]);
+	}, [currentInstitution?.id]);
 
-	const handleCreateNewExitProcess = (separationType: ISeparationType) => {
-		const basePath = "/off-boarding/exit-process/create";
-		router.push(`${basePath}?category=${separationType.category}`);
-	};
+	const handleCreateNewExitProcess = useCallback(
+		(separationType: ISeparationType) => {
+			const basePath = "/off-boarding/exit-process/create";
+			router.push(`${basePath}?category=${separationType.category}`);
+		},
+		[router],
+	);
 
-	const handleReorderSuccess = (updatedStages: any[]) => {
+	const handleReorderSuccess = useCallback(() => {
 		if (!separationToReorder) return;
 		refreshTableRef.current?.();
-	};
+	}, [separationToReorder]);
 
-	const getStatusColor = (status: string) => {
+	const getStatusColor = useCallback((status: string) => {
 		switch (status) {
 			case "planned":
 				return "bg-blue-100 text-blue-800";
@@ -132,9 +138,9 @@ export default function ExitProcessPage() {
 			default:
 				return "bg-gray-100 text-gray-800";
 		}
-	};
+	}, []);
 
-	const getCategoryColor = (category: string) => {
+	const getCategoryColor = useCallback((category: string) => {
 		switch (category) {
 			case "resignation":
 				return "bg-purple-100 text-purple-800";
@@ -147,9 +153,9 @@ export default function ExitProcessPage() {
 			default:
 				return "bg-gray-100 text-gray-800";
 		}
-	};
+	}, []);
 
-	const getStageStatusIcon = (status: string) => {
+	const getStageStatusIcon = useCallback((status: string) => {
 		switch (status) {
 			case "completed":
 				return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -160,7 +166,167 @@ export default function ExitProcessPage() {
 			default:
 				return <Clock className="h-4 w-4 text-gray-400" />;
 		}
-	};
+	}, []);
+
+	const renderTableContent = useCallback(
+		({
+			data,
+			loading,
+			refresh,
+		}: {
+			data: IPaginatedResponse<IEmployeeSeparation> | null;
+			loading: boolean;
+			refresh: () => void;
+		}) => {
+			React.useEffect(() => {
+				refreshTableRef.current = refresh;
+			}, [refresh]);
+
+			if (loading && (!data || data.results.length === 0)) {
+				return <TableSkeleton rows={5} columns={1} />;
+			}
+
+			if (!data?.results || data.results.length === 0) {
+				return (
+					<div className="text-center py-12">
+						<FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+						<p className="text-muted-foreground">No exit processes found</p>
+					</div>
+				);
+			}
+
+			return (
+				<div className="grid grid-cols-1 gap-4">
+					{data.results.map((separation) => (
+						<Card key={separation.id} className="hover:shadow-md transition-shadow">
+							<CardContent className="p-6">
+								<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+									<div className="flex-1 space-y-3">
+										<div className="flex items-start justify-between">
+											<div>
+												<h3 className="font-semibold text-lg">
+													{separation.employee?.name || "Unknown Employee"}
+												</h3>
+												<p className="text-sm text-muted-foreground">
+													{separation.employee_separation_type?.separation_type || "No type"}
+												</p>
+											</div>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+														<MoreVertical className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													<DropdownMenuItem
+														onClick={() => router.push(`/exit-process/${separation.id}`)}
+													>
+														<Eye className="h-4 w-4 mr-2" />
+														View Details
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() => router.push(`/exit-process/${separation.id}/edit`)}
+													>
+														<Edit className="h-4 w-4 mr-2" />
+														Edit
+													</DropdownMenuItem>
+													{separation.stages && separation.stages.length > 0 && (
+														<>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																onClick={() => {
+																	setSeparationToReorder(separation);
+																	setReorderModalOpen(true);
+																}}
+															>
+																<ArrowUpDown className="h-4 w-4 mr-2" />
+																Reorder Stages
+															</DropdownMenuItem>
+														</>
+													)}
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+
+										<div className="flex flex-wrap gap-2">
+											<Badge className={getStatusColor(separation.separation_status)}>
+												{separation.separation_status}
+											</Badge>
+											<Badge
+												className={getCategoryColor(
+													separation.employee_separation_type?.category || "unknown",
+												)}
+											>
+												{separation.employee_separation_type?.category || "unknown"}
+											</Badge>
+										</div>
+
+										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+											<div className="flex items-center gap-2">
+												<Calendar className="h-4 w-4 text-muted-foreground" />
+												<span className="text-muted-foreground">Effective Date:</span>
+												<span className="font-medium">
+													{new Date(separation.effective_date).toLocaleDateString()}
+												</span>
+											</div>
+											<div className="flex items-center gap-2">
+												<Users className="h-4 w-4 text-muted-foreground" />
+												<span className="text-muted-foreground">Initiated by:</span>
+												<span className="font-medium">
+													{separation.initiated_by?.user?.fullname || "N/A"}
+												</span>
+											</div>
+										</div>
+
+										{separation.stages && separation.stages.length > 0 && (
+											<div className="mt-4">
+												<p className="text-sm font-medium mb-2">Exit Stages:</p>
+												<div className="space-y-2">
+													{separation.stages
+														.sort((a, b) => a.position - b.position)
+														.slice(0, 3)
+														.map((stage) => (
+															<div key={stage.id} className="flex items-center gap-2 text-sm">
+																{getStageStatusIcon(stage.status)}
+																<span
+																	className={stage.status === "completed" ? "text-green-600" : ""}
+																>
+																	{stage.stage_name}
+																</span>
+																<Badge variant="outline" className="ml-auto text-xs">
+																	{stage.status
+																		.replace(/_/g, " ")
+																		.replace(/\b\w/g, (l) => l.toUpperCase())}
+																</Badge>
+															</div>
+														))}
+													{separation.stages.length > 3 && (
+														<p className="text-xs text-muted-foreground">
+															+{separation.stages.length - 3} more stages
+														</p>
+													)}
+												</div>
+											</div>
+										)}
+
+										{separation.additional_notes && (
+											<div className="mt-3 p-3 bg-gray-50 rounded-md">
+												<p className="text-sm text-muted-foreground">
+													{separation.additional_notes.substring(0, 150)}
+													{separation.additional_notes.length > 150 ? "..." : ""}
+												</p>
+											</div>
+										)}
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			);
+		},
+		[getStatusColor, getCategoryColor, getStageStatusIcon, router],
+	);
 
 	return (
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
@@ -223,7 +389,7 @@ export default function ExitProcessPage() {
 
 			{/* Filters */}
 			<div className="flex flex-col sm:flex-row gap-4 mb-6">
-				<div className="relative flex-1">
+				<div className="relative sm:w-[500px]">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
 						className="pl-9"
@@ -232,28 +398,30 @@ export default function ExitProcessPage() {
 						onChange={(e) => setSearchTerm(e.target.value)}
 					/>
 				</div>
-				<Select value={statusFilter} onValueChange={setStatusFilter}>
-					<SelectTrigger className="w-full sm:w-[180px]">
-						<SelectValue placeholder="Status" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">All Status</SelectItem>
-						<SelectItem value="planned">Planned</SelectItem>
-						<SelectItem value="completed">Completed</SelectItem>
-						<SelectItem value="cancelled">Cancelled</SelectItem>
-					</SelectContent>
-				</Select>
-				<Select value={categoryFilter} onValueChange={setCategoryFilter}>
-					<SelectTrigger className="w-full sm:w-[180px]">
-						<SelectValue placeholder="Category" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">All Categories</SelectItem>
-						<SelectItem value="resignation">Resignation</SelectItem>
-						<SelectItem value="termination">Termination</SelectItem>
-						<SelectItem value="retirement">Retirement</SelectItem>
-					</SelectContent>
-				</Select>
+				<div className="flex gap-4 ms-auto">
+					<Select value={statusFilter} onValueChange={setStatusFilter}>
+						<SelectTrigger className="w-full sm:w-[180px]">
+							<SelectValue placeholder="Status" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Status</SelectItem>
+							<SelectItem value="planned">Planned</SelectItem>
+							<SelectItem value="completed">Completed</SelectItem>
+							<SelectItem value="cancelled">Cancelled</SelectItem>
+						</SelectContent>
+					</Select>
+					<Select value={categoryFilter} onValueChange={setCategoryFilter}>
+						<SelectTrigger className="w-full sm:w-[180px]">
+							<SelectValue placeholder="Category" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Categories</SelectItem>
+							<SelectItem value="resignation">Resignation</SelectItem>
+							<SelectItem value="termination">Termination</SelectItem>
+							<SelectItem value="retirement">Retirement</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
 			</div>
 
 			{/* Separations List with PaginatedTableWrapper */}
@@ -264,156 +432,7 @@ export default function ExitProcessPage() {
 				className="space-y-4"
 				footerClassName="pt-4"
 			>
-				{({ data, loading, refresh }) => {
-					useEffect(() => {
-						refreshTableRef.current = refresh;
-					}, [refresh]);
-
-					if (loading && (!data || data.results.length === 0)) {
-						return <TableSkeleton rows={5} columns={1} />;
-					}
-
-					if (!data?.results || data.results.length === 0) {
-						return (
-							<div className="text-center py-12">
-								<FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-								<p className="text-muted-foreground">No exit processes found</p>
-							</div>
-						);
-					}
-
-					return (
-						<div className="grid grid-cols-1 gap-4">
-							{data.results.map((separation) => (
-								<Card key={separation.id} className="hover:shadow-md transition-shadow">
-									<CardContent className="p-6">
-										<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-											<div className="flex-1 space-y-3">
-												<div className="flex items-start justify-between">
-													<div>
-														<h3 className="font-semibold text-lg">
-															{separation.employee?.name || "Unknown Employee"}
-														</h3>
-														<p className="text-sm text-muted-foreground">
-															{separation.employee_separation_type?.separation_type || "No type"}
-														</p>
-													</div>
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-																<MoreVertical className="h-4 w-4" />
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															<DropdownMenuItem
-																onClick={() => router.push(`/exit-process/${separation.id}`)}
-															>
-																<Eye className="h-4 w-4 mr-2" />
-																View Details
-															</DropdownMenuItem>
-															<DropdownMenuItem
-																onClick={() => router.push(`/exit-process/${separation.id}/edit`)}
-															>
-																<Edit className="h-4 w-4 mr-2" />
-																Edit
-															</DropdownMenuItem>
-															{separation.stages && separation.stages.length > 0 && (
-																<>
-																	<DropdownMenuSeparator />
-																	<DropdownMenuItem
-																		onClick={() => {
-																			setSeparationToReorder(separation);
-																			setReorderModalOpen(true);
-																		}}
-																	>
-																		<ArrowUpDown className="h-4 w-4 mr-2" />
-																		Reorder Stages
-																	</DropdownMenuItem>
-																</>
-															)}
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</div>
-
-												<div className="flex flex-wrap gap-2">
-													<Badge className={getStatusColor(separation.separation_status)}>
-														{separation.separation_status}
-													</Badge>
-													<Badge
-														className={getCategoryColor(
-															separation.employee_separation_type?.category || "unknown",
-														)}
-													>
-														{separation.employee_separation_type?.category || "unknown"}
-													</Badge>
-												</div>
-
-												<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-													<div className="flex items-center gap-2">
-														<Calendar className="h-4 w-4 text-muted-foreground" />
-														<span className="text-muted-foreground">Effective Date:</span>
-														<span className="font-medium">
-															{new Date(separation.effective_date).toLocaleDateString()}
-														</span>
-													</div>
-													<div className="flex items-center gap-2">
-														<Users className="h-4 w-4 text-muted-foreground" />
-														<span className="text-muted-foreground">Initiated by:</span>
-														<span className="font-medium">
-															{separation.initiated_by?.user?.fullname || "N/A"}
-														</span>
-													</div>
-												</div>
-
-												{separation.stages && separation.stages.length > 0 && (
-													<div className="mt-4">
-														<p className="text-sm font-medium mb-2">Exit Stages:</p>
-														<div className="space-y-2">
-															{separation.stages
-																.sort((a, b) => a.position - b.position)
-																.slice(0, 3)
-																.map((stage) => (
-																	<div key={stage.id} className="flex items-center gap-2 text-sm">
-																		{getStageStatusIcon(stage.status)}
-																		<span
-																			className={
-																				stage.status === "completed" ? "text-green-600" : ""
-																			}
-																		>
-																			{stage.stage_name}
-																		</span>
-																		<Badge variant="outline" className="ml-auto text-xs">
-																			{stage.status
-																				.replace(/_/g, " ")
-																				.replace(/\b\w/g, (l) => l.toUpperCase())}
-																		</Badge>
-																	</div>
-																))}
-															{separation.stages.length > 3 && (
-																<p className="text-xs text-muted-foreground">
-																	+{separation.stages.length - 3} more stages
-																</p>
-															)}
-														</div>
-													</div>
-												)}
-
-												{separation.additional_notes && (
-													<div className="mt-3 p-3 bg-gray-50 rounded-md">
-														<p className="text-sm text-muted-foreground">
-															{separation.additional_notes.substring(0, 150)}
-															{separation.additional_notes.length > 150 ? "..." : ""}
-														</p>
-													</div>
-												)}
-											</div>
-										</div>
-									</CardContent>
-								</Card>
-							))}
-						</div>
-					);
-				}}
+				{renderTableContent}
 			</PaginatedTableWrapper>
 
 			{/* Stage Reorder Modal */}
