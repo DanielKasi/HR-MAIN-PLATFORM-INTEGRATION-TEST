@@ -18,7 +18,7 @@ class InstitutionSpotCheckSetting(BaseApprovableModel):
     late_starts_after_minutes = models.IntegerField(default=10)
 
     def __str__(self):
-        return f"{self.institution.name} SpotCheck Settings"
+        return f"{self.institution.institution_name} SpotCheck Settings"
 
     def get_institution(self):
         return self.institution
@@ -157,4 +157,8 @@ class EmployeeSpotCheck(TimeStampedModel):
             )
 
             check_spotcheck_response.apply_async(args=[self.id], eta=send_time)
+
+            # issue penalty if already expired
+            if timezone.now() > send_time:
+                self.issue_penalty()
 
