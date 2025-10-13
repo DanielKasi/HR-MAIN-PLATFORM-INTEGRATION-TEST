@@ -7,7 +7,7 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, inline_serializer
-from employee.models import Employee, EmployeeAttendance, EmployeeeLogs
+from employee.models import Employee, EmployeeAttendance, EmployeeLogs
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
 from .models import Device, DeviceStatus, DeviceEmployeeAttachment
@@ -532,7 +532,7 @@ class DeviceCallbackView(APIView):
                     record_time = record_datetime.time()
 
                     with transaction.atomic():
-                        EmployeeeLogs.objects.create(
+                        EmployeeLogs.objects.create(
                             employee=employee,
                             device=device,
                             date=record_date,

@@ -1697,7 +1697,7 @@ class EmployeeContract(BaseApprovableModel):
 
         super().save(*args, **kwargs)
 
-class EmployeeeLogs(SoftDeletableTimeStampedModel):
+class EmployeeLogs(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='logs')
     device = models.ForeignKey('devices.Device', on_delete=models.CASCADE, related_name='logs', help_text="Device from which the log originates", null=True, blank=True)
     record_reference = models.CharField(max_length=100, unique=True, help_text="Unique log record reference", null=True, blank=True)

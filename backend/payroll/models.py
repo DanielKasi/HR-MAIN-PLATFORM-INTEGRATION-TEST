@@ -476,6 +476,7 @@ class EmployeePenalty(BaseApprovableModel):
     PENALTY_STATUS_CHOICES = [
         ("waived", "Waived"),
         ("applied", "Applied"),
+        ("system_cancelled", "System Cancelled"),
     ]    
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="penalties"

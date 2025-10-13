@@ -11,7 +11,7 @@ from .models import (
     EmployeeCompanyEmail,
     EmployeeMonthlyHourAccount,
     EmployeeType,
-    EmployeeeLogs,
+    EmployeeLogs,
     NextOfKin,
     QualificationAward,
     RequestedDocument,
@@ -1115,12 +1115,12 @@ class DocumentRequestSerializer(BaseApprovableSerializer):
         return instance   
 
 
-class EmployeeeLogsSerializer(serializers.ModelSerializer):
+class EmployeeLogsSerializer(serializers.ModelSerializer):
     employee = serializers.SerializerMethodField()
     device = serializers.SerializerMethodField()
 
     class Meta:
-        model = EmployeeeLogs
+        model = EmployeeLogs
         fields = '__all__'
         read_only_fields = ['id', 'employee', 'device', 'created_at', 'updated_at']
 

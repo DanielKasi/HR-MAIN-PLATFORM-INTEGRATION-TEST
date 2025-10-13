@@ -131,6 +131,10 @@ class EmployeeSpotCheck(TimeStampedModel):
 
         self.save()
 
+    def confirm_attendance(self):
+        from employee.models import EmployeeLogs
+        pass
+
     def save(self, *args, **kwargs):
         from spotcheck.tasks import check_spotcheck_response
         from spotcheck.utilities import get_employee_spotchecks_expires_after_minutes

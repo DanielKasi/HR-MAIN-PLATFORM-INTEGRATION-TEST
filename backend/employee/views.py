@@ -23,7 +23,7 @@ from .models import (
     EmployeeCompanyEmail,
     EmployeeMonthlyHourAccount,
     EmployeeType,
-    EmployeeeLogs,
+    EmployeeLogs,
     NextOfKin,
     WorkType,
     EmployeeWorkingDays,
@@ -38,7 +38,7 @@ from .serializers import (
     EmployeeMonthlyHourAccountSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
-    EmployeeeLogsSerializer,
+    EmployeeLogsSerializer,
     QualificationAwardSerializer,
     RequestedDocumentSerializer,
     WorkTypeSerializer,
@@ -4871,7 +4871,7 @@ class EmployeeLogListCreateView(APIView, SortableAPIMixin):
         ],
         responses={
             200: OpenApiResponse(
-                response=EmployeeeLogsSerializer(many=True),
+                response=EmployeeLogsSerializer(many=True),
                 description="List of employee logs.",
             ),
             400: OpenApiResponse(description="Invalid ordering field or date format."),
@@ -4895,7 +4895,7 @@ class EmployeeLogListCreateView(APIView, SortableAPIMixin):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        logs = EmployeeeLogs.objects.filter(
+        logs = EmployeeLogs.objects.filter(
             device__institution=institution, deleted_at__isnull=True
         )
 
@@ -4928,5 +4928,5 @@ class EmployeeLogListCreateView(APIView, SortableAPIMixin):
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(logs, request)
-        serializer = EmployeeeLogsSerializer(paginated_qs, many=True)
+        serializer = EmployeeLogsSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
