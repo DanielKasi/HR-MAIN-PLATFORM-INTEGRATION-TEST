@@ -40,7 +40,7 @@ class AIQuerySerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not self.instance and not attrs.get("question"):
-            raise serializers.ValidationError({"detail": "Question is required."})
+            raise serializers.ValidationError({"error": "Question is required."})
         return attrs
 
 
@@ -778,7 +778,7 @@ class AIAssistantSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not self.instance and not attrs.get("question"):
-            raise serializers.ValidationError({"detail": "Question is required."})
+            raise serializers.ValidationError({"error": "Question is required."})
         return attrs
 
 

@@ -195,7 +195,7 @@ class ProjectSerializer(BaseApprovableSerializer):
                         data_copy[field] = value[0]
                     elif len(value) > 1:
                         raise serializers.ValidationError(
-                            {field: f"Expected a single value for {field}, got multiple: {value}"}
+                            {"error": f"Expected a single value for {field}, got multiple: {value}"}
                         )
                     else:
                         data_copy[field] = None
@@ -207,7 +207,7 @@ class ProjectSerializer(BaseApprovableSerializer):
                             data_copy[field] = parsed_value[0]
                         else:
                             raise serializers.ValidationError(
-                                {field: f"Invalid stringified list for {field}: {value}"}
+                                {"error": f"Invalid stringified list for {field}: {value}"}
                             )
                     except json.JSONDecodeError:
                         data_copy[field] = value
@@ -258,7 +258,7 @@ class ProjectSerializer(BaseApprovableSerializer):
 
         if project_status and project_status not in dict(Project.PROJECT_STATUS_CHOICES):
             raise serializers.ValidationError(
-                {"project_status": f"'{project_status}' is not a valid choice."}
+                {"error": f"'{project_status}' is not a valid choice."}
             )
 
         manager_objects = []
@@ -269,7 +269,7 @@ class ProjectSerializer(BaseApprovableSerializer):
                     manager_objects.append(manager)
                 except Employee.DoesNotExist:
                     raise serializers.ValidationError(
-                        {"managers": f"Manager with ID {manager_id} does not belong to the selected institution"}
+                        {"error": f"Manager with ID {manager_id} does not belong to the selected institution"}
                     )
             data['managers'] = manager_objects
 
@@ -281,7 +281,7 @@ class ProjectSerializer(BaseApprovableSerializer):
                     assignee_objects.append(assignee)
                 except Employee.DoesNotExist:
                     raise serializers.ValidationError(
-                        {"assignees": f"Assignee with ID {assignee_id} does not belong to the selected institution"}
+                        {"error": f"Assignee with ID {assignee_id} does not belong to the selected institution"}
                     )
             data['assignees'] = assignee_objects
 
@@ -290,11 +290,11 @@ class ProjectSerializer(BaseApprovableSerializer):
                 if not isinstance(document, (str, bytes)) and hasattr(document, 'size'):
                     if document.size > 10 * 1024 * 1024:  # 10MB limit
                         raise serializers.ValidationError(
-                            {"documents": f"File {document.name} exceeds maximum size of 10MB"}
+                            {"error": f"File {document.name} exceeds maximum size of 10MB"}
                         )
                 else:
                     raise serializers.ValidationError(
-                        {"documents": f"Invalid file format for {document}"}
+                        {"error": f"Invalid file format for {document}"}
                     )
 
         return data
