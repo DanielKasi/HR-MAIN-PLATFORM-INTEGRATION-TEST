@@ -243,7 +243,7 @@ class EmailProviderConfigListCreateView(APIView, SortableAPIMixin):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
                 return Response({"error": "Failed to create config", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"error": "Validation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         parameters=[
