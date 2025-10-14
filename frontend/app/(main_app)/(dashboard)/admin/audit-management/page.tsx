@@ -237,6 +237,7 @@ export default function AuditLogsPage() {
 
 	// Filter and Search State
 	const [searchTerm, setSearchTerm] = useState("");
+	const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 	const [actionFilter, setActionFilter] = useState("all");
 	const [contentTypeFilter, setContentTypeFilter] = useState("all");
 	const [dateFrom, setDateFrom] = useState("");
@@ -245,6 +246,24 @@ export default function AuditLogsPage() {
 	// Infinite Scroll Refs
 	const observerRef = useRef<IntersectionObserver | null>(null);
 	const loadMoreRef = useRef<HTMLDivElement | null>(null);
+	const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+	// Debounce search term
+	useEffect(() => {
+		if (searchTimeoutRef.current) {
+			clearTimeout(searchTimeoutRef.current);
+		}
+
+		searchTimeoutRef.current = setTimeout(() => {
+			setDebouncedSearchTerm(searchTerm);
+		}, 500);
+
+		return () => {
+			if (searchTimeoutRef.current) {
+				clearTimeout(searchTimeoutRef.current);
+			}
+		};
+	}, [searchTerm]);
 
 	// --- Utility Functions ---
 	const toggleLog = (id: number) => {
@@ -297,7 +316,7 @@ export default function AuditLogsPage() {
 				let url: string;
 				if (isInitial || !nextUrl) {
 					const params = new URLSearchParams();
-					if (searchTerm) params.append("search", searchTerm);
+					if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
 					if (actionFilter !== "all") params.append("action", actionFilter);
 					if (contentTypeFilter !== "all") params.append("content_type__model", contentTypeFilter);
 					if (dateFrom) params.append("date_from", dateFrom);
@@ -332,7 +351,7 @@ export default function AuditLogsPage() {
 			loading,
 			hasMore,
 			nextUrl,
-			searchTerm,
+			debouncedSearchTerm,
 			actionFilter,
 			contentTypeFilter,
 			dateFrom,
@@ -350,7 +369,7 @@ export default function AuditLogsPage() {
 			fetchAuditLogs(true);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentInstitution, searchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo]);
+	}, [currentInstitution, debouncedSearchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo]);
 
 	// Infinite scroll observer setup
 	useEffect(() => {
@@ -366,7 +385,7 @@ export default function AuditLogsPage() {
 					fetchAuditLogs(false);
 				}
 			},
-			{ threshold: 0 },
+			{ threshold: 0.5 },
 		);
 
 		observer.observe(loadMoreRef.current);
@@ -389,90 +408,94 @@ export default function AuditLogsPage() {
 
 	return (
 		<div className="min-h-screen bg-background p-6">
-			<div>
-				{/* Header */}
-				<div className="mb-6 flex items-center gap-3">
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8"
-						onClick={() => router.push("/admin")}
-					>
-						<ArrowLeft className="h-5 w-5" />
-					</Button>
-					<h1 className="text-2xl font-semibold">Audit Logs</h1>
-				</div>
-
-				{/* Search and Filters */}
-				<div className="mb-6 flex flex-wrap items-center gap-4">
-					<div className="relative flex-1 max-w-xs min-w-[200px]">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							type="text"
-							placeholder="Search user, object, or description..."
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-							className="pl-9"
-						/>
-					</div>
-
-					<div className="ml-auto flex flex-wrap items-center gap-2">
-						{/* Action Filter */}
-						<Select value={actionFilter} onValueChange={setActionFilter}>
-							<SelectTrigger className="w-[150px]">
-								<SelectValue placeholder="Action" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">All Actions</SelectItem>
-								<SelectItem value="CREATE">Create</SelectItem>
-								<SelectItem value="UPDATE">Update</SelectItem>
-								<SelectItem value="DELETE">Delete</SelectItem>
-							</SelectContent>
-						</Select>
-
-						{/* Content Type Filter */}
-						<Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
-							<SelectTrigger className="w-[180px]">
-								<SelectValue placeholder="Content Type" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">All Types</SelectItem>
-								<SelectItem value="institution">Institution</SelectItem>
-								<SelectItem value="branch">Branch</SelectItem>
-								<SelectItem value="department">Department</SelectItem>
-								<SelectItem value="employee">Employee</SelectItem>
-								<SelectItem value="user">User</SelectItem>
-							</SelectContent>
-						</Select>
-
-						{/* Date Range Filters */}
-						<Input
-							type="date"
-							value={dateFrom}
-							onChange={(e) => setDateFrom(e.target.value)}
-							className="w-[150px] min-w-0"
-							placeholder="From Date"
-						/>
-						<Input
-							type="date"
-							value={dateTo}
-							onChange={(e) => setDateTo(e.target.value)}
-							className="w-[150px] min-w-0"
-							placeholder="To Date"
-						/>
-
-						{/* Refresh Button */}
+			<div className="px-4">
+				<div className="mb-6 flex flex-col gap-4">
+					{/* Top Row — Back button + Title */}
+					<div className="flex items-center gap-4">
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-9 w-9 flex-shrink-0"
-							onClick={handleRefresh}
-							disabled={loading}
+							className="h-8 w-8 flex-shrink-0"
+							onClick={() => router.push("/admin")}
 						>
-							<RefreshCw
-								className={`h-4 w-4 ${loading && auditLogs.length === 0 ? "animate-spin" : ""}`}
-							/>
+							<ArrowLeft className="h-5 w-5" />
 						</Button>
+						<h1 className="text-2xl font-semibold whitespace-nowrap">Audit Logs</h1>
+					</div>
+
+					{/* Bottom Row — Search + Filters */}
+					<div className="flex flex-wrap items-center gap-3">
+						{/* Search Bar */}
+						<div className="relative flex-1 max-w-md min-w-[250px]">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								type="text"
+								placeholder="Search user, object, or description..."
+								value={searchTerm}
+								onChange={(e) => setSearchTerm(e.target.value)}
+								className="pl-9 focus-visible:ring-0 focus-visible:ring-offset-0"
+							/>
+						</div>
+
+						{/* Filters */}
+						<div className="flex items-center gap-2 ml-auto flex-wrap">
+							{/* Action Filter */}
+							<Select value={actionFilter} onValueChange={setActionFilter}>
+								<SelectTrigger className="w-[150px] focus:ring-0 focus:ring-offset-0">
+									<SelectValue placeholder="Action" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">All Actions</SelectItem>
+									<SelectItem value="CREATE">Create</SelectItem>
+									<SelectItem value="UPDATE">Update</SelectItem>
+									<SelectItem value="DELETE">Delete</SelectItem>
+								</SelectContent>
+							</Select>
+
+							{/* Content Type Filter */}
+							<Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
+								<SelectTrigger className="w-[180px] focus:ring-0 focus:ring-offset-0">
+									<SelectValue placeholder="Content Type" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">All Types</SelectItem>
+									<SelectItem value="institution">Institution</SelectItem>
+									<SelectItem value="branch">Branch</SelectItem>
+									<SelectItem value="department">Department</SelectItem>
+									<SelectItem value="employee">Employee</SelectItem>
+									<SelectItem value="user">User</SelectItem>
+								</SelectContent>
+							</Select>
+
+							{/* Date Filters */}
+							<Input
+								type="date"
+								value={dateFrom}
+								onChange={(e) => setDateFrom(e.target.value)}
+								className="w-[150px] min-w-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+								placeholder="From Date"
+							/>
+							<Input
+								type="date"
+								value={dateTo}
+								onChange={(e) => setDateTo(e.target.value)}
+								className="w-[150px] min-w-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+								placeholder="To Date"
+							/>
+
+							{/* Refresh Button */}
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-9 w-9 flex-shrink-0"
+								onClick={handleRefresh}
+								disabled={loading}
+							>
+								<RefreshCw
+									className={`h-4 w-4 ${loading && auditLogs.length === 0 ? "animate-spin" : ""}`}
+								/>
+							</Button>
+						</div>
 					</div>
 				</div>
 
@@ -512,7 +535,7 @@ export default function AuditLogsPage() {
 							const userName = extractUserName(log.user);
 
 							return (
-								<div key={log.id} className="relative space-y-3 ml-8 mt-10">
+								<div key={log.id} className="relative space-y-3  mt-10">
 									{!isLastItem && (
 										<div className="absolute left-[5px] top-6 bottom-0 w-px bg-gray-300" />
 									)}
@@ -610,14 +633,17 @@ export default function AuditLogsPage() {
 							);
 						})}
 
-						<div ref={loadMoreRef} className="flex justify-center pt-4">
-							{loading && auditLogs.length > 0 && (
-								<div className="flex items-center gap-2 text-xs text-gray-500">
-									<div className="h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-									Loading more entries...
-								</div>
-							)}
-						</div>
+						{/* Infinite Scroll Trigger */}
+						{hasMore && (
+							<div ref={loadMoreRef} className="flex justify-center pt-4 pb-8">
+								{loading && auditLogs.length > 0 && (
+									<div className="flex items-center gap-2 text-xs text-gray-500">
+										<div className="h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+										Loading more entries...
+									</div>
+								)}
+							</div>
+						)}
 					</div>
 				)}
 			</div>
