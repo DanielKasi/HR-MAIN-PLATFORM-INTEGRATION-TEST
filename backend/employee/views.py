@@ -654,7 +654,7 @@ class EmployeeCreateAPIView(APIView):
             else:
                 if "user.fullname" not in final_data:
                     raise serializers.ValidationError(
-                        {"user.fullname": "This field is required when creating a new user."}
+                        {"error": "This field is required when creating a new user."}
                     )
                 random_password = generate_compliant_password()
                 final_data["user"] = {
@@ -665,7 +665,7 @@ class EmployeeCreateAPIView(APIView):
                 }
                 # print(f"New user data: {final_data['user']}")
         else:
-            raise serializers.ValidationError({"user.email": "This field is required."})
+            raise serializers.ValidationError({"error": "This field is required."})
 
         if "name" not in final_data and "user.fullname" in final_data:
             final_data["name"] = final_data["user.fullname"]
@@ -2025,14 +2025,14 @@ class EmployeeUpdateAPIView(APIView):
                         if not QualificationAward.objects.filter(id=qual_id).exists():
                             raise serializers.ValidationError(
                                 {
-                                    "educations": f"QualificationAward with ID {qual_id} does not exist."
+                                    "error": f"QualificationAward with ID {qual_id} does not exist."
                                 }
                             )
                         edu["qualification_id"] = qual_id
                     except (ValueError, TypeError):
                         raise serializers.ValidationError(
                             {
-                                "educations": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."
+                                "error": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."
                             }
                         )
                 elif "qualification" in edu and edu["qualification"]:
@@ -2048,7 +2048,7 @@ class EmployeeUpdateAPIView(APIView):
                         except Exception as e:
                             raise serializers.ValidationError(
                                 {
-                                    "educations": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"
+                                    "error": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"
                                 }
                             )
                     finally:
@@ -2056,7 +2056,7 @@ class EmployeeUpdateAPIView(APIView):
                 else:
                     raise serializers.ValidationError(
                         {
-                            "educations": "Either qualification_id or qualification must be provided."
+                            "error": "Either qualification_id or qualification must be provided."
                         }
                     )
                 if not edu.get("institution"):
@@ -2081,7 +2081,7 @@ class EmployeeUpdateAPIView(APIView):
                 except (ValueError, TypeError) as e:
                     raise serializers.ValidationError(
                         {
-                            "spouse.date_of_birth": f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"
+                            "error": f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"
                         }
                     )
         else:
@@ -4341,7 +4341,7 @@ class EmployeeEmailDeleteView(APIView):
             employee_email.confirm_delete()  # Assumes BaseApprovableModel defines this
             return Response({"message": "Employee email deleted successfully."}, status=status.HTTP_200_OK)
         except ValidationError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class EmployeeEmailResetPasswordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -4374,7 +4374,7 @@ class EmployeeEmailResetPasswordView(APIView):
                 response_data["password"] = password
             return Response(response_data, status=status.HTTP_200_OK)
         except ValidationError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
 
 
 def verify_email_and_redirect(request):
@@ -4395,16 +4395,6 @@ def verify_email_and_redirect(request):
         user = employee.user
         user.email = email
         user.save()
-
-        # Log the successful email update
-        LogEntry.objects.log_action(
-            user_id=user.id,
-            content_type_id=None,
-            object_id=None,
-            object_repr="Email updated",
-            action_flag=2,  # Change
-            change_message=f"User email updated to {email} via welcome email link",
-        )
 
         # Redirect to the system login page
         return redirect(f"{settings.FRONTEND_URL.rstrip('/')}{settings.LOGIN_URL}")
@@ -4866,7 +4856,7 @@ class EmployeeLogListCreateView(APIView, SortableAPIMixin):
         parameters=[
             OpenApiParameter(name="search", type=str, description="Search by employee name, device serial number, or record reference"),
             OpenApiParameter(name="date", type=str, description="Filter by log date (YYYY-MM-DD)"),
-            OpenApiParameter(name="employee_id", type=str, description="Filter by employee external ID"),
+            OpenApiParameter(name="employee", type=str, description="Filter by employee external ID"),
             OpenApiParameter(name="ordering", type=str, description="Sort by fields (e.g., 'employee__name,-date,time,created_at')"),
         ],
         responses={

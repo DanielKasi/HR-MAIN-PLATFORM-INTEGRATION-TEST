@@ -250,14 +250,14 @@ class CPanelClient:
         result = response.json()
         if result.get("status") != 1:
             errors = result.get("errors", ["Unknown error"])
-            raise ValidationError(f"cPanel API error: {errors[0]}")
+            raise ValidationError({"error": f"cPanel API error: {errors[0]}"})
         return result.get("data", {})
 
     def create_email_account(self, email: str, password: str, quota: int) -> None:
         """Create a new email account with specified quota"""
         parts = email.split("@")
         if len(parts) != 2:
-            raise ValidationError(f"Invalid email format: {email}")
+            raise ValidationError({"error": f"Invalid email format: {email}"})
 
         username, domain = parts
         params = {
@@ -273,7 +273,7 @@ class CPanelClient:
         """Reset an email account password"""
         parts = email.split("@")
         if len(parts) != 2:
-            raise ValidationError(f"Invalid email format: {email}")
+            raise ValidationError({"error": f"Invalid email format: {email}"})
 
         username, domain = parts
         params = {"email": username, "domain": domain, "password": password}
@@ -281,13 +281,13 @@ class CPanelClient:
         try:
             self._make_api_request("Email", "passwd_pop", params)
         except ValidationError as e:
-            raise ValidationError(f"Failed to reset password for {email}: {e}")
+            raise ValidationError({"error": f"Failed to reset password for {email}: {e}"})
         
     def suspend_email_account(self, email: str) -> None:
         """Suspend login for an email account"""
         parts = email.split("@")
         if len(parts) != 2:
-            raise ValidationError(f"Invalid email format: {email}")
+            raise ValidationError({"error": f"Invalid email format: {email}"})
         username, domain = parts
         params = {"email": username, "domain": domain}
         self._make_api_request("Email", "suspend_login", params)
@@ -296,7 +296,7 @@ class CPanelClient:
         """Unsuspend login for an email account"""
         parts = email.split("@")
         if len(parts) != 2:
-            raise ValidationError(f"Invalid email format: {email}")
+            raise ValidationError({"error": f"Invalid email format: {email}"})
         username, domain = parts
         params = {"email": username, "domain": domain}
         self._make_api_request("Email", "unsuspend_login", params)    
@@ -312,7 +312,7 @@ def generate_email(employee):
     try:
         config = employee.get_institution().email_config
     except AttributeError:
-        raise ValueError("No email config set for institution.")
+        raise ValueError({"error": "No email config set for institution."})
 
     fullname = employee.user.fullname.strip().lower()
     parts = re.split(r"\s+", fullname)
@@ -355,7 +355,7 @@ def create_company_email(employee, password=None):
         elif config.provider == "google_workspace":
             _create_google_email(employee, config, password)
         else:
-            raise ValidationError(f"Unsupported provider: {config.provider}")
+            raise ValidationError({"error": f"Unsupported provider: {config.provider}"})
 
     # Create EmployeeCompanyEmail instance
     email_account = EmployeeCompanyEmail.objects.create(
@@ -395,7 +395,7 @@ def reset_email_password(employee, new_password=None):
     # elif config.provider == 'microsoft_365':
     #     _reset_microsoft_email_password(employee, config, new_password)
     else:
-        raise ValidationError(f"Unsupported provider: {config.provider}")
+        raise ValidationError({"error": f"Unsupported provider: {config.provider}"})
 
     # TODO: Send new_password to employee
 
@@ -705,7 +705,7 @@ def _suspend_cpanel_email(email: str, config) -> None:
     Suspend cPanel email account login using CPanelClient.
     """
     if not all([config.api_url, config.api_username, config.api_token]):
-        raise ValidationError("cPanel requires api_url, api_username, and api_token.")
+        raise ValidationError({"error": "cPanel requires api_url, api_username, and api_token."})
 
     from urllib.parse import urlparse
 
@@ -724,7 +724,7 @@ def _unsuspend_cpanel_email(email: str, config) -> None:
     Unsuspend cPanel email account login using CPanelClient.
     """
     if not all([config.api_url, config.api_username, config.api_token]):
-        raise ValidationError("cPanel requires api_url, api_username, and api_token.")
+        raise ValidationError({"error": "cPanel requires api_url, api_username, and api_token."})
 
     from urllib.parse import urlparse
 
@@ -744,7 +744,7 @@ def _suspend_google_email(email: str, config) -> None:
     """
     if not config.api_token:
         raise ValidationError(
-            "Google Workspace requires api_token (service account JSON)."
+            {"error": "Google Workspace requires api_token (service account JSON)."}
         )
 
     try:
