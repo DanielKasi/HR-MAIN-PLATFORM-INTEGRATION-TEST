@@ -1,5 +1,6 @@
 from django.db import models, transaction
 from approval.models import Approval, BaseApprovableModel
+from performance.tasks import send_meeting_notification_email
 from documents.models import DocumentTemplate
 from performance.teams_api import create_teams_meeting, update_teams_meeting
 from performance.zoom_api import create_zoom_meeting, update_zoom_meeting
@@ -17,6 +18,10 @@ from googleapiclient.discovery import build
 import os
 from google.auth.transport.requests import Request
 from datetime import datetime
+from django.template.loader import render_to_string
+from communication.models import Announcement
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 class Period(BaseApprovableModel):   
@@ -419,6 +424,9 @@ class Meeting(BaseApprovableModel):
 
     def __str__(self):
         return f"{self.title} on {self.start_time.date()}"
+    
+    def get_institution(self):
+        return self.institution
 
     @classmethod
     def get_report_data(cls, start_date, end_date, institution, **filters):
@@ -501,7 +509,7 @@ class Meeting(BaseApprovableModel):
             'conferenceData': {
                 'createRequest': {'requestId': f'meet-{self.id}', 'conferenceSolutionKey': {'type': 'hangoutsMeet'}}
             },
-            'attendees': [{'email': p.user.email} for p in self.participants.all()],
+            'attendees': [{'email': p.user.email} for p in self.participants.all() if p.user and p.user.email],
         }
         if self.is_recurring and self.recurrence_rule:
             event['recurrence'] = [self.recurrence_rule]
@@ -526,7 +534,7 @@ class Meeting(BaseApprovableModel):
                 start_time=self.start_time.isoformat(),
                 end_time=self.end_time.isoformat(),
                 recurrence=self._get_teams_recurrence() if self.is_recurring else None,
-                attendees=[p.user.email for p in self.participants.all()],
+                attendees=[p.user.email for p in self.participants.all() if p.user and p.user.email],
             )
             print(f"Teams meeting created: ID={teams_data['id']}, Join URL={teams_data['onlineMeeting']['joinUrl']}")
             self.calendar_event_id = teams_data['id']
@@ -611,7 +619,8 @@ class Meeting(BaseApprovableModel):
             self.online_link = self._get_institution_meeting_link()
             if self.online_link:
                 print(f"Updating meeting with online_link: {self.online_link}")
-                super().save()  # Update the instance with the new online_link and calendar_event_id
+                # Avoid recursive save by setting fields directly
+                Meeting.objects.filter(id=self.id).update(online_link=self.online_link, calendar_event_id=self.calendar_event_id)
 
     def _update_google_calendar_event(self, integration):
         print(f"Updating Google Calendar event for {self.title} (id: {self.id})")
@@ -638,7 +647,7 @@ class Meeting(BaseApprovableModel):
             'conferenceData': {
                 'createRequest': {'requestId': f'meet-{self.id}', 'conferenceSolutionKey': {'type': 'hangoutsMeet'}}
             },
-            'attendees': [{'email': p.user.email} for p in self.participants.all()],
+            'attendees': [{'email': p.user.email} for p in self.participants.all() if p.user and p.user.email],
         }
         if self.is_recurring and self.recurrence_rule:
             event['recurrence'] = [self.recurrence_rule]
@@ -652,6 +661,8 @@ class Meeting(BaseApprovableModel):
             ).execute()
             print(f"Google Calendar event updated: ID={updated_event['id']}, Hangout Link={updated_event.get('hangoutLink')}")
             self.online_link = updated_event.get('hangoutLink')
+            # Avoid recursive save
+            Meeting.objects.filter(id=self.id).update(online_link=self.online_link)
         except Exception as e:
             print(f"Error updating Google Calendar event: {e}")
             raise
@@ -671,6 +682,8 @@ class Meeting(BaseApprovableModel):
             )
             print(f"Zoom meeting updated: Join URL={zoom_data['join_url']}")
             self.online_link = zoom_data['join_url']
+            # Avoid recursive save
+            Meeting.objects.filter(id=self.id).update(online_link=self.online_link)
         except Exception as e:
             print(f"Error updating Zoom meeting: {e}")
             raise
@@ -687,27 +700,71 @@ class Meeting(BaseApprovableModel):
                 start_time=self.start_time.isoformat(),
                 end_time=self.end_time.isoformat(),
                 recurrence=self._get_teams_recurrence() if self.is_recurring else None,
-                attendees=[p.user.email for p in self.participants.all()],
+                attendees=[p.user.email for p in self.participants.all() if p.user and p.user.email],
             )
             print(f"Teams meeting updated: Join URL={teams_data['onlineMeeting']['joinUrl']}")
             self.online_link = teams_data['onlineMeeting']['joinUrl']
+            # Avoid recursive save
+            Meeting.objects.filter(id=self.id).update(online_link=self.online_link)
         except Exception as e:
             print(f"Error updating Teams meeting: {e}")
             raise
 
     def save(self, *args, **kwargs):
         print(f"Saving meeting: {self.title} (mode: {self.mode}, id: {self.id})")
-        # Save the instance first to ensure it has an id
+        is_new = self.pk is None        
         super().save(*args, **kwargs)
-        # Now handle online link generation for online/hybrid meetings
-        if self.mode in ['online', 'hybrid'] and not self.online_link:
+        # Handle online link generation for online/hybrid meetings
+        if is_new and self.mode in ['online', 'hybrid'] and not self.online_link:
             print("Generating online link for online/hybrid meeting")
             self.online_link = self._get_institution_meeting_link()
             if self.online_link:
                 print(f"Updating meeting with online_link: {self.online_link}")
-                super().save()  # Save again to store online_link and calendar_event_id
+                # Avoid recursive save
+                Meeting.objects.filter(id=self.id).update(online_link=self.online_link, calendar_event_id=self.calendar_event_id)
+
+        if is_new:
+            # Create announcement
+            announcement = Announcement.objects.create(
+                title=f"New Meeting: {self.title}",
+                content=f"""
+Meeting Details:
+Title: {self.title}
+Date: {self.start_time.date()}
+Time: {self.start_time.time()} - {self.end_time.time()}
+Mode: {self.mode.title()}
+{f"Location: {self.location}" if self.location else ""}
+{f"Online Link: {self.online_link}" if self.online_link else ""}
+{f"Agenda: {self.agenda}" if self.agenda else ""}
+                """,
+                requires_acknowledgment=True
+            )
+            announcement.target_employees.set(self.participants.all())
+            print(f"Created announcement for meeting: {self.title}")
+
+            # Prepare data for email notifications
+            participant_emails = [p.user.email for p in self.participants.all() if p.user and p.user.email]
+            print(f"Participant emails for notification: {participant_emails}")
+            meeting_data = {
+                'title': self.title,
+                'meeting_date': str(self.start_time.date()),
+                'meeting_time': f"{self.start_time.time()} - {self.end_time.time()}",
+                'meeting_mode': self.mode.title(),
+                'meeting_location': self.location or '',
+                'meeting_online_link': self.online_link or '',
+                'meeting_agenda': self.agenda or '',
+                'organizer_name': self.organizer.name if self.organizer else 'Meeting Organizer',
+            }
+            
+            try:
+                send_meeting_notification_email.delay(self.id, participant_emails, meeting_data)
+                print(f"Triggered Celery task to send emails for meeting {self.title}")
+            except Exception as e:
+                print(f"Error triggering Celery email task for meeting {self.title}: {str(e)}")
+
         print("Meeting saved, syncing to calendar")
-        self._sync_to_calendar()
+        if not is_new:  # Only sync for updates, as new meetings handle online_link above
+            self._sync_to_calendar()
 
 class PerformanceConcernType(BaseApprovableModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
