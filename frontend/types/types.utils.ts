@@ -144,6 +144,23 @@ export interface IPaginatedResponse<T> {
 	results: T[];
 }
 
+export interface Stage {
+	id: number;
+	stage_name: string;
+	status: string;
+	position: number;
+	notes?: string;
+}
+
+export interface StageReorderModalProps {
+	isOpen: boolean;
+	separationId: number;
+	stages: Stage[];
+	employeeName: string;
+	onClose: () => void;
+	onSuccess: (updatedStages: Stage[]) => void;
+}
+
 export type OffboardingData = {
 	separation_counts: {
 		planned: number;

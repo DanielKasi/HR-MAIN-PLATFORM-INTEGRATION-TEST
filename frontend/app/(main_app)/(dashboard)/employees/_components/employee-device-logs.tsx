@@ -23,23 +23,25 @@ export default function EmployeeDevicesLogs({
 	search,
 }: EmployeeDevicesLogsProps) {
 	const refreshFunctionRef = refreshRef || useRef<(() => void) | null>(null);
-	const [columns, setColumns] = useState<ColumnDef<IEmployeeLog>[]>([
-		{
-			key: "employee",
-			header: "Employee",
-			cell: (employee_log) => (
-				<div className="flex-col items-start justify-start gap-4">
-					<p>{employee_log.employee.name}</p>
-					<p>
-						(
-						<span className="text-sm font-semibold line-clamp-1">
-							{employee_log.employee.position}
-						</span>
-						)
-					</p>
-				</div>
-			),
-		},
+	const columns: ColumnDef<IEmployeeLog>[] = [
+		...(employee
+			? [
+					{
+						key: "employee",
+						header: "Employee",
+						cell: (employee_log: IEmployeeLog) => (
+							<div className="flex-col items-start justify-start gap-4">
+								<p>{employee_log.employee.name}</p>
+								<p>
+									<span className="text-sm font-semibold line-clamp-1">
+										({employee_log.employee.position})
+									</span>
+								</p>
+							</div>
+						),
+					},
+				]
+			: []),
 		{
 			key: "record_reference",
 			header: "Record Reference",
@@ -62,7 +64,7 @@ export default function EmployeeDevicesLogs({
 			header: "Time",
 			cell: (employee_log) => employee_log.time,
 		},
-	]);
+	];
 
 	const memoizedDeps = useMemo(() => [employee, device, search], [employee, device, search]);
 

@@ -180,7 +180,7 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 				columns={columns}
 				skeletonRows={5}
 				emptyState={
-					<div className="text-center py-12">
+					<div className="flex flex-col items-center justify-center py-12">
 						<Icon
 							icon="hugeicons:biometric-device"
 							className="!w-12 !h-12 text-muted-foreground mb-4"
