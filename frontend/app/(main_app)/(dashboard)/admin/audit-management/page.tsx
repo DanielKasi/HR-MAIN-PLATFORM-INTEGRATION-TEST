@@ -96,6 +96,25 @@ const extractDisplayName = (value: any): string => {
 	return String(value);
 };
 
+const extractAssetName = (value: any): string => {
+	if (!value) return "Unknown Asset";
+
+	if (typeof value === "string") {
+		try {
+			const parsed = JSON.parse(value);
+			return parsed.name || parsed.title || parsed.display_name || "Unknown Asset";
+		} catch {
+			return value;
+		}
+	}
+
+	if (typeof value === "object") {
+		return value.name || value.title || value.display_name || "Unknown Asset";
+	}
+
+	return String(value);
+};
+
 const extractUserName = (value: any): string => {
 	if (!value) return "System";
 
@@ -241,16 +260,16 @@ export default function AuditLogsPage() {
 		});
 	};
 
-	const getActionColor = useCallback((action: string) => {
+	const getActionBadgeVariant = useCallback((action: string) => {
 		switch (action.toUpperCase()) {
 			case "CREATE":
-				return "bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20";
+				return "success";
 			case "UPDATE":
-				return "bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20";
+				return "info";
 			case "DELETE":
-				return "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20";
+				return "destructive";
 			default:
-				return "bg-gray-500/10 text-gray-600 hover:bg-gray-500/20";
+				return "default";
 		}
 	}, []);
 
@@ -513,6 +532,7 @@ export default function AuditLogsPage() {
 							const isLastItem = index === auditLogs.length - 1;
 
 							// Extract clean display names
+							const assetName = extractAssetName(log.content_object);
 							const displayName = extractDisplayName(log.content_object);
 							const userName = extractUserName(log.user);
 
@@ -529,17 +549,11 @@ export default function AuditLogsPage() {
 
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center gap-2 flex-wrap">
-												<Badge
-													className={cn(
-														"text-xs font-medium px-2 py-0.5 rounded",
-														getActionColor(log.action),
-													)}
-												>
+												<span className="text-sm font-medium text-gray-900">{assetName}</span>
+												<Badge variant={getActionBadgeVariant(log.action)}>
 													{log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()}
 												</Badge>
 												<span className="text-sm text-gray-600">By {userName}</span>
-												<span className="text-sm font-medium text-gray-900">{displayName}</span>
-												<span className="text-xs text-gray-500">(ID: {log.object_id})</span>
 											</div>
 
 											<div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
@@ -554,7 +568,7 @@ export default function AuditLogsPage() {
 										<div className="ml-6 bg-[#F4F4F9] rounded-lg">
 											<button
 												onClick={() => toggleLog(log.id)}
-												className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 mb-2 p-4 pb-2"
+												className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 mb-2 pt-3 pl-3 pb-3"
 											>
 												{isExpanded ? (
 													<ChevronUp className="h-4 w-4" />
@@ -569,8 +583,8 @@ export default function AuditLogsPage() {
 													{/* Description Section */}
 													{log.description && (
 														<div className="space-y-2">
-															<div className="text-xs font-medium text-gray-700">Description</div>
-															<div className="text-sm text-gray-900  p-2 rounded-md">
+															<div className="text-xs font-medium text-gray-500">Description</div>
+															<div className="text-sm text-gray-900 rounded-md">
 																{log.description}
 															</div>
 														</div>
