@@ -157,7 +157,7 @@ class TicketSerializer(serializers.ModelSerializer):
                 )
             except Exception as e:
                 raise serializers.ValidationError(
-                    {"new_attachments": f"Failed to create attachment: {str(e)}"}
+                    {"error": f"Failed to create attachment: {str(e)}"}
                 )
 
         return ticket
@@ -188,7 +188,7 @@ class TicketSerializer(serializers.ModelSerializer):
                 )
             except Exception as e:
                 raise serializers.ValidationError(
-                    {"new_comments": f"Failed to create comment: {str(e)}"}
+                    {"error": f"Failed to create comment: {str(e)}"}
                 )
 
         for attachment_file in new_attachments:
@@ -200,7 +200,7 @@ class TicketSerializer(serializers.ModelSerializer):
                 )
             except Exception as e:
                 raise serializers.ValidationError(
-                    {"new_attachments": f"Failed to create attachment: {str(e)}"}
+                    {"error": f"Failed to create attachment: {str(e)}"}
                 )
 
         return instance
