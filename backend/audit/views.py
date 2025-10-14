@@ -58,7 +58,8 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
             )
 
         data = AuditLog.objects.filter(
-            institution=institution
+            institution=institution,
+            content_object__isnull=False
         ).order_by("-timestamp")
 
         if search_query:
