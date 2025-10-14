@@ -3,24 +3,22 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+
 import {
 	Search,
-	Calendar,
-	User,
 	FileText,
-	Eye,
 	RefreshCw,
-	Plus,
 	Loader2,
 	ArrowLeft,
-	Edit,
-	Trash2,
 	ChevronDown,
 	ChevronUp,
+	Clock,
+	ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Select,
 	SelectContent,
@@ -28,19 +26,16 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 import apiRequest from "@/lib/apiRequest";
 import { IPaginatedResponse } from "@/types/types.utils";
+
+// --- Interfaces ---
 
 interface IAuditLog {
 	id: number;
@@ -50,15 +45,170 @@ interface IAuditLog {
 	object_id: number;
 	action: "CREATE" | "UPDATE" | "DELETE";
 	timestamp: string;
-	changes: string;
+	changes: string | any;
 	description: string;
 	content_type: number;
 }
+
+// --- Utility Functions ---
+
+const safeStringify = (value: any): string => {
+	if (value === undefined || value === null) {
+		return "N/A";
+	}
+
+	if (typeof value === "object") {
+		try {
+			return JSON.stringify(value, null, 2);
+		} catch (e) {
+			console.error("Failed to stringify object:", value, e);
+			return "[Unserializable Object]";
+		}
+	}
+
+	if (typeof value === "boolean") {
+		return value ? "true" : "false";
+	}
+
+	if (typeof value === "number") {
+		return value.toString();
+	}
+
+	return String(value);
+};
+
+const extractDisplayName = (value: any): string => {
+	if (!value) return "N/A";
+
+	if (typeof value === "string") {
+		try {
+			const parsed = JSON.parse(value);
+			return parsed.display_name || parsed.type || parsed.email || parsed.full_name || value;
+		} catch {
+			return value;
+		}
+	}
+
+	if (typeof value === "object") {
+		return value.display_name || value.type || value.email || value.full_name || "N/A";
+	}
+
+	return String(value);
+};
+
+const extractUserName = (value: any): string => {
+	if (!value) return "System";
+
+	if (typeof value === "string") {
+		try {
+			const parsed = JSON.parse(value);
+			return parsed.full_name || parsed.email || parsed.username || value;
+		} catch {
+			return value;
+		}
+	}
+
+	if (typeof value === "object") {
+		return value.full_name || value.email || value.username || "Unknown User";
+	}
+
+	return String(value);
+};
+
+const parseChanges = (
+	changes: IAuditLog["changes"],
+	action: IAuditLog["action"],
+): Record<string, { old: any; new: any }> => {
+	if (!changes) {
+		return {};
+	}
+
+	let changesObj: Record<string, any>;
+
+	if (typeof changes === "string") {
+		try {
+			changesObj = JSON.parse(changes);
+		} catch (e) {
+			console.error("Failed to parse changes JSON:", e);
+			return {};
+		}
+	} else if (typeof changes === "object" && changes !== null) {
+		changesObj = changes;
+	} else {
+		return {};
+	}
+
+	if (typeof changesObj !== "object" || changesObj === null) {
+		return {};
+	}
+
+	const parsedChanges: Record<string, { old: any; new: any }> = {};
+
+	// Handle different change formats
+	if (Array.isArray(changesObj)) {
+		// If it's an array format, process each item
+		changesObj.forEach((change, index) => {
+			if (change && typeof change === "object") {
+				parsedChanges[`Change ${index + 1}`] = {
+					old: safeStringify(change.old !== undefined ? change.old : change.from),
+					new: safeStringify(change.new !== undefined ? change.new : change.to),
+				};
+			}
+		});
+	} else {
+		// Handle object format
+		Object.entries(changesObj).forEach(([field, values]) => {
+			const normalizedField = field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, " ");
+
+			let oldValue: any = null;
+			let newValue: any = null;
+
+			try {
+				if (Array.isArray(values) && values.length === 2) {
+					// Standard format: [old_value, new_value]
+					oldValue = values[0];
+					newValue = values[1];
+				} else if (typeof values === "object" && values !== null) {
+					// Object format with old/new properties
+					oldValue = (values as any).old || (values as any).from;
+					newValue = (values as any).new || (values as any).to;
+				} else if (action === "CREATE") {
+					// CREATE: The value is the "new" value
+					oldValue = null;
+					newValue = values;
+				} else if (action === "DELETE") {
+					// DELETE: The value is the "old" value being deleted
+					oldValue = values;
+					newValue = null;
+				} else {
+					// Fallback - treat as single value
+					oldValue = values;
+					newValue = null;
+				}
+			} catch (error) {
+				console.error(`Error processing field ${field}:`, error);
+				oldValue = "Error processing value";
+				newValue = "Error processing value";
+			}
+
+			parsedChanges[normalizedField] = {
+				old: oldValue,
+				new: newValue,
+			};
+		});
+	}
+
+	return parsedChanges;
+};
+
+// --- Component ---
+
 export default function AuditLogsPage() {
 	const router = useRouter();
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	useDocumentTitle("AUDIT LOGS");
 
+	// --- State ---
 	const [auditLogs, setAuditLogs] = useState<IAuditLog[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [initialLoad, setInitialLoad] = useState(true);
@@ -66,6 +216,7 @@ export default function AuditLogsPage() {
 	const [nextUrl, setNextUrl] = useState<string | null>(null);
 	const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
+	// Filter and Search State
 	const [searchTerm, setSearchTerm] = useState("");
 	const [actionFilter, setActionFilter] = useState("all");
 	const [contentTypeFilter, setContentTypeFilter] = useState("all");
@@ -73,25 +224,53 @@ export default function AuditLogsPage() {
 	const [dateTo, setDateTo] = useState("");
 	const [ordering, setOrdering] = useState("-timestamp");
 
+	// Infinite Scroll Refs
 	const observerRef = useRef<IntersectionObserver | null>(null);
 	const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-	// --- Toggle log expansion ---
+	// --- Utility Functions ---
 	const toggleLog = (id: number) => {
-		const newExpanded = new Set(expandedLogs);
-		if (newExpanded.has(id)) {
-			newExpanded.delete(id);
-		} else {
-			newExpanded.add(id);
+		setExpandedLogs((prev) => {
+			const newExpanded = new Set(prev);
+			if (newExpanded.has(id)) {
+				newExpanded.delete(id);
+			} else {
+				newExpanded.add(id);
+			}
+			return newExpanded;
+		});
+	};
+
+	const getActionColor = useCallback((action: string) => {
+		switch (action.toUpperCase()) {
+			case "CREATE":
+				return "bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20";
+			case "UPDATE":
+				return "bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20";
+			case "DELETE":
+				return "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20";
+			default:
+				return "bg-gray-500/10 text-gray-600 hover:bg-gray-500/20";
 		}
-		setExpandedLogs(newExpanded);
+	}, []);
+
+	const getDotColor = (action: string) => {
+		return "bg-gray-400";
+	};
+
+	const formatTimestamp = (timestamp: string) => {
+		const date = new Date(timestamp);
+		return {
+			date: date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+			time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+		};
 	};
 
 	// --- Data Fetching Logic ---
 	const fetchAuditLogs = useCallback(
 		async (isInitial = false) => {
 			if (!currentInstitution) return;
-			if (loading) return;
+			if (loading && !isInitial) return;
 			if (!isInitial && !hasMore) return;
 
 			try {
@@ -102,10 +281,11 @@ export default function AuditLogsPage() {
 					const params = new URLSearchParams();
 					if (searchTerm) params.append("search", searchTerm);
 					if (actionFilter !== "all") params.append("action", actionFilter);
-					if (contentTypeFilter !== "all") params.append("content_type", contentTypeFilter);
+					if (contentTypeFilter !== "all") params.append("content_type__model", contentTypeFilter);
 					if (dateFrom) params.append("date_from", dateFrom);
 					if (dateTo) params.append("date_to", dateTo);
 					if (ordering) params.append("ordering", ordering);
+					params.append("institution_id", String(currentInstitution.id));
 					url = `/audit/institutions/audit-logs/?${params.toString()}`;
 				} else {
 					url = nextUrl;
@@ -144,7 +324,7 @@ export default function AuditLogsPage() {
 		],
 	);
 
-	// Initial fetch and refetch on filter changes
+	// Initial fetch and refetch on filter/sort changes
 	useEffect(() => {
 		if (currentInstitution) {
 			setAuditLogs([]);
@@ -154,17 +334,9 @@ export default function AuditLogsPage() {
 			fetchAuditLogs(true);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [
-		currentInstitution?.id,
-		searchTerm,
-		actionFilter,
-		contentTypeFilter,
-		dateFrom,
-		dateTo,
-		ordering,
-	]);
+	}, [currentInstitution, searchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo, ordering]);
 
-	// Infinite scroll observer
+	// Infinite scroll observer setup
 	useEffect(() => {
 		if (loading || !hasMore || !loadMoreRef.current) return;
 
@@ -199,44 +371,11 @@ export default function AuditLogsPage() {
 		fetchAuditLogs(true);
 	};
 
-	// --- Utility Functions ---
-	const getActionColor = useCallback((action: string) => {
-		switch (action) {
-			case "CREATE":
-				return "bg-green-100 text-green-800";
-			case "UPDATE":
-				return "bg-blue-100 text-blue-800";
-			case "DELETE":
-				return "bg-red-100 text-red-800";
-			default:
-				return "bg-gray-100 text-gray-800";
-		}
-	}, []);
-
-	const formatTimestamp = (timestamp: string) => {
-		const date = new Date(timestamp);
-		return {
-			date: date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-			time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
-		};
-	};
-
-	const handleViewDetails = (log: IAuditLog) => {
-		showSuccessToast(`Viewing details for ${log.content_object}`);
-	};
-
-	const parseChanges = (changesStr: string) => {
-		try {
-			const changesObj = JSON.parse(changesStr);
-			return Object.entries(changesObj).map(([field, values]) => ({
-				field: field.charAt(0).toUpperCase() + field.slice(1),
-				from: Array.isArray(values) ? String(values[0] ?? "null") : String(values),
-				to: Array.isArray(values) ? String(values[1] ?? "null") : String(values),
-			}));
-		} catch {
-			return [];
-		}
-	};
+	// // Debug function to see the actual changes structure
+	// const debugChanges = (log: IAuditLog) => {
+	//     console.log('Raw changes:', log.changes);
+	//     console.log('Parsed changes:', parseChanges(log.changes, log.action));
+	// };
 
 	// --- Render ---
 	return (
@@ -256,20 +395,22 @@ export default function AuditLogsPage() {
 				</div>
 
 				{/* Search and Filters */}
-				<div className="mb-6 flex items-center gap-4 flex-wrap">
-					<div className="relative flex-1 max-w-xs">
+				<div className="mb-6 flex flex-wrap items-center gap-4">
+					<div className="relative flex-1 max-w-xs min-w-[200px]">
 						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							type="text"
-							placeholder="Search"
+							placeholder="Search user, object, or description..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 							className="pl-9"
 						/>
 					</div>
-					<div className="ml-auto flex items-center gap-2 flex-wrap">
+
+					<div className="ml-auto flex flex-wrap items-center gap-2">
+						{/* Action Filter */}
 						<Select value={actionFilter} onValueChange={setActionFilter}>
-							<SelectTrigger className="w-[150px] focus-visible:ring-0 focus-visible:ring-offset-0">
+							<SelectTrigger className="w-[150px]">
 								<SelectValue placeholder="Action" />
 							</SelectTrigger>
 							<SelectContent>
@@ -280,8 +421,9 @@ export default function AuditLogsPage() {
 							</SelectContent>
 						</Select>
 
+						{/* Content Type Filter */}
 						<Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
-							<SelectTrigger className="w-[180px] focus-visible:ring-0 focus-visible:ring-offset-0">
+							<SelectTrigger className="w-[180px]">
 								<SelectValue placeholder="Content Type" />
 							</SelectTrigger>
 							<SelectContent>
@@ -294,25 +436,25 @@ export default function AuditLogsPage() {
 							</SelectContent>
 						</Select>
 
-						<div className="flex gap-2">
-							<Input
-								type="date"
-								value={dateFrom}
-								onChange={(e) => setDateFrom(e.target.value)}
-								className="w-[150px] focus-visible:ring-0 focus-visible:ring-offset-0"
-								placeholder="From"
-							/>
-							<Input
-								type="date"
-								value={dateTo}
-								onChange={(e) => setDateTo(e.target.value)}
-								className="w-[150px] focus-visible:ring-0 focus-visible:ring-offset-0"
-								placeholder="To"
-							/>
-						</div>
+						{/* Date Range Filters */}
+						<Input
+							type="date"
+							value={dateFrom}
+							onChange={(e) => setDateFrom(e.target.value)}
+							className="w-[150px] min-w-0"
+							placeholder="From Date"
+						/>
+						<Input
+							type="date"
+							value={dateTo}
+							onChange={(e) => setDateTo(e.target.value)}
+							className="w-[150px] min-w-0"
+							placeholder="To Date"
+						/>
 
+						{/* Ordering/Sort */}
 						<Select value={ordering} onValueChange={setOrdering}>
-							<SelectTrigger className="w-[150px] focus-visible:ring-0 focus-visible:ring-offset-0">
+							<SelectTrigger className="w-[150px]">
 								<SelectValue placeholder="Sort by" />
 							</SelectTrigger>
 							<SelectContent>
@@ -320,17 +462,18 @@ export default function AuditLogsPage() {
 								<SelectItem value="timestamp">Oldest First</SelectItem>
 								<SelectItem value="action">Action (A-Z)</SelectItem>
 								<SelectItem value="-action">Action (Z-A)</SelectItem>
-								<SelectItem value="user__email">User (A-Z)</SelectItem>
-								<SelectItem value="-user__email">User (Z-A)</SelectItem>
+								<SelectItem value="user">User (A-Z)</SelectItem>
+								<SelectItem value="-user">User (Z-A)</SelectItem>
 							</SelectContent>
 						</Select>
 
+						{/* Refresh Button */}
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-9 w-9"
+							className="h-9 w-9 flex-shrink-0"
 							onClick={handleRefresh}
-							disabled={loading && auditLogs.length === 0}
+							disabled={loading}
 						>
 							<RefreshCw
 								className={`h-4 w-4 ${loading && auditLogs.length === 0 ? "animate-spin" : ""}`}
@@ -341,132 +484,149 @@ export default function AuditLogsPage() {
 
 				{/* Audit Logs Timeline */}
 				{initialLoad && loading ? (
-					<TableSkeleton rows={10} columns={1} />
+					<div className="space-y-4">
+						{[1, 2, 3].map((i) => (
+							<div key={i} className="flex gap-3">
+								<Skeleton className="h-3 w-3 rounded-full flex-shrink-0 mt-1" />
+								<div className="flex-1 space-y-2">
+									<Skeleton className="h-4 w-3/4" />
+									<Skeleton className="h-3 w-1/2" />
+								</div>
+							</div>
+						))}
+					</div>
 				) : auditLogs.length === 0 ? (
-					<div className="text-center py-12">
-						<FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-						<p className="text-muted-foreground">No audit logs found</p>
+					<div className="p-8 text-center rounded-lg border border-dashed border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+						<div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 mb-3">
+							<Clock className="h-5 w-5 text-gray-400" />
+						</div>
+						<p className="text-sm font-medium text-gray-900">No activity yet</p>
+						<p className="text-xs text-gray-500 mt-1">Changes will appear here</p>
 					</div>
 				) : (
-					<div className="relative">
+					<div className={cn("space-y-6")}>
 						{auditLogs.map((log, index) => {
 							const { date, time } = formatTimestamp(log.timestamp);
-							const changes = parseChanges(log.changes);
+							const changes = parseChanges(log.changes, log.action);
+							const hasChanges = changes && Object.keys(changes).length > 0;
 							const isExpanded = expandedLogs.has(log.id);
+							const isLastItem = index === auditLogs.length - 1;
+
+							// Extract clean display names
+							const displayName = extractDisplayName(log.content_object);
+							const userName = extractUserName(log.user);
 
 							return (
-								<div key={log.id} className="relative flex gap-4">
-									{/* Timeline indicator */}
-									<div className="relative flex flex-col items-center">
-										<div className="h-3 w-3 rounded-full bg-gray-400" />
-										{index < auditLogs.length - 1 && (
-											<div className="w-px flex-1 bg-gray-300 min-h-[80px]" />
-										)}
+								<div key={log.id} className="relative space-y-3 ml-8 mt-10">
+									{!isLastItem && (
+										<div className="absolute left-[5px] top-6 bottom-0 w-px bg-gray-300" />
+									)}
+
+									<div className="flex items-start gap-3 relative">
+										<div className="flex-shrink-0 mt-1 relative z-10">
+											<div className={cn("h-3 w-3 rounded-full", getDotColor(log.action))} />
+										</div>
+
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center gap-2 flex-wrap">
+												<Badge
+													className={cn(
+														"text-xs font-medium px-2 py-0.5 rounded",
+														getActionColor(log.action),
+													)}
+												>
+													{log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()}
+												</Badge>
+												<span className="text-sm text-gray-600">By {userName}</span>
+												<span className="text-sm font-medium text-gray-900">{displayName}</span>
+												<span className="text-xs text-gray-500">(ID: {log.object_id})</span>
+											</div>
+
+											<div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+												<span>{date}</span>
+												<span>•</span>
+												<span>{time}</span>
+											</div>
+										</div>
 									</div>
 
-									{/* Log content */}
-									<div className="flex-1 pb-8">
-										<div className="flex items-center gap-2 mb-1 flex-wrap">
-											<span className="font-medium text-sm">{log.content_object}</span>
-											<Badge className={getActionColor(log.action)}>{log.action}</Badge>
-											<span className="text-sm text-muted-foreground">{log.user}</span>
-										</div>
-										<div className="text-xs text-muted-foreground mb-3">
-											{date} • {time}
-										</div>
-
-										{/* Details section */}
-										<div className="border border-border rounded-lg overflow-hidden">
+									{(hasChanges || log.description) && (
+										<div className="ml-6 bg-[#F4F4F9] rounded-lg">
 											<button
 												onClick={() => toggleLog(log.id)}
-												className="flex w-full items-center gap-2 bg-muted/30 px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 transition-colors"
+												className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 mb-2 p-4 pb-2"
 											>
 												{isExpanded ? (
 													<ChevronUp className="h-4 w-4" />
 												) : (
 													<ChevronDown className="h-4 w-4" />
 												)}
-												Details
+												<span>Details</span>
 											</button>
 
 											{isExpanded && (
-												<div className="bg-muted/20 px-4 py-4 space-y-4">
-													<div>
-														<h4 className="text-sm font-medium mb-2">Description</h4>
-														<p className="text-sm text-muted-foreground">{log.description}</p>
-													</div>
-
-													{changes.length > 0 && (
-														<div>
-															<h4 className="text-sm font-medium mb-3">Changes</h4>
-															<div className="space-y-3">
-																{changes.map((change, idx) => (
-																	<div key={idx} className="flex items-center gap-4">
-																		<div className="min-w-0">
-																			<div className="text-xs text-muted-foreground mb-1">
-																				{change.field}:
-																			</div>
-																			<div className="text-sm font-medium truncate">
-																				{change.from}
-																			</div>
-																		</div>
-																		<div className="flex items-center flex-shrink-0">
-																			<div className="h-px w-8 bg-yellow-400" />
-																			<div className="h-0 w-0 border-y-4 border-l-4 border-y-transparent border-l-yellow-400" />
-																		</div>
-																		<div className="min-w-0">
-																			<div className="text-xs text-muted-foreground mb-1">
-																				{change.field}:
-																			</div>
-																			<div className="text-sm font-medium truncate">
-																				{change.to}
-																			</div>
-																		</div>
-																	</div>
-																))}
+												<div className="p-4 space-y-4 pt-0">
+													{/* Description Section */}
+													{log.description && (
+														<div className="space-y-2">
+															<div className="text-xs font-medium text-gray-700">Description</div>
+															<div className="text-sm text-gray-900  p-2 rounded-md">
+																{log.description}
 															</div>
 														</div>
 													)}
 
-													<div className="flex gap-2 pt-2">
-														<Button
-															variant="outline"
-															size="sm"
-															onClick={() => handleViewDetails(log)}
-														>
-															<Eye className="h-4 w-4 mr-2" />
-															View Full Details
-														</Button>
-														<Button
-															variant="outline"
-															size="sm"
-															onClick={() => {
-																navigator.clipboard.writeText(JSON.stringify(log, null, 2));
-																showSuccessToast("Copied to clipboard");
-															}}
-														>
-															<FileText className="h-4 w-4 mr-2" />
-															Copy Log Data
-														</Button>
-													</div>
+													{/* Changes Section */}
+													{hasChanges &&
+														Object.entries(changes).map(([field, change]: [string, any]) => (
+															<div key={field} className="space-y-2">
+																<div className="text-xs font-medium text-gray-700">{field}:</div>
+																<div className="flex items-center gap-2">
+																	<div className="flex-1">
+																		<div className="text-xs text-gray-500 mb-1">Previous:</div>
+																		<div className="text-sm text-gray-900  p-2 rounded-md">
+																			{change.old !== null &&
+																			change.old !== undefined &&
+																			change.old !== "N/A" ? (
+																				safeStringify(change.old)
+																			) : (
+																				<span className="text-gray-400 italic">Empty</span>
+																			)}
+																		</div>
+																	</div>
+																	<div className="flex items-center gap-0 flex-shrink-0">
+																		<div className="h-px w-16 bg-[#848496] rounded-full" />
+																		<ArrowRight className="h-4 w-4 text-[#848496] -ml-1" />
+																	</div>
+																	<div className="flex-1">
+																		<div className="text-xs text-gray-500 mb-1">Current:</div>
+																		<div className="text-sm font-medium text-gray-900  p-2 rounded-md">
+																			{change.new !== null &&
+																			change.new !== undefined &&
+																			change.new !== "N/A" ? (
+																				safeStringify(change.new)
+																			) : (
+																				<span className="text-gray-400 italic">Empty</span>
+																			)}
+																		</div>
+																	</div>
+																</div>
+															</div>
+														))}
 												</div>
 											)}
 										</div>
-									</div>
+									)}
 								</div>
 							);
 						})}
 
-						{/* Loading/End Indicator */}
-						<div ref={loadMoreRef} className="flex justify-center py-4">
-							{loading && (
-								<div className="flex items-center gap-2 text-muted-foreground">
-									<Loader2 className="h-5 w-5 animate-spin" />
-									<span>Loading...</span>
+						<div ref={loadMoreRef} className="flex justify-center pt-4">
+							{loading && auditLogs.length > 0 && (
+								<div className="flex items-center gap-2 text-xs text-gray-500">
+									<div className="h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+									Loading more entries...
 								</div>
-							)}
-							{!hasMore && auditLogs.length > 0 && (
-								<div className="text-sm text-muted-foreground">End of logs reached.</div>
 							)}
 						</div>
 					</div>
