@@ -50,7 +50,7 @@ export interface IWorkHourCount {
 export interface IEmployeeLog {
 	id: number;
 	employee: { id: number; name: string; position: string; employee_id: string };
-	device: { id: number; name: string };
+	device: { name: string; serial_number: string };
 	record_reference: string;
 	date: string;
 	time: string;

@@ -144,13 +144,13 @@ export interface IPaginatedResponse<T> {
 	results: T[];
 }
 
-export interface Stage {
-	id: number;
-	stage_name: string;
-	status: string;
-	position: number;
-	notes?: string;
-}
+// export interface Stage {
+// 	id: number;
+// 	stage_name: string;
+// 	status: string;
+// 	position: number;
+// 	notes?: string;
+// }
 
 export interface StageReorderModalProps {
 	isOpen: boolean;
