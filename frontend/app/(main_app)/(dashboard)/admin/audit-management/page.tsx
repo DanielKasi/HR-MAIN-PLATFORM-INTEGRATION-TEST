@@ -6,9 +6,7 @@ import { useSelector } from "react-redux";
 
 import {
 	Search,
-	FileText,
 	RefreshCw,
-	Loader2,
 	ArrowLeft,
 	ChevronDown,
 	ChevronUp,
@@ -27,9 +25,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { showErrorToast, showSuccessToast } from "@/lib/utils";
+import { showErrorToast } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 import apiRequest from "@/lib/apiRequest";
@@ -81,10 +78,9 @@ const extractDisplayName = (value: any): string => {
 };
 
 const extractAssetName = (log: IAuditLog): string => {
-	const value = log.content_object;
+	const value: any = log.content_object;
 
 	if (!value) {
-		// Fallback to parsing description if content_object is missing
 		if (log.description) {
 			const parts = log.description.split("for ");
 			if (parts.length > 1) {
