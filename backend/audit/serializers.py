@@ -34,13 +34,8 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
 
     def get_institution(self, obj):
-        content_obj = obj.content_object
-        if not content_obj:
-            return None
-        institution = getattr(content_obj, 'institution', None)
-        if not institution:
-            return None 
+        institution = obj.institution
         return {
             'id': institution.id,
-            'name': institution.name
-        }
+            'name': institution.institution_name
+        } if institution else None
