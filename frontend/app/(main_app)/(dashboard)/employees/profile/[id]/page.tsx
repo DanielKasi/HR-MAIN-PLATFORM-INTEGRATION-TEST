@@ -56,13 +56,11 @@ import type {
 import { toast } from "sonner";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
-import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { formatCurrency, getCurrentUserLocation, getFileUrl } from "@/lib/helpers";
+import { formatCurrency, formatDate, getFileUrl } from "@/lib/helpers";
 import { useMobile } from "@/hooks/use-mobile";
 import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
 import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
 import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 import { EmployeeBonusPointsTable } from "@/components/performance/bonus-points/bonus-points-table";
 import FixedLoader from "@/components/fixed-loader";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,7 +71,8 @@ import SingleEmployeeAttendance from "@/components/attendance/single-employee-at
 import EmployeeDocumentRequestsTable from "../../_components/employee-document-requests-table";
 import EmployeeSignatures from "@/components/employee/employee-signature";
 import EmployeeDevices from "../../_components/employee-devices";
-import EmployeeDevicesLogs from "../../_components/employee-device-logs";
+import DevicesLogsTable from "../../logs/_components/device-logs-table";
+import EmployeeDevicesLogs from "../../_components/employee-device-log";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -133,15 +132,6 @@ export default function EmployeeProfile() {
 	const isMobile = useMobile();
 
 	const selectedInstitution = useSelector(selectSelectedInstitution);
-
-	const formatDate = useCallback((dateString: string | null) => {
-		if (!dateString) return null;
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-		});
-	}, []);
 
 	const getMaritalStatusLabel = useCallback((status: IMaritalStatus) => {
 		if (!status) return null;
@@ -1559,8 +1549,6 @@ export default function EmployeeProfile() {
 														)}
 													</div>
 												)}
-
-												{/* EmployeeDevicesLogs */}
 											</CardContent>
 										</Card>
 									</div>

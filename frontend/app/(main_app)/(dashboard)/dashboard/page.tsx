@@ -23,6 +23,8 @@ import EmployeeAttendance from "@/components/attendance/employee-attendance";
 import { USER_GENDER } from "@/types/user.types";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import AnnouncementCarousel from "@/components/dashboard_components/announcements-carousel";
+import BarHChart from "../analytics/_components/barh.chart";
+import colors from "../analytics/_components/colors";
 
 export default function Dashboard() {
 	const [data, setData] = useState<IInstitutionAnalytics | null>(null);
@@ -152,22 +154,6 @@ export default function Dashboard() {
 								<MetricCards data={data?.basic_counts} onRefresh={refreshData} loading={loading} />
 							</div>
 						</div>
-
-						{/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-							<Card className="bg-primary/10 shadow-sm border-none">
-								<CardContent className="p-6">
-									<div className="flex items-center gap-3 mb-2">
-										<div className="w-8 h-8 text-primary/80 rounded-lg flex items-center justify-center">
-											<Icon icon="hugeicons:payment-success-02" className="!w-7 !h-7" />
-										</div>
-										<span className="text-xs md:text-sm text-gray-600">Payroll this Month</span>
-									</div>
-									<p className="text-2xl font-bold text-gray-900">
-										{currentPayroll.toLocaleString()}
-									</p>
-								</CardContent>
-							</Card>
-						</div> */}
 
 						{/* Payroll Chart */}
 						<PayrollChart
