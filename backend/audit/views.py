@@ -3,13 +3,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiTypes
-from django.utils.decorators import method_decorator
 from django.db.models import Q
 from audit.models import AuditLog
 from institution.models import Institution
 from .serializers import AuditLogSerializer
 from utilities.sortable_api import SortableAPIMixin
 from utilities.pagination import CustomPageNumberPagination
+from django.utils.dateparse import parse_date
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 
@@ -77,14 +78,11 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
             'institutionpenaltyconfig', 'branchpenaltyconfig', 'branchlocationcomparisonconfig'
         ]
         
-        from django.contrib.contenttypes.models import ContentType
         content_types = ContentType.objects.filter(model__in=institution_related_models)
         
         # Get audit logs for these content types
         logs = AuditLog.objects.filter(content_type__in=content_types)
         
-        # Filter by institution-related objects
-        from django.db.models import Q
         query = Q()
         
         for content_type_obj in content_types:
@@ -125,7 +123,6 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
 
         if date_from:
             try:
-                from django.utils.dateparse import parse_date
                 parsed_date = parse_date(date_from)
                 if parsed_date:
                     logs = logs.filter(timestamp__date__gte=parsed_date)
@@ -137,7 +134,6 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
 
         if date_to:
             try:
-                from django.utils.dateparse import parse_date
                 parsed_date = parse_date(date_to)
                 if parsed_date:
                     logs = logs.filter(timestamp__date__lte=parsed_date)
