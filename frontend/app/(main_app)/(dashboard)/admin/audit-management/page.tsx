@@ -241,7 +241,6 @@ export default function AuditLogsPage() {
 	const [contentTypeFilter, setContentTypeFilter] = useState("all");
 	const [dateFrom, setDateFrom] = useState("");
 	const [dateTo, setDateTo] = useState("");
-	const [ordering, setOrdering] = useState("-timestamp");
 
 	// Infinite Scroll Refs
 	const observerRef = useRef<IntersectionObserver | null>(null);
@@ -303,7 +302,6 @@ export default function AuditLogsPage() {
 					if (contentTypeFilter !== "all") params.append("content_type__model", contentTypeFilter);
 					if (dateFrom) params.append("date_from", dateFrom);
 					if (dateTo) params.append("date_to", dateTo);
-					if (ordering) params.append("ordering", ordering);
 					params.append("institution_id", String(currentInstitution.id));
 					url = `/audit/institutions/audit-logs/?${params.toString()}`;
 				} else {
@@ -339,7 +337,6 @@ export default function AuditLogsPage() {
 			contentTypeFilter,
 			dateFrom,
 			dateTo,
-			ordering,
 		],
 	);
 
@@ -353,7 +350,7 @@ export default function AuditLogsPage() {
 			fetchAuditLogs(true);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentInstitution, searchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo, ordering]);
+	}, [currentInstitution, searchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo]);
 
 	// Infinite scroll observer setup
 	useEffect(() => {
@@ -369,7 +366,7 @@ export default function AuditLogsPage() {
 					fetchAuditLogs(false);
 				}
 			},
-			{ threshold: 0.1 },
+			{ threshold: 0 },
 		);
 
 		observer.observe(loadMoreRef.current);
@@ -390,16 +387,9 @@ export default function AuditLogsPage() {
 		fetchAuditLogs(true);
 	};
 
-	// // Debug function to see the actual changes structure
-	// const debugChanges = (log: IAuditLog) => {
-	//     console.log('Raw changes:', log.changes);
-	//     console.log('Parsed changes:', parseChanges(log.changes, log.action));
-	// };
-
-	// --- Render ---
 	return (
 		<div className="min-h-screen bg-background p-6">
-			<div className="mx-auto max-w-5xl">
+			<div>
 				{/* Header */}
 				<div className="mb-6 flex items-center gap-3">
 					<Button
@@ -470,21 +460,6 @@ export default function AuditLogsPage() {
 							className="w-[150px] min-w-0"
 							placeholder="To Date"
 						/>
-
-						{/* Ordering/Sort */}
-						<Select value={ordering} onValueChange={setOrdering}>
-							<SelectTrigger className="w-[150px]">
-								<SelectValue placeholder="Sort by" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="-timestamp">Newest First</SelectItem>
-								<SelectItem value="timestamp">Oldest First</SelectItem>
-								<SelectItem value="action">Action (A-Z)</SelectItem>
-								<SelectItem value="-action">Action (Z-A)</SelectItem>
-								<SelectItem value="user">User (A-Z)</SelectItem>
-								<SelectItem value="-user">User (Z-A)</SelectItem>
-							</SelectContent>
-						</Select>
 
 						{/* Refresh Button */}
 						<Button
