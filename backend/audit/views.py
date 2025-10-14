@@ -40,29 +40,7 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
         tags=["Audit Logs"],
     )
     @method_decorator(permission_required('can_view_audit_logs', raise_exception=True))
-    def get(self, request, institution_id):
-        try:
-            user_profile = request.user.profile
-            institution = Institution.objects.get(id=institution_id)
-
-            if user_profile.institution != institution and not request.user.is_superuser:
-                return Response(
-                    {"detail": "You do not have permission to view logs for this institution."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-                
-        except Institution.DoesNotExist:
-            return Response(
-                {"detail": "Institution not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except AttributeError:
-            return Response(
-                {"detail": "User profile not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Get query parameters
+    def get(self, request):
         search_query = request.query_params.get("search", None)
         action = request.query_params.get("action", None)
         content_type = request.query_params.get("content_type", None)
@@ -70,42 +48,20 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
         date_from = request.query_params.get("date_from", None)
         date_to = request.query_params.get("date_to", None)
 
-        # Get all institution-related content types
-        institution_related_models = [
-            'institution', 'institutionbanktype', 'institutionbankaccount', 
-            'institutionworkingdays', 'institutiontax', 'institutiontaxrule',
-            'branch', 'branchworkingdays', 'branchshift', 'department',
-            'institutionpenaltyconfig', 'branchpenaltyconfig', 'branchlocationcomparisonconfig'
-        ]
-        
-        content_types = ContentType.objects.filter(model__in=institution_related_models)
-        
-        # Get audit logs for these content types
-        logs = AuditLog.objects.filter(content_type__in=content_types)
-        
-        query = Q()
-        
-        for content_type_obj in content_types:
-            model_class = content_type_obj.model_class()
-            
-            if hasattr(model_class, 'institution'):
-                object_ids = model_class.objects.filter(institution=institution).values_list('id', flat=True)
-                for obj_id in object_ids:
-                    query |= Q(content_type=content_type_obj, object_id=obj_id)
-            elif hasattr(model_class, 'get_institution'):
-                # For models with get_institution method
-                for obj in model_class.objects.all():
-                    try:
-                        if obj.get_institution() == institution:
-                            query |= Q(content_type=content_type_obj, object_id=obj.id)
-                    except:
-                        continue
-        
-        logs = logs.filter(query)
+        try:
+            institution = request.user.profile.institution
+        except AttributeError:
+            return Response(
+                {"detail": "User profile or institution not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # Apply filters
+        data = AuditLog.objects.filter(
+            institution=institution
+        ).order_by("-timestamp")
+
         if search_query:
-            logs = logs.filter(
+            data = data.filter(
                 Q(action__icontains=search_query) |
                 Q(user__email__icontains=search_query) |
                 Q(description__icontains=search_query) |
@@ -113,19 +69,19 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
             )
 
         if action:
-            logs = logs.filter(action=action.upper())
+            data = data.filter(action=action.upper())
 
         if content_type:
-            logs = logs.filter(content_type__model=content_type.lower())
+            data = data.filter(content_type__model=content_type.lower())
 
         if user_id:
-            logs = logs.filter(user__id=user_id)
+            data = data.filter(user__id=user_id)
 
         if date_from:
             try:
                 parsed_date = parse_date(date_from)
                 if parsed_date:
-                    logs = logs.filter(timestamp__date__gte=parsed_date)
+                    data = data.filter(timestamp__date__gte=parsed_date)
             except ValueError:
                 return Response(
                     {"detail": "Invalid date_from format. Use YYYY-MM-DD."},
@@ -136,21 +92,20 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
             try:
                 parsed_date = parse_date(date_to)
                 if parsed_date:
-                    logs = logs.filter(timestamp__date__lte=parsed_date)
+                    data = data.filter(timestamp__date__lte=parsed_date)
             except ValueError:
                 return Response(
                     {"detail": "Invalid date_to format. Use YYYY-MM-DD."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Apply sorting
         try:
-            logs = self.apply_sorting(logs, request)
+            data = self.apply_sorting(data, request)
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Paginate and return response
         paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(logs, request)
-        serializer = AuditLogSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        page = paginator.paginate_queryset(data, request)
+        serializer = AuditLogSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data
+        )
