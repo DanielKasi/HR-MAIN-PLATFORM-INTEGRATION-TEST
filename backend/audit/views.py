@@ -43,6 +43,7 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         action = request.query_params.get("action", None)
+        object_id = request.query_params.get("object_id", None)
         content_type = request.query_params.get("content_type", None)
         user_id = request.query_params.get("user_id", None)
         date_from = request.query_params.get("date_from", None)
@@ -65,7 +66,8 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
                 Q(action__icontains=search_query) |
                 Q(user__email__icontains=search_query) |
                 Q(description__icontains=search_query) |
-                Q(content_type__model__icontains=search_query)
+                Q(content_type__model__icontains=search_query) |
+                Q(object_id__icontains=search_query)
             )
 
         if action:
@@ -76,6 +78,9 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
 
         if user_id:
             data = data.filter(user__id=user_id)
+        
+        if object_id:
+            data = data.filter(object_id=object_id)
 
         if date_from:
             try:
@@ -107,5 +112,4 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
         paginator = CustomPageNumberPagination()
         page = paginator.paginate_queryset(data, request)
         serializer = AuditLogSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data
-        )
+        return paginator.get_paginated_response(serializer.data)

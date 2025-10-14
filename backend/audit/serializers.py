@@ -13,12 +13,16 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
     def get_content_object(self, obj):
         content_obj = obj.content_object
+
+        raw_display_name = str(content_obj)
+        display_name = raw_display_name.replace('_', ' ').title()
+
         return {
             'id': getattr(content_obj, 'id', None),
-            'type': obj.content_type.model,
-            'display_name': str(content_obj) if content_obj else None,
-            'name': getattr(content_obj, 'institution_name', None)
+            'type': obj.content_type.model.replace('_', ' ').title(),
+            'display_name': display_name if content_obj else None,
         } if content_obj else None
+    
 
     def get_user(self, obj):
         user = obj.user
@@ -32,14 +36,10 @@ class AuditLogSerializer(serializers.ModelSerializer):
         content_obj = obj.content_object
         if not content_obj:
             return None
-        
-        institution = (
-            getattr(content_obj, 'institution', None) or
-            (content_obj.get_institution() if hasattr(content_obj, 'get_institution') else None) or
-            (content_obj if hasattr(content_obj, 'institution_name') else None)
-        )
-        
+        institution = getattr(content_obj, 'institution', None)
+        if not institution:
+            return None 
         return {
             'id': institution.id,
-            'name': institution.institution_name,
-        } if institution and hasattr(institution, 'institution_name') else None
+            'name': institution.name
+        }
