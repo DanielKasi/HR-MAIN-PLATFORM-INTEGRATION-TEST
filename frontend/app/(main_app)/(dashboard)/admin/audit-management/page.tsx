@@ -326,17 +326,7 @@ export default function AuditLogsPage() {
 				setInitialLoad(false);
 			}
 		},
-		[
-			currentInstitution,
-			loading,
-			hasMore,
-			nextUrl,
-			debouncedSearchTerm,
-			actionFilter,
-			contentTypeFilter,
-			dateFrom,
-			dateTo,
-		],
+		[currentInstitution, debouncedSearchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo],
 	);
 
 	useEffect(() => {
@@ -347,8 +337,15 @@ export default function AuditLogsPage() {
 			setInitialLoad(true);
 			fetchAuditLogs(true);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentInstitution, debouncedSearchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo]);
+	}, [
+		currentInstitution,
+		debouncedSearchTerm,
+		actionFilter,
+		contentTypeFilter,
+		dateFrom,
+		dateTo,
+		fetchAuditLogs,
+	]);
 
 	useEffect(() => {
 		if (loading || !hasMore || !loadMoreRef.current) return;
@@ -504,7 +501,7 @@ export default function AuditLogsPage() {
 							const isExpanded = expandedLogs.has(log.id);
 							const isLastItem = index === auditLogs.length - 1;
 
-							const assetName = extractAssetName(log); // Updated to pass whole log
+							const assetName = extractAssetName(log);
 							const displayName = extractDisplayName(log.content_object);
 							const userName = extractUserName(log.user);
 
