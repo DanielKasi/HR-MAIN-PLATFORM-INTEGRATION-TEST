@@ -285,7 +285,7 @@ def send_email_task(employee_id, email, password, config_id, is_welcome_email):
             action_flag=2,  # Change
             change_message=f"Failed to send {'welcome' if is_welcome_email else 'account creation'} email: {str(e)}",
         )
-        raise ValidationError(f"Failed to send email: {str(e)}")
+        raise ValidationError({"error":f"Failed to send email: {str(e)}"})
     
 
 @shared_task(max_retries=3, default_retry_delay=300)

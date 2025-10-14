@@ -32,14 +32,10 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'full_name': user.get_full_name() if hasattr(user, 'get_full_name') else user.fullname
         } if user else None
 
+
     def get_institution(self, obj):
-        content_obj = obj.content_object
-        if not content_obj:
-            return None
-        institution = getattr(content_obj, 'institution', None)
-        if not institution:
-            return None 
+        institution = obj.institution
         return {
             'id': institution.id,
-            'name': institution.name
-        }
+            'name': institution.institution_name
+        } if institution else None

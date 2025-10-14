@@ -248,7 +248,7 @@ class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
                     email = generate_email(employee)
                     validated_data['email'] = email
                 except Exception as e:
-                    raise serializers.ValidationError(f"Failed to generate company email: {str(e)}")
+                    raise serializers.ValidationError({"error": f"Failed to generate company email: {str(e)}"})
 
             if provider is None and config:
                 validated_data['provider'] = config.provider
@@ -257,7 +257,7 @@ class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
             company_email = super().create(validated_data)
             return company_email
         except Exception as e:
-            raise serializers.ValidationError(f"Error creating company email: {str(e)}")      
+            raise serializers.ValidationError({"error": f"Error creating company email: {str(e)}"})      
 class EmployeeSerializer(BaseApprovableSerializer):
     date_of_birth = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     user = CustomUserSerializer()
@@ -335,7 +335,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 if existing_user:
                     if user_id and user_id != existing_user.id:
                         raise serializers.ValidationError(
-                            {"user.id": f"Provided user id {user_id} does not match existing user with email {email}."}
+                            {"error": f"Provided user id {user_id} does not match existing user with email {email}."}
                         )
                     user = existing_user
                     print(f"Using existing user: {user.id}, {user.email}")
@@ -346,7 +346,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
                     user = user_serializer.save()
                     print(f"Created new user: {user.id}, {user.email}")
             else:
-                raise serializers.ValidationError({"user.email": "This field is required."})
+                raise serializers.ValidationError({"error": "Email is required."})
 
             validated_data["user"] = user
             validated_data["email"] = user.email
@@ -493,11 +493,11 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 else:
                     Spouse.objects.create(employee=instance, **spouse_serializer.validated_data)
             except serializers.ValidationError as ve:
-                raise serializers.ValidationError({"spouse": ve.detail})
+                raise serializers.ValidationError({"error": ve.detail})
             except IntegrityError as ie:
-                raise serializers.ValidationError({"spouse": "A spouse already exists for this employee."})
+                raise serializers.ValidationError({"error": "A spouse already exists for this employee."})
             except Exception as e:
-                raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
+                raise serializers.ValidationError({"error": f"Error updating/creating spouse: {str(e)}"})
         elif spouse_data == {}:
             existing_spouse = Spouse.objects.filter(employee=instance).first()
             if existing_spouse:
@@ -663,7 +663,7 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
     def validate(self, data):
         employee = data.get("employee")
         if not employee:
-            raise serializers.ValidationError({"employee": "Employee is required."})
+            raise serializers.ValidationError({"error": "Employee is required."})
 
         # Check if we should validate location for this user
         should_validate_location = self._should_validate_location(employee)
@@ -1004,20 +1004,20 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
         if context == "REQUEST":
             if not hasattr(request_user, "employees"):
                 raise serializers.ValidationError(
-                    {"detail": "Logged-in user is not an employee."}
+                    {"error": "Logged-in user is not an employee."}
                 )
             data["employee"] = request_user.employees
             employee = data["employee"]
         elif context == "ALLOCATION":
             if employee is None:
                 raise serializers.ValidationError(
-                    {"detail": "Employee must be provided for ALLOCATION context."}
+                    {"error": "Employee must be provided for ALLOCATION context."}
                 )
 
         if shift.branch != employee.payroll_branch:
             raise serializers.ValidationError(
                 {
-                    "detail": f"Shift '{shift.name}' does not belong to employee's branch '{employee.payroll_branch.branch_name}'."
+                    "error": f"Shift '{shift.name}' does not belong to employee's branch '{employee.payroll_branch.branch_name}'."
                 }
             )
 
@@ -1026,7 +1026,7 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
         if shift.shift_day.day.level != level:
             raise serializers.ValidationError(
                 {
-                    "detail": f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
+                    "error": f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
                     f"but the selected date is '{date_selected.strftime('%A')}'."
                 }
             )
@@ -1036,7 +1036,7 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
         if shift.start_time < branch_open or shift.end_time > branch_close:
             raise serializers.ValidationError(
                 {
-                    "detail": f"Shift '{shift.name}' must be within branch working hours "
+                    "error": f"Shift '{shift.name}' must be within branch working hours "
                     f"({branch_open} - {branch_close})."
                 }
             )

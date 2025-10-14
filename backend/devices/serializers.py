@@ -52,14 +52,14 @@ class DeviceSerializer(serializers.ModelSerializer):
         """Ensure serial number is unique for the institution."""
         institution = self.context.get('institution')
         if institution and Device.objects.filter(serial_number=value, institution=institution).exists():
-            raise serializers.ValidationError("A device with this serial number already exists for this institution.")
+            raise serializers.ValidationError({"error": "A device with this serial number already exists for this institution."})
         return value
 
     def create(self, validated_data):
         """Set institution from context during creation."""
         institution = self.context.get('institution')
         if not institution:
-            raise serializers.ValidationError("Institution must be provided in context.")
+            raise serializers.ValidationError({"error": "Institution must be provided in context."})
         validated_data['institution'] = institution
         return super().create(validated_data)
     

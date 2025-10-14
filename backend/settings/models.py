@@ -1,4 +1,5 @@
 from django.db import models
+from jsonschema import ValidationError
 from approval.models import BaseApprovableModel
 from institution.models import Institution
 from slugify import slugify
@@ -56,10 +57,35 @@ class MeetingIntegration(BaseApprovableModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.platform} for {self.institution}"   
-    
+        return f"{self.platform} for {self.institution}"
+
+    def clean(self):
+        print(f"Validating MeetingIntegration for {self.platform} (institution: {self.institution})")
+        if self.platform == 'google_meet':
+            if not self.oauth_token:
+                print("Validation error: oauth_token is required for Google Meet")
+                raise ValidationError({"error": "oauth_token is required for Google Meet"})
+            if not self.oauth_refresh_token:
+                print("Validation error: oauth_refresh_token is required for Google Meet")
+                raise ValidationError({"error": "oauth_refresh_token is required for Google Meet"})
+        elif self.platform == 'zoom':
+            if not self.api_key or not self.api_secret:
+                print("Validation error: api_key and api_secret are required for Zoom")
+                raise ValidationError({"error": "api_key and api_secret are required for Zoom"})
+        elif self.platform == 'microsoft_teams':
+            if not self.api_key or not self.api_secret or not self.tenant_id:
+                print("Validation error: api_key, api_secret, and tenant_id are required for Microsoft Teams")
+                raise ValidationError({"error": "api_key, api_secret, and tenant_id are required for Microsoft Teams"})
+
+    def save(self, *args, **kwargs):
+        print(f"Saving MeetingIntegration for {self.platform} (institution: {self.institution})")
+        self.clean()  # Validate before saving
+        super().save(*args, **kwargs)
+        print("MeetingIntegration saved")
+
     def get_institution(self):
-        return self.institution 
+        print(f"Retrieving institution for {self.platform} integration: {self.institution}")
+        return self.institution
     
 class EmailProviderConfig(BaseApprovableModel):
     PROVIDER_CHOICES = (
