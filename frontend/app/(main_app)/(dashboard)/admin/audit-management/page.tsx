@@ -34,23 +34,7 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 
 import apiRequest from "@/lib/apiRequest";
 import { IPaginatedResponse } from "@/types/types.utils";
-
-// --- Interfaces ---
-
-interface IAuditLog {
-	id: number;
-	content_object: string;
-	user: string;
-	institution: string;
-	object_id: number;
-	action: "CREATE" | "UPDATE" | "DELETE";
-	timestamp: string;
-	changes: string | any;
-	description: string;
-	content_type: number;
-}
-
-// --- Utility Functions ---
+import type { IAuditLog } from "@/types/types.utils";
 
 const safeStringify = (value: any): string => {
 	if (value === undefined || value === null) {
@@ -96,8 +80,20 @@ const extractDisplayName = (value: any): string => {
 	return String(value);
 };
 
-const extractAssetName = (value: any): string => {
-	if (!value) return "Unknown Asset";
+const extractAssetName = (log: IAuditLog): string => {
+	const value = log.content_object;
+
+	if (!value) {
+		// Fallback to parsing description if content_object is missing
+		if (log.description) {
+			const parts = log.description.split("for ");
+			if (parts.length > 1) {
+				// Grab everything after "for " and trim trailing period or whatever
+				return parts[1].replace(/\.$/, "").trim();
+			}
+		}
+		return "Unknown Asset";
+	}
 
 	if (typeof value === "string") {
 		try {
@@ -163,9 +159,7 @@ const parseChanges = (
 
 	const parsedChanges: Record<string, { old: any; new: any }> = {};
 
-	// Handle different change formats
 	if (Array.isArray(changesObj)) {
-		// If it's an array format, process each item
 		changesObj.forEach((change, index) => {
 			if (change && typeof change === "object") {
 				parsedChanges[`Change ${index + 1}`] = {
@@ -175,7 +169,6 @@ const parseChanges = (
 			}
 		});
 	} else {
-		// Handle object format
 		Object.entries(changesObj).forEach(([field, values]) => {
 			const normalizedField = field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, " ");
 
@@ -184,23 +177,18 @@ const parseChanges = (
 
 			try {
 				if (Array.isArray(values) && values.length === 2) {
-					// Standard format: [old_value, new_value]
 					oldValue = values[0];
 					newValue = values[1];
 				} else if (typeof values === "object" && values !== null) {
-					// Object format with old/new properties
 					oldValue = (values as any).old || (values as any).from;
 					newValue = (values as any).new || (values as any).to;
 				} else if (action === "CREATE") {
-					// CREATE: The value is the "new" value
 					oldValue = null;
 					newValue = values;
 				} else if (action === "DELETE") {
-					// DELETE: The value is the "old" value being deleted
 					oldValue = values;
 					newValue = null;
 				} else {
-					// Fallback - treat as single value
 					oldValue = values;
 					newValue = null;
 				}
@@ -220,14 +208,11 @@ const parseChanges = (
 	return parsedChanges;
 };
 
-// --- Component ---
-
 export default function AuditLogsPage() {
 	const router = useRouter();
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	useDocumentTitle("AUDIT LOGS");
 
-	// --- State ---
 	const [auditLogs, setAuditLogs] = useState<IAuditLog[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [initialLoad, setInitialLoad] = useState(true);
@@ -235,7 +220,6 @@ export default function AuditLogsPage() {
 	const [nextUrl, setNextUrl] = useState<string | null>(null);
 	const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
-	// Filter and Search State
 	const [searchTerm, setSearchTerm] = useState("");
 	const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 	const [actionFilter, setActionFilter] = useState("all");
@@ -243,12 +227,10 @@ export default function AuditLogsPage() {
 	const [dateFrom, setDateFrom] = useState("");
 	const [dateTo, setDateTo] = useState("");
 
-	// Infinite Scroll Refs
 	const observerRef = useRef<IntersectionObserver | null>(null);
 	const loadMoreRef = useRef<HTMLDivElement | null>(null);
 	const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-	// Debounce search term
 	useEffect(() => {
 		if (searchTimeoutRef.current) {
 			clearTimeout(searchTimeoutRef.current);
@@ -265,7 +247,6 @@ export default function AuditLogsPage() {
 		};
 	}, [searchTerm]);
 
-	// --- Utility Functions ---
 	const toggleLog = (id: number) => {
 		setExpandedLogs((prev) => {
 			const newExpanded = new Set(prev);
@@ -303,7 +284,6 @@ export default function AuditLogsPage() {
 		};
 	};
 
-	// --- Data Fetching Logic ---
 	const fetchAuditLogs = useCallback(
 		async (isInitial = false) => {
 			if (!currentInstitution) return;
@@ -359,7 +339,6 @@ export default function AuditLogsPage() {
 		],
 	);
 
-	// Initial fetch and refetch on filter/sort changes
 	useEffect(() => {
 		if (currentInstitution) {
 			setAuditLogs([]);
@@ -371,7 +350,6 @@ export default function AuditLogsPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [currentInstitution, debouncedSearchTerm, actionFilter, contentTypeFilter, dateFrom, dateTo]);
 
-	// Infinite scroll observer setup
 	useEffect(() => {
 		if (loading || !hasMore || !loadMoreRef.current) return;
 
@@ -410,7 +388,6 @@ export default function AuditLogsPage() {
 		<div className="min-h-screen bg-background p-6">
 			<div className="px-4">
 				<div className="mb-6 flex flex-col gap-4">
-					{/* Top Row — Back button + Title */}
 					<div className="flex items-center gap-4">
 						<Button
 							variant="ghost"
@@ -423,9 +400,7 @@ export default function AuditLogsPage() {
 						<h1 className="text-2xl font-semibold whitespace-nowrap">Audit Logs</h1>
 					</div>
 
-					{/* Bottom Row — Search + Filters */}
 					<div className="flex flex-wrap items-center gap-3">
-						{/* Search Bar */}
 						<div className="relative flex-1 max-w-md min-w-[250px]">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<Input
@@ -437,9 +412,7 @@ export default function AuditLogsPage() {
 							/>
 						</div>
 
-						{/* Filters */}
 						<div className="flex items-center gap-2 ml-auto flex-wrap">
-							{/* Action Filter */}
 							<Select value={actionFilter} onValueChange={setActionFilter}>
 								<SelectTrigger className="w-[150px] focus:ring-0 focus:ring-offset-0">
 									<SelectValue placeholder="Action" />
@@ -452,7 +425,6 @@ export default function AuditLogsPage() {
 								</SelectContent>
 							</Select>
 
-							{/* Content Type Filter */}
 							<Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
 								<SelectTrigger className="w-[180px] focus:ring-0 focus:ring-offset-0">
 									<SelectValue placeholder="Content Type" />
@@ -464,10 +436,15 @@ export default function AuditLogsPage() {
 									<SelectItem value="department">Department</SelectItem>
 									<SelectItem value="employee">Employee</SelectItem>
 									<SelectItem value="user">User</SelectItem>
+									<SelectItem value="institutionemployeeseparationtypes">
+										Separation Type
+									</SelectItem>
+									<SelectItem value="offboardingstage">Offboarding Stage</SelectItem>
+									<SelectItem value="employeeattendance">Employee Attendance</SelectItem>
+									<SelectItem value="terminationinitiation">Termination Initiation</SelectItem>
 								</SelectContent>
 							</Select>
 
-							{/* Date Filters */}
 							<Input
 								type="date"
 								value={dateFrom}
@@ -483,7 +460,6 @@ export default function AuditLogsPage() {
 								placeholder="To Date"
 							/>
 
-							{/* Refresh Button */}
 							<Button
 								variant="ghost"
 								size="icon"
@@ -499,7 +475,6 @@ export default function AuditLogsPage() {
 					</div>
 				</div>
 
-				{/* Audit Logs Timeline */}
 				{initialLoad && loading ? (
 					<div className="space-y-4">
 						{[1, 2, 3].map((i) => (
@@ -529,13 +504,12 @@ export default function AuditLogsPage() {
 							const isExpanded = expandedLogs.has(log.id);
 							const isLastItem = index === auditLogs.length - 1;
 
-							// Extract clean display names
-							const assetName = extractAssetName(log.content_object);
+							const assetName = extractAssetName(log); // Updated to pass whole log
 							const displayName = extractDisplayName(log.content_object);
 							const userName = extractUserName(log.user);
 
 							return (
-								<div key={log.id} className="relative space-y-3  mt-10">
+								<div key={log.id} className="relative space-y-3 mt-10">
 									{!isLastItem && (
 										<div className="absolute left-[5px] top-6 bottom-0 w-px bg-gray-300" />
 									)}
@@ -578,7 +552,6 @@ export default function AuditLogsPage() {
 
 											{isExpanded && (
 												<div className="p-4 space-y-4 pt-0">
-													{/* Description Section */}
 													{log.description && (
 														<div className="space-y-2">
 															<div className="text-xs font-medium text-gray-500">Description</div>
@@ -588,7 +561,6 @@ export default function AuditLogsPage() {
 														</div>
 													)}
 
-													{/* Changes Section */}
 													{hasChanges &&
 														Object.entries(changes).map(([field, change]: [string, any]) => (
 															<div key={field} className="space-y-2">
@@ -596,7 +568,7 @@ export default function AuditLogsPage() {
 																<div className="flex items-center gap-2">
 																	<div className="flex-1">
 																		<div className="text-xs text-gray-500 mb-1">Previous:</div>
-																		<div className="text-sm text-gray-900  p-2 rounded-md">
+																		<div className="text-sm text-gray-900 p-2 rounded-md">
 																			{change.old !== null &&
 																			change.old !== undefined &&
 																			change.old !== "N/A" ? (
@@ -612,7 +584,7 @@ export default function AuditLogsPage() {
 																	</div>
 																	<div className="flex-1">
 																		<div className="text-xs text-gray-500 mb-1">Current:</div>
-																		<div className="text-sm font-medium text-gray-900  p-2 rounded-md">
+																		<div className="text-sm font-medium text-gray-900 p-2 rounded-md">
 																			{change.new !== null &&
 																			change.new !== undefined &&
 																			change.new !== "N/A" ? (
@@ -633,7 +605,6 @@ export default function AuditLogsPage() {
 							);
 						})}
 
-						{/* Infinite Scroll Trigger */}
 						{hasMore && (
 							<div ref={loadMoreRef} className="flex justify-center pt-4 pb-8">
 								{loading && auditLogs.length > 0 && (
