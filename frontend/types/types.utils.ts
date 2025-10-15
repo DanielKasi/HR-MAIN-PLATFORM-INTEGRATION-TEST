@@ -2153,6 +2153,17 @@ export interface IInstitutionAnalytics {
 		dept: string;
 		payroll: number;
 	}[];
+	employees_by_gender: {
+		// Add this property
+		gender: string;
+		count: number;
+	}[];
+	employees_by_department: {
+		// Fixed the properties
+		department: string;
+		count: number;
+		year?: number;
+	}[];
 }
 
 export interface IKYCDocument {
