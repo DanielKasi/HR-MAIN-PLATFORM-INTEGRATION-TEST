@@ -57,7 +57,7 @@ const CustomTreemapContent = (props: any) => {
 							fill="white"
 							fontSize="10"
 						>
-							Count: {count}
+							{count}
 						</text>
 					</g>
 				);
