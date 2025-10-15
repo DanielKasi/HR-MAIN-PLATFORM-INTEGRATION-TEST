@@ -223,6 +223,11 @@ STORAGES = {
     },
 }
 
+AUTHENTICATION_BACKENDS = [
+    'users.authentication.CustomAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Email configuration for Baifam Group domain
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.environ.get("EMAIL_HOST")

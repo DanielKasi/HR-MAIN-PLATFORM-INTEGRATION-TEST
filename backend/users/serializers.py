@@ -256,7 +256,7 @@ class UserSendForgotPasswordTokenSerializer(serializers.Serializer):
 
 
 class LoginRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
 
