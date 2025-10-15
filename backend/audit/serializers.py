@@ -20,7 +20,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
         return {
             'id': getattr(content_obj, 'id', None),
             'type': obj.content_type.model.replace('_', ' ').title(),
-            'display_name': display_name if content_obj else None,
+            'display_name': obj.content_type.model.replace('_', ' ').title(),
         } if content_obj else None
     
 
