@@ -294,7 +294,7 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
                     h-10 p-1 rounded-md text-xs flex items-center justify-center relative cursor-pointer transition-all duration-200
                     ${
 											isToday(day)
-												? "bg-primary/60 text-white font-medium"
+												? "bg-[#0CA0F5]/60 text-white font-medium"
 												: hasEvents
 													? "bg-slate-100 text-slate-900 hover:bg-slate-200"
 													: "text-slate-700 hover:bg-slate-50"
@@ -308,20 +308,22 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 									{/* Event indicators */}
 									{hasEvents && (
 										<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-											{holidays.length > 0 && <div className="w-1 h-1 bg-red-500 rounded-full" />}
+											{holidays.length > 0 && <div className="w-1 h-1 bg-[#0CA0F5] rounded-full" />}
 											{events.slice(0, 2).map((event, idx) => (
 												<div
 													key={idx}
 													className={`w-1 h-1 rounded-full ${
 														event.event_mode === "online"
-															? "bg-blue-500"
+															? "bg-[#0CA0F5]"
 															: event.event_mode === "physical"
-																? "bg-green-500"
-																: "bg-purple-500"
+																? "bg-[#0CA0F5]"
+																: "bg-[#0CA0F5]"
 													}`}
 												/>
 											))}
-											{events.length > 2 && <div className="w-1 h-1 bg-slate-400 rounded-full" />}
+											{events.length > 2 && (
+												<div className="w-1 h-1 bg-[#0CA0F5]/60 rounded-full" />
+											)}
 										</div>
 									)}
 
@@ -368,8 +370,10 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 														<div className="space-y-2">
 															{holidays.map((holiday) => (
 																<div key={holiday.id} className="flex items-center gap-2 text-xs">
-																	<Star className="h-3 w-3 text-red-500 flex-shrink-0" />
-																	<span className="text-red-700 font-medium">{holiday.title}</span>
+																	<Star className="h-3 w-3 text-[#0CA0F5] flex-shrink-0" />
+																	<span className="text-[#0CA0F5] font-medium">
+																		{holiday.title}
+																	</span>
 																</div>
 															))}
 
@@ -410,317 +414,3 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 		</div>
 	);
 }
-
-// "use client";
-
-// import { CALENDAR_API } from "@/lib/api/calendar.utils";
-// import { showErrorToast } from "@/lib/utils";
-// import { selectSelectedInstitution } from "@/store/auth/selectors";
-// import { ICalendar } from "@/types/types.utils";
-// import { ChevronLeft, ChevronRight, MapPin, Star, Users, Video } from "lucide-react";
-// import { useEffect, useRef, useState } from "react";
-// import { useSelector } from "react-redux";
-
-// const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-// const getEventModeIcon = (mode: string) => {
-// 	switch (mode) {
-// 		case "online":
-// 			return <Video className="h-3 w-3" />;
-// 		case "physical":
-// 			return <MapPin className="h-3 w-3" />;
-// 		case "hybrid":
-// 			return <Users className="h-3 w-3" />;
-// 		default:
-// 			return null;
-// 	}
-// };
-
-// export function MinimalCalendar() {
-// 	const [currentDate, setCurrentDate] = useState(new Date());
-// 	const [calendar, setCalendar] = useState<ICalendar | null>(null);
-// 	const [loading, setLoading] = useState(true);
-// 	const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
-// 	const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-// 	const [isTooltipVisible, setIsTooltipVisible] = useState(false);
-// 	const tooltipRef = useRef<HTMLDivElement>(null);
-// 	const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-// 	const currentInstitution = useSelector(selectSelectedInstitution);
-
-// 	const getWeekDays = (date: Date) => {
-// 		const dayOfWeek = date.getDay();
-// 		const startOfWeek = new Date(date);
-// 		startOfWeek.setDate(date.getDate() - dayOfWeek);
-
-// 		const weekDays = [];
-// 		for (let i = 0; i < 7; i++) {
-// 			const day = new Date(startOfWeek);
-// 			day.setDate(startOfWeek.getDate() + i);
-// 			weekDays.push(day);
-// 		}
-// 		return weekDays;
-// 	};
-
-// 	const navigateWeek = (direction: "prev" | "next") => {
-// 		const newDate = new Date(currentDate);
-// 		if (direction === "prev") {
-// 			newDate.setDate(newDate.getDate() - 7);
-// 		} else {
-// 			newDate.setDate(newDate.getDate() + 7);
-// 		}
-// 		setCurrentDate(newDate);
-// 	};
-
-// 	const handleMouseEnter = (day: Date, event: React.MouseEvent) => {
-// 		// Clear any existing timeout
-// 		if (hoverTimeoutRef.current) {
-// 			clearTimeout(hoverTimeoutRef.current);
-// 		}
-
-// 		const rect = event.currentTarget.getBoundingClientRect();
-// 		const containerRect = event.currentTarget.closest(".relative")?.getBoundingClientRect();
-
-// 		if (containerRect) {
-// 			// Position tooltip relative to the container
-// 			const x = rect.left - containerRect.left + rect.width / 2;
-// 			const y = rect.top - containerRect.top - 10; // 10px above the day cell
-
-// 			setTooltipPosition({ x, y });
-// 			setHoveredDay(day);
-// 			setIsTooltipVisible(true);
-// 		}
-// 	};
-
-// 	const handleMouseLeave = () => {
-// 		// Add a small delay before hiding to prevent flickering
-// 		hoverTimeoutRef.current = setTimeout(() => {
-// 			setIsTooltipVisible(false);
-// 			setHoveredDay(null);
-// 		}, 100);
-// 	};
-
-// 	const isToday = (date: Date) => {
-// 		const today = new Date();
-// 		return (
-// 			date.getFullYear() === today.getFullYear() &&
-// 			date.getMonth() === today.getMonth() &&
-// 			date.getDate() === today.getDate()
-// 		);
-// 	};
-
-// 	const getEventsForDate = (date: Date) => {
-// 		if (!calendar) return { events: [], holidays: [] };
-
-// 		// Create a date string in YYYY-MM-DD format using local date components
-// 		// This avoids timezone issues when comparing dates
-// 		const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-// 		const events = calendar.event_occurrences
-// 			.filter((occurrence) => occurrence.date === dateStr)
-// 			.map((occurrence) => occurrence.event);
-
-// 		const holidays = calendar.public_holidays.filter((holiday) => holiday.date === dateStr);
-
-// 		return { events, holidays };
-// 	};
-
-// 	const fetchCalendar = async (year: number) => {
-// 		try {
-// 			setLoading(true);
-// 			const response = await CALENDAR_API.getCalendar({ year });
-
-// 			setCalendar(response);
-// 		} catch (error) {
-// 			showErrorToast({ error, defaultMessage: "Failed to fetch calendar" });
-// 			setCalendar(null);
-// 		} finally {
-// 			setLoading(false);
-// 		}
-// 	};
-
-// 	useEffect(() => {
-// 		if (currentInstitution) {
-// 			fetchCalendar(currentDate.getFullYear());
-// 		}
-// 	}, [currentInstitution, currentDate.getFullYear()]);
-
-// 	const handleTooltipMouseEnter = () => {
-// 		// Clear the timeout if mouse enters tooltip
-// 		if (hoverTimeoutRef.current) {
-// 			clearTimeout(hoverTimeoutRef.current);
-// 		}
-// 	};
-
-// 	const handleTooltipMouseLeave = () => {
-// 		setIsTooltipVisible(false);
-// 		setHoveredDay(null);
-// 	};
-
-// 	const weekDays = getWeekDays(currentDate);
-
-// 	const formatWeekRange = () => {
-// 		const firstDay = weekDays[0];
-// 		const lastDay = weekDays[6];
-// 		const monthNames = [
-// 			"Jan",
-// 			"Feb",
-// 			"Mar",
-// 			"Apr",
-// 			"May",
-// 			"Jun",
-// 			"Jul",
-// 			"Aug",
-// 			"Sep",
-// 			"Oct",
-// 			"Nov",
-// 			"Dec",
-// 		];
-
-// 		if (firstDay.getMonth() === lastDay.getMonth()) {
-// 			return `${monthNames[firstDay.getMonth()]} ${firstDay.getDate()}-${lastDay.getDate()}, ${firstDay.getFullYear()}`;
-// 		} else {
-// 			return `${monthNames[firstDay.getMonth()]} ${firstDay.getDate()} - ${monthNames[lastDay.getMonth()]} ${lastDay.getDate()}, ${firstDay.getFullYear()}`;
-// 		}
-// 	};
-
-// 	return (
-// 		<div className="w-full lg:max-w-md mx-auto bg-card border rounded-xl p-6 shadow-sm">
-// 			{/* Header */}
-// 			<div className="flex items-center justify-between mb-6">
-// 				<button
-// 					onClick={() => navigateWeek("prev")}
-// 					className="p-2 hover:bg-muted rounded-lg transition-colors"
-// 				>
-// 					<ChevronLeft className="w-5 h-5" />
-// 				</button>
-
-// 				<h2 className="text-lg font-semibold truncate">{formatWeekRange()}</h2>
-
-// 				<button
-// 					onClick={() => navigateWeek("next")}
-// 					className="p-2 hover:bg-muted rounded-lg transition-colors"
-// 				>
-// 					<ChevronRight className="w-5 h-5" />
-// 				</button>
-// 			</div>
-
-// 			{/* Day Headers */}
-// 			<div className="grid grid-cols-7 gap-2 mb-2">
-// 				{DAYS.map((day) => (
-// 					<div key={day} className="text-center text-xs font-medium text-muted-foreground">
-// 						{day}
-// 					</div>
-// 				))}
-// 			</div>
-
-// 			<div className="grid grid-cols-7 gap-2">
-// 				{weekDays.map((day) => {
-// 					const { events, holidays } = getEventsForDate(day);
-// 					const hasEvents = events.length > 0 || holidays.length > 0;
-// 					return (
-// 						<button
-// 							key={day.toISOString()}
-// 							className={`
-// 				  h-10 rounded-lg text-sm flex items-center justify-center transition-colors relative
-// 				  ${isToday(day) ? "bg-primary text-primary-foreground font-semibold" : "hover:bg-muted"}
-// 				`}
-// 							onMouseEnter={(e) => handleMouseEnter(day, e)}
-// 							onMouseLeave={handleMouseLeave}
-// 						>
-// 							{day.getDate()}
-
-// 							{hasEvents && (
-// 								<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-// 									{holidays.length > 0 && <div className="w-1 h-1 bg-red-500 rounded-full" />}
-// 									{events.slice(0, 2).map((event, idx) => (
-// 										<div
-// 											key={idx}
-// 											className={`w-1 h-1 rounded-full ${
-// 												event.event_mode === "online"
-// 													? "bg-blue-500"
-// 													: event.event_mode === "physical"
-// 														? "bg-green-500"
-// 														: "bg-purple-500"
-// 											}`}
-// 										/>
-// 									))}
-// 									{events.length > 2 && <div className="w-1 h-1 bg-slate-400 rounded-full" />}
-// 								</div>
-// 							)}
-// 							{/* Hover Tooltip */}
-// 							{hoveredDay?.getDate().toString().toLowerCase() ===
-// 								day?.getDate().toString().toLowerCase() &&
-// 								isTooltipVisible && (
-// 									<div
-// 										ref={tooltipRef}
-// 										className="absolute z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-3 min-w-36 transition-all duration-200 ease-out"
-// 										style={{
-// 											left: `${tooltipPosition.x}px`,
-// 											top: `${tooltipPosition.y}px`,
-// 											transform: ` ${day.getDay() === 6 ? "translateX(-70%)" : "translateX(-50%)"} translateY(-100%)`,
-// 										}}
-// 										onMouseEnter={handleTooltipMouseEnter}
-// 										onMouseLeave={handleTooltipMouseLeave}
-// 									>
-// 										{/* Tooltip Arrow */}
-// 										<div
-// 											className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"} transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-200`}
-// 										/>
-// 										<div
-// 											className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"}  transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white`}
-// 											style={{ marginTop: "-1px" }}
-// 										/>
-// 										<div className="text-xs font-medium text-slate-900 mb-2">
-// 											{hoveredDay.toLocaleDateString("en-US", {
-// 												weekday: "long",
-// 												month: "long",
-// 												day: "numeric",
-// 											})}
-// 										</div>
-// 										{(() => {
-// 											const { events, holidays } = getEventsForDate(hoveredDay);
-// 											if (events.length === 0 && holidays.length === 0) {
-// 												return <p className="text-xs text-slate-500">No events or holidays</p>;
-// 											}
-// 											return (
-// 												<div className="space-y-2">
-// 													{holidays.map((holiday) => (
-// 														<div key={holiday.id} className="flex items-center gap-2 text-xs">
-// 															<Star className="h-3 w-3 text-red-500 flex-shrink-0" />
-// 															<span className="text-red-700 font-medium">{holiday.title}</span>
-// 														</div>
-// 													))}
-// 													{events.slice(0, 3).map((event) => (
-// 														<div key={event.id} className="flex items-start gap-2 text-xs">
-// 															<div className="flex-shrink-0 mt-0.5">
-// 																{getEventModeIcon(event.event_mode)}
-// 															</div>
-// 															<div className="flex-1 min-w-0">
-// 																<div className="font-medium text-slate-900 truncate">
-// 																	{event.title}
-// 																</div>
-// 																{event.description && (
-// 																	<div className="text-slate-600 line-clamp-2 mt-1">
-// 																		{event.description}
-// 																	</div>
-// 																)}
-// 															</div>
-// 														</div>
-// 													))}
-// 													{events.length > 3 && (
-// 														<div className="text-xs text-slate-500 font-medium">
-// 															+{events.length - 3} more events
-// 														</div>
-// 													)}
-// 												</div>
-// 											);
-// 										})()}
-// 									</div>
-// 								)}
-// 						</button>
-// 					);
-// 				})}
-// 			</div>
-// 		</div>
-// 	);
-// }

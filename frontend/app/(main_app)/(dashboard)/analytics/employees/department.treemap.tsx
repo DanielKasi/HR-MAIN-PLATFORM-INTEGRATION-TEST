@@ -26,7 +26,7 @@ const CustomTreemapContent = (props: any) => {
 			{children.map((child: any, index: number) => {
 				const { x, y, width, height, department, count } = child;
 
-				const colors = ["#ff4500", "#ff7f50", "#ff6347", "#ff5722", "#ffa07a"];
+				const colors = ["#0CA0F5", "#3DB3F7", "#5DC2F9", "#7DD1FB", "#9DE0FD"];
 				const fillColor = colors[index % colors.length];
 
 				return (
@@ -57,7 +57,7 @@ const CustomTreemapContent = (props: any) => {
 							fill="white"
 							fontSize="10"
 						>
-							Count: {count}
+							{/* {count} */}
 						</text>
 					</g>
 				);
@@ -70,16 +70,16 @@ export default function DepartmentTreeMap({ data, chartConfig, title }: Departme
 	const departmentConfig = React.useMemo(() => {
 		const config: Record<string, { label: string; color: string }> = {};
 		const colors = [
-			"#ff4500",
-			"#ff7f50",
-			"#ff6347",
-			"#ff5722",
-			"#ffa07a",
-			"#ff6b35",
-			"#ff8a50",
-			"#ff9770",
-			"#ffab91",
-			"#d84315",
+			"#0CA0F5",
+			"#3DB3F7",
+			"#5DC2F9",
+			"#7DD1FB",
+			"#9DE0FD",
+			"#0A8AD6",
+			"#2BA7F6",
+			"#4CBAF8",
+			"#6DCBFA",
+			"#0890E8",
 		];
 		data.forEach((item, index) => {
 			config[item.department] = {
@@ -94,7 +94,7 @@ export default function DepartmentTreeMap({ data, chartConfig, title }: Departme
 	return (
 		<Card className="shadow-none border rounded-xl">
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
+				<CardTitle className="text-lg font-semibold text-slate-900">{title}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<ChartContainer config={departmentConfig} className="w-full h-full max-h-[400px]">
