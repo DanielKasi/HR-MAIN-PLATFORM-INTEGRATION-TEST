@@ -346,7 +346,6 @@ export default function DashboardSideBar() {
 			submenu: [
 				{ title: "Analytics", href: "/analytics/offboarding" },
 				{ title: "Exit Process", href: "/off-boarding/exit-process" },
-				{ title: "Resignation Letters", href: "#" },
 				{ title: "Offboarding Stages", href: "/off-boarding/stages" },
 				{ title: "Separation Types", href: "/off-boarding/separation-types" },
 				{ title: "Separation Policy", href: "/off-boarding/separation-policy" },
