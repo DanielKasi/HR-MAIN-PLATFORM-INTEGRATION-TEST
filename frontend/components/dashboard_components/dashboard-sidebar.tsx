@@ -45,6 +45,7 @@ export default function DashboardSideBar() {
 	const [InstitutionName, setInstitutionName] = useState("PERACOSOFT");
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [scrollPercentage, setScrollPercentage] = useState(0);
+	const [fetchingRelatedEmployee, setFetchingRelatedEmployee] = useState(false);
 
 	useEffect(() => {
 		const scrollElement = document.getElementById("mobile-nav-scroll");
@@ -132,16 +133,18 @@ export default function DashboardSideBar() {
 	};
 
 	const fetchRelatedEmployeeByUserId = async () => {
-		if (!currentUser) {
+		if (!currentUser || fetchingRelatedEmployee) {
 			return;
 		}
 		try {
+			setFetchingRelatedEmployee(true);
 			const employee = await EMPLOYEE_API.getByUserId({ user_id: currentUser.id });
 
 			setRelatedEmployee(employee);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to fetch related employee" });
 		} finally {
+			setFetchingRelatedEmployee(false);
 		}
 	};
 

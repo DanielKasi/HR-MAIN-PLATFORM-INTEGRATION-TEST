@@ -2,7 +2,11 @@
 
 import type {
 	IBranchDay,
+	IBranchDayFormData,
 	IBranchWorkingDays,
+	IDay,
+	IDayType,
+	IInstitutionDay,
 	IInstitutionWorkingDays,
 	ISystemWorkingDay,
 } from "@/types/types.utils";
@@ -20,18 +24,28 @@ interface WorkingDaysManagerProps {
 		| { type: "branch"; branchId: number; branchWorkingDays: IBranchWorkingDays | null }
 		| { type: "institution"; institutionWorkingDays: IInstitutionWorkingDays | null };
 	systemWorkingDays: ISystemWorkingDay[];
-	onUpdate: (args: any) => Promise<void>; // args: number[] for institution, { dayId, dayType } for branch add, or day_name for remove
+	// 	onUpdate: (args: {type:"institution", days: IDay[]} |{type:"branch",
+	// 	dayId:number, action:"add"|"remove", dayType:"PHYSICAL"|"REMOTE", day_name:string, days?:IBranchDayFormData[]},
+	// ) => Promise<void>; // args: number[] for institution, { dayId, dayType } for branch add, or day_name for remove
+	onInstitutionDaysUpdate?: (day_ids: number[]) => Promise<void>;
+	onBranchDaysUpdate?: (args: {
+		dayId: number;
+		action?: "add" | "remove";
+		dayType: IDayType;
+		day_name?: string;
+		days?: IBranchDayFormData[];
+	}) => Promise<void>;
+
 	isSaving?: boolean;
 }
 
 export function WorkingDaysManager({
 	scope,
 	systemWorkingDays,
-	onUpdate,
+	onBranchDaysUpdate,
+	onInstitutionDaysUpdate,
 	isSaving = false,
 }: WorkingDaysManagerProps) {
-	// For institution: selectedDays is array of system day ids
-	// For branch: selectedBranchDays is array of IBranchDay
 	const [selectedDays, setSelectedDays] = useState<number[]>([]);
 	const [selectedBranchDays, setSelectedBranchDays] = useState<IBranchDay[]>([]);
 	const [hasChanges, setHasChanges] = useState(false);
@@ -44,8 +58,8 @@ export function WorkingDaysManager({
 
 	// Initialize selected days when workingDays changes
 	React.useEffect(() => {
-		if (scope.type === "institution" && scope.institutionWorkingDays?.days) {
-			const dayIds = scope.institutionWorkingDays.days.map((day) => day.id);
+		if (scope.type === "institution" && scope.institutionWorkingDays?.institution_days) {
+			const dayIds = scope.institutionWorkingDays.institution_days.map((day) => day.id);
 
 			setSelectedDays(dayIds);
 			setHasChanges(false);
@@ -58,17 +72,23 @@ export function WorkingDaysManager({
 
 	// Check for changes - but not during auto-save operations
 	React.useEffect(() => {
-		if (scope.type === "institution" && scope.institutionWorkingDays?.days && !isAutoSaving) {
-			const currentDayIds = scope.institutionWorkingDays?.days.map((day) => day.id).sort();
+		if (
+			scope.type === "institution" &&
+			scope.institutionWorkingDays?.institution_days &&
+			!isAutoSaving
+		) {
+			const currentDayIds = scope.institutionWorkingDays?.institution_days
+				.map((day) => day.id)
+				.sort();
 			const selectedDayIds = [...selectedDays].sort();
 
 			setHasChanges(JSON.stringify(currentDayIds) !== JSON.stringify(selectedDayIds));
 		} else if (scope.type === "branch" && scope.branchWorkingDays?.branch_days && !isAutoSaving) {
 			// Compare by day_id and day_type
 			const current = scope.branchWorkingDays.branch_days
-				.map((d) => `${d.day_id}-${d.day_type}`)
+				.map((d) => `${d.id}-${d.day_type}`)
 				.sort();
-			const selected = selectedBranchDays.map((d) => `${d.day_id}-${d.day_type}`).sort();
+			const selected = selectedBranchDays.map((d) => `${d.id}-${d.day_type}`).sort();
 
 			setHasChanges(JSON.stringify(current) !== JSON.stringify(selected));
 		}
@@ -116,7 +136,7 @@ export function WorkingDaysManager({
 
 		setSelectedDays(newSelectedDays);
 		try {
-			await onUpdate(newSelectedDays);
+			await onInstitutionDaysUpdate?.(newSelectedDays);
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedDays(selectedDays);
@@ -133,7 +153,7 @@ export function WorkingDaysManager({
 
 		setSelectedDays(newSelectedDays);
 		try {
-			await onUpdate(newSelectedDays);
+			await onInstitutionDaysUpdate?.(newSelectedDays);
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedDays(selectedDays);
@@ -146,7 +166,7 @@ export function WorkingDaysManager({
 
 	// Branch handlers
 	const handleRemoveBranchDay = async (branchDay: IBranchDay) => {
-		setRemovingDayId(branchDay.day_id);
+		setRemovingDayId(branchDay.id);
 		setIsAutoSaving(true);
 		const newSelectedBranchDays = selectedBranchDays.filter(
 			(d) => d.day_name.toLowerCase() !== branchDay.day_name.toLowerCase(),
@@ -155,7 +175,12 @@ export function WorkingDaysManager({
 
 		setSelectedBranchDays(newSelectedBranchDays);
 		try {
-			await onUpdate({ action: "remove", day_name: branchDay.day_name });
+			await onBranchDaysUpdate?.({
+				action: "remove",
+				day_name: branchDay.day_name,
+				dayId: branchDay.day_id,
+				dayType: branchDay.day_type,
+			});
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedBranchDays(selectedBranchDays);
@@ -180,7 +205,7 @@ export function WorkingDaysManager({
 
 		setSelectedBranchDays(newSelectedBranchDays);
 		try {
-			await onUpdate({ action: "add", dayId, dayType });
+			await onBranchDaysUpdate?.({ action: "add", dayId, dayType });
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedBranchDays(selectedBranchDays);
@@ -200,7 +225,7 @@ export function WorkingDaysManager({
 
 	const handleSave = async () => {
 		try {
-			await onUpdate(selectedDays);
+			await onInstitutionDaysUpdate?.(selectedDays);
 			setHasChanges(false);
 			toast.success("Working days updated successfully");
 		} catch (error) {
@@ -209,8 +234,8 @@ export function WorkingDaysManager({
 	};
 
 	const handleReset = () => {
-		if (scope.type === "institution" && scope.institutionWorkingDays?.days) {
-			const dayIds = scope.institutionWorkingDays.days.map((day) => day.id);
+		if (scope.type === "institution" && scope.institutionWorkingDays?.institution_days) {
+			const dayIds = scope.institutionWorkingDays.institution_days.map((day) => day.id);
 
 			setSelectedDays(dayIds);
 		}
@@ -218,7 +243,7 @@ export function WorkingDaysManager({
 
 	// if (
 	// 	scope.type === "institution" &&
-	// 	(!scope.institutionWorkingDays || scope.institutionWorkingDays.days.length === 0)
+	// 	(!scope.institutionWorkingDays || scope.institutionWorkingDays.institution_days.length === 0)
 	// ) {
 	// 	// For institution, show empty state if no days set
 	// 	return (
