@@ -79,7 +79,7 @@ export function AttendanceRecordsTable({
 								{scope.type === "default" ? (
 									<>
 										<CardTitle className="flex items-center justify-between">
-											<span className="mb-3">
+											<span className="text-lg font-semibold text-slate-900">
 												<h1>Today's Attendance</h1>
 											</span>
 										</CardTitle>

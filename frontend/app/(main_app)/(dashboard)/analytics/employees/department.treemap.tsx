@@ -94,7 +94,7 @@ export default function DepartmentTreeMap({ data, chartConfig, title }: Departme
 	return (
 		<Card className="shadow-none border rounded-xl">
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
+				<CardTitle className="text-lg font-semibold text-slate-900">{title}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<ChartContainer config={departmentConfig} className="w-full h-full max-h-[400px]">
