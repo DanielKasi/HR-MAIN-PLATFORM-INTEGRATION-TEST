@@ -115,10 +115,10 @@ export function PayrollChart({
 							<Line
 								type="monotone"
 								dataKey="payroll"
-								stroke="#3CB371"
+								stroke="#0CA0F5"
 								strokeWidth={3}
-								dot={{ fill: "#3CB371", strokeWidth: 2, r: 5 }}
-								activeDot={{ r: 7, fill: "#3CB371", strokeWidth: 2 }}
+								dot={{ fill: "#0CA0F5", strokeWidth: 2, r: 5 }}
+								activeDot={{ r: 7, fill: "#0CA0F5", strokeWidth: 2 }}
 							/>
 						</LineChart>
 					</ResponsiveContainer>

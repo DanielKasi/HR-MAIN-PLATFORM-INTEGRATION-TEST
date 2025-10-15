@@ -77,7 +77,7 @@ export function EmployeeCountChart({ data, onRefresh, loading }: EmployeeCountCh
 							<Tooltip content={<CustomTooltip />} />
 							<Bar
 								dataKey="count"
-								fill="#EF4444"
+								fill="#0CA0F5"
 								className="hover:!bg-transparent cursor-pointer"
 								radius={[4, 4, 0, 0]}
 							/>

@@ -45,8 +45,8 @@ export default function BarHChart({
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
-			if (index == 0) acc.label = color;
-			acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color };
+			if (index == 0) acc.label = "#0CA0F5";
+			acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color: "#0CA0F5" };
 			return acc;
 		}, {} as any);
 	}, []);
@@ -111,7 +111,7 @@ export default function BarHChart({
 						<Bar
 							dataKey={dataKey}
 							radius={rounded ? 5 : 0}
-							fill={color}
+							fill="#0CA0F5"
 							background={{ fill: "hsl(var(--accent))" }}
 						>
 							<LabelList position="right" offset={8} className="text-sm fill-slate-600" />

@@ -88,7 +88,7 @@ export function EventsAndHolidaysWidget({
 						onClick={() => setActiveTab("holidays")}
 						className={`px-3 py-2 text-sm font-medium border-b-2 ${
 							activeTab === "holidays"
-								? "border-red-500 text-red-500"
+								? "border-[#0CA0F5] text-[#0CA0F5]"
 								: "border-transparent text-gray-500 hover:text-gray-700"
 						}`}
 					>
@@ -98,7 +98,7 @@ export function EventsAndHolidaysWidget({
 						onClick={() => setActiveTab("events")}
 						className={`px-3 py-2 text-sm font-medium border-b-2 ${
 							activeTab === "events"
-								? "border-red-500 text-red-500"
+								? "border-[#0CA0F5] text-[#0CA0F5]"
 								: "border-transparent text-gray-500 hover:text-gray-700"
 						}`}
 					>
@@ -117,7 +117,7 @@ export function EventsAndHolidaysWidget({
 								{calendarData?.event_occurrences.map((item, index) => (
 									<div key={`${activeTab}-${index}`} className="flex flex-col gap-3">
 										<div className="flex items-start gap-3">
-											<div className="w-1 h-full min-h-24 bg-red-500 rounded-full mt-1" />
+											<div className="w-1 h-full min-h-24 bg-[#0CA0F5] rounded-full mt-1" />
 
 											<div className="flex-1 min-w-0">
 												<h4 className="font-medium text-sm">{item.event.title}</h4>
@@ -150,7 +150,7 @@ export function EventsAndHolidaysWidget({
 							<>
 								{calendarData?.public_holidays.map((item, index) => (
 									<div key={`${activeTab}-${index}`} className="flex items-start gap-3">
-										<div className="w-1 h-12 bg-red-500 rounded-full flex-shrink-0 mt-1" />
+										<div className="w-1 h-12 bg-[#0CA0F5] rounded-full flex-shrink-0 mt-1" />
 										<div className="flex-1 min-w-0">
 											<h4 className="font-medium text-sm">{item.title}</h4>
 											<div className="flex items-center gap-4 mt-1">

@@ -22,7 +22,7 @@ const config: Config = {
 					800: "hsl(var(--chart-8))",
 					900: "hsl(var(--chart-9))",
 				},
-				mainColor: "#FF3403",
+				mainColor: "#0CA0F5",
 				myblack: "#162032",
 				background: "hsl(var(--background))",
 				foreground: "hsl(var(--foreground))",
@@ -35,9 +35,9 @@ const config: Config = {
 					foreground: "hsl(var(--popover-foreground))",
 				},
 				primary: {
-					DEFAULT: "#FF3403", // Changed to orange-500
-					foreground: "hsl(0, 0%, 100%)", // White for contrast
-					hover: "hsl(25, 95%, 43%)", // Slightly darker orange for hover
+					DEFAULT: "#0CA0F5",
+					foreground: "hsl(0, 0%, 100%)",
+					hover: "hsl(199, 93%, 43%)",
 				},
 				secondary: {
 					DEFAULT: "hsl(var(--secondary))",
@@ -78,8 +78,8 @@ const config: Config = {
 					"accent-foreground": "hsl(var(--sidebar-accent-foreground))",
 					border: "hsl(var(--sidebar-border))",
 					ring: "hsl(var(--sidebar-ring))",
-					hover: "hsl(25, 95%, 43%)", // Updated to match primary.hover
-					selected: "hsl(25, 95%, 53%)", // Updated to match primary.DEFAULT
+					hover: "hsl(199, 93%, 43%)",
+					selected: "hsl(199, 93%, 50%)",
 				},
 			},
 			height: {
