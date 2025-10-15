@@ -1,12 +1,13 @@
 from rest_framework import serializers
 from general.serializers import BaseApprovableSerializer
-from users.models import CustomUser
+from users.models import CustomUser, Profile, Role, RolePermission, UserPermission, UserRole
 from users.serializers import CustomUserSerializer
 from .models import (
     Department,
     Institution,
     Branch,
     InstitutionDay,
+    OwnershipTransfer,
     TaxRuleCategory,
     UserBranch,
     InstitutionKYCDocument,
@@ -27,8 +28,8 @@ from django.db import transaction
 from recruitment.models import JobPosition
 import logging
 from django.utils import timezone
-from settings.serializers import SystemDaySerializer
 from settings.models import SystemDay
+from rest_framework.exceptions import ValidationError
 
 
 logger = logging.getLogger(__name__)
@@ -104,7 +105,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
     approval_status_display = serializers.CharField(
         source="get_approval_status_display", read_only=True
     )
-
+    transfer_history = serializers.SerializerMethodField()
     branches = serializers.SerializerMethodField()
 
     class Meta:
@@ -185,6 +186,13 @@ class InstitutionSerializer(serializers.ModelSerializer):
             )
             branches = institution.branches.filter(id__in=user_branches)
         return BranchSerializer(branches, many=True).data
+    
+    def get_transfer_history(self, obj):
+        institution = obj
+        ownership_transfers = OwnershipTransfer.objects.filter(institution=institution).order_by(
+            "-transfer_date"
+        )
+        return OwnershipTransferSerializer(ownership_transfers, many=True).data
 
 
 class InstitutionBankTypeSerializer(BaseApprovableSerializer):
@@ -838,3 +846,104 @@ class AIChatSerializer(serializers.Serializer):
 class UserChatsSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     chats = AIChatSerializer(many=True)
+
+
+class OwnershipTransferSerializer(BaseApprovableSerializer):
+    previous_owner = CustomUserSerializer(read_only=True)
+    new_owner = CustomUserSerializer(read_only=True)
+
+    previous_owner_id = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        source="previous_owner",
+        write_only=True,
+    )
+    new_owner_id = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        source="new_owner",
+        write_only=True,
+    )
+
+    class Meta:
+        model = OwnershipTransfer
+        fields = '__all__'
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        if attrs.get("account_fate") == "new_role" and not attrs.get("new_role"):
+            raise ValidationError({
+                "error": "New role must be specified when account fate is 'new_role'."
+            })
+
+        # Ensuring current owner cannot be the same as new owner
+        if attrs.get("previous_owner") == attrs.get("new_owner"):
+            raise ValidationError({
+                "error": "Previous owner and new owner cannot be the same."
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            raise ValidationError({
+                "error": "User must be authenticated to create an ownership transfer."
+            })
+
+        if validated_data["institution"].institution_owner != request.user:
+            raise ValidationError({
+                "error": "You are not authorized to create an ownership transfer for this institution."
+            })
+
+        account_fate = validated_data.pop("account_fate", None)
+
+        if account_fate == "new_role":
+            new_role = validated_data.pop("new_role", None)
+            institution_roles = Role.objects.filter(institution=validated_data["institution"])
+
+            if new_role not in institution_roles:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Role '{new_role}' does not exist in the institution roles."
+                    }
+                )
+
+            UserRole.objects.filter(user=validated_data["previous_owner"]).delete()
+            UserRole.objects.create(
+                user=validated_data["previous_owner"],
+                role=new_role,
+            )
+
+            role_permissions = RolePermission.objects.filter(role=new_role)
+
+            UserPermission.objects.filter(
+                user=validated_data["previous_owner"],
+            ).delete()
+
+            for permission in role_permissions:
+                UserPermission.objects.create(
+                    user=validated_data["previous_owner"],
+                    permission=permission.permission,
+                )
+
+        elif account_fate == "deactivate":
+            user = validated_data["previous_owner"]
+            user.is_active = False
+            user.save()
+
+            Profile.objects.filter(user=user, works_at=validated_data["institution"]).delete()
+            UserPermission.objects.filter(user=user).delete()
+            UserRole.objects.filter(user=user).delete()
+            UserBranch.objects.filter(user=user).delete()
+
+        institution = validated_data["institution"]
+        if institution.institution_owner != validated_data["new_owner"]:
+            institution.institution_owner = validated_data["new_owner"]
+            institution.save()
+
+        # our institution owner doesn't need a role, so we need to remove any existing roles from the new owner
+        UserRole.objects.filter(user=validated_data["new_owner"]).delete()
+        UserBranch.objects.filter(user=validated_data["new_owner"]).delete()
+        UserPermission.objects.filter(user=validated_data["new_owner"]).delete()
+
+        ownership_transfer = OwnershipTransfer.objects.create(**validated_data)
+        return ownership_transfer

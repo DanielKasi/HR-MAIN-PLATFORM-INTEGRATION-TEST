@@ -5,7 +5,7 @@ from django.utils import timezone
 import requests
 from calendar2.models import Calendar, Event
 from django.db import models
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from settings.models import EmailProviderConfig
 from institution.models import Branch, InstitutionBankType, UserBranch
 from datetime import date, datetime
@@ -1055,9 +1055,29 @@ class EmployeeDay(BaseApprovableModel):
     end_time = models.TimeField(null=True, blank=True)
 
     def __str__(self):
-        return (
-            f"{self.employee_working_days.employee.user.fullname} - {self.day.day_name}"
-        )
+        return f"{self.employee_working_days.employee.user.fullname} - {self.day.day_name}"
+
+    def clean(self):
+        if self.start_time and self.end_time:
+            if self.start_time >= self.end_time:
+                raise ValidationError("Start time must be before end time.")
+            # Validate against BranchDay times
+            branch_day = self.employee_working_days.employee.department.branch.working_days.branch_days.filter(
+                day=self.day
+            ).first()
+            if branch_day and branch_day.opening_time and branch_day.closing_time:
+                if self.start_time < branch_day.opening_time:
+                    raise ValidationError(
+                        f"Employee start time ({self.start_time}) cannot be before branch opening time ({branch_day.opening_time})."
+                    )
+                if self.end_time > branch_day.closing_time:
+                    raise ValidationError(
+                        f"Employee end time ({self.end_time}) cannot be after branch closing time ({branch_day.closing_time})."
+                    )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         unique_together = ("employee_working_days", "day")
@@ -1070,6 +1090,7 @@ class EmployeeShift(BaseApprovableModel):
     CONTEXT_TYPES = [
         ("REQUEST", "Request"),
         ("ALLOCATION", "Allocation"),
+        ("OVERRIDE", "Override"),
     ]
 
     STATUS_CHOICES = [
@@ -1079,44 +1100,152 @@ class EmployeeShift(BaseApprovableModel):
     ]
 
     employee = models.ForeignKey(
-        Employee, on_delete=models.CASCADE, related_name="employee_shift"
+        Employee, on_delete=models.CASCADE, related_name="shifts"
     )
     shift = models.ForeignKey(
-        "institution.BranchShift",
+        'institution.BranchShift',
         on_delete=models.CASCADE,
-        related_name="employee_shift",
+        related_name="employee_shifts",
     )
     context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")
     shift_status = models.CharField(
         choices=STATUS_CHOICES, max_length=200, default="PENDING"
     )
-
-    date = models.DateField()
+    date = models.DateField(null=True, blank=True)  # Specific date for one-time shifts
+    start_date = models.DateField(null=True, blank=True)  # For recurring shifts
+    end_date = models.DateField(null=True, blank=True)  # Null for indefinite
+    is_recurring = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-
     def __str__(self):
-        return f"{self.employee.user.fullname} - shift {self.context.upper()}"
+        if self.is_recurring:
+            end_date_str = "indefinite" if not self.end_date else self.end_date
+            return f"{self.employee.user.fullname} - {self.shift.name} (Recurring: {self.start_date} to {end_date_str})"
+        return f"{self.employee.user.fullname} - {self.shift.name} on {self.date}"
+
+    def clean(self):
+        # Validate shift type
+        if self.is_recurring:
+            if not self.start_date:
+                raise ValidationError("Start date is required for recurring shifts.")
+            if self.end_date and self.start_date > self.end_date:
+                raise ValidationError("Start date must be before end date.")
+            if self.date:
+                raise ValidationError("Date field should be null for recurring shifts.")
+            # Validate weekday matches shift_day
+            weekday = self.start_date.weekday() + 1  # SystemDay level 1=Monday
+            if self.shift.shift_day.day.level != weekday:
+                raise ValidationError(
+                    f"Shift day ({self.shift.shift_day.day.day_name}) does not match start date weekday."
+                )
+        else:
+            if not self.date:
+                raise ValidationError("Date is required for one-time shifts.")
+            if self.start_date or self.end_date:
+                raise ValidationError("Start and end dates should be null for one-time shifts.")
+            # Validate shift_day matches date's weekday
+            weekday = self.date.weekday() + 1
+            if self.shift.shift_day.day.level != weekday:
+                raise ValidationError(
+                    f"Shift day ({self.shift.shift_day.day.day_name}) does not match shift date weekday."
+                )
+
+        # Validate against EmployeeDay times
+        employee_day = self.employee.working_days.employee_days.filter(
+            day=self.shift.shift_day.day
+        ).first()
+        if employee_day and employee_day.start_time and employee_day.end_time:
+            if self.shift.start_time < employee_day.start_time:
+                raise ValidationError(
+                    f"Shift start time ({self.shift.start_time}) cannot be before employee working hours ({employee_day.start_time})."
+                )
+            if self.shift.end_time > employee_day.end_time:
+                raise ValidationError(
+                    f"Shift end time ({self.shift.end_time}) cannot be after employee working hours ({employee_day.end_time})."
+                )
+
+        # Check for time conflicts with other shifts on the same day
+        check_date = self.date if not self.is_recurring else self.start_date
+        weekday = check_date.weekday() + 1
+        existing_shifts = EmployeeShift.objects.filter(
+            employee=self.employee,
+            shift__shift_day__day__level=weekday,
+        ).exclude(id=self.id)
+        if not self.is_recurring:
+            existing_shifts = existing_shifts.filter(date=check_date)
+        else:
+            existing_shifts = existing_shifts.filter(
+                models.Q(is_recurring=False, date=check_date) |
+                models.Q(is_recurring=True, start_date__lte=check_date) &
+                (models.Q(end_date__isnull=True) | models.Q(end_date__gte=check_date))
+            )
+
+        for existing_shift in existing_shifts:
+            if (self.shift.start_time < existing_shift.shift.end_time and
+                self.shift.end_time > existing_shift.shift.start_time):
+                raise ValidationError(
+                    f"Shift conflicts with existing shift '{existing_shift.shift.name}' "
+                    f"({existing_shift.shift.start_time} - {existing_shift.shift.end_time}) on {check_date}."
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def applies_to_date(self, date):
+        if self.is_recurring:
+            if self.start_date > date:
+                return False
+            if self.end_date and self.end_date < date:
+                return False
+            weekday = date.weekday() + 1
+            return self.shift.shift_day.day.level == weekday
+        return self.date == date
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["employee", "date", "is_recurring"]),
+            models.Index(fields=["employee", "start_date", "end_date", "is_recurring"]),
+        ]
 
     def get_institution(self):
         return self.employee.get_institution()
 
     @classmethod
     def get_report_data(cls, start_date, end_date, institution, **filters):
-        queryset = cls.objects.filter(
-            date__range=(start_date, end_date),
-            employee__department__institution=institution,
-            **filters
-        ).select_related('employee', 'shift')
-        return list(queryset.values(
-            'employee__name',
-            'shift__name',
-            'context',
-            'shift_status',
-            'date',
-            'created_at'
-        ))    
+        data = []
+        employees = Employee.objects.filter(
+            department__institution=institution, **filters
+        ).select_related("user", "department", "working_days")
+        current_date = start_date
+        while current_date <= end_date:
+            weekday = current_date.weekday() + 1
+            for employee in employees:
+                # Get all applicable shifts (one-time and recurring)
+                shifts = cls.objects.filter(
+                    employee=employee,
+                ).filter(
+                    models.Q(is_recurring=False, date=current_date) |
+                    (
+                        models.Q(is_recurring=True, start_date__lte=current_date) &
+                        (models.Q(end_date__isnull=True) | models.Q(end_date__gte=current_date)) &
+                        models.Q(shift__shift_day__day__level=weekday)
+                    )
+                ).select_related("shift", "shift__shift_day", "shift__shift_day__day")
+                
+                for shift in shifts:
+                    data.append({
+                        "employee_name": employee.user.fullname,
+                        "shift_name": shift.shift.name,
+                        "context": shift.context,
+                        "shift_status": shift.shift_status,
+                        "date": current_date,
+                        "created_at": shift.created_at,
+                        "is_recurring": shift.is_recurring,
+                    })
+            current_date += timedelta(days=1)
+        return data
 
 
 class EmployeeMonthlyHourAccount(SoftDeletableTimeStampedModel):

@@ -285,14 +285,20 @@ class RolePermission(BaseApprovableModel):
     permission = models.ForeignKey(
         Permission, related_name="roles", on_delete=models.CASCADE
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
 
     def __str__(self):
         return f"{self.role} - {self.permission}"
 
     def get_institution(self):
         return self.role.institution
+    
+class UserPermission(SoftDeletableTimeStampedModel):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.permission.permission_name}"
 
 
 class UserRole(BaseApprovableModel):

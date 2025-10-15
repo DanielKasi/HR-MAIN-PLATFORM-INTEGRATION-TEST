@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiTypes
 from rest_framework.permissions import AllowAny
 from django.conf import settings
 from django.http import HttpResponseRedirect
@@ -17,12 +17,14 @@ from utilities.helpers import (
     create_and_institution_token,
     send_activation_confirmation_email,
 )
+from django.contrib.auth.decorators import permission_required
 from users.models import Profile, System
-
+from rest_framework.permissions import IsAuthenticated
 from .models import (
     Department,
     Institution,
     Branch,
+    OwnershipTransfer,
     TaxRuleCategory,
     UserBranch,
     InstitutionBankAccount,
@@ -45,6 +47,7 @@ from .serializers import (
     InstitutionSerializer,
     BranchSerializer,
     OrganizationChartSerializer,
+    OwnershipTransferSerializer,
     SuccessResponseSerializer,
     TaxRuleCategorySerializer,
     UserBranchSerializer,
@@ -93,6 +96,7 @@ from ai_assistant.utils import (
     user_has_permission,
 )
 from .utils import _load_user_file, load_db_rules
+from django.utils.decorators import method_decorator
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -2926,3 +2930,99 @@ class BranchShiftDetailView(APIView):
         branch_shift.save(update_fields=["approval_status"])
         branch_shift.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class OwnershipTransferAPIView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['transfer_date', 'account_fate', 'created_at']
+    default_ordering = ['-transfer_date']  
+
+    @extend_schema(
+        request=OwnershipTransferSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=OwnershipTransferSerializer,
+                description="Ownership transfer created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        description="Transfer ownership of an institution",
+        summary="Transfer institution ownership",
+        tags=["Institution Management"],
+    )
+    @method_decorator(permission_required('can_create_ownership_transfer', raise_exception=True))
+    @transaction.atomic()
+    def post(self, request):
+        serializer = OwnershipTransferSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by institution name, previous owner email, or new owner email"},
+            {"name": "transfer_date", "type": "date", "description": "Filter by transfer date"},
+            {"name": "account_fate", "type": "str", "description": "Filter by account fate (new_role/deactivate)"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'transfer_date,-account_fate,created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=OwnershipTransferSerializer(many=True),
+                description="List of ownership transfers.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        description="Retrieve all ownership transfers for an institution",
+        summary="Get ownership transfers",
+        tags=["Institution Management"],
+    )
+    @method_decorator(permission_required('can_view_ownership_transfers', raise_exception=True))
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        transfer_date = request.query_params.get("transfer_date", None)
+        account_fate = request.query_params.get("account_fate", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        transfers = OwnershipTransfer.objects.filter(
+            institution=institution
+        )
+
+        if search_query:
+            transfers = transfers.filter(
+                Q(institution__institution_name__icontains=search_query) |
+                Q(previous_owner__email__icontains=search_query) |
+                Q(new_owner__email__icontains=search_query)
+            )
+
+        if transfer_date:
+            transfers = transfers.filter(transfer_date__date=transfer_date)
+
+        if account_fate:
+            transfers = transfers.filter(account_fate=account_fate)
+
+        try:
+            transfers = self.apply_sorting(transfers, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(transfers, request)
+        serializer = OwnershipTransferSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+        
