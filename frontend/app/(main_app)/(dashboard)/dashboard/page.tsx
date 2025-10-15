@@ -179,7 +179,7 @@ export default function Dashboard() {
 										{ gender: "Female", count: data.gender_distribution.female },
 										{ gender: "Other", count: data.gender_distribution.other },
 									]}
-									colors={["#415180", "#FF3403", "#10B981"]}
+									colors={["#415180", "#0CA0F5", "#10B981"]}
 									label={"Gender"}
 									dataKey={"count"}
 									nameKey={"gender"}
