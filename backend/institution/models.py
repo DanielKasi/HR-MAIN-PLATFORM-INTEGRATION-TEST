@@ -563,9 +563,6 @@ class BranchShift(BaseApprovableModel):
         on_delete=models.CASCADE,
         related_name="shifts",
         help_text="The day this shift occurs",
-        # Will be deleted later
-        blank=True,
-        null=True,
     )
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -576,19 +573,24 @@ class BranchShift(BaseApprovableModel):
         return self.name
 
     def clean(self):
-        branch_opening_time = self.branch.branch_opening_time
-        branch_closing_time = self.branch.branch_closing_time
+        if self.shift_day:
+            branch_opening_time = self.shift_day.opening_time
+            branch_closing_time = self.shift_day.closing_time
+        else:
+            # Fallback if shift_day is removed later
+            branch_opening_time = self.branch.branch_opening_time
+            branch_closing_time = self.branch.branch_closing_time
 
         if self.start_time < branch_opening_time:
             raise ValidationError(
-                {"error": f"Shift start time ({self.start_time}) cannot be before branch opening time ({branch_opening_time})."}
+                f"Shift start time ({self.start_time}) cannot be before branch opening time ({branch_opening_time})."
             )
         if self.end_time > branch_closing_time:
             raise ValidationError(
-                {"error": f"Shift end time ({self.end_time}) cannot be after branch closing time ({branch_closing_time})."}
+                f"Shift end time ({self.end_time}) cannot be after branch closing time ({branch_closing_time})."
             )
         if self.start_time >= self.end_time:
-            raise ValidationError({"error": "Shift start time must be before end time."})
+            raise ValidationError("Shift start time must be before end time.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -868,3 +870,45 @@ class BranchLocationComparisonConfig(BaseApprovableModel):
 
     def get_institution(self):
         return self.branch.institution
+    
+class OwnershipTransfer(BaseApprovableModel):
+    ACCOUNT_FATE_CHOICES = [
+        ("new_role", "Take on New Role"),
+        ("deactivate", "Deactivate Account"),
+    ]
+    institution = models.ForeignKey(
+        'institution.Institution', related_name="ownership_transfers", on_delete=models.CASCADE
+    )
+    previous_owner = models.ForeignKey(
+        "users.CustomUser",
+        related_name="previous_ownerships",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+    new_owner = models.ForeignKey(
+        "users.CustomUser",
+        related_name="new_ownerships",
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+    )
+    account_fate = models.CharField(
+        max_length=20, choices=ACCOUNT_FATE_CHOICES, default="new_role"
+    )
+    new_role = models.ForeignKey(
+        "users.Role",
+        related_name="new_owner_roles",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+    transfer_reason = models.TextField(blank=True, null=True)
+    transfer_date = models.DateTimeField(auto_now_add=True)
+
+
+    def __str__(self):
+        return f"Ownership Transfer for {self.institution.institution_name} from {self.previous_owner.email} to {self.new_owner.email if self.new_owner else 'N/A'}"    
+    
+    def get_institution(self):
+        return self.institution

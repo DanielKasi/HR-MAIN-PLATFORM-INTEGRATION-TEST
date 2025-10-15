@@ -16,7 +16,8 @@ from .models import (
     BranchDay, 
     BranchWorkingDays,
     BranchShift,
-    BranchLocationComparisonConfig
+    BranchLocationComparisonConfig,
+    OwnershipTransfer
 )
 
 
@@ -51,3 +52,4 @@ admin.site.register(BranchDay)
 admin.site.register(BranchWorkingDays)
 admin.site.register(BranchShift)
 admin.site.register(BranchLocationComparisonConfig)
+admin.site.register(OwnershipTransfer)
