@@ -403,6 +403,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
         many=True,
         required=False
     )
+    document_templates_details = serializers.SerializerMethodField()
 
     class Meta:
         model = JobPosition
@@ -423,6 +424,13 @@ class JobPositionSerializer(serializers.ModelSerializer):
                 "department": obj.reports_to.department.name,
             }
         return None
+    
+    def get_document_templates_details(self, obj):
+        if obj.document_templates:
+            return {
+                "name": obj.document_templates.name,
+                # "type": obj.document_templates.document_type.name if obj.document_templates.document_type else None
+            }
 
     def get_job_adverts(self, obj):
         adverts = JobPositionAdvert.objects.filter(job_position=obj)
@@ -430,19 +438,11 @@ class JobPositionSerializer(serializers.ModelSerializer):
     
     def to_internal_value(self, data):
         print(f"Raw JobPositionSerializer data: {data}")
-        # Preserve document_templates as raw data
         data = copy.deepcopy(data)
-        # Rename document_templates to document_template_assignments for validation
-        if 'document_templates' in data:
-            data['document_template_assignments'] = data.pop('document_templates')
-        internal_data = super().to_internal_value(data)
-        print(f"Internal data after processing: {internal_data}")
-        # Rename back to document_templates for create/update
-        if 'document_template_assignments' in internal_data:
-            internal_data['document_templates'] = internal_data.pop('document_template_assignments')
-        return internal_data
+        return super().to_internal_value(data)
 
     def validate(self, attrs):
+        print(f"Validating JobPositionSerializer with attrs: {attrs}")
         salary_min = attrs.get('salary_min')
         salary_max = attrs.get('salary_max')
         if salary_min and salary_max and salary_max < salary_min:
@@ -465,7 +465,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         print(f"Creating JobPosition with validated_data: {validated_data}")
-        document_templates_data = validated_data.pop("document_templates", [])
+        document_templates_data = validated_data.pop("document_template_assignments", [])
         
         with transaction.atomic():
             job_position = JobPosition.objects.create(**validated_data)
@@ -492,11 +492,12 @@ class JobPositionSerializer(serializers.ModelSerializer):
                     purpose=serializer.validated_data['purpose']
                 )
             
+            print(f"Created JobPositionDocumentTemplates: {job_position.document_template.all()}")
             return job_position
 
     def update(self, instance, validated_data):
         print(f"Updating JobPosition with validated_data: {validated_data}")
-        document_templates_data = validated_data.pop("document_templates", [])
+        document_templates_data = validated_data.pop("document_template_assignments", [])
         
         with transaction.atomic():
             employee_ids = validated_data.pop("apply_salary_to_employees", [])
