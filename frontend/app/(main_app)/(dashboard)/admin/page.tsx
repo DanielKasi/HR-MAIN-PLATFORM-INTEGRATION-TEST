@@ -136,7 +136,7 @@ export default function AdminPage() {
 									<span>Blacklist</span>
 								</Link>
 								<Link
-									href="#"
+									href="/admin/audit-management"
 									className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
 								>
 									<ClipboardList className="w-5 h-5 text-gray-500" />

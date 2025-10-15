@@ -1004,6 +1004,19 @@ export interface IEmployeeTypeFormData {
 	institution: number;
 }
 
+export interface IAuditLog {
+	id: number;
+	content_object: string;
+	user: string;
+	institution: string;
+	object_id: number;
+	action: "CREATE" | "UPDATE" | "DELETE";
+	timestamp: string;
+	changes: string | any;
+	description: string;
+	content_type: number;
+}
+
 // Response interfaces (what you get back from the API)
 export interface IWorkType {
 	id: number;
