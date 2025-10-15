@@ -40,6 +40,7 @@ export function WorkingDaysManager({
 	const [isAutoSaving, setIsAutoSaving] = useState(false);
 	const [addDayType, setAddDayType] = useState<"PHYSICAL" | "REMOTE" | null>(null);
 	const [pendingAddDayId, setPendingAddDayId] = useState<number | null>(null);
+	const [sortedDays, setSortedDays] = useState<ISystemWorkingDay[]>([]);
 
 	// Initialize selected days when workingDays changes
 	React.useEffect(() => {
@@ -74,8 +75,10 @@ export function WorkingDaysManager({
 	}, [selectedDays, selectedBranchDays, scope, isAutoSaving]);
 
 	React.useEffect(() => {
-		// console.log("\n\n selectedBranchDays changed as :", selectedBranchDays);
-	}, [selectedBranchDays]);
+		const newSortedDays = [...systemWorkingDays].sort((a, b) => a.level - b.level);
+		setSortedDays(newSortedDays);
+		console.log("\n\n Received sorted days : ", newSortedDays);
+	}, [systemWorkingDays]);
 
 	const getDayColor = (dayCode: string) => {
 		const colors = {
@@ -213,32 +216,28 @@ export function WorkingDaysManager({
 		}
 	};
 
-	if (
-		scope.type === "institution" &&
-		(!scope.institutionWorkingDays || scope.institutionWorkingDays.days.length === 0)
-	) {
-		// For institution, show empty state if no days set
-		return (
-			<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-				<div className="p-6 border-b border-gray-200">
-					<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2" />
-				</div>
-				<div className="p-6">
-					<div className="text-center py-8">
-						<Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-						<h3 className="text-lg font-medium text-gray-900 mb-2">No Working Days Set</h3>
-						<p className="text-gray-500">
-							Configure your institution's working days to get started.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
-	// For branch: always render the grid, even if no days are set
-
-	// Sort days by level for proper display order
-	const sortedDays = [...systemWorkingDays].sort((a, b) => a.level - b.level);
+	// if (
+	// 	scope.type === "institution" &&
+	// 	(!scope.institutionWorkingDays || scope.institutionWorkingDays.days.length === 0)
+	// ) {
+	// 	// For institution, show empty state if no days set
+	// 	return (
+	// 		<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+	// 			<div className="p-6 border-b border-gray-200">
+	// 				<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2" />
+	// 			</div>
+	// 			<div className="p-6">
+	// 				<div className="text-center py-8">
+	// 					<Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+	// 					<h3 className="text-lg font-medium text-gray-900 mb-2">No Working Days Set</h3>
+	// 					<p className="text-gray-500">
+	// 						Configure your institution's working days to get started.
+	// 					</p>
+	// 				</div>
+	// 			</div>
+	// 		</div>
+	// 	);
+	// }
 
 	return (
 		<div className="bg-white rounded-lg border border-gray-200 shadow-sm">

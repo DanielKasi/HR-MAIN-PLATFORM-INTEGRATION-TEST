@@ -20,17 +20,35 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CUSTOM_CODES } from "@/constants";
 import { selectUser, selectAuthError, selectUserLoading } from "@/store/auth/selectors";
 import { clearAuthError, loginStart } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
 import { showErrorToast } from "@/lib/utils";
 import { AUTH_API } from "@/utils/auth-utils";
+import PhoneNumberInput from "@/components/phone-number-input";
+import type { ICountry } from "@/types/types.utils";
+
+type AuthMethod = "email" | "username" | "phone";
 
 export default function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
+	const [authMethod, setAuthMethod] = useState<AuthMethod>("email");
 	const [email, setEmail] = useState("");
+	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
+	const [phoneData, setPhoneData] = useState<{
+		country: ICountry | null;
+		countryCode: string;
+		phoneNumber: string;
+		isValid: boolean;
+	}>({
+		country: null,
+		countryCode: "",
+		phoneNumber: "",
+		isValid: false,
+	});
 	const router = useRouter();
 	const [errorMessage, setErrorMessage] = useState("");
 	const [OTPSentMessage, setOTPSentMessage] = useState("");
@@ -94,35 +112,64 @@ export default function LoginPage() {
 		}
 	}, [OTPSentMessage]);
 
+	const getUsernameValue = () => {
+		switch (authMethod) {
+			case "email":
+				return email.trim();
+			case "username":
+				return username.trim();
+			case "phone":
+				return phoneData.isValid ? `${phoneData.countryCode}${phoneData.phoneNumber}` : "";
+			default:
+				return "";
+		}
+	};
+
+	const isFormValid = () => {
+		if (!password.trim()) return false;
+
+		switch (authMethod) {
+			case "email":
+				return email.trim() !== "";
+			case "username":
+				return username.trim() !== "";
+			case "phone":
+				return phoneData.isValid;
+			default:
+				return false;
+		}
+	};
+
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		if (!email.trim() || !password.trim()) {
-			setErrorMessage("You need to provide a password and email !");
-
+		if (!isFormValid()) {
+			setErrorMessage(`You need to provide a password and ${authMethod}!`);
 			return;
-		} else {
-			setErrorMessage("");
-			dispatch(loginStart(email, password));
 		}
+
+		setErrorMessage("");
+		const usernameValue = getUsernameValue();
+		dispatch(loginStart(usernameValue, password));
 	};
 
 	const handleCustomCodeAction = async (code: CUSTOM_CODES) => {
 		if (code === CUSTOM_CODES.BLOCKED_BY_ADMIN) {
 			return;
 		}
-		if (!email.trim()) {
-			setErrorMessage("You need to provide your email address");
 
+		const usernameValue = getUsernameValue();
+		if (!usernameValue) {
+			setErrorMessage(`You need to provide your ${authMethod} address`);
 			return;
 		}
 
 		setLoadingState((prev) => ({ ...prev, OTP: true }));
 		if (code == CUSTOM_CODES.SELF_CREATED_UNVERIFIED) {
 			try {
-				const response = await AUTH_API.resendOtp({ mode: "otp", email });
+				const response = await AUTH_API.resendOtp({ mode: "otp", email: usernameValue });
 
-				router.push(`verify-otp?email=${encodeURIComponent(email)}`);
+				router.push(`verify-otp?email=${encodeURIComponent(usernameValue)}`);
 			} catch (error: any) {
 				showErrorToast({ error, defaultMessage: "Failed to send OTP " });
 				// setErrorMessage(error?.message);
@@ -131,9 +178,9 @@ export default function LoginPage() {
 			}
 		} else if (code == CUSTOM_CODES.ADMIN_CREATED_UNVERIFIED) {
 			try {
-				await AUTH_API.resendOtp({ mode: "password_link", email });
+				await AUTH_API.resendOtp({ mode: "password_link", email: usernameValue });
 
-				setOTPSentMessage(`We have sent an email to ${email}, check your inbox`);
+				setOTPSentMessage(`We have sent an email to ${usernameValue}, check your inbox`);
 			} catch (error: any) {
 				setErrorMessage(error.message);
 			} finally {
@@ -171,22 +218,68 @@ export default function LoginPage() {
 										{customErrorCode === CUSTOM_CODES.SELF_CREATED_UNVERIFIED
 											? "OTP"
 											: "Password link"}{" "}
-										to this email
+										to this {authMethod}
 									</span>
 								)}
 							</p>
 						)}
-						<div className="grid gap-2">
-							<Label htmlFor="email">Email</Label>
-							<Input
-								required
-								id="email"
-								placeholder="name@example.com"
-								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-							/>
-						</div>
+
+						<Tabs
+							value={authMethod}
+							onValueChange={(value) => setAuthMethod(value as AuthMethod)}
+							className="w-full"
+						>
+							<TabsList className="grid w-full grid-cols-3 rounded-xl !mb-8">
+								<TabsTrigger className="rounded-xl px-1" value="email">
+									Email
+								</TabsTrigger>
+								<TabsTrigger className="rounded-xl px-1" value="username">
+									Username
+								</TabsTrigger>
+								<TabsTrigger className="rounded-xl px-1" value="phone">
+									Phone
+								</TabsTrigger>
+							</TabsList>
+
+							<TabsContent value="email" className="space-y-2">
+								<div className="grid gap-2 space-y-1">
+									<Label htmlFor="email">Email</Label>
+									<Input
+										required
+										id="email"
+										placeholder="name@example.com"
+										type="email"
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+									/>
+								</div>
+							</TabsContent>
+
+							<TabsContent value="username" className="space-y-2">
+								<div className="grid gap-2 space-y-1">
+									<Label htmlFor="username">Username</Label>
+									<Input
+										required
+										id="username"
+										placeholder="Enter your username"
+										type="text"
+										value={username}
+										onChange={(e) => setUsername(e.target.value)}
+									/>
+								</div>
+							</TabsContent>
+
+							<TabsContent value="phone" className="space-y-2">
+								<PhoneNumberInput
+									label="Phone Number"
+									required
+									value={phoneData.phoneNumber}
+									country={phoneData.country}
+									onChange={setPhoneData}
+								/>
+							</TabsContent>
+						</Tabs>
+
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between">
 								<Label htmlFor="password">Password</Label>

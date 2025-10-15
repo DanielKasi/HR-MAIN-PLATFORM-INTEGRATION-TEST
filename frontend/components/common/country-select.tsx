@@ -77,7 +77,7 @@ export default function CountrySelect({
 				disabled={disabled}
 				type="button"
 				variant="outline"
-				className="w-fit md:w-full h-[48px] rounded-[14px] border justify-between"
+				className="w-fit md:w-full h-12 rounded-[14px] border justify-between"
 				onClick={() => setIsOpen((v) => !v)}
 			>
 				<span className="flex items-center gap-2 truncate">

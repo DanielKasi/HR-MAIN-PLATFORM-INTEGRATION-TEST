@@ -68,10 +68,10 @@ interface InactivityRaceResult {
 }
 
 function* login({
-	payload: { email, password },
-}: ActionWithPayLoad<AUTH_ACTION_TYPES.LOGIN_START, { email: string; password: string }>) {
+	payload: { username, password },
+}: ActionWithPayLoad<AUTH_ACTION_TYPES.LOGIN_START, { username: string; password: string }>) {
 	try {
-		const loginResponse: LoginResponse = yield call(loginWithEmailAndPassword, email, password);
+		const loginResponse: LoginResponse = yield call(loginWithEmailAndPassword, username, password);
 
 		if (!loginResponse.user || !loginResponse.tokens.access || !loginResponse.tokens.refresh) {
 			throw new Error("Failed to login");
