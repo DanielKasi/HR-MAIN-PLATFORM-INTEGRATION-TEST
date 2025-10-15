@@ -991,6 +991,8 @@ class Command(BaseCommand):
             {"day_code": "SUN", "opening_time": None, "closing_time": None},
         ]
         institutions = Institution.objects.all()
+        institution_day_created = 0
+        institution_day_updated = 0
         for institution in institutions:
             self.stdout.write(f"Processing {institution.institution_name}")
             bank_type, created = InstitutionBankType.objects.get_or_create(
@@ -1094,21 +1096,6 @@ class Command(BaseCommand):
                 institution=institution
             )
             if created:
-                for day_data in default_working_hours:
-                    system_day = SystemDay.objects.filter(day_code=day_data["day_code"]).first()
-                    if system_day and day_data["opening_time"] and day_data["closing_time"]:
-                        InstitutionDay.objects.create(
-                            institution_working_days=working_days,
-                            day=system_day,
-                            opening_time=day_data["opening_time"],
-                            closing_time=day_data["closing_time"],
-                        )
-                        self.stdout.write(
-                            self.style.SUCCESS(
-                                f"   └─ Created InstitutionDay for {system_day.day_name} ({day_data['opening_time'].strftime('%H:%M')} - {day_data['closing_time'].strftime('%H:%M')})"
-                            )
-                        )
-                working_days.days.set([day.day for day in working_days.institution_days.all()])
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"   └─ Created default working days for {institution.institution_name}"
@@ -1120,6 +1107,54 @@ class Command(BaseCommand):
                         f"   └─ Default working days already exist for {institution.institution_name}"
                     )
                 )
+            # Check and create/update InstitutionDay records
+            existing_days = set(working_days.institution_days.values_list('day__day_code', flat=True))
+            for day_data in default_working_hours:
+                system_day = SystemDay.objects.filter(day_code=day_data["day_code"]).first()
+                if not system_day:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"   └─ Skipping InstitutionDay for {day_data['day_code']}: SystemDay not found"
+                        )
+                    )
+                    continue
+                if day_data["opening_time"] and day_data["closing_time"]:
+                    inst_day, inst_day_created = InstitutionDay.objects.get_or_create(
+                        institution_working_days=working_days,
+                        day=system_day,
+                        defaults={
+                            "opening_time": day_data["opening_time"],
+                            "closing_time": day_data["closing_time"],
+                        },
+                    )
+                    if inst_day_created:
+                        institution_day_created += 1
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f"   └─ Created InstitutionDay for {system_day.day_name} ({day_data['opening_time'].strftime('%H:%M')} - {day_data['closing_time'].strftime('%H:%M')})"
+                            )
+                        )
+                    else:
+                        # Update existing InstitutionDay if times differ
+                        if (inst_day.opening_time != day_data["opening_time"] or
+                            inst_day.closing_time != day_data["closing_time"]):
+                            inst_day.opening_time = day_data["opening_time"]
+                            inst_day.closing_time = day_data["closing_time"]
+                            inst_day.save()
+                            institution_day_updated += 1
+                            self.stdout.write(
+                                self.style.NOTICE(
+                                    f"   └─ Updated InstitutionDay for {system_day.day_name} ({day_data['opening_time'].strftime('%H:%M')} - {day_data['closing_time'].strftime('%H:%M')})"
+                                )
+                            )
+                        else:
+                            self.stdout.write(
+                                self.style.NOTICE(
+                                    f"   └─ InstitutionDay for {system_day.day_name} already exists with correct times"
+                                )
+                            )
+            # Update days field to ensure it matches InstitutionDay records
+            working_days.days.set([inst_day.day for inst_day in working_days.institution_days.all()])
             owner_user = institution.institution_owner
             owner_employee = Employee.objects.filter(
                 user=owner_user, payroll_branch__institution__id=institution.id
@@ -1144,3 +1179,17 @@ class Command(BaseCommand):
                         f"  └─ Employee already exists for owner user {owner_user.email}"
                     )
                 )
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Institution Days Summary"))
+        self.stdout.write(
+            self.style.NOTICE(
+                f"  ➕ InstitutionDay Created: {institution_day_created}"
+            )
+        )
+        self.stdout.write(
+            self.style.NOTICE(
+                f"  ♻️ InstitutionDay Updated: {institution_day_updated}"
+            )
+        )
+        self.stdout.write(
+            self.style.SUCCESS("\n🎉 Institution working days processing completed!")
+        )
