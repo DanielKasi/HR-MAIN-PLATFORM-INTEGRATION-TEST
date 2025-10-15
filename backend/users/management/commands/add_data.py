@@ -5,7 +5,6 @@ from django.conf import settings
 from django.db.models import Q
 from django.db import transaction
 from employee.service import create_owner_employee
-from recruitment.models import JobPosition
 from users.models import Permission, PermissionCategory, SystemType, System, CustomUser
 from approval.models import Action
 from discipline.models import DisciplineType
@@ -25,12 +24,11 @@ from employee.models import Employee, QualificationAward
 from settings.models import SystemDay
 from employee.tasks import send_employee_welcome_email
 from employee.views import generate_compliant_password
-from calendar2.models import Calendar, Event
 from performance.models import PerformanceConcernType, PIPSupportResourceType
-
+import uuid
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, create tax rules, and schedule birthday emails"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, create tax rules, schedule birthday emails, and generate usernames for users without usernames"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -64,106 +62,63 @@ class Command(BaseCommand):
         self.create_default_performance_data()
         self.create_tax_rules_for_institutions()
         self.create_default_awards()
-        self.create_birthday_events()
-        self.schedule_all_birthday_emails()
+        self.generate_usernames()
         self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
 
-    def schedule_all_birthday_emails(self):
-        """Schedule birthday email tasks for all active employees."""
+    def generate_usernames(self):
+        """Generate usernames for CustomUser records without usernames."""
         self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "\n⏳ Scheduling birthday email tasks for active employees...\n"
-            )
+            self.style.MIGRATE_HEADING("\n⏳ Generating usernames for users without usernames...\n")
         )
-        employees = Employee.objects.filter(
-            is_active=True,
-            deleted_at__isnull=True,
-            date_of_birth__isnull=False,
-            user__isnull=False,
-            user__email__isnull=False,
-        ).select_related("user")
+        users_without_usernames = CustomUser.objects.filter(Q(username__isnull=True) | Q(username=''))
+        if not users_without_usernames.exists():
+            self.stdout.write(
+                self.style.NOTICE("No users found without usernames.")
+            )
+            return
 
-        success_count = 0
-        skip_count = 0
-        error_count = 0
-
-        for employee in employees:
+        updated_count = 0
+        for user in users_without_usernames:
             try:
-                employee.schedule_birthday_email()
+                name_parts = user.fullname.strip().split()
+                if len(name_parts) >= 2:
+                    base_username = f"{name_parts[0][0].lower()}{name_parts[1].lower().replace(' ', '')}"
+                else:
+                    base_username = ''.join(c for c in user.fullname.lower() if c.isalnum())
+                if not base_username:
+                    base_username = 'user'
+
+                username = base_username[:50]  # Ensure within max_length
+                counter = 1
+                while CustomUser.objects.exclude(id=user.id).filter(username=username).exists():
+                    username = f"{base_username}{counter}"[:50]
+                    counter += 1
+                    if len(username) > 50 or counter > 100:  # Prevent excessive iterations
+                        username = f"user{str(uuid.uuid4())[:8]}"
+                        counter = 1
+                user.username = username
+                user.save()
+                updated_count += 1
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Scheduled birthday email for {employee.user.email}"
-                    )
+                    self.style.SUCCESS(f"  ✅ Generated username '{username}' for user '{user.fullname}' (ID: {user.id})")
                 )
-                success_count += 1
             except Exception as e:
                 self.stdout.write(
                     self.style.ERROR(
-                        f"  ❌ Failed to schedule for {employee.user.email}: {str(e)}"
+                        f"  ❌ Failed to generate username for user '{user.fullname}' (ID: {user.id}): {str(e)}"
                     )
                 )
-
-                error_count += 1
-                skip_count += 1
-
         self.stdout.write(
-            "\n" + self.style.MIGRATE_LABEL("📋 Birthday Email Scheduling Summary")
+            "\n" + self.style.MIGRATE_LABEL("📋 Username Generation Summary")
         )
         self.stdout.write(
-            self.style.NOTICE(f"  ➕ Successfully scheduled: {success_count}")
+            self.style.NOTICE(f"  ➕ Updated: {updated_count} user(s) with new usernames")
         )
-        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
         self.stdout.write(
-            self.style.SUCCESS("\n🎉 Birthday email scheduling completed!")
+            self.style.SUCCESS("\n🎉 Username generation completed successfully!")
         )
 
-    def create_birthday_events(self):
-        """Create birthday events for all active employees with a date of birth."""
-        self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "\n⏳ Creating birthday events for active employees...\n"
-            )
-        )
-        employees = Employee.objects.filter(
-            is_active=True,
-            deleted_at__isnull=True,
-            date_of_birth__isnull=False,
-            department__isnull=False,
-            user__isnull=False,
-            user__profile__isnull=False,
-        ).select_related("user", "department")
-
-        success_count = 0
-        skip_count = 0
-        error_count = 0
-
-        for employee in employees:
-            try:
-                employee.create_birthday_event()
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created birthday event for {employee.user.fullname}"
-                    )
-                )
-                success_count += 1
-            except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"  ❌ Failed to create birthday event for {employee.user.fullname}: {str(e)}"
-                    )
-                )
-                error_count += 1
-                skip_count += 1
-
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Birthday Events Summary"))
-        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {success_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Birthday events created successfully!")
-        )
 
     def create_tax_rules_for_institutions(self):
         """Create tax rule categories globally and tax rules per institution based on country_code"""

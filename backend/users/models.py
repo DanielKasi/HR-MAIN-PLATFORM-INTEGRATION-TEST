@@ -1,3 +1,4 @@
+import uuid
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
@@ -20,18 +21,54 @@ from approval.models import BaseApprovableModel
 
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
-        if email:
-            email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+    def generate_unique_username(self, fullname):
+        """Generate a unique username based on fullname."""
+        name_parts = fullname.strip().split()
+        if len(name_parts) >= 2:
+            # First letter of first name + second name (lowercase, no spaces)
+            base_username = f"{name_parts[0][0].lower()}{name_parts[1].lower().replace(' ', '')}"
+        else:
+            # If only one name, use it fully, lowercase, no spaces
+            base_username = ''.join(c for c in fullname.lower() if c.isalnum())
+        if not base_username:
+            base_username = 'user'
+
+        username = base_username[:50]  # Ensure within max_length
+        counter = 1
+        while self.filter(Q(username=username)).exclude(id=None).exists():
+            username = f"{base_username}{counter}"[:50]
+            counter += 1
+            if len(username) > 50 or counter > 100:  # Prevent excessive iterations
+                username = f"user{str(uuid.uuid4())[:8]}"
+                counter = 1
+        return username
+
+    def create_user(self, email, fullname, password=None, **extra_fields):
+        """Create and save a regular user with the given email, fullname, and password."""
+        if not email:
+            raise ValueError('The Email field must be set')
+        if not fullname:
+            raise ValueError('The Fullname field must be set')
+
+        email = self.normalize_email(email)
+        extra_fields.setdefault('username', self.generate_unique_username(fullname))
+        user = self.model(email=email, fullname=fullname, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-        return self.create_user(email, password, **extra_fields)
+    def create_superuser(self, email, fullname, password=None, **extra_fields):
+        """Create and save a superuser with the given email, fullname, and password."""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, fullname, password, **extra_fields)
 
 
 class UserType(TextChoices):
@@ -39,7 +76,8 @@ class UserType(TextChoices):
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedModel):
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
+    username = models.CharField(max_length=50, unique=True, null=True, blank=True)
     fullname = models.CharField(max_length=255)
     # is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
