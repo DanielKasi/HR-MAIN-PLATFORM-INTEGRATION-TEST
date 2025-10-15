@@ -6,6 +6,7 @@ from recruitment.models import (
     JobAdvertApplication,
     InterviewStage,
     JobInterview,
+    JobPositionDocumentTemplate,
     SkillZone,
     SkillZoneCategory,
     ApplicationDocument,
@@ -339,9 +340,15 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
         
         return instance
 
+class JobPositionDocumentTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobPositionDocumentTemplate
+        fields = '__all__'
+
+    
 
 
-class JobPositionSerializer(BaseApprovableSerializer):
+class JobPositionSerializer(serializers.ModelSerializer):
     department_details = serializers.SerializerMethodField(read_only=True)
     reports_to_details = serializers.SerializerMethodField()
     job_adverts = serializers.SerializerMethodField(read_only=True)
@@ -352,10 +359,9 @@ class JobPositionSerializer(BaseApprovableSerializer):
         help_text="List of employee IDs to apply minimum salary to",
     )
     employees = EmployeeSerializer(many=True, read_only=True)
-    
-    # Add computed salary fields
     salary_range_display = serializers.ReadOnlyField()
     salary_midpoint = serializers.ReadOnlyField()
+    document_templates = JobPositionDocumentTemplateSerializer(many=True, required=False)
 
     class Meta:
         model = JobPosition
@@ -364,7 +370,6 @@ class JobPositionSerializer(BaseApprovableSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from institution.serializers import DepartmentSerializer
-
         self.fields["department_details"] = DepartmentSerializer(
             source="department", read_only=True
         )
@@ -383,20 +388,15 @@ class JobPositionSerializer(BaseApprovableSerializer):
         return JobPositionAdvertSerializer(adverts, many=True).data
 
     def validate(self, attrs):
-        # Validate salary range
         salary_min = attrs.get('salary_min')
         salary_max = attrs.get('salary_max')
-        
         if salary_min and salary_max and salary_max < salary_min:
             raise serializers.ValidationError({
                 'salary_max': 'Maximum salary must be greater than or equal to minimum salary.'
             })
 
-        # Validate employee IDs
         employee_ids = attrs.get("apply_salary_to_employees", [])
         if employee_ids:
-
-
             invalid_ids = (
                 Employee.objects.exclude(id__in=employee_ids)
                 .filter(position=self.instance)
@@ -404,41 +404,53 @@ class JobPositionSerializer(BaseApprovableSerializer):
             )
             if invalid_ids:
                 raise serializers.ValidationError(
-                    {
-                        "error": f"Some employee IDs are invalid: {list(invalid_ids)}"
-                    }
+                    {"error": f"Some employee IDs are invalid: {list(invalid_ids)}"}
                 )
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop("apply_salary_to_employees", [])  # Remove this from model creation
-
-        job_position = JobPosition.objects.create(**validated_data)
-
-        institution = job_position.department.institution
-
-        return job_position
+        document_templates_data = validated_data.pop("document_templates", [])
+        
+        with transaction.atomic():
+            job_position = JobPosition.objects.create(**validated_data)
+            
+            # Create JobPositionDocumentTemplate instances
+            for template_data in document_templates_data:
+                JobPositionDocumentTemplate.objects.create(
+                    job_position=job_position,
+                    **template_data
+                )
+            
+            return job_position
 
     def update(self, instance, validated_data):
-
-        employee_ids = validated_data.pop("apply_salary_to_employees", [])
+        document_templates_data = validated_data.pop("document_templates", [])
         
-        # Get old and new salary_min for comparison
-        old_salary_min = instance.salary_min
-        new_salary_min = validated_data.get("salary_min", old_salary_min)
-        
-        instance = super().update(instance, validated_data)
-
-        # Apply salary_min to selected employees if it changed
-        if (new_salary_min is not None and 
-            old_salary_min != new_salary_min and 
-            employee_ids):
-            Employee.objects.filter(
-                id__in=employee_ids, 
-                position=instance
-            ).update(salary=new_salary_min)
-
-        return instance
+        with transaction.atomic():
+            employee_ids = validated_data.pop("apply_salary_to_employees", [])
+            old_salary_min = instance.salary_min
+            new_salary_min = validated_data.get("salary_min", old_salary_min)
+            
+            instance = super().update(instance, validated_data)
+            
+            # Update document templates (replace existing)
+            if document_templates_data:
+                instance.document_template_assignments.all().delete()
+                for template_data in document_templates_data:
+                    JobPositionDocumentTemplate.objects.create(
+                        job_position=instance,
+                        **template_data
+                    )
+            
+            if (new_salary_min is not None and 
+                old_salary_min != new_salary_min and 
+                employee_ids):
+                Employee.objects.filter(
+                    id__in=employee_ids,
+                    position=instance
+                ).update(salary=new_salary_min)
+            
+            return instance
 
 
 
