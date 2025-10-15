@@ -61,8 +61,9 @@ export function PayrollChart({
 							className={`text-sm font-medium ${growthPercentage >= 0 ? "text-green-600" : "text-red-600"}`}
 						>
 							{growthPercentage > 0 ? "+" : ""}
-							{growthPercentage.toFixed(0)}% vs last year
+							{growthPercentage.toFixed(0)}%
 						</span>
+						<span className="text-gray-500">vs last year</span>
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
