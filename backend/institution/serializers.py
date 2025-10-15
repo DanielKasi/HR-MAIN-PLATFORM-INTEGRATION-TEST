@@ -6,6 +6,7 @@ from .models import (
     Department,
     Institution,
     Branch,
+    InstitutionDay,
     TaxRuleCategory,
     UserBranch,
     InstitutionKYCDocument,
@@ -255,16 +256,29 @@ class InstitutionBankAccountSerializer(BaseApprovableSerializer):
         return rep
 
 
-class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
-    days = serializers.PrimaryKeyRelatedField(
-        queryset=SystemDay.objects.all(),
-        many=True,
+class InstitutionDaySerializer(serializers.ModelSerializer):
+    day_name = serializers.CharField(source="day.day_name", read_only=True)
+    day_id = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all(), source="day", write_only=True, required=True
     )
+
+    class Meta:
+        model = InstitutionDay
+        fields = ["id", "day_id", "day_name", "opening_time", "closing_time"]
+
+    def validate(self, data):
+        opening_time = data.get("opening_time")
+        closing_time = data.get("closing_time")
+        if opening_time and closing_time and opening_time >= closing_time:
+            raise serializers.ValidationError({"error": "Opening time must be before closing time."})
+        return data
+
+class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
+    institution_days = InstitutionDaySerializer(many=True)
 
     class Meta:
         model = InstitutionWorkingDays
         fields = '__all__'
-
         read_only_fields = [
             "id",
             "institution",
@@ -279,7 +293,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError({"error": "User has not profile"})
+            raise serializers.ValidationError({"error": "User has no profile"})
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -296,37 +310,52 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
         except InstitutionWorkingDays.DoesNotExist:
             pass
 
-        created_by = request.user if request and request.user.is_authenticated else None
-
+        institution_days_data = validated_data.pop("institution_days", [])
         validated_data["institution"] = institution
-        validated_data["created_by"] = created_by
+        validated_data["created_by"] = request.user if request and request.user.is_authenticated else None
 
-        return super().create(validated_data)
+        institution_working_days = super().create(validated_data)
+
+        for day_data in institution_days_data:
+            InstitutionDay.objects.create(
+                institution_working_days=institution_working_days,
+                day=day_data["day"],
+                opening_time=day_data.get("opening_time", "09:00:00"),
+                closing_time=day_data.get("closing_time", "17:00:00"),
+            )
+
+        return institution_working_days
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
-        user = (
-            request.user.profile if request and request.user.is_authenticated else None
-        )
+        user = request.user.profile if request and request.user.is_authenticated else None
 
         if not user:
             raise serializers.ValidationError(
                 {"error": "User must be authenticated to update working days."}
             )
 
-        instance.days.set(validated_data.get("days", instance.days.all()))
-        instance.updated_by = (
-            request.user if request and request.user.is_authenticated else None
-        )
+        institution_days_data = validated_data.pop("institution_days", [])
+
+        instance.institution_days.all().delete()
+
+        for day_data in institution_days_data:
+            InstitutionDay.objects.create(
+                institution_working_days=instance,
+                day=day_data["day"],
+                opening_time=day_data.get("opening_time", "09:00:00"),
+                closing_time=day_data.get("closing_time", "17:00:00"),
+            )
+
+        instance.updated_by = request.user if request and request.user.is_authenticated else None
         instance.save()
 
         return instance
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["days"] = SystemDaySerializer(instance.days, many=True).data
+        rep["institution_days"] = InstitutionDaySerializer(instance.institution_days, many=True).data
         return rep
-
 
 class BranchDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
@@ -336,8 +365,14 @@ class BranchDaySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BranchDay
-        fields = ["id", "day_id", "day_name", "day_type"]
+        fields = ["id", "day_id", "day_name", "day_type", "opening_time", "closing_time"]
 
+    def validate(self, data):
+        opening_time = data.get("opening_time")
+        closing_time = data.get("closing_time")
+        if opening_time and closing_time and opening_time >= closing_time:
+            raise serializers.ValidationError({"error": "Opening time must be before closing time."})
+        return data
 
 class BranchWorkingDaysSerializer(BaseApprovableSerializer):
     branch_days = BranchDaySerializer(many=True)
@@ -359,12 +394,18 @@ class BranchWorkingDaysSerializer(BaseApprovableSerializer):
         for bd_data in branch_days_data:
             day = bd_data.get("day")
             day_type = bd_data.get("day_type", "PHYSICAL")
+            opening_time = bd_data.get("opening_time", "09:00:00")
+            closing_time = bd_data.get("closing_time", "17:00:00")
 
             if not day:
                 continue
 
             BranchDay.objects.create(
-                branch_working_days=instance, day=day, day_type=day_type
+                branch_working_days=instance,
+                day=day,
+                day_type=day_type,
+                opening_time=opening_time,
+                closing_time=closing_time,
             )
 
         instance.refresh_from_db()

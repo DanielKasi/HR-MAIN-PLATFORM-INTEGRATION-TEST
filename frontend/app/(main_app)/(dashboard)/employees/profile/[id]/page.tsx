@@ -17,7 +17,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import type { IAttendance, ICompanyEmail, IMaritalStatus } from "@/types/types.utils";
+import type { IAttendance, IMaritalStatus } from "@/types/types.utils";
 import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
 import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
 import EmployeeDiscipline from "@/components/employee/employee-discipline";
@@ -40,13 +40,7 @@ import {
 	Settings,
 } from "lucide-react";
 import Link from "next/link";
-import {
-	AttendanceAPI,
-	EMPLOYEE_API,
-	getEmployeeById,
-	showErrorToast,
-	spotcheckAPI,
-} from "@/lib/utils";
+import { AttendanceAPI, EMPLOYEE_API, getEmployeeById, spotcheckAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type {
 	IEmployee,
@@ -62,16 +56,12 @@ import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-s
 import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
 import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
 import { EmployeeBonusPointsTable } from "@/components/performance/bonus-points/bonus-points-table";
-import FixedLoader from "@/components/fixed-loader";
 import { Skeleton } from "@/components/ui/skeleton";
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
-import { CheckInModal } from "@/components/checkin-modal";
-import { CheckOutModal } from "@/components/checkout-modal";
 import SingleEmployeeAttendance from "@/components/attendance/single-employee-attendance";
 import EmployeeDocumentRequestsTable from "../../_components/employee-document-requests-table";
 import EmployeeSignatures from "@/components/employee/employee-signature";
 import EmployeeDevices from "../../_components/employee-devices";
-import DevicesLogsTable from "../../logs/_components/device-logs-table";
 import EmployeeDevicesLogs from "../../_components/employee-device-log";
 
 export default function EmployeeProfile() {

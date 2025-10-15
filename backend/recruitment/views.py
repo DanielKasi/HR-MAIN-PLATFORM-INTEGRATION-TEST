@@ -65,6 +65,7 @@ class JobPositionListAPI(APIView, SortableAPIMixin):
     @method_decorator(permission_required('can_create_job_positions', raise_exception=True))
     @transaction.atomic()
     def post(self, request, institution_id):
+        print(request.data)
         serializer = JobPositionSerializer(data=request.data)
         if serializer.is_valid():
             instance = serializer.save()

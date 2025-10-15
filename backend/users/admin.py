@@ -51,6 +51,7 @@ class CustomUserAdmin(UserAdmin):
             {
                 "fields": (
                     "fullname",
+                    "username",
                     "user_type",
                     "gender",
                     "is_email_verified",

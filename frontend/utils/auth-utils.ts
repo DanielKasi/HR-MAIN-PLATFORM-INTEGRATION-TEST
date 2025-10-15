@@ -1,6 +1,7 @@
 import axios from "axios";
 
-import { Permission, IUser, IUserInstitution } from "@/types";
+import { Permission, IUser } from "@/types/user.types";
+import { IUserInstitution } from "@/types/other";
 import apiRequest from "@/lib/apiRequest";
 import { getInstitutionById } from "@/lib/helpers";
 import { store } from "@/store";
@@ -16,8 +17,15 @@ export type LoginResponse = {
 	institution_attached: IUserInstitution[];
 };
 
-export const loginWithEmailAndPassword = async (email: string, password: string) => {
-	const response = await apiRequest.post("user/login/", { email: email, password: password });
+/**
+ *
+ * @param username  This username can be either an email, a user name or a phone number , it's done this way just for convenience
+ * @param password
+ * @returns
+ */
+
+export const loginWithEmailAndPassword = async (username: string, password: string) => {
+	const response = await apiRequest.post("user/login/", { username: username, password: password });
 	const responseData = response.data;
 
 	return {

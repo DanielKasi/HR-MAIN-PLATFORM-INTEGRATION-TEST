@@ -304,20 +304,35 @@ class InstitutionWorkingDays(BaseApprovableModel):
     institution = models.OneToOneField(
         Institution, related_name="working_days", on_delete=models.CASCADE
     )
+    
 
     days = models.ManyToManyField(
         "settings.SystemDay",
+        through="InstitutionDay",
         related_name="working_day",
         blank=True,
     )
-
-
 
     def __str__(self):
         return f"Working Days for {self.institution.institution_name}"
 
     def get_institution(self):
         return self.institution
+
+
+class InstitutionDay(models.Model):
+    institution_working_days = models.ForeignKey(
+        InstitutionWorkingDays, on_delete=models.CASCADE, related_name="institution_days"
+    )
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+    opening_time = models.TimeField(default="09:00:00")
+    closing_time = models.TimeField(default="17:00:00")
+
+    def __str__(self):
+        return f"{self.institution_working_days.institution.institution_name} - {self.day.day_name}"
+
+    class Meta:
+        ordering = ("day__level",)
 
 
 class InstitutionTax(BaseApprovableModel):
@@ -475,7 +490,6 @@ class BranchWorkingDays(BaseApprovableModel):
 
         if is_new:
             self._create_branch_days()
-
         else:
             if not self.branch_days.exists():
                 self._update_branch_days()
@@ -485,10 +499,12 @@ class BranchWorkingDays(BaseApprovableModel):
             institution=self.branch.institution
         )
 
-        for day in inst_working_days.days.all():
+        for inst_day in inst_working_days.institution_days.all():
             BranchDay.objects.create(
                 branch_working_days=self,
-                day=day,
+                day=inst_day.day,
+                opening_time=inst_day.opening_time,
+                closing_time=inst_day.closing_time,
             )
 
     def _update_branch_days(self):
@@ -498,10 +514,12 @@ class BranchWorkingDays(BaseApprovableModel):
 
         self.days.clear()
 
-        for day in inst_working_days.days.all():
+        for inst_day in inst_working_days.institution_days.all():
             BranchDay.objects.create(
                 branch_working_days=self,
-                day=day,
+                day=inst_day.day,
+                opening_time=inst_day.opening_time,
+                closing_time=inst_day.closing_time,
             )
 
         self.days.set(inst_working_days.days.all())
@@ -514,8 +532,9 @@ class BranchDay(models.Model):
     branch_working_days = models.ForeignKey(
         BranchWorkingDays, on_delete=models.CASCADE, related_name="branch_days"
     )
-
     day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+    opening_time = models.TimeField(default="09:00:00")
+    closing_time = models.TimeField(default="17:00:00")
 
     DAY_TYPE_CHOICES = (
         ("REMOTE", "Remote"),
