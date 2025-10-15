@@ -30,6 +30,7 @@ from .serializers import (
     SignatureSerializer,
     UserOTPVerificationSerializer,
     UserPasswordResetSerializer,
+    UserPermissionSerializer,
     UserResendOTPVerificationSerializer,
     UserSendForgotPasswordTokenSerializer,
     ResendOTPSerializer,
@@ -44,6 +45,7 @@ from .models import (
     Permission,
     PermissionCategory,
     Signature,
+    UserPermission,
     UserType,
     OTPModel,
     Profile,
@@ -1287,6 +1289,8 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
         serializer = SignatureSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
     
+
+    
 class SignatureDetailView(APIView):
 
     @extend_schema(
@@ -1381,4 +1385,47 @@ class SignatureDetailView(APIView):
             serializer.save()
             signature.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+
+class UserPermissionDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=UserPermissionSerializer,
+        responses={200: UserPermissionSerializer(many=True)},
+        description="Update user permissions in bulk.",
+        summary="Update user permissions",
+        tags=["User Management"],
+    )
+    def patch(self, request, user_id):
+        try:
+            from django.contrib.auth import get_user_model
+
+            User = get_user_model()
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = request.data.copy()
+        data["user_id"] = user_id
+
+        serializer = UserPermissionSerializer(user, data=data, partial=True)
+        if serializer.is_valid():
+            result = serializer.save()
+
+            if isinstance(result, list):
+                return Response(
+                    serializer.to_representation(result), status=status.HTTP_200_OK
+                )
+            else:
+                user_permissions = UserPermission.objects.filter(
+                    user=user
+                ).select_related("permission")
+                response_serializer = UserPermissionSerializer(
+                    user_permissions, many=True
+                )
+                return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)       
