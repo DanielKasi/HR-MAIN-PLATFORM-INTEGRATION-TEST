@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from documents.models import DocumentTemplate
 from recruitment.models import (
     JobPosition,
     JobPositionAdvert,
@@ -22,6 +23,7 @@ from users.serializers import CustomUserSerializer
 from recruitment.models import RequiredDocument, ApplicationDocument
 from employee.models import Employee, WorkType, EmployeeType
 from general.serializers import BaseApprovableSerializer
+import copy
 
 
 class RequiredDocumentSerializer(serializers.ModelSerializer):
@@ -341,9 +343,44 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
         return instance
 
 class JobPositionDocumentTemplateSerializer(serializers.ModelSerializer):
+    document_template = serializers.PrimaryKeyRelatedField(queryset=DocumentTemplate.objects.all())
+
     class Meta:
         model = JobPositionDocumentTemplate
-        fields = '__all__'
+        fields = ['document_template', 'purpose']
+
+    def to_internal_value(self, data):
+        print(f"JobPositionDocumentTemplateSerializer to_internal_value input: {data}")
+        return super().to_internal_value(data)
+
+    def to_representation(self, instance):
+        print(f"JobPositionDocumentTemplateSerializer to_representation instance: {instance}")
+        ret = super().to_representation(instance)
+        print(f"JobPositionDocumentTemplateSerializer to_representation output: {ret}")
+        return ret
+
+    def validate(self, attrs):
+        print(f"Validating JobPositionDocumentTemplateSerializer with attrs: {attrs}")
+        purpose = attrs.get('purpose')
+        
+        # Validate purpose
+        valid_purposes = [choice[0] for choice in JobPositionDocumentTemplate._meta.get_field('purpose').choices]
+        if purpose not in valid_purposes:
+            raise serializers.ValidationError({
+                'purpose': f"Purpose must be one of: {', '.join(valid_purposes)}."
+            })
+        
+        # Check for duplicate purpose
+        job_position = self.context.get('job_position')
+        if job_position and JobPositionDocumentTemplate.objects.filter(
+            job_position=job_position,
+            purpose=purpose
+        ).exclude(id=self.instance.id if self.instance else None).exists():
+            raise serializers.ValidationError({
+                'purpose': f"A template with purpose '{purpose}' already exists for this job position."
+            })
+        
+        return attrs
 
     
 
@@ -361,7 +398,11 @@ class JobPositionSerializer(serializers.ModelSerializer):
     employees = EmployeeSerializer(many=True, read_only=True)
     salary_range_display = serializers.ReadOnlyField()
     salary_midpoint = serializers.ReadOnlyField()
-    document_templates = JobPositionDocumentTemplateSerializer(many=True, required=False)
+    document_templates = JobPositionDocumentTemplateSerializer(
+        source='document_template_assignments',  # For serialization (response)
+        many=True,
+        required=False
+    )
 
     class Meta:
         model = JobPosition
@@ -386,6 +427,20 @@ class JobPositionSerializer(serializers.ModelSerializer):
     def get_job_adverts(self, obj):
         adverts = JobPositionAdvert.objects.filter(job_position=obj)
         return JobPositionAdvertSerializer(adverts, many=True).data
+    
+    def to_internal_value(self, data):
+        print(f"Raw JobPositionSerializer data: {data}")
+        # Preserve document_templates as raw data
+        data = copy.deepcopy(data)
+        # Rename document_templates to document_template_assignments for validation
+        if 'document_templates' in data:
+            data['document_template_assignments'] = data.pop('document_templates')
+        internal_data = super().to_internal_value(data)
+        print(f"Internal data after processing: {internal_data}")
+        # Rename back to document_templates for create/update
+        if 'document_template_assignments' in internal_data:
+            internal_data['document_templates'] = internal_data.pop('document_template_assignments')
+        return internal_data
 
     def validate(self, attrs):
         salary_min = attrs.get('salary_min')
@@ -409,21 +464,38 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        print(f"Creating JobPosition with validated_data: {validated_data}")
         document_templates_data = validated_data.pop("document_templates", [])
         
         with transaction.atomic():
             job_position = JobPosition.objects.create(**validated_data)
             
-            # Create JobPositionDocumentTemplate instances
             for template_data in document_templates_data:
+                print(f"Processing template_data: {template_data}")
+                document_template = template_data['document_template']
+                if isinstance(document_template, DocumentTemplate):
+                    document_template = document_template.pk
+                serializer_data = {
+                    'document_template': document_template,
+                    'purpose': template_data['purpose']
+                }
+                print(f"Passing to JobPositionDocumentTemplateSerializer: {serializer_data}")
+                serializer = JobPositionDocumentTemplateSerializer(
+                    data=serializer_data,
+                    context={'job_position': job_position, 'institution_id': self.context.get('institution_id')}
+                )
+                serializer.is_valid(raise_exception=True)
+                print(f"Validated template_data: {serializer.validated_data}")
                 JobPositionDocumentTemplate.objects.create(
                     job_position=job_position,
-                    **template_data
+                    document_template=serializer.validated_data['document_template'],
+                    purpose=serializer.validated_data['purpose']
                 )
             
             return job_position
 
     def update(self, instance, validated_data):
+        print(f"Updating JobPosition with validated_data: {validated_data}")
         document_templates_data = validated_data.pop("document_templates", [])
         
         with transaction.atomic():
@@ -433,13 +505,28 @@ class JobPositionSerializer(serializers.ModelSerializer):
             
             instance = super().update(instance, validated_data)
             
-            # Update document templates (replace existing)
             if document_templates_data:
                 instance.document_template_assignments.all().delete()
                 for template_data in document_templates_data:
+                    print(f"Processing template_data: {template_data}")
+                    document_template = template_data['document_template']
+                    if isinstance(document_template, DocumentTemplate):
+                        document_template = document_template.pk
+                    serializer_data = {
+                        'document_template': document_template,
+                        'purpose': template_data['purpose']
+                    }
+                    print(f"Passing to JobPositionDocumentTemplateSerializer: {serializer_data}")
+                    serializer = JobPositionDocumentTemplateSerializer(
+                        data=serializer_data,
+                        context={'job_position': instance, 'institution_id': self.context.get('institution_id')}
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    print(f"Validated template_data: {serializer.validated_data}")
                     JobPositionDocumentTemplate.objects.create(
                         job_position=instance,
-                        **template_data
+                        document_template=serializer.validated_data['document_template'],
+                        purpose=serializer.validated_data['purpose']
                     )
             
             if (new_salary_min is not None and 

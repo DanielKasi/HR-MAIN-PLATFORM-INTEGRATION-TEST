@@ -16,6 +16,7 @@ from institution.models import (
     InstitutionBankAccount,
     Branch,
     InstitutionWorkingDays,
+    InstitutionDay,
     InstitutionTax,
     InstitutionTaxRule,
     TaxRuleCategory,
@@ -26,6 +27,7 @@ from employee.tasks import send_employee_welcome_email
 from employee.views import generate_compliant_password
 from performance.models import PerformanceConcernType, PIPSupportResourceType
 import uuid
+from datetime import time
 
 class Command(BaseCommand):
     help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, create tax rules, schedule birthday emails, and generate usernames for users without usernames"
@@ -118,7 +120,6 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS("\n🎉 Username generation completed successfully!")
         )
-
 
     def create_tax_rules_for_institutions(self):
         """Create tax rule categories globally and tax rules per institution based on country_code"""
@@ -690,7 +691,9 @@ class Command(BaseCommand):
                 )
             else:
                 updated_count += 1
-                self.stdout.write(self.style.NOTICE(f"  ♻️ Updated award: {award.name}"))
+                self.stdout.write(
+                    self.style.NOTICE(f"  ♻️ Updated award: {award.name}")
+                )
         deleted_awards, _ = QualificationAward.objects.exclude(
             name__in=valid_award_names
         ).delete()
@@ -968,7 +971,7 @@ class Command(BaseCommand):
     def create_default_bank_info(self):
         self.stdout.write(
             self.style.MIGRATE_HEADING(
-                "\n⏳ Creating default bank info and updating employees...\n"
+                "\n⏳ Creating default bank info, working days, and updating employees...\n"
             )
         )
         default_bank_data = {
@@ -978,6 +981,15 @@ class Command(BaseCommand):
             "account_name": "Default Account",
             "account_number": "1234567890",
         }
+        default_working_hours = [
+            {"day_code": "MON", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "TUE", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "WED", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "THU", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "FRI", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "SAT", "opening_time": time(9, 0), "closing_time": time(13, 0)},
+            {"day_code": "SUN", "opening_time": None, "closing_time": None},
+        ]
         institutions = Institution.objects.all()
         for institution in institutions:
             self.stdout.write(f"Processing {institution.institution_name}")
@@ -1082,7 +1094,21 @@ class Command(BaseCommand):
                 institution=institution
             )
             if created:
-                working_days.days.set(SystemDay.objects.all())
+                for day_data in default_working_hours:
+                    system_day = SystemDay.objects.filter(day_code=day_data["day_code"]).first()
+                    if system_day and day_data["opening_time"] and day_data["closing_time"]:
+                        InstitutionDay.objects.create(
+                            institution_working_days=working_days,
+                            day=system_day,
+                            opening_time=day_data["opening_time"],
+                            closing_time=day_data["closing_time"],
+                        )
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f"   └─ Created InstitutionDay for {system_day.day_name} ({day_data['opening_time'].strftime('%H:%M')} - {day_data['closing_time'].strftime('%H:%M')})"
+                            )
+                        )
+                working_days.days.set([day.day for day in working_days.institution_days.all()])
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"   └─ Created default working days for {institution.institution_name}"

@@ -150,7 +150,7 @@ class CustomAuthBackend(ModelBackend):
         UserModel = get_user_model()
         try:
             user = UserModel.objects.get(
-                Q(username__iexact=username) | Q(email__iexact=username) | Q(employees__phone_number=username)
+                Q(username__exact=username) | Q(email__iexact=username) | Q(employees__phone_number=username)
             )
             if user.check_password(password):
                 return user
