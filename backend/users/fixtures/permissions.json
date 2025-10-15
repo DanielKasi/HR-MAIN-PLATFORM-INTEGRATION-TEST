@@ -966,6 +966,19 @@
     }
   ],
 
+  "Institution Management": [
+    {
+      "code": "can_create_ownership_transfer",
+      "name": "Can Create Ownership Transfer",
+      "description": "Can Create Ownership Transfer"
+    },
+    {
+      "code": "can_view_ownership_transfers",
+      "name": "Can View Ownership Transfers",
+      "description": "Can View Ownership Transfers"
+    }
+  ],
+
   "Asset Management": [
     {
       "code": "can_create_asset_categories",
