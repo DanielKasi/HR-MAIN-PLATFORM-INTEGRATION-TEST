@@ -144,13 +144,13 @@ export interface IPaginatedResponse<T> {
 	results: T[];
 }
 
-export interface Stage {
-	id: number;
-	stage_name: string;
-	status: string;
-	position: number;
-	notes?: string;
-}
+// export interface Stage {
+// 	id: number;
+// 	stage_name: string;
+// 	status: string;
+// 	position: number;
+// 	notes?: string;
+// }
 
 export interface StageReorderModalProps {
 	isOpen: boolean;
@@ -1002,6 +1002,19 @@ export interface IEmployeeTypeFormData {
 	code: string;
 	description: string;
 	institution: number;
+}
+
+export interface IAuditLog {
+	id: number;
+	content_object: string;
+	user: string;
+	institution: string;
+	object_id: number;
+	action: "CREATE" | "UPDATE" | "DELETE";
+	timestamp: string;
+	changes: string | any;
+	description: string;
+	content_type: number;
 }
 
 // Response interfaces (what you get back from the API)
