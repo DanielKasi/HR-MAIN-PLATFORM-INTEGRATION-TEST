@@ -1864,15 +1864,46 @@ export interface ISystemWorkingDay {
 	level: number;
 }
 
+export interface IInstitutionDay {
+	id: number;
+	day_name: string;
+	opening_time: string;
+	closing_time: string;
+}
+export interface IInstitutionDayFormData {
+	day_id: number;
+	opening_time?: string;
+	closing_time?: string;
+}
+
 // Institution Working Days interface
 export interface IInstitutionWorkingDays {
 	id: number;
 	institution: number;
-	days: ISystemWorkingDay[];
+	institution_days: IInstitutionDay[];
 	created_by: number | null;
 	created_at: string;
 	updated_by: number | null;
 	updated_at: string;
+}
+
+export interface IDay {
+	id: number;
+	day_type: IDayType;
+	day_name: string;
+	opening_time?: string | null;
+	closing_time?: string | null;
+}
+
+export interface IDayFormData {
+	day_id: number;
+	day_type: IDayType;
+	opening_time?: string | null;
+	closing_time?: string | null;
+}
+
+export interface IInstitutionWorkingDaysFormData {
+	institution_days: IInstitutionDayFormData[];
 }
 
 // Form data for creating/updating institution working days
@@ -2258,12 +2289,21 @@ export interface IBranchLocationComparisonConfigFormData {
 
 export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT" | "ALLOCATION";
 export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
-
+export type IDayType = "PHYSICAL" | "REMOTE";
 export interface IBranchDay {
 	id: number;
-	day_id: number;
 	day_name: string;
-	day_type: "PHYSICAL" | "REMOTE";
+	day_id: number;
+	day_type: IDayType;
+	opening_time?: string | null;
+	closing_time?: string | null;
+}
+
+export interface IBranchDayFormData {
+	day_id: number;
+	day_type: IDayType;
+	opening_time?: string | null;
+	closing_time?: string | null;
 }
 
 export interface IBranchWorkingDays {

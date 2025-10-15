@@ -1,6 +1,11 @@
 "use client";
 
-import type { ISystemWorkingDay, IBranchWorkingDays, IBranchDay } from "@/types/types.utils";
+import type {
+	ISystemWorkingDay,
+	IBranchWorkingDays,
+	IBranchDay,
+	IBranchDayFormData,
+} from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
 import { RotateCcw, AlertCircle } from "lucide-react";
@@ -18,7 +23,7 @@ import { WorkingDaysManager } from "@/components/working-days-manager";
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { branchesAPI, showErrorToast, systemAPI } from "@/lib/utils";
-import { Branch } from "@/types";
+import { Branch } from "@/types/branch.types";
 
 export default function BranchWorkingDaysTab() {
 	const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([]);
@@ -67,7 +72,13 @@ export default function BranchWorkingDaysTab() {
 		setIsLoading(false);
 	};
 
-	const handleBranchWorkingDaysUpdate = async (args: any) => {
+	const handleBranchWorkingDaysUpdate = async (args: {
+		dayId: number;
+		action?: "add" | "remove";
+		dayType: "PHYSICAL" | "REMOTE";
+		day_name?: string;
+		days?: IBranchDayFormData[];
+	}) => {
 		if (!selectedBranch) {
 			toast.error("No branch selected");
 			return;
@@ -95,7 +106,7 @@ export default function BranchWorkingDaysTab() {
 				];
 			} else if (args.action === "remove") {
 				const remainingDays = currentDays.filter(
-					(d) => d.day_name.toLowerCase() !== args.day_name.toLowerCase(),
+					(d) => d.day_name.toLowerCase() !== args.day_name?.toLowerCase(),
 				);
 
 				newDays = remainingDays.map((d) => {
@@ -108,7 +119,7 @@ export default function BranchWorkingDaysTab() {
 						day_type: d.day_type,
 					};
 				});
-			} else if (args.action === "save") {
+			} else if (args.action === "save" && args.days) {
 				for (const day of args.days) {
 					const validDayId = systemWorkingDays.find((d) => d.id === day.day_id);
 
@@ -272,7 +283,7 @@ export default function BranchWorkingDaysTab() {
 							branchWorkingDays: branchWorkingDays,
 						}}
 						systemWorkingDays={systemWorkingDays}
-						onUpdate={handleBranchWorkingDaysUpdate}
+						onBranchDaysUpdate={handleBranchWorkingDaysUpdate}
 						isSaving={isSaving}
 					/>
 				</ApprovableInstancePageLayout>
@@ -287,7 +298,7 @@ export default function BranchWorkingDaysTab() {
 						branchWorkingDays: branchWorkingDays,
 					}}
 					systemWorkingDays={systemWorkingDays}
-					onUpdate={handleBranchWorkingDaysUpdate}
+					onBranchDaysUpdate={handleBranchWorkingDaysUpdate}
 					isSaving={isSaving}
 				/>
 			)}

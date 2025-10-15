@@ -211,6 +211,16 @@ export default function AdminPage() {
 										<span>Working days</span>
 									</Link>
 								</div>
+
+								<div className="">
+									<Link
+										href="/admin/ownership-transfer"
+										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+									>
+										<Icon icon="hugeicons:folder-transfer" className="!w-5 !h-5" />
+										<span>Ownership Transfer</span>
+									</Link>
+								</div>
 							</div>
 						</div>
 
