@@ -79,7 +79,9 @@ export function AttendanceRecordsTable({
 								{scope.type === "default" ? (
 									<>
 										<CardTitle className="flex items-center justify-between">
-											<span className="mb-2">Attendance</span>
+											<span className="mb-3">
+												<h1>Today's Attendance</h1>
+											</span>
 										</CardTitle>
 									</>
 								) : (
@@ -88,17 +90,6 @@ export function AttendanceRecordsTable({
 
 								<div className="flex flex-col gap-4 py-4">
 									<div className="grid grid-cols-1  md:flex flex-col md:flex-row gap-4 w-full items-center justify-start">
-										{scope.type === "default" && (
-											<div className="relative md:w-full md:max-w-lg lg:max-w-xl">
-												<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-												<Input
-													placeholder="Search employees..."
-													value={search || ""}
-													onChange={(e) => setSearch(e.target.value)}
-													className="pl-10  "
-												/>
-											</div>
-										)}
 										{!showingOnDashboard && (
 											<Input
 												type="date"

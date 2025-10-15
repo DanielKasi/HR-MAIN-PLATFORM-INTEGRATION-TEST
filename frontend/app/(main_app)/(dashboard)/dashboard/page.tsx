@@ -10,10 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCards } from "@/components/dashboard-new/metric-cards";
 import { PayrollChart } from "@/components/dashboard-new/payroll-chart";
-import { DepartmentTreemap } from "@/components/dashboard-new/department-treemap";
-import { PayrollByDepartment } from "@/components/dashboard-new/payroll-by-department";
 import { EmployeeCountChart } from "@/components/dashboard-new/employee-count-chart";
-import { GenderDistribution } from "@/components/dashboard-new/gender-distribution";
 import { SimpleCalendarWidget } from "@/components/calendar-widget";
 import { EventsAndHolidaysWidget } from "@/components/dashboard-new/events-and-holidays";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
@@ -27,8 +24,6 @@ import BarHChart from "../analytics/_components/barh.chart";
 import colors from "../analytics/_components/colors";
 import DonutChart from "@/app/(main_app)/(dashboard)/analytics/_components/pie.chart";
 import DepartmentTreeMap from "@/app/(main_app)/(dashboard)/analytics/employees/department.treemap";
-
-import { IEmployeeDashboard } from "@/types/employee.types";
 
 export default function Dashboard() {
 	const [data, setData] = useState<IInstitutionAnalytics | null>(null);
@@ -149,9 +144,9 @@ export default function Dashboard() {
 
 				<TasksCards branchId={null} />
 
-				<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+				<div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
 					{/* Main Content */}
-					<div className="lg:col-span-3 flex flex-col gap-6">
+					<div className="lg:col-span-4 flex flex-col gap-6">
 						{/* Metrics and Calendar Row */}
 						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 							<div className="md:col-span-4">
@@ -196,9 +191,9 @@ export default function Dashboard() {
 					</div>
 
 					{/* Sidebar */}
-					<div className="flex flex-col gap-6 lg:col-span-1">
+					<div className="flex flex-col gap-6 lg:col-span-2">
 						<div className="flex flex-col gap-4">
-							<div className="min-h-[13.2rem]">
+							<div className="min-h-[13.5rem]">
 								<AnnouncementCarousel />
 							</div>
 							<div className="">
@@ -210,6 +205,7 @@ export default function Dashboard() {
 					</div>
 				</div>
 
+				{/* full page div */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{data?.employees_per_department && (
 						<DepartmentTreeMap

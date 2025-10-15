@@ -92,7 +92,7 @@ export default function Piechart({
 	return (
 		<Card className={`flex flex-col shadow-none border ${className}`}>
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
+				<CardTitle className="text-lg font-semibold text-slate-900">{title}</CardTitle>
 				{select && groups?.length > 0 && !isArrayData && (
 					<div className="flex items-center gap-4">
 						<Select
