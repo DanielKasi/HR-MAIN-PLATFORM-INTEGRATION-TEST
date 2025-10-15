@@ -930,7 +930,7 @@ class OwnershipTransferSerializer(BaseApprovableSerializer):
             user.is_active = False
             user.save()
 
-            Profile.objects.filter(user=user, works_at=validated_data["institution"]).delete()
+            Profile.objects.filter(user=user, institution=validated_data["institution"]).delete()
             UserPermission.objects.filter(user=user).delete()
             UserRole.objects.filter(user=user).delete()
             UserBranch.objects.filter(user=user).delete()
