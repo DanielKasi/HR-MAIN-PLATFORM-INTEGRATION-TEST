@@ -158,9 +158,11 @@ class UserListAPIView(APIView, SortableAPIMixin):
             queryset = self.apply_sorting(queryset, request)
         except ValueError as e:
             return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
-
-        serializer = CustomUserSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        paginator = CustomPageNumberPagination()
+        paginated_users = paginator.paginate_queryset(queryset, request)
+        serializer = CustomUserSerializer(paginated_users, many=True)
+        return paginator.get_paginated_response(serializer.data)
     
 class ChangePasswordAPIView(APIView):
     @extend_schema(

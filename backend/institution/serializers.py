@@ -130,6 +130,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "is_active",
             "user_inactivity_time",
             "is_attendance_penalties_enabled",
+            "transfer_history"
         ]
 
     def create(self, validated_data):
