@@ -201,7 +201,7 @@ class Employee(BaseApprovableModel):
         max_length=10, unique=False, editable=False, blank=True
     )
     email = models.EmailField(blank=True, null=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True, unique=True)
     position = models.ForeignKey(
         "recruitment.JobPosition",
         on_delete=models.CASCADE,
