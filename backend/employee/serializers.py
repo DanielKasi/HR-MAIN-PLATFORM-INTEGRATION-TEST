@@ -53,7 +53,8 @@ from institution.models import Department, BranchShift
 from recruitment.models import JobPosition
 from datetime import date, timedelta, datetime
 from users.models import CustomUser, Profile, UserRole
-from institution.serializers import BranchSerializer
+from institution.serializers import BranchSerializer, BranchShiftSerializer
+from django.db.models import Q
 
 class EmployeeMonthlyHourAccountSerializer(serializers.ModelSerializer):
     employee = serializers.SerializerMethodField()
@@ -248,7 +249,7 @@ class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
                     email = generate_email(employee)
                     validated_data['email'] = email
                 except Exception as e:
-                    raise serializers.ValidationError(f"Failed to generate company email: {str(e)}")
+                    raise serializers.ValidationError({"error": f"Failed to generate company email: {str(e)}"})
 
             if provider is None and config:
                 validated_data['provider'] = config.provider
@@ -257,7 +258,7 @@ class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
             company_email = super().create(validated_data)
             return company_email
         except Exception as e:
-            raise serializers.ValidationError(f"Error creating company email: {str(e)}")      
+            raise serializers.ValidationError({"error": f"Error creating company email: {str(e)}"})      
 class EmployeeSerializer(BaseApprovableSerializer):
     date_of_birth = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     user = CustomUserSerializer()
@@ -335,7 +336,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 if existing_user:
                     if user_id and user_id != existing_user.id:
                         raise serializers.ValidationError(
-                            {"user.id": f"Provided user id {user_id} does not match existing user with email {email}."}
+                            {"error": f"Provided user id {user_id} does not match existing user with email {email}."}
                         )
                     user = existing_user
                     print(f"Using existing user: {user.id}, {user.email}")
@@ -346,7 +347,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
                     user = user_serializer.save()
                     print(f"Created new user: {user.id}, {user.email}")
             else:
-                raise serializers.ValidationError({"user.email": "This field is required."})
+                raise serializers.ValidationError({"error": "Email is required."})
 
             validated_data["user"] = user
             validated_data["email"] = user.email
@@ -493,11 +494,11 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 else:
                     Spouse.objects.create(employee=instance, **spouse_serializer.validated_data)
             except serializers.ValidationError as ve:
-                raise serializers.ValidationError({"spouse": ve.detail})
+                raise serializers.ValidationError({"error": ve.detail})
             except IntegrityError as ie:
-                raise serializers.ValidationError({"spouse": "A spouse already exists for this employee."})
+                raise serializers.ValidationError({"error": "A spouse already exists for this employee."})
             except Exception as e:
-                raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
+                raise serializers.ValidationError({"error": f"Error updating/creating spouse: {str(e)}"})
         elif spouse_data == {}:
             existing_spouse = Spouse.objects.filter(employee=instance).first()
             if existing_spouse:
@@ -663,7 +664,7 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
     def validate(self, data):
         employee = data.get("employee")
         if not employee:
-            raise serializers.ValidationError({"employee": "Employee is required."})
+            raise serializers.ValidationError({"error": "Employee is required."})
 
         # Check if we should validate location for this user
         should_validate_location = self._should_validate_location(employee)
@@ -998,59 +999,139 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
         request_user = self.context["request"].user
         context = data.get("context")
         shift = data.get("shift")
-        date_selected = data.get("date")
+        is_recurring = data.get("is_recurring", False)
+        date = data.get("date")
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
         employee = data.get("employee")
 
+        # Set employee for REQUEST context
         if context == "REQUEST":
             if not hasattr(request_user, "employees"):
                 raise serializers.ValidationError(
-                    {"detail": "Logged-in user is not an employee."}
+                    {"error": "Logged-in user is not an employee."}
                 )
             data["employee"] = request_user.employees
             employee = data["employee"]
-        elif context == "ALLOCATION":
+        elif context == "ALLOCATION" or context == "OVERRIDE":
             if employee is None:
                 raise serializers.ValidationError(
-                    {"detail": "Employee must be provided for ALLOCATION context."}
+                    {"error": "Employee must be provided for ALLOCATION or OVERRIDE context."}
                 )
 
+        # Validate shift belongs to employee's branch
         if shift.branch != employee.payroll_branch:
             raise serializers.ValidationError(
                 {
-                    "detail": f"Shift '{shift.name}' does not belong to employee's branch '{employee.payroll_branch.branch_name}'."
+                    "error": f"Shift '{shift.name}' does not belong to employee's branch '{employee.payroll_branch.branch_name}'."
                 }
             )
 
-        python_weekday = date_selected.weekday()
-        level = python_weekday + 1
-        if shift.shift_day.day.level != level:
-            raise serializers.ValidationError(
-                {
-                    "detail": f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
-                    f"but the selected date is '{date_selected.strftime('%A')}'."
-                }
+        # Validate shift type and dates
+        if is_recurring:
+            if not start_date:
+                raise serializers.ValidationError(
+                    {"error": "Start date is required for recurring shifts."}
+                )
+            if end_date and start_date > end_date:
+                raise serializers.ValidationError(
+                    {"error": "Start date must be before end date."}
+                )
+            if date:
+                raise serializers.ValidationError(
+                    {"error": "Date field should be null for recurring shifts."}
+                )
+            # Validate weekday matches shift_day
+            weekday = start_date.weekday() + 1  # SystemDay level 1=Monday
+            if shift.shift_day.day.level != weekday:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
+                        f"but start date is a '{start_date.strftime('%A')}'."
+                    }
+                )
+        else:
+            if not date:
+                raise serializers.ValidationError(
+                    {"error": "Date is required for one-time shifts."}
+                )
+            if start_date or end_date:
+                raise serializers.ValidationError(
+                    {"error": "Start and end dates should be null for one-time shifts."}
+                )
+            # Validate shift_day matches date's weekday
+            weekday = date.weekday() + 1
+            if shift.shift_day.day.level != weekday:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
+                        f"but the selected date is '{date.strftime('%A')}'."
+                    }
+                )
+
+        # Validate against BranchDay times
+        branch_day = employee.payroll_branch.working_days.branch_days.filter(
+            day=shift.shift_day.day
+        ).first()
+        if branch_day and branch_day.opening_time and branch_day.closing_time:
+            if shift.start_time < branch_day.opening_time or shift.end_time > branch_day.closing_time:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Shift '{shift.name}' must be within branch working hours "
+                        f"({branch_day.opening_time} - {branch_day.closing_time})."
+                    }
+                )
+
+        # Validate against EmployeeDay times
+        employee_day = employee.working_days.employee_days.filter(
+            day=shift.shift_day.day
+        ).first()
+        if employee_day and employee_day.start_time and employee_day.end_time:
+            if shift.start_time < employee_day.start_time or shift.end_time > employee_day.end_time:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Shift '{shift.name}' must be within employee's working hours "
+                        f"({employee_day.start_time} - {employee_day.end_time}) on {shift.shift_day.day.day_name}."
+                    }
+                )
+
+        # Check for time conflicts with existing shifts
+        check_date = date if not is_recurring else start_date
+        weekday = check_date.weekday() + 1
+        existing_shifts = EmployeeShift.objects.filter(
+            employee=employee,
+            shift__shift_day__day__level=weekday,
+        ).exclude(id=self.instance.id if self.instance else None)
+        if not is_recurring:
+            existing_shifts = existing_shifts.filter(date=check_date)
+        else:
+            existing_shifts = existing_shifts.filter(
+                Q(is_recurring=False, date=check_date) |
+                Q(is_recurring=True, start_date__lte=check_date) &
+                (Q(end_date__isnull=True) | Q(end_date__gte=check_date))
             )
 
-        branch_open = employee.payroll_branch.branch_opening_time
-        branch_close = employee.payroll_branch.branch_closing_time
-        if shift.start_time < branch_open or shift.end_time > branch_close:
-            raise serializers.ValidationError(
-                {
-                    "detail": f"Shift '{shift.name}' must be within branch working hours "
-                    f"({branch_open} - {branch_close})."
-                }
-            )
+        for existing_shift in existing_shifts:
+            if (shift.start_time < existing_shift.shift.end_time and
+                shift.end_time > existing_shift.shift.start_time):
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Shift '{shift.name}' conflicts with existing shift '{existing_shift.shift.name}' "
+                        f"({existing_shift.shift.start_time} - {existing_shift.shift.end_time}) on {check_date}."
+                    }
+                )
 
-      
         return data
 
     def create(self, validated_data):
         validated_data["created_by"] = self.context["request"].user
         return super().create(validated_data)
 
-    def to_representation(self, instance):
-        from institution.serializers import BranchShiftSerializer
+    def update(self, instance, validated_data):
+        validated_data["created_by"] = instance.created_by  # Preserve original created_by
+        return super().update(instance, validated_data)
 
+    def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
         rep["shift"] = BranchShiftSerializer(instance.shift).data

@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { RefObject, useMemo, useRef } from "react";
 import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { IEmployee } from "@/types/types.utils";
 import { getPaginatedFromUrl } from "@/lib/api/_api.utils";
@@ -9,37 +9,41 @@ import { EMPLOYEE_DEVICE_LOGS } from "@/lib/api/employee.utils";
 import { IEmployeeLog } from "@/types/employee.types";
 import { formatDate } from "@/lib/helpers";
 
-interface EmployeeDevicesLogsProps {
+interface DevicesLogsTableProps {
 	employee?: IEmployee;
 	device?: number;
 	refreshRef?: RefObject<(() => void) | null>;
 	search?: string;
+	date?: string;
 }
 
-export default function EmployeeDevicesLogs({
+export default function DevicesLogsTable({
 	employee,
 	device,
 	refreshRef,
 	search,
-}: EmployeeDevicesLogsProps) {
+	date,
+}: DevicesLogsTableProps) {
 	const refreshFunctionRef = refreshRef || useRef<(() => void) | null>(null);
-	const [columns, setColumns] = useState<ColumnDef<IEmployeeLog>[]>([
-		{
-			key: "employee",
-			header: "Employee",
-			cell: (employee_log) => (
-				<div className="flex-col items-start justify-start gap-4">
-					<p>{employee_log.employee.name}</p>
-					<p>
-						(
-						<span className="text-sm font-semibold line-clamp-1">
-							{employee_log.employee.position}
-						</span>
-						)
-					</p>
-				</div>
-			),
-		},
+	const columns: ColumnDef<IEmployeeLog>[] = [
+		...(employee
+			? [
+					{
+						key: "employee",
+						header: "Employee",
+						cell: (employee_log: IEmployeeLog) => (
+							<div className="flex-col items-start justify-start gap-4">
+								<p>{employee_log.employee.name}</p>
+								<p>
+									<span className="text-sm font-semibold line-clamp-1">
+										({employee_log.employee.position})
+									</span>
+								</p>
+							</div>
+						),
+					},
+				]
+			: []),
 		{
 			key: "record_reference",
 			header: "Record Reference",
@@ -48,7 +52,7 @@ export default function EmployeeDevicesLogs({
 		{
 			key: "device",
 			header: "Device",
-			cell: (employee_log) => employee_log.device.name || "",
+			cell: (employee_log) => employee_log.device.name || employee_log.device.serial_number || "",
 		},
 		{
 			key: "date",
@@ -62,9 +66,12 @@ export default function EmployeeDevicesLogs({
 			header: "Time",
 			cell: (employee_log) => employee_log.time,
 		},
-	]);
+	];
 
-	const memoizedDeps = useMemo(() => [employee, device, search], [employee, device, search]);
+	const memoizedDeps = useMemo(
+		() => [employee, device, search, date],
+		[employee, device, search, date],
+	);
 
 	return (
 		<div>
@@ -72,9 +79,10 @@ export default function EmployeeDevicesLogs({
 				fetchFirstPage={async () =>
 					await EMPLOYEE_DEVICE_LOGS.getPaginated({
 						page: 1,
-						employee_id: employee?.id,
-						device_id: device,
+						employee: employee?.id,
+						device,
 						search,
+						date,
 					})
 				}
 				fetchFromUrl={(url) => getPaginatedFromUrl<IEmployeeLog>(url)}

@@ -168,6 +168,8 @@ import {
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
 	ITaxRuleCategory,
+	IAuditLog,
+	IInstitutionWorkingDaysFormData,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -197,6 +199,7 @@ import { MAIN_DOMAIN_URL } from "@/constants";
 import keys from "@/components/projects/tasks/keys";
 import { number } from "zod";
 import { Branch } from "@/types/branch.types";
+import { IOwnershipTransferFormData } from "@/types/institution.types";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -484,6 +487,84 @@ export const deleteJobPosition = async ({ jobPositionId }: { jobPositionId: numb
 	} catch (error) {
 		// console.error("Error deleting job position/title:", error);
 	}
+};
+
+export const AUDIT_LOGS_API = {
+	getPaginated: async ({
+		institutionId,
+		page = 1,
+		search,
+		action,
+		content_type__model,
+		date_from,
+		date_to,
+		ordering,
+	}: {
+		institutionId: number;
+		page?: number;
+		search?: string;
+		action?: string;
+		content_type__model?: string;
+		date_from?: string;
+		date_to?: string;
+		ordering?: string;
+	}): Promise<IPaginatedResponse<IAuditLog>> => {
+		try {
+			const params = new URLSearchParams({
+				page: page.toString(),
+				institution_id: institutionId.toString(),
+			});
+
+			if (search) {
+				params.append("search", search);
+			}
+			if (action && action !== "all") {
+				params.append("action", action);
+			}
+			if (content_type__model && content_type__model !== "all") {
+				params.append("content_type__model", content_type__model);
+			}
+			if (date_from) {
+				params.append("date_from", date_from);
+			}
+			if (date_to) {
+				params.append("date_to", date_to);
+			}
+			if (ordering) {
+				params.append("ordering", ordering);
+			}
+
+			const endpoint = `/audit/institutions/audit-logs/?${params.toString()}`;
+			const response = await apiRequest.get(endpoint);
+
+			return response.data as IPaginatedResponse<IAuditLog>;
+		} catch (error) {
+			console.error("Error fetching paginated audit logs:", error);
+			throw error;
+		}
+	},
+
+	getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAuditLog>> => {
+		try {
+			const response = await apiRequest.get(forceUrlToHttps(url));
+
+			return response.data as IPaginatedResponse<IAuditLog>;
+		} catch (error) {
+			console.error("Error fetching audit logs from URL:", error);
+			throw error;
+		}
+	},
+
+	getById: async ({ auditLogId }: { auditLogId: number }): Promise<IAuditLog> => {
+		try {
+			const response = await apiRequest.get(`/audit/institutions/audit-logs/${auditLogId}/`);
+
+			return response.data as IAuditLog;
+		} catch (error) {
+			console.error("Error fetching audit log:", error);
+			throw error;
+		}
+	},
 };
 
 export const createJobPosition = async ({
@@ -5893,9 +5974,16 @@ export const ROLES_API = {
 
 		return response.data as IPaginatedResponse<Role>;
 	},
+	getById: async ({ roleId }: { roleId: number }) => {
+		const response = await apiRequest.get(`user/role/${roleId}`);
+		return response.data as Role;
+	},
 };
 
 export const institutionAPI = {
+	transferOwnerShip: async ({ transferData }: { transferData: IOwnershipTransferFormData }) => {
+		const response = await apiRequest.post(`institution/transfer-ownership/`, transferData);
+	},
 	getDasboardAnalytics: async ({ institutionId }: { institutionId: number }) => {
 		const response = await apiRequest.get(`/institution/${institutionId}/dashboard-analytics/`);
 
@@ -5912,7 +6000,7 @@ export const institutionAPI = {
 		}
 	},
 
-	createWorkingDays: async (data: IWorkingDaysFormData) => {
+	createWorkingDays: async (data: IInstitutionWorkingDaysFormData) => {
 		try {
 			const response = await apiRequest.post("/institution/working-days/", data);
 
@@ -5927,7 +6015,7 @@ export const institutionAPI = {
 		data,
 	}: {
 		workingDaysId: number | string;
-		data: IWorkingDaysFormData;
+		data: IInstitutionWorkingDaysFormData;
 	}) => {
 		try {
 			const response = await apiRequest.patch(`/institution/working-days/${workingDaysId}/`, data);
@@ -5963,6 +6051,11 @@ export const institutionAPI = {
 		});
 		const response = await apiRequest.patch(`/institution/${institutionId}/`, formData);
 
+		return response.data as IUserInstitution;
+	},
+
+	getById: async ({ institutionId }: { institutionId: number }) => {
+		const response = await apiRequest.get(`/institution/${institutionId}/`);
 		return response.data as IUserInstitution;
 	},
 
@@ -7913,6 +8006,27 @@ export const branchesAPI = {
 };
 
 export const usersAPI = {
+	getPaginatedUsers: async ({
+		page = 1,
+		search,
+		ordering,
+	}: {
+		page?: number;
+		search?: string;
+		ordering?: string;
+	}) => {
+		const params = new URLSearchParams({
+			page: page.toString(),
+		});
+
+		if (search) {
+			params.append("search", search);
+		}
+		ordering && params.append("ordering", ordering);
+		const endpoint = `user/?${params.toString()}`;
+		const response = await apiRequest.get(endpoint);
+		return response.data as IPaginatedResponse<IUser>;
+	},
 	getProfilesByInstitutionId: async ({ institutionId }: { institutionId: number }) => {
 		const response = await apiRequest.get(`/institution/profile/${institutionId}/`);
 
@@ -7921,6 +8035,11 @@ export const usersAPI = {
 	update: async ({ userId, updateData }: { userId: number; updateData: Partial<IUser> }) => {
 		const response = await apiRequest.patch(`user/${userId}/`, updateData);
 		return response.data as { message: string; user: IUser };
+	},
+
+	getById: async ({ userId }: { userId: number }) => {
+		const response = await apiRequest.get(`user/${userId}/`);
+		return response.data as IUser;
 	},
 };
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-import EmployeeDevicesLogs from "../_components/employee-device-logs";
+import DevicesLogsTable from "./_components/device-logs-table";
 
 export default function DevicesLogsPage() {
 	const [searchQuery, setSearchQuery] = useState("");
@@ -44,7 +44,7 @@ export default function DevicesLogsPage() {
 					</div>
 				</div>
 
-				<EmployeeDevicesLogs search={searchQuery} />
+				<DevicesLogsTable search={searchQuery} />
 			</div>
 		</div>
 	);

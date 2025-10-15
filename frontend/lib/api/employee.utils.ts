@@ -5,9 +5,10 @@ import { IEmployeeLog } from "@/types/employee.types";
 export const EMPLOYEE_DEVICE_LOGS = {
 	getPaginated: async (params?: {
 		page?: number;
-		employee_id?: number;
-		device_id?: number;
+		employee?: number;
+		device?: number;
 		search?: string;
+		date?: string;
 	}) => {
 		const urlParams = new URLSearchParams();
 		Object.entries(params || { page: 1 }).forEach(([key, value]) => {

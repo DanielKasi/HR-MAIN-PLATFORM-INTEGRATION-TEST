@@ -6,6 +6,7 @@ from .views import (
     InstitutionDetailAPIView,
     InstitutionListAPIView,
     InstitutionUserProfileAPIView,
+    OwnershipTransferAPIView,
     SystemActivationView,
     TaxRuleCategoryList,
     UserProfileListAPIView,
@@ -217,4 +218,9 @@ urlpatterns = [
     ),
     path("user-chats/", UserChatsView.as_view(), name="user-chats"),
     path("organization-chart/", OrganizationChartView.as_view(), name="organization-chart"),
+    path(
+        "transfer-ownership/",
+        OwnershipTransferAPIView.as_view(),
+        name="transfer-ownership",
+    ),
 ]

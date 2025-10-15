@@ -7,6 +7,7 @@ from .models import (
     InstitutionBankType,
     InstitutionBankAccount,
     InstitutionWorkingDays,
+    InstitutionDay,
     InstitutionTax,
     InstitutionTaxRule,
     InstitutionKYCDocument,
@@ -15,7 +16,8 @@ from .models import (
     BranchDay, 
     BranchWorkingDays,
     BranchShift,
-    BranchLocationComparisonConfig
+    BranchLocationComparisonConfig,
+    OwnershipTransfer
 )
 
 
@@ -40,6 +42,7 @@ admin.site.register(Department)
 admin.site.register(InstitutionBankType)
 admin.site.register(InstitutionBankAccount)
 admin.site.register(InstitutionWorkingDays)
+admin.site.register(InstitutionDay)
 admin.site.register(InstitutionTax)
 admin.site.register(InstitutionTaxRule)
 admin.site.register(InstitutionKYCDocument)
@@ -49,3 +52,4 @@ admin.site.register(BranchDay)
 admin.site.register(BranchWorkingDays)
 admin.site.register(BranchShift)
 admin.site.register(BranchLocationComparisonConfig)
+admin.site.register(OwnershipTransfer)

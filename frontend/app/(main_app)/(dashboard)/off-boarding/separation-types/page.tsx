@@ -67,7 +67,6 @@ const SEPARATION_CATEGORIES = [
 	{ value: "resignation", label: "Resignation" },
 	{ value: "termination", label: "Termination" },
 	{ value: "retirement", label: "Retirement" },
-	{ value: "contract_end", label: "Contract End" },
 ] as const;
 
 const formSchema = z.object({
@@ -83,7 +82,7 @@ export default function SeparationPolicyTypesPage() {
 	const [stages, setStages] = useState<IOffboardingStage[]>([]);
 	const [editingPolicyType, setEditingPolicyType] = useState<ISeparationType | null>(null);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false); // Add this state
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [policyTypeToDelete, setPolicyTypeToDelete] = useState<ISeparationType | null>(null);
 	const [searchTerm, setSearchTerm] = useState("");
 	const refreshTableRef = useRef<(() => void) | null>(null);
@@ -91,8 +90,6 @@ export default function SeparationPolicyTypesPage() {
 	const [ordering, setOrdering] = useState("");
 	const searchParams = useSearchParams();
 	const from = searchParams.get("from");
-
-	// console.log("From query param:", from);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -125,7 +122,6 @@ export default function SeparationPolicyTypesPage() {
 		setIsCreateDialogOpen(false); // Close the create dialog
 		form.reset(); // Reset the form
 		if (from) {
-			// Redirect to the page specified in the "from" query param
 			router.push(from);
 		} else {
 			refreshTableRef.current?.();
@@ -161,7 +157,7 @@ export default function SeparationPolicyTypesPage() {
 				await SeparationPolicyTypesAPI.create({
 					policyTypeData: { ...values },
 				});
-				handleCreateSuccess({} as ISeparationType); // We don't have the created separation type here, but the refresh will show it
+				handleCreateSuccess({} as ISeparationType);
 			}
 		} catch (error) {
 			toast.error(

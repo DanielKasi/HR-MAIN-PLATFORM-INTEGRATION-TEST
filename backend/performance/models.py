@@ -1,8 +1,9 @@
 from django.db import models, transaction
 from approval.models import Approval, BaseApprovableModel
+from performance.tasks import send_meeting_notification_email
 from documents.models import DocumentTemplate
 from performance.teams_api import create_teams_meeting, update_teams_meeting
-from performance.zoom_api import create_zoom_meeting
+from performance.zoom_api import create_zoom_meeting, update_zoom_meeting
 from employee.models import Employee
 from institution.models import Institution
 from django.utils import timezone
@@ -17,6 +18,10 @@ from googleapiclient.discovery import build
 import os
 from google.auth.transport.requests import Request
 from datetime import datetime
+from django.template.loader import render_to_string
+from communication.models import Announcement
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 class Period(BaseApprovableModel):   
@@ -420,14 +425,18 @@ class Meeting(BaseApprovableModel):
     def __str__(self):
         return f"{self.title} on {self.start_time.date()}"
     
+    def get_institution(self):
+        return self.institution
+
     @classmethod
     def get_report_data(cls, start_date, end_date, institution, **filters):
+        print(f"Fetching report data for institution {institution} from {start_date} to {end_date} with filters {filters}")
         queryset = cls.objects.filter(
             start_time__range=(start_date, end_date),
             institution=institution,
             **filters
         ).select_related('institution', 'organizer').prefetch_related('participants')
-        return list(queryset.values(
+        report_data = list(queryset.values(
             'title',
             'start_time',
             'end_time',
@@ -436,33 +445,47 @@ class Meeting(BaseApprovableModel):
             'organizer__name',
             'is_recurring',
         ))
+        print(f"Retrieved {len(report_data)} meetings")
+        return report_data
 
     def _get_institution_meeting_link(self):
+        print(f"Getting meeting link for meeting {self.title} (mode: {self.mode}, id: {self.id})")
         integration = self.institution.meeting_integrations.first()
         if not integration:
+            print("No meeting integration found for institution")
             return None
+        print(f"Using integration platform: {integration.platform}")
         if integration.platform == 'zoom':
             return self._create_zoom_meeting(integration)
         elif integration.platform == 'google_meet':
             return self._create_google_meet(integration)
         elif integration.platform == 'microsoft_teams':
             return self._create_teams_meeting(integration)
+        print(f"Unknown integration platform: {integration.platform}")
         return None
 
     def _create_zoom_meeting(self, integration):
+        print(f"Creating Zoom meeting for {self.title} (id: {self.id})")
         duration = int((self.end_time - self.start_time).total_seconds() / 60)
-        zoom_data = create_zoom_meeting(
-            api_key=integration.api_key,
-            api_secret=integration.api_secret,
-            topic=self.title,
-            start_time=self.start_time.isoformat(),
-            duration=duration,
-            recurrence=self._get_zoom_recurrence() if self.is_recurring else None,
-        )
-        self.calendar_event_id = zoom_data['id']
-        return zoom_data['join_url']
+        print(f"Zoom meeting duration: {duration} minutes")
+        try:
+            zoom_data = create_zoom_meeting(
+                api_key=integration.api_key,
+                api_secret=integration.api_secret,
+                topic=self.title,
+                start_time=self.start_time.isoformat(),
+                duration=duration,
+                recurrence=self._get_zoom_recurrence() if self.is_recurring else None,
+            )
+            print(f"Zoom meeting created: ID={zoom_data['id']}, Join URL={zoom_data['join_url']}")
+            self.calendar_event_id = zoom_data['id']
+            return zoom_data['join_url']
+        except Exception as e:
+            print(f"Error creating Zoom meeting: {e}")
+            raise
 
     def _create_google_meet(self, integration):
+        print(f"Creating Google Meet for {self.title} (id: {self.id})")
         credentials = Credentials(
             token=integration.oauth_token,
             refresh_token=integration.oauth_refresh_token,
@@ -471,10 +494,12 @@ class Meeting(BaseApprovableModel):
             token_uri='https://oauth2.googleapis.com/token',
         )
         if credentials.expired and credentials.refresh_token:
+            print("Google credentials expired, refreshing...")
             credentials.refresh(Request())
             integration.oauth_token = credentials.token
             integration.oauth_refresh_token = credentials.refresh_token
             integration.save()
+            print("Google credentials refreshed and saved")
         service = build('calendar', 'v3', credentials=credentials)
         event = {
             'summary': self.title,
@@ -484,75 +509,105 @@ class Meeting(BaseApprovableModel):
             'conferenceData': {
                 'createRequest': {'requestId': f'meet-{self.id}', 'conferenceSolutionKey': {'type': 'hangoutsMeet'}}
             },
-            'attendees': [{'email': p.user.email} for p in self.participants.all()],
+            'attendees': [{'email': p.user.email} for p in self.participants.all() if p.user and p.user.email],
         }
         if self.is_recurring and self.recurrence_rule:
             event['recurrence'] = [self.recurrence_rule]
-        event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
-        self.calendar_event_id = event['id']
-        return event.get('hangoutLink')
+            print(f"Google Meet recurrence rule: {self.recurrence_rule}")
+        try:
+            event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
+            print(f"Google Meet created: ID={event['id']}, Hangout Link={event.get('hangoutLink')}")
+            self.calendar_event_id = event['id']
+            return event.get('hangoutLink')
+        except Exception as e:
+            print(f"Error creating Google Meet: {e}")
+            raise
 
     def _create_teams_meeting(self, integration):
-        teams_data = create_teams_meeting(
-            client_id=integration.api_key,
-            client_secret=integration.api_secret,
-            tenant_id=integration.tenant_id,
-            subject=self.title,
-            start_time=self.start_time.isoformat(),
-            end_time=self.end_time.isoformat(),
-            recurrence=self._get_teams_recurrence() if self.is_recurring else None,
-            attendees=[p.user.email for p in self.participants.all()],
-        )
-        self.calendar_event_id = teams_data['id']
-        return teams_data['onlineMeeting']['joinUrl']
+        print(f"Creating Microsoft Teams meeting for {self.title} (id: {self.id})")
+        try:
+            teams_data = create_teams_meeting(
+                client_id=integration.api_key,
+                client_secret=integration.api_secret,
+                tenant_id=integration.tenant_id,
+                subject=self.title,
+                start_time=self.start_time.isoformat(),
+                end_time=self.end_time.isoformat(),
+                recurrence=self._get_teams_recurrence() if self.is_recurring else None,
+                attendees=[p.user.email for p in self.participants.all() if p.user and p.user.email],
+            )
+            print(f"Teams meeting created: ID={teams_data['id']}, Join URL={teams_data['onlineMeeting']['joinUrl']}")
+            self.calendar_event_id = teams_data['id']
+            return teams_data['onlineMeeting']['joinUrl']
+        except Exception as e:
+            print(f"Error creating Teams meeting: {e}")
+            raise
 
     def _get_zoom_recurrence(self):
         if not self.recurrence_rule:
+            print("No recurrence rule provided for Zoom meeting")
             return None
-        rrule = rrulestr(self.recurrence_rule)
-        recurrence_type = {
-            0: 1,  # Daily
-            1: 2,  # Weekly
-            2: 3,  # Monthly
-        }.get(rrule._freq, 1)
-        return {
-            'type': recurrence_type,
-            'repeat_interval': rrule._interval,
-            'weekly_days': ','.join(str(d + 1) for d in rrule._byweekday) if rrule._byweekday else None,
-            'end_date_time': (rrulestr(self.recurrence_rule)._until or self.end_time).isoformat(),
-        }
+        try:
+            rrule = rrulestr(self.recurrence_rule)
+            recurrence_type = {
+                0: 1,  # Daily
+                1: 2,  # Weekly
+                2: 3,  # Monthly
+            }.get(rrule._freq, 1)
+            recurrence = {
+                'type': recurrence_type,
+                'repeat_interval': rrule._interval,
+                'weekly_days': ','.join(str(d + 1) for d in rrule._byweekday) if rrule._byweekday else None,
+                'end_date_time': (rrule._until or self.end_time).isoformat(),
+            }
+            print(f"Zoom recurrence: {recurrence}")
+            return recurrence
+        except ValueError as e:
+            print(f"Invalid recurrence rule for Zoom: {e}")
+            raise
 
     def _get_teams_recurrence(self):
         if not self.recurrence_rule:
+            print("No recurrence rule provided for Teams meeting")
             return None
-        rrule = rrulestr(self.recurrence_rule)
-        recurrence_type = {
-            0: 'daily',
-            1: 'weekly',
-            2: 'monthly'
-        }.get(rrule._freq, 'daily')
-        pattern = {
-            'type': recurrence_type,
-            'interval': rrule._interval,
-        }
-        if rrule._byweekday:
-            pattern['daysOfWeek'] = [rrule._byweekday[i].weekday for i in range(len(rrule._byweekday))]
-        range_end = rrule._until or self.end_time
-        return {
-            'pattern': pattern,
-            'range': {
-                'type': 'endDate',
-                'endDate': range_end.strftime('%Y-%m-%d')
+        try:
+            rrule = rrulestr(self.recurrence_rule)
+            recurrence_type = {
+                0: 'daily',
+                1: 'weekly',
+                2: 'monthly'
+            }.get(rrule._freq, 'daily')
+            pattern = {
+                'type': recurrence_type,
+                'interval': rrule._interval,
             }
-        }
+            if rrule._byweekday:
+                pattern['daysOfWeek'] = [rrule._byweekday[i].weekday for i in range(len(rrule._byweekday))]
+            range_end = rrule._until or self.end_time
+            recurrence = {
+                'pattern': pattern,
+                'range': {
+                    'type': 'endDate',
+                    'endDate': range_end.strftime('%Y-%m-%d')
+                }
+            }
+            print(f"Teams recurrence: {recurrence}")
+            return recurrence
+        except ValueError as e:
+            print(f"Invalid recurrence rule for Teams: {e}")
+            raise
 
     def _sync_to_calendar(self):
+        print(f"Syncing meeting {self.title} to calendar (mode: {self.mode}, id: {self.id})")
         if self.mode not in ['online', 'hybrid']:
+            print("Skipping calendar sync for non-online/hybrid meeting")
             return
         integration = self.institution.meeting_integrations.first()
         if not integration:
+            print("No integration found for calendar sync")
             return
         if self.calendar_event_id:
+            print(f"Updating existing calendar event: {self.calendar_event_id}")
             if integration.platform == 'google_meet':
                 self._update_google_calendar_event(integration)
             elif integration.platform == 'zoom':
@@ -560,11 +615,15 @@ class Meeting(BaseApprovableModel):
             elif integration.platform == 'microsoft_teams':
                 self._update_teams_meeting(integration)
         else:
+            print("Creating new calendar event")
             self.online_link = self._get_institution_meeting_link()
             if self.online_link:
-                self.save()
+                print(f"Updating meeting with online_link: {self.online_link}")
+                # Avoid recursive save by setting fields directly
+                Meeting.objects.filter(id=self.id).update(online_link=self.online_link, calendar_event_id=self.calendar_event_id)
 
     def _update_google_calendar_event(self, integration):
+        print(f"Updating Google Calendar event for {self.title} (id: {self.id})")
         credentials = Credentials(
             token=integration.oauth_token,
             refresh_token=integration.oauth_refresh_token,
@@ -573,10 +632,12 @@ class Meeting(BaseApprovableModel):
             token_uri='https://oauth2.googleapis.com/token',
         )
         if credentials.expired and credentials.refresh_token:
+            print("Google credentials expired, refreshing...")
             credentials.refresh(Request())
             integration.oauth_token = credentials.token
             integration.oauth_refresh_token = credentials.refresh_token
             integration.save()
+            print("Google credentials refreshed and saved")
         service = build('calendar', 'v3', credentials=credentials)
         event = {
             'summary': self.title,
@@ -586,10 +647,11 @@ class Meeting(BaseApprovableModel):
             'conferenceData': {
                 'createRequest': {'requestId': f'meet-{self.id}', 'conferenceSolutionKey': {'type': 'hangoutsMeet'}}
             },
-            'attendees': [{'email': p.user.email} for p in self.participants.all()],
+            'attendees': [{'email': p.user.email} for p in self.participants.all() if p.user and p.user.email],
         }
         if self.is_recurring and self.recurrence_rule:
             event['recurrence'] = [self.recurrence_rule]
+            print(f"Updating Google event with recurrence: {self.recurrence_rule}")
         try:
             updated_event = service.events().update(
                 calendarId='primary',
@@ -597,12 +659,16 @@ class Meeting(BaseApprovableModel):
                 body=event,
                 conferenceDataVersion=1
             ).execute()
+            print(f"Google Calendar event updated: ID={updated_event['id']}, Hangout Link={updated_event.get('hangoutLink')}")
             self.online_link = updated_event.get('hangoutLink')
+            # Avoid recursive save
+            Meeting.objects.filter(id=self.id).update(online_link=self.online_link)
         except Exception as e:
             print(f"Error updating Google Calendar event: {e}")
+            raise
 
     def _update_zoom_meeting(self, integration):
-        from .zoom_api import update_zoom_meeting
+        print(f"Updating Zoom meeting for {self.title} (id: {self.id})")
         duration = int((self.end_time - self.start_time).total_seconds() / 60)
         try:
             zoom_data = update_zoom_meeting(
@@ -614,11 +680,16 @@ class Meeting(BaseApprovableModel):
                 duration=duration,
                 recurrence=self._get_zoom_recurrence() if self.is_recurring else None,
             )
+            print(f"Zoom meeting updated: Join URL={zoom_data['join_url']}")
             self.online_link = zoom_data['join_url']
+            # Avoid recursive save
+            Meeting.objects.filter(id=self.id).update(online_link=self.online_link)
         except Exception as e:
             print(f"Error updating Zoom meeting: {e}")
+            raise
 
     def _update_teams_meeting(self, integration):
+        print(f"Updating Microsoft Teams meeting for {self.title} (id: {self.id})")
         try:
             teams_data = update_teams_meeting(
                 client_id=integration.api_key,
@@ -629,20 +700,71 @@ class Meeting(BaseApprovableModel):
                 start_time=self.start_time.isoformat(),
                 end_time=self.end_time.isoformat(),
                 recurrence=self._get_teams_recurrence() if self.is_recurring else None,
-                attendees=[p.user.email for p in self.participants.all()],
+                attendees=[p.user.email for p in self.participants.all() if p.user and p.user.email],
             )
+            print(f"Teams meeting updated: Join URL={teams_data['onlineMeeting']['joinUrl']}")
             self.online_link = teams_data['onlineMeeting']['joinUrl']
+            # Avoid recursive save
+            Meeting.objects.filter(id=self.id).update(online_link=self.online_link)
         except Exception as e:
             print(f"Error updating Teams meeting: {e}")
+            raise
 
     def save(self, *args, **kwargs):
-        if self.mode in ['online', 'hybrid'] and not self.online_link:
-            self.online_link = self._get_institution_meeting_link()
+        print(f"Saving meeting: {self.title} (mode: {self.mode}, id: {self.id})")
+        is_new = self.pk is None        
         super().save(*args, **kwargs)
-        self._sync_to_calendar()
+        # Handle online link generation for online/hybrid meetings
+        if is_new and self.mode in ['online', 'hybrid'] and not self.online_link:
+            print("Generating online link for online/hybrid meeting")
+            self.online_link = self._get_institution_meeting_link()
+            if self.online_link:
+                print(f"Updating meeting with online_link: {self.online_link}")
+                # Avoid recursive save
+                Meeting.objects.filter(id=self.id).update(online_link=self.online_link, calendar_event_id=self.calendar_event_id)
 
-    def get_institution(self):
-        return self.institution     
+        if is_new:
+            # Create announcement
+            announcement = Announcement.objects.create(
+                title=f"New Meeting: {self.title}",
+                content=f"""
+Meeting Details:
+Title: {self.title}
+Date: {self.start_time.date()}
+Time: {self.start_time.time()} - {self.end_time.time()}
+Mode: {self.mode.title()}
+{f"Location: {self.location}" if self.location else ""}
+{f"Online Link: {self.online_link}" if self.online_link else ""}
+{f"Agenda: {self.agenda}" if self.agenda else ""}
+                """,
+                requires_acknowledgment=True
+            )
+            announcement.target_employees.set(self.participants.all())
+            print(f"Created announcement for meeting: {self.title}")
+
+            # Prepare data for email notifications
+            participant_emails = [p.user.email for p in self.participants.all() if p.user and p.user.email]
+            print(f"Participant emails for notification: {participant_emails}")
+            meeting_data = {
+                'title': self.title,
+                'meeting_date': str(self.start_time.date()),
+                'meeting_time': f"{self.start_time.time()} - {self.end_time.time()}",
+                'meeting_mode': self.mode.title(),
+                'meeting_location': self.location or '',
+                'meeting_online_link': self.online_link or '',
+                'meeting_agenda': self.agenda or '',
+                'organizer_name': self.organizer.name if self.organizer else 'Meeting Organizer',
+            }
+            
+            try:
+                send_meeting_notification_email.delay(self.id, participant_emails, meeting_data)
+                print(f"Triggered Celery task to send emails for meeting {self.title}")
+            except Exception as e:
+                print(f"Error triggering Celery email task for meeting {self.title}: {str(e)}")
+
+        print("Meeting saved, syncing to calendar")
+        if not is_new:  # Only sync for updates, as new meetings handle online_link above
+            self._sync_to_calendar()
 
 class PerformanceConcernType(BaseApprovableModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)

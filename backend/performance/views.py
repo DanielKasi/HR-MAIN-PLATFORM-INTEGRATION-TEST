@@ -993,12 +993,13 @@ class MeetingListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
+        print (request.data)
         serializer = MeetingSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save(
                 institution=request.user.profile.institution
-                # organizer=request.user.profile
             )
+            print("Institution", request.user.profile.institution)
             instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

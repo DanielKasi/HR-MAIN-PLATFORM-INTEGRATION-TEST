@@ -93,35 +93,13 @@ class BonusPointSettingsSerializer(BaseApprovableSerializer):
         allowed_fields = BonusPointSettings.ALLOWED_FIELDS.get(model_name.capitalize(), [])
         if data.get('condition_field') not in allowed_fields:
             raise serializers.ValidationError({
-                "condition_field": f"Invalid field for {model_name}. Must be one of: {', '.join(allowed_fields)}"
+                "error": f"Invalid field for {model_name}. Must be one of: {', '.join(allowed_fields)}"
             })
         if data.get('condition_operator') not in [op[0] for op in BonusPointSettings.CONDITION_OPERATOR_CHOICES]:
             raise serializers.ValidationError({
-                "condition_operator": f"Invalid operator. Must be one of: {', '.join(op[0] for op in BonusPointSettings.CONDITION_OPERATOR_CHOICES)}"
+                "error": f"Invalid operator. Must be one of: {', '.join(op[0] for op in BonusPointSettings.CONDITION_OPERATOR_CHOICES)}"
             })
-        model_class = data['content_type'].model_class()
-        field = model_class._meta.get_field(data['condition_field'])
-        condition_value = data.get('condition_value')
-        # if isinstance(field, (models.DateField, models.DateTimeField)):
-        #     try:
-        #         from datetime import datetime
-        #         datetime.strptime(condition_value, '%Y-%m-%d')
-        #     except ValueError:
-        #         raise serializers.ValidationError({
-        #             "condition_value": f"Invalid value for {data['condition_field']}. Must be a valid date (YYYY-MM-DD)."
-        #         })
-        # elif isinstance(field, models.BooleanField):
-        #     if condition_value.lower() not in ['true', 'false']:
-        #         raise serializers.ValidationError({
-        #             "condition_value": f"Invalid value for {data['condition_field']}. Must be 'true' or 'false'."
-        #         })
-        # elif isinstance(field, (models.IntegerField, models.FloatField)):
-        #     try:
-        #         float(condition_value)
-        #     except ValueError:
-        #         raise serializers.ValidationError({
-        #             "condition_value": f"Invalid value for {data['condition_field']}. Must be a number."
-        #         })
+
         return data
 
     class Meta:

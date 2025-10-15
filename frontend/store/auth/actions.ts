@@ -3,8 +3,9 @@ import { ActionWithPayLoad, Action, createAction } from "../storeUtils";
 import { AUTH_ACTION_TYPES } from "./types";
 import { AuthError } from "./reducer";
 
-import { ITill, StoredColorData } from "@/types";
-import { Branch, Permission, IUser, IUserInstitution } from "@/types";
+import { ITill, StoredColorData, IUserInstitution } from "@/types/other";
+import { Permission, IUser } from "@/types/user.types";
+import { Branch } from "@/types/branch.types";
 import { getAuthError } from "@/utils/error-utils";
 
 type UpdateThemeAction = ActionWithPayLoad<AUTH_ACTION_TYPES.UPDATE_THEME, StoredColorData>;
@@ -12,7 +13,7 @@ type RemoveThemeAction = Action<AUTH_ACTION_TYPES.REMOVE_THEME>;
 
 type LoginStart = ActionWithPayLoad<
 	AUTH_ACTION_TYPES.LOGIN_START,
-	{ email: string; password: string }
+	{ username: string; password: string }
 >;
 
 type LoginFailure = ActionWithPayLoad<AUTH_ACTION_TYPES.LOGIN_FAILURE, AuthError>;
@@ -85,8 +86,8 @@ export type AuthAction =
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_SUCCESS>
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE>;
 
-export const loginStart = (email: string, password: string): LoginStart =>
-	createAction(AUTH_ACTION_TYPES.LOGIN_START, { email, password });
+export const loginStart = (username: string, password: string): LoginStart =>
+	createAction(AUTH_ACTION_TYPES.LOGIN_START, { username, password });
 export const loginFailure = (error: unknown): LoginFailure =>
 	createAction(AUTH_ACTION_TYPES.LOGIN_FAILURE, getAuthError(error));
 

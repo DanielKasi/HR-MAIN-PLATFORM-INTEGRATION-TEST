@@ -173,7 +173,7 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, data):
         if data["new_password"] != data["new_password_confirm"]:
             raise serializers.ValidationError(
-                {"new_password_confirm": "New passwords do not match."}
+                {"error": "New passwords do not match."}
             )
 
         user = self.context["request"].user
@@ -181,7 +181,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         # Check old password
         if not user.check_password(data["old_password"]):
             raise serializers.ValidationError(
-                {"old_password": "Old password is incorrect."}
+                {"error": "Old password is incorrect."}
             )
 
         # Validate new password strength
@@ -189,7 +189,7 @@ class ChangePasswordSerializer(serializers.Serializer):
             validate_password(data["new_password"], user)
         except exceptions.ValidationError as e:
             errors = dict(e.error_list)
-            raise serializers.ValidationError({"new_password": errors})
+            raise serializers.ValidationError({"error": errors})
 
         return data
 
@@ -256,7 +256,7 @@ class UserSendForgotPasswordTokenSerializer(serializers.Serializer):
 
 
 class LoginRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
 

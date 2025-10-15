@@ -4,6 +4,8 @@ import type {
 	ISystemWorkingDay,
 	IInstitutionWorkingDays,
 	IWorkingDaysFormData,
+	IInstitutionWorkingDaysFormData,
+	IDay,
 } from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
@@ -39,7 +41,7 @@ export default function InstitutionWorkingDays() {
 
 	useEffect(() => {
 		if (institutionWorkingDays) {
-			const currentDayIds = institutionWorkingDays.days.map((day) => day.id).sort();
+			const currentDayIds = institutionWorkingDays.institution_days.map((day) => day.id).sort();
 			const selectedDayIds = [...selectedDays].sort();
 
 			setHasChanges(JSON.stringify(currentDayIds) !== JSON.stringify(selectedDayIds));
@@ -62,7 +64,7 @@ export default function InstitutionWorkingDays() {
 
 			setInstitutionWorkingDays(currentWorkingDays);
 			if (currentWorkingDays) {
-				setSelectedDays(currentWorkingDays.days.map((day) => day.id));
+				setSelectedDays(currentWorkingDays.institution_days.map((day) => day.id));
 			} else {
 				setSelectedDays([]);
 			}
@@ -74,20 +76,30 @@ export default function InstitutionWorkingDays() {
 		}
 	};
 
-	const handleWorkingDaysUpdate = async (dayIds: number[]) => {
+	const handleWorkingDaysUpdate = async (day_ids: number[]) => {
 		if (!selectedInstitution) {
 			toast.error("No institution selected");
 
 			return;
 		}
-		if (dayIds.length === 0) {
+		if (day_ids.length === 0) {
 			toast.error("Please select at least one working day");
 
 			return;
 		}
 		try {
 			setIsSaving(true);
-			const formData: IWorkingDaysFormData = { days: dayIds };
+			const matchingDays = institutionWorkingDays?.institution_days
+				.filter((inst_day) => day_ids.find((day_id) => inst_day.id === day_id))
+				.map((day) => ({
+					day_id: day.id,
+					opening_time: day.opening_time,
+					closing_time: day.closing_time,
+				}));
+			if (!matchingDays) {
+				throw new Error("No matching days !");
+			}
+			const formData: IInstitutionWorkingDaysFormData = { institution_days: matchingDays };
 			let updatedWorkingDays: IInstitutionWorkingDays;
 
 			if (institutionWorkingDays) {
@@ -99,7 +111,7 @@ export default function InstitutionWorkingDays() {
 				updatedWorkingDays = await institutionAPI.createWorkingDays(formData);
 			}
 			setInstitutionWorkingDays(updatedWorkingDays);
-			setSelectedDays(dayIds);
+			setSelectedDays(updatedWorkingDays.institution_days.map((day) => day.id));
 			setHasChanges(false);
 		} catch (error: any) {
 			const errorMessage = error?.message || error?.detail || "Failed to save working days";
@@ -164,7 +176,7 @@ export default function InstitutionWorkingDays() {
 			<WorkingDaysManager
 				scope={{ type: "institution", institutionWorkingDays: institutionWorkingDays }}
 				systemWorkingDays={systemWorkingDays}
-				onUpdate={handleWorkingDaysUpdate}
+				onInstitutionDaysUpdate={handleWorkingDaysUpdate}
 				isSaving={isSaving}
 			/>
 		</div>

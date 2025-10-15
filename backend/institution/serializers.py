@@ -1,11 +1,13 @@
 from rest_framework import serializers
 from general.serializers import BaseApprovableSerializer
-from users.models import CustomUser
+from users.models import CustomUser, Profile, Role, RolePermission, UserPermission, UserRole
 from users.serializers import CustomUserSerializer
 from .models import (
     Department,
     Institution,
     Branch,
+    InstitutionDay,
+    OwnershipTransfer,
     TaxRuleCategory,
     UserBranch,
     InstitutionKYCDocument,
@@ -26,8 +28,8 @@ from django.db import transaction
 from recruitment.models import JobPosition
 import logging
 from django.utils import timezone
-from settings.serializers import SystemDaySerializer
 from settings.models import SystemDay
+from rest_framework.exceptions import ValidationError
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +42,7 @@ class AIQuerySerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not self.instance and not attrs.get("question"):
-            raise serializers.ValidationError({"detail": "Question is required."})
+            raise serializers.ValidationError({"error": "Question is required."})
         return attrs
 
 
@@ -103,7 +105,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
     approval_status_display = serializers.CharField(
         source="get_approval_status_display", read_only=True
     )
-
+    transfer_history = serializers.SerializerMethodField()
     branches = serializers.SerializerMethodField()
 
     class Meta:
@@ -128,6 +130,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "is_active",
             "user_inactivity_time",
             "is_attendance_penalties_enabled",
+            "transfer_history"
         ]
 
     def create(self, validated_data):
@@ -184,6 +187,13 @@ class InstitutionSerializer(serializers.ModelSerializer):
             )
             branches = institution.branches.filter(id__in=user_branches)
         return BranchSerializer(branches, many=True).data
+    
+    def get_transfer_history(self, obj):
+        institution = obj
+        ownership_transfers = OwnershipTransfer.objects.filter(institution=institution).order_by(
+            "-transfer_date"
+        )
+        return OwnershipTransferSerializer(ownership_transfers, many=True).data
 
 
 class InstitutionBankTypeSerializer(BaseApprovableSerializer):
@@ -255,16 +265,29 @@ class InstitutionBankAccountSerializer(BaseApprovableSerializer):
         return rep
 
 
-class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
-    days = serializers.PrimaryKeyRelatedField(
-        queryset=SystemDay.objects.all(),
-        many=True,
+class InstitutionDaySerializer(serializers.ModelSerializer):
+    day_name = serializers.CharField(source="day.day_name", read_only=True)
+    day_id = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all(), source="day", write_only=True, required=True
     )
+
+    class Meta:
+        model = InstitutionDay
+        fields = ["id", "day_id", "day_name", "opening_time", "closing_time"]
+
+    def validate(self, data):
+        opening_time = data.get("opening_time")
+        closing_time = data.get("closing_time")
+        if opening_time and closing_time and opening_time >= closing_time:
+            raise serializers.ValidationError({"error": "Opening time must be before closing time."})
+        return data
+
+class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
+    institution_days = InstitutionDaySerializer(many=True)
 
     class Meta:
         model = InstitutionWorkingDays
         fields = '__all__'
-
         read_only_fields = [
             "id",
             "institution",
@@ -279,7 +302,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError({"error": "User has not profile"})
+            raise serializers.ValidationError({"error": "User has no profile"})
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -296,37 +319,52 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
         except InstitutionWorkingDays.DoesNotExist:
             pass
 
-        created_by = request.user if request and request.user.is_authenticated else None
-
+        institution_days_data = validated_data.pop("institution_days", [])
         validated_data["institution"] = institution
-        validated_data["created_by"] = created_by
+        validated_data["created_by"] = request.user if request and request.user.is_authenticated else None
 
-        return super().create(validated_data)
+        institution_working_days = super().create(validated_data)
+
+        for day_data in institution_days_data:
+            InstitutionDay.objects.create(
+                institution_working_days=institution_working_days,
+                day=day_data["day"],
+                opening_time=day_data.get("opening_time", "09:00:00"),
+                closing_time=day_data.get("closing_time", "17:00:00"),
+            )
+
+        return institution_working_days
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
-        user = (
-            request.user.profile if request and request.user.is_authenticated else None
-        )
+        user = request.user.profile if request and request.user.is_authenticated else None
 
         if not user:
             raise serializers.ValidationError(
                 {"error": "User must be authenticated to update working days."}
             )
 
-        instance.days.set(validated_data.get("days", instance.days.all()))
-        instance.updated_by = (
-            request.user if request and request.user.is_authenticated else None
-        )
+        institution_days_data = validated_data.pop("institution_days", [])
+
+        instance.institution_days.all().delete()
+
+        for day_data in institution_days_data:
+            InstitutionDay.objects.create(
+                institution_working_days=instance,
+                day=day_data["day"],
+                opening_time=day_data.get("opening_time", "09:00:00"),
+                closing_time=day_data.get("closing_time", "17:00:00"),
+            )
+
+        instance.updated_by = request.user if request and request.user.is_authenticated else None
         instance.save()
 
         return instance
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["days"] = SystemDaySerializer(instance.days, many=True).data
+        rep["institution_days"] = InstitutionDaySerializer(instance.institution_days, many=True).data
         return rep
-
 
 class BranchDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
@@ -336,8 +374,14 @@ class BranchDaySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BranchDay
-        fields = ["id", "day_id", "day_name", "day_type"]
+        fields = ["id", "day_id", "day_name", "day_type", "opening_time", "closing_time"]
 
+    def validate(self, data):
+        opening_time = data.get("opening_time")
+        closing_time = data.get("closing_time")
+        if opening_time and closing_time and opening_time >= closing_time:
+            raise serializers.ValidationError({"error": "Opening time must be before closing time."})
+        return data
 
 class BranchWorkingDaysSerializer(BaseApprovableSerializer):
     branch_days = BranchDaySerializer(many=True)
@@ -359,12 +403,18 @@ class BranchWorkingDaysSerializer(BaseApprovableSerializer):
         for bd_data in branch_days_data:
             day = bd_data.get("day")
             day_type = bd_data.get("day_type", "PHYSICAL")
+            opening_time = bd_data.get("opening_time", "09:00:00")
+            closing_time = bd_data.get("closing_time", "17:00:00")
 
             if not day:
                 continue
 
             BranchDay.objects.create(
-                branch_working_days=instance, day=day, day_type=day_type
+                branch_working_days=instance,
+                day=day,
+                day_type=day_type,
+                opening_time=opening_time,
+                closing_time=closing_time,
             )
 
         instance.refresh_from_db()
@@ -778,7 +828,7 @@ class AIAssistantSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not self.instance and not attrs.get("question"):
-            raise serializers.ValidationError({"detail": "Question is required."})
+            raise serializers.ValidationError({"error": "Question is required."})
         return attrs
 
 
@@ -797,3 +847,104 @@ class AIChatSerializer(serializers.Serializer):
 class UserChatsSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     chats = AIChatSerializer(many=True)
+
+
+class OwnershipTransferSerializer(BaseApprovableSerializer):
+    previous_owner = CustomUserSerializer(read_only=True)
+    new_owner = CustomUserSerializer(read_only=True)
+
+    previous_owner_id = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        source="previous_owner",
+        write_only=True,
+    )
+    new_owner_id = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        source="new_owner",
+        write_only=True,
+    )
+
+    class Meta:
+        model = OwnershipTransfer
+        fields = '__all__'
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        if attrs.get("account_fate") == "new_role" and not attrs.get("new_role"):
+            raise ValidationError({
+                "error": "New role must be specified when account fate is 'new_role'."
+            })
+
+        # Ensuring current owner cannot be the same as new owner
+        if attrs.get("previous_owner") == attrs.get("new_owner"):
+            raise ValidationError({
+                "error": "Previous owner and new owner cannot be the same."
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            raise ValidationError({
+                "error": "User must be authenticated to create an ownership transfer."
+            })
+
+        if validated_data["institution"].institution_owner != request.user:
+            raise ValidationError({
+                "error": "You are not authorized to create an ownership transfer for this institution."
+            })
+
+        account_fate = validated_data.pop("account_fate", None)
+
+        if account_fate == "new_role":
+            new_role = validated_data.pop("new_role", None)
+            institution_roles = Role.objects.filter(institution=validated_data["institution"])
+
+            if new_role not in institution_roles:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Role '{new_role}' does not exist in the institution roles."
+                    }
+                )
+
+            UserRole.objects.filter(user=validated_data["previous_owner"]).delete()
+            UserRole.objects.create(
+                user=validated_data["previous_owner"],
+                role=new_role,
+            )
+
+            role_permissions = RolePermission.objects.filter(role=new_role)
+
+            UserPermission.objects.filter(
+                user=validated_data["previous_owner"],
+            ).delete()
+
+            for permission in role_permissions:
+                UserPermission.objects.create(
+                    user=validated_data["previous_owner"],
+                    permission=permission.permission,
+                )
+
+        elif account_fate == "deactivate":
+            user = validated_data["previous_owner"]
+            user.is_active = False
+            user.save()
+
+            Profile.objects.filter(user=user, institution=validated_data["institution"]).delete()
+            UserPermission.objects.filter(user=user).delete()
+            UserRole.objects.filter(user=user).delete()
+            UserBranch.objects.filter(user=user).delete()
+
+        institution = validated_data["institution"]
+        if institution.institution_owner != validated_data["new_owner"]:
+            institution.institution_owner = validated_data["new_owner"]
+            institution.save()
+
+        # our institution owner doesn't need a role, so we need to remove any existing roles from the new owner
+        UserRole.objects.filter(user=validated_data["new_owner"]).delete()
+        UserBranch.objects.filter(user=validated_data["new_owner"]).delete()
+        UserPermission.objects.filter(user=validated_data["new_owner"]).delete()
+
+        ownership_transfer = OwnershipTransfer.objects.create(**validated_data)
+        return ownership_transfer

@@ -158,9 +158,11 @@ class UserListAPIView(APIView, SortableAPIMixin):
             queryset = self.apply_sorting(queryset, request)
         except ValueError as e:
             return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
-
-        serializer = CustomUserSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        paginator = CustomPageNumberPagination()
+        paginated_users = paginator.paginate_queryset(queryset, request)
+        serializer = CustomUserSerializer(paginated_users, many=True)
+        return paginator.get_paginated_response(serializer.data)
     
 class ChangePasswordAPIView(APIView):
     @extend_schema(
@@ -446,15 +448,16 @@ class LoginView(APIView):
     def post(self, request):
         serializer = LoginRequestSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data["email"]
+            username = serializer.validated_data["username"]
             password = serializer.validated_data["password"]
 
-            try:
-                user_instance = CustomUser.objects.get(email=email)
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
                 # The custom_codes are in sync with the frontend, they should be kept so or modified together
                 if (
-                    not user_instance.is_password_verified
-                    and not user_instance.is_email_verified
+                    not user.is_password_verified
+                    and not user.is_email_verified
                 ):
                     return Response(
                         {
@@ -464,7 +467,7 @@ class LoginView(APIView):
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
-                if not user_instance.is_email_verified:
+                if not user.is_email_verified:
                     return Response(
                         {
                             "detail": "You need to verify your account to be able to login",
@@ -473,7 +476,7 @@ class LoginView(APIView):
                         status=status.HTTP_403_FORBIDDEN,
                     )
                 
-                if not user_instance.is_active:
+                if not user.is_active:
                     return Response(
                         {
                             "detail": "Your account is currently inactive. Contact Admin to have it activated"
@@ -481,56 +484,45 @@ class LoginView(APIView):
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
-                user = authenticate(email=user_instance.email, password=password)
+                if user.user_type == UserType.STAFF:
+                    institution_attached = user.institutions_owned.all()
 
-                if user is not None:
-                    if user.user_type == UserType.STAFF:
-                        institution_attached = user.institutions_owned.all()
+                    # If user is not an institution owner, check if they are associated with an institution in profile
+                    if not institution_attached:
+                        try:
+                            institution_attached = (
+                                [user.profile.institution]
+                                if user.profile.institution
+                                else []
+                            )
+                        except ObjectDoesNotExist:
+                            institution_attached = (
+                                []
+                                if not institution_attached
+                                else institution_attached
+                            )
 
-                        # If user is not an institution owner, check if they are associated with an institution in profile
-                        if not institution_attached:
-                            try:
-                                institution_attached = (
-                                    [user.profile.institution]
-                                    if user.profile.institution
-                                    else []
-                                )
-                            except ObjectDoesNotExist:
-                                institution_attached = (
-                                    []
-                                    if not institution_attached
-                                    else institution_attached
-                                )
+                    serializer_context = {"user": user}
 
-                        serializer_context = {"user": user}
-
-                        return Response(
-                            {
-                                "tokens": user.get_token(),
-                                "user": CustomUserSerializer(user).data,
-                                "institution_attached": InstitutionWithBranchesSerializer(
-                                    institution_attached,
-                                    many=True,
-                                    context=serializer_context,
-                                ).data,
-                            },
-                            status=status.HTTP_200_OK,
-                        )
-                return Response(
-                    {
-                        "detail": "Invalid Credentials",
-                        "custom_code": "INVALID_CREDENTIALS",
-                    },
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
-            except CustomUser.DoesNotExist:
-                return Response(
-                    {
-                        "detail": "Invalid Credentials",
-                        "custom_code": "INVALID_CREDENTIALS",
-                    },
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+                    return Response(
+                        {
+                            "tokens": user.get_token(),
+                            "user": CustomUserSerializer(user).data,
+                            "institution_attached": InstitutionWithBranchesSerializer(
+                                institution_attached,
+                                many=True,
+                                context=serializer_context,
+                            ).data,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+            return Response(
+                {
+                    "detail": "Invalid Credentials",
+                    "custom_code": "INVALID_CREDENTIALS",
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )

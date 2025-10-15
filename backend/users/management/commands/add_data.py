@@ -5,7 +5,6 @@ from django.conf import settings
 from django.db.models import Q
 from django.db import transaction
 from employee.service import create_owner_employee
-from recruitment.models import JobPosition
 from users.models import Permission, PermissionCategory, SystemType, System, CustomUser
 from approval.models import Action
 from discipline.models import DisciplineType
@@ -17,6 +16,7 @@ from institution.models import (
     InstitutionBankAccount,
     Branch,
     InstitutionWorkingDays,
+    InstitutionDay,
     InstitutionTax,
     InstitutionTaxRule,
     TaxRuleCategory,
@@ -25,12 +25,12 @@ from employee.models import Employee, QualificationAward
 from settings.models import SystemDay
 from employee.tasks import send_employee_welcome_email
 from employee.views import generate_compliant_password
-from calendar2.models import Calendar, Event
 from performance.models import PerformanceConcernType, PIPSupportResourceType
-
+import uuid
+from datetime import time
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, create tax rules, and schedule birthday emails"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, create tax rules, schedule birthday emails, and generate usernames for users without usernames"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -64,105 +64,61 @@ class Command(BaseCommand):
         self.create_default_performance_data()
         self.create_tax_rules_for_institutions()
         self.create_default_awards()
-        self.create_birthday_events()
-        self.schedule_all_birthday_emails()
+        self.generate_usernames()
         self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
 
-    def schedule_all_birthday_emails(self):
-        """Schedule birthday email tasks for all active employees."""
+    def generate_usernames(self):
+        """Generate usernames for CustomUser records without usernames."""
         self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "\n⏳ Scheduling birthday email tasks for active employees...\n"
-            )
+            self.style.MIGRATE_HEADING("\n⏳ Generating usernames for users without usernames...\n")
         )
-        employees = Employee.objects.filter(
-            is_active=True,
-            deleted_at__isnull=True,
-            date_of_birth__isnull=False,
-            user__isnull=False,
-            user__email__isnull=False,
-        ).select_related("user")
+        users_without_usernames = CustomUser.objects.filter(Q(username__isnull=True) | Q(username=''))
+        if not users_without_usernames.exists():
+            self.stdout.write(
+                self.style.NOTICE("No users found without usernames.")
+            )
+            return
 
-        success_count = 0
-        skip_count = 0
-        error_count = 0
-
-        for employee in employees:
+        updated_count = 0
+        for user in users_without_usernames:
             try:
-                employee.schedule_birthday_email()
+                name_parts = user.fullname.strip().split()
+                if len(name_parts) >= 2:
+                    base_username = f"{name_parts[0][0].lower()}{name_parts[1].lower().replace(' ', '')}"
+                else:
+                    base_username = ''.join(c for c in user.fullname.lower() if c.isalnum())
+                if not base_username:
+                    base_username = 'user'
+
+                username = base_username[:50]  # Ensure within max_length
+                counter = 1
+                while CustomUser.objects.exclude(id=user.id).filter(username=username).exists():
+                    username = f"{base_username}{counter}"[:50]
+                    counter += 1
+                    if len(username) > 50 or counter > 100:  # Prevent excessive iterations
+                        username = f"user{str(uuid.uuid4())[:8]}"
+                        counter = 1
+                user.username = username
+                user.save()
+                updated_count += 1
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Scheduled birthday email for {employee.user.email}"
-                    )
+                    self.style.SUCCESS(f"  ✅ Generated username '{username}' for user '{user.fullname}' (ID: {user.id})")
                 )
-                success_count += 1
             except Exception as e:
                 self.stdout.write(
                     self.style.ERROR(
-                        f"  ❌ Failed to schedule for {employee.user.email}: {str(e)}"
+                        f"  ❌ Failed to generate username for user '{user.fullname}' (ID: {user.id}): {str(e)}"
                     )
                 )
-
-                error_count += 1
-                skip_count += 1
-
         self.stdout.write(
-            "\n" + self.style.MIGRATE_LABEL("📋 Birthday Email Scheduling Summary")
+            "\n" + self.style.MIGRATE_LABEL("📋 Username Generation Summary")
         )
         self.stdout.write(
-            self.style.NOTICE(f"  ➕ Successfully scheduled: {success_count}")
+            self.style.NOTICE(f"  ➕ Updated: {updated_count} user(s) with new usernames")
         )
-        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
         self.stdout.write(
-            self.style.SUCCESS("\n🎉 Birthday email scheduling completed!")
-        )
-
-    def create_birthday_events(self):
-        """Create birthday events for all active employees with a date of birth."""
-        self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "\n⏳ Creating birthday events for active employees...\n"
-            )
-        )
-        employees = Employee.objects.filter(
-            is_active=True,
-            deleted_at__isnull=True,
-            date_of_birth__isnull=False,
-            department__isnull=False,
-            user__isnull=False,
-            user__profile__isnull=False,
-        ).select_related("user", "department")
-
-        success_count = 0
-        skip_count = 0
-        error_count = 0
-
-        for employee in employees:
-            try:
-                employee.create_birthday_event()
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created birthday event for {employee.user.fullname}"
-                    )
-                )
-                success_count += 1
-            except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"  ❌ Failed to create birthday event for {employee.user.fullname}: {str(e)}"
-                    )
-                )
-                error_count += 1
-                skip_count += 1
-
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Birthday Events Summary"))
-        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {success_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Birthday events created successfully!")
+            self.style.SUCCESS("\n🎉 Username generation completed successfully!")
         )
 
     def create_tax_rules_for_institutions(self):
@@ -735,7 +691,9 @@ class Command(BaseCommand):
                 )
             else:
                 updated_count += 1
-                self.stdout.write(self.style.NOTICE(f"  ♻️ Updated award: {award.name}"))
+                self.stdout.write(
+                    self.style.NOTICE(f"  ♻️ Updated award: {award.name}")
+                )
         deleted_awards, _ = QualificationAward.objects.exclude(
             name__in=valid_award_names
         ).delete()
@@ -1013,7 +971,7 @@ class Command(BaseCommand):
     def create_default_bank_info(self):
         self.stdout.write(
             self.style.MIGRATE_HEADING(
-                "\n⏳ Creating default bank info and updating employees...\n"
+                "\n⏳ Creating default bank info, working days, and updating employees...\n"
             )
         )
         default_bank_data = {
@@ -1023,7 +981,18 @@ class Command(BaseCommand):
             "account_name": "Default Account",
             "account_number": "1234567890",
         }
+        default_working_hours = [
+            {"day_code": "MON", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "TUE", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "WED", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "THU", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "FRI", "opening_time": time(9, 0), "closing_time": time(17, 0)},
+            {"day_code": "SAT", "opening_time": time(9, 0), "closing_time": time(13, 0)},
+            {"day_code": "SUN", "opening_time": None, "closing_time": None},
+        ]
         institutions = Institution.objects.all()
+        institution_day_created = 0
+        institution_day_updated = 0
         for institution in institutions:
             self.stdout.write(f"Processing {institution.institution_name}")
             bank_type, created = InstitutionBankType.objects.get_or_create(
@@ -1127,7 +1096,6 @@ class Command(BaseCommand):
                 institution=institution
             )
             if created:
-                working_days.days.set(SystemDay.objects.all())
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"   └─ Created default working days for {institution.institution_name}"
@@ -1139,6 +1107,54 @@ class Command(BaseCommand):
                         f"   └─ Default working days already exist for {institution.institution_name}"
                     )
                 )
+            # Check and create/update InstitutionDay records
+            existing_days = set(working_days.institution_days.values_list('day__day_code', flat=True))
+            for day_data in default_working_hours:
+                system_day = SystemDay.objects.filter(day_code=day_data["day_code"]).first()
+                if not system_day:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"   └─ Skipping InstitutionDay for {day_data['day_code']}: SystemDay not found"
+                        )
+                    )
+                    continue
+                if day_data["opening_time"] and day_data["closing_time"]:
+                    inst_day, inst_day_created = InstitutionDay.objects.get_or_create(
+                        institution_working_days=working_days,
+                        day=system_day,
+                        defaults={
+                            "opening_time": day_data["opening_time"],
+                            "closing_time": day_data["closing_time"],
+                        },
+                    )
+                    if inst_day_created:
+                        institution_day_created += 1
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f"   └─ Created InstitutionDay for {system_day.day_name} ({day_data['opening_time'].strftime('%H:%M')} - {day_data['closing_time'].strftime('%H:%M')})"
+                            )
+                        )
+                    else:
+                        # Update existing InstitutionDay if times differ
+                        if (inst_day.opening_time != day_data["opening_time"] or
+                            inst_day.closing_time != day_data["closing_time"]):
+                            inst_day.opening_time = day_data["opening_time"]
+                            inst_day.closing_time = day_data["closing_time"]
+                            inst_day.save()
+                            institution_day_updated += 1
+                            self.stdout.write(
+                                self.style.NOTICE(
+                                    f"   └─ Updated InstitutionDay for {system_day.day_name} ({day_data['opening_time'].strftime('%H:%M')} - {day_data['closing_time'].strftime('%H:%M')})"
+                                )
+                            )
+                        else:
+                            self.stdout.write(
+                                self.style.NOTICE(
+                                    f"   └─ InstitutionDay for {system_day.day_name} already exists with correct times"
+                                )
+                            )
+            # Update days field to ensure it matches InstitutionDay records
+            working_days.days.set([inst_day.day for inst_day in working_days.institution_days.all()])
             owner_user = institution.institution_owner
             owner_employee = Employee.objects.filter(
                 user=owner_user, payroll_branch__institution__id=institution.id
@@ -1163,3 +1179,17 @@ class Command(BaseCommand):
                         f"  └─ Employee already exists for owner user {owner_user.email}"
                     )
                 )
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Institution Days Summary"))
+        self.stdout.write(
+            self.style.NOTICE(
+                f"  ➕ InstitutionDay Created: {institution_day_created}"
+            )
+        )
+        self.stdout.write(
+            self.style.NOTICE(
+                f"  ♻️ InstitutionDay Updated: {institution_day_updated}"
+            )
+        )
+        self.stdout.write(
+            self.style.SUCCESS("\n🎉 Institution working days processing completed!")
+        )

@@ -2,7 +2,11 @@
 
 import type {
 	IBranchDay,
+	IBranchDayFormData,
 	IBranchWorkingDays,
+	IDay,
+	IDayType,
+	IInstitutionDay,
 	IInstitutionWorkingDays,
 	ISystemWorkingDay,
 } from "@/types/types.utils";
@@ -20,18 +24,28 @@ interface WorkingDaysManagerProps {
 		| { type: "branch"; branchId: number; branchWorkingDays: IBranchWorkingDays | null }
 		| { type: "institution"; institutionWorkingDays: IInstitutionWorkingDays | null };
 	systemWorkingDays: ISystemWorkingDay[];
-	onUpdate: (args: any) => Promise<void>; // args: number[] for institution, { dayId, dayType } for branch add, or day_name for remove
+	// 	onUpdate: (args: {type:"institution", days: IDay[]} |{type:"branch",
+	// 	dayId:number, action:"add"|"remove", dayType:"PHYSICAL"|"REMOTE", day_name:string, days?:IBranchDayFormData[]},
+	// ) => Promise<void>; // args: number[] for institution, { dayId, dayType } for branch add, or day_name for remove
+	onInstitutionDaysUpdate?: (day_ids: number[]) => Promise<void>;
+	onBranchDaysUpdate?: (args: {
+		dayId: number;
+		action?: "add" | "remove";
+		dayType: IDayType;
+		day_name?: string;
+		days?: IBranchDayFormData[];
+	}) => Promise<void>;
+
 	isSaving?: boolean;
 }
 
 export function WorkingDaysManager({
 	scope,
 	systemWorkingDays,
-	onUpdate,
+	onBranchDaysUpdate,
+	onInstitutionDaysUpdate,
 	isSaving = false,
 }: WorkingDaysManagerProps) {
-	// For institution: selectedDays is array of system day ids
-	// For branch: selectedBranchDays is array of IBranchDay
 	const [selectedDays, setSelectedDays] = useState<number[]>([]);
 	const [selectedBranchDays, setSelectedBranchDays] = useState<IBranchDay[]>([]);
 	const [hasChanges, setHasChanges] = useState(false);
@@ -40,11 +54,12 @@ export function WorkingDaysManager({
 	const [isAutoSaving, setIsAutoSaving] = useState(false);
 	const [addDayType, setAddDayType] = useState<"PHYSICAL" | "REMOTE" | null>(null);
 	const [pendingAddDayId, setPendingAddDayId] = useState<number | null>(null);
+	const [sortedDays, setSortedDays] = useState<ISystemWorkingDay[]>([]);
 
 	// Initialize selected days when workingDays changes
 	React.useEffect(() => {
-		if (scope.type === "institution" && scope.institutionWorkingDays?.days) {
-			const dayIds = scope.institutionWorkingDays.days.map((day) => day.id);
+		if (scope.type === "institution" && scope.institutionWorkingDays?.institution_days) {
+			const dayIds = scope.institutionWorkingDays.institution_days.map((day) => day.id);
 
 			setSelectedDays(dayIds);
 			setHasChanges(false);
@@ -57,25 +72,33 @@ export function WorkingDaysManager({
 
 	// Check for changes - but not during auto-save operations
 	React.useEffect(() => {
-		if (scope.type === "institution" && scope.institutionWorkingDays?.days && !isAutoSaving) {
-			const currentDayIds = scope.institutionWorkingDays?.days.map((day) => day.id).sort();
+		if (
+			scope.type === "institution" &&
+			scope.institutionWorkingDays?.institution_days &&
+			!isAutoSaving
+		) {
+			const currentDayIds = scope.institutionWorkingDays?.institution_days
+				.map((day) => day.id)
+				.sort();
 			const selectedDayIds = [...selectedDays].sort();
 
 			setHasChanges(JSON.stringify(currentDayIds) !== JSON.stringify(selectedDayIds));
 		} else if (scope.type === "branch" && scope.branchWorkingDays?.branch_days && !isAutoSaving) {
 			// Compare by day_id and day_type
 			const current = scope.branchWorkingDays.branch_days
-				.map((d) => `${d.day_id}-${d.day_type}`)
+				.map((d) => `${d.id}-${d.day_type}`)
 				.sort();
-			const selected = selectedBranchDays.map((d) => `${d.day_id}-${d.day_type}`).sort();
+			const selected = selectedBranchDays.map((d) => `${d.id}-${d.day_type}`).sort();
 
 			setHasChanges(JSON.stringify(current) !== JSON.stringify(selected));
 		}
 	}, [selectedDays, selectedBranchDays, scope, isAutoSaving]);
 
 	React.useEffect(() => {
-		// console.log("\n\n selectedBranchDays changed as :", selectedBranchDays);
-	}, [selectedBranchDays]);
+		const newSortedDays = [...systemWorkingDays].sort((a, b) => a.level - b.level);
+		setSortedDays(newSortedDays);
+		console.log("\n\n Received sorted days : ", newSortedDays);
+	}, [systemWorkingDays]);
 
 	const getDayColor = (dayCode: string) => {
 		const colors = {
@@ -113,7 +136,7 @@ export function WorkingDaysManager({
 
 		setSelectedDays(newSelectedDays);
 		try {
-			await onUpdate(newSelectedDays);
+			await onInstitutionDaysUpdate?.(newSelectedDays);
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedDays(selectedDays);
@@ -130,7 +153,7 @@ export function WorkingDaysManager({
 
 		setSelectedDays(newSelectedDays);
 		try {
-			await onUpdate(newSelectedDays);
+			await onInstitutionDaysUpdate?.(newSelectedDays);
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedDays(selectedDays);
@@ -143,7 +166,7 @@ export function WorkingDaysManager({
 
 	// Branch handlers
 	const handleRemoveBranchDay = async (branchDay: IBranchDay) => {
-		setRemovingDayId(branchDay.day_id);
+		setRemovingDayId(branchDay.id);
 		setIsAutoSaving(true);
 		const newSelectedBranchDays = selectedBranchDays.filter(
 			(d) => d.day_name.toLowerCase() !== branchDay.day_name.toLowerCase(),
@@ -152,7 +175,12 @@ export function WorkingDaysManager({
 
 		setSelectedBranchDays(newSelectedBranchDays);
 		try {
-			await onUpdate({ action: "remove", day_name: branchDay.day_name });
+			await onBranchDaysUpdate?.({
+				action: "remove",
+				day_name: branchDay.day_name,
+				dayId: branchDay.day_id,
+				dayType: branchDay.day_type,
+			});
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedBranchDays(selectedBranchDays);
@@ -177,7 +205,7 @@ export function WorkingDaysManager({
 
 		setSelectedBranchDays(newSelectedBranchDays);
 		try {
-			await onUpdate({ action: "add", dayId, dayType });
+			await onBranchDaysUpdate?.({ action: "add", dayId, dayType });
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedBranchDays(selectedBranchDays);
@@ -197,7 +225,7 @@ export function WorkingDaysManager({
 
 	const handleSave = async () => {
 		try {
-			await onUpdate(selectedDays);
+			await onInstitutionDaysUpdate?.(selectedDays);
 			setHasChanges(false);
 			toast.success("Working days updated successfully");
 		} catch (error) {
@@ -206,39 +234,35 @@ export function WorkingDaysManager({
 	};
 
 	const handleReset = () => {
-		if (scope.type === "institution" && scope.institutionWorkingDays?.days) {
-			const dayIds = scope.institutionWorkingDays.days.map((day) => day.id);
+		if (scope.type === "institution" && scope.institutionWorkingDays?.institution_days) {
+			const dayIds = scope.institutionWorkingDays.institution_days.map((day) => day.id);
 
 			setSelectedDays(dayIds);
 		}
 	};
 
-	if (
-		scope.type === "institution" &&
-		(!scope.institutionWorkingDays || scope.institutionWorkingDays.days.length === 0)
-	) {
-		// For institution, show empty state if no days set
-		return (
-			<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-				<div className="p-6 border-b border-gray-200">
-					<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2" />
-				</div>
-				<div className="p-6">
-					<div className="text-center py-8">
-						<Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-						<h3 className="text-lg font-medium text-gray-900 mb-2">No Working Days Set</h3>
-						<p className="text-gray-500">
-							Configure your institution's working days to get started.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
-	// For branch: always render the grid, even if no days are set
-
-	// Sort days by level for proper display order
-	const sortedDays = [...systemWorkingDays].sort((a, b) => a.level - b.level);
+	// if (
+	// 	scope.type === "institution" &&
+	// 	(!scope.institutionWorkingDays || scope.institutionWorkingDays.institution_days.length === 0)
+	// ) {
+	// 	// For institution, show empty state if no days set
+	// 	return (
+	// 		<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+	// 			<div className="p-6 border-b border-gray-200">
+	// 				<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2" />
+	// 			</div>
+	// 			<div className="p-6">
+	// 				<div className="text-center py-8">
+	// 					<Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+	// 					<h3 className="text-lg font-medium text-gray-900 mb-2">No Working Days Set</h3>
+	// 					<p className="text-gray-500">
+	// 						Configure your institution's working days to get started.
+	// 					</p>
+	// 				</div>
+	// 			</div>
+	// 		</div>
+	// 	);
+	// }
 
 	return (
 		<div className="bg-white rounded-lg border border-gray-200 shadow-sm">

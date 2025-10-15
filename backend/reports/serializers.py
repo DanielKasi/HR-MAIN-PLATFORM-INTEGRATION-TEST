@@ -32,7 +32,7 @@ class ReportGenerateInputSerializer(serializers.Serializer):
     def validate(self, attrs):
         """Custom validation: Ensure end_date > start_date."""
         if attrs['end_date'] <= attrs['start_date']:
-            raise serializers.ValidationError("End date must be after start date.")
+            raise serializers.ValidationError({"error": "End date must be after start date."})
         return attrs
 
     def validate_app(self, value):
@@ -40,7 +40,7 @@ class ReportGenerateInputSerializer(serializers.Serializer):
         from .registry import build_reports_registry
         all_reports = build_reports_registry()
         if value not in all_reports:
-            raise serializers.ValidationError(f"Invalid app '{value}'. Available: {list(all_reports.keys())}")
+            raise serializers.ValidationError({"error": f"Invalid app '{value}'. Available: {list(all_reports.keys())}"})
         return value
 
     def validate_report_type(self, value):
