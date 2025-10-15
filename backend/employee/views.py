@@ -99,6 +99,7 @@ from collections import defaultdict
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
+from django.utils.dateparse import parse_date
 
 
 class QualificationAwardListCreateAPIView(APIView):
@@ -3441,23 +3442,61 @@ class EmployeeShiftListCreateView(APIView, SortableAPIMixin):
         "created_at",
         "shift",
         "context",
-        "date" "is_active",
+        "date",
+        "is_active",
     ]
     default_ordering = ["employee"]
 
     @extend_schema(
-        summary="List all employee shifts or create a new shift",
-        request=EmployeeShiftSerializer,
-        responses=EmployeeShiftSerializer,
+        summary="List all employee shifts",
+        responses=EmployeeShiftSerializer(many=True),
         tags=["Shifts-Allocations/Requests"],
+        parameters=[
+            {
+                "name": "context",
+                "in": "query",
+                "required": False,
+                "type": "string",
+                "enum": ["ALLOCATION", "REQUEST", "OVERRIDE", "all"],
+                "description": "Filter by shift context",
+            },
+            {
+                "name": "search",
+                "in": "query",
+                "required": False,
+                "type": "string",
+                "description": "Search by employee name or email",
+            },
+            {
+                "name": "is_employee_specific",
+                "in": "query",
+                "required": False,
+                "type": "boolean",
+                "description": "Filter by specific employee",
+            },
+            {
+                "name": "employee_id",
+                "in": "query",
+                "required": False,
+                "type": "integer",
+                "description": "Employee ID for specific employee filter",
+            },
+            {
+                "name": "date",
+                "in": "query",
+                "required": False,
+                "type": "string",
+                "format": "date",
+                "description": "Filter shifts by date (YYYY-MM-DD), matching the shift's day to the date's weekday",
+            },
+        ],
     )
     def get(self, request):
         user = request.user
-
         profile = getattr(user, "profile", None)
 
         if not profile or not profile.institution:
-            return Response({"detail": "No institution linked"}, status=400)
+            return Response({"detail": "No institution linked"}, status=status.HTTP_400_BAD_REQUEST)
 
         institution = profile.institution
 
@@ -3465,28 +3504,68 @@ class EmployeeShiftListCreateView(APIView, SortableAPIMixin):
         search = request.query_params.get("search")
         is_employee_specific = request.query_params.get("is_employee_specific")
         employee_id = request.query_params.get("employee_id")
+        date = request.query_params.get("date")
 
         shifts = EmployeeShift.objects.filter(
             shift__branch__institution=institution, is_active=True
-        )
+        ).select_related("employee", "shift", "shift__shift_day", "shift__shift_day__day")
 
-        if query_context in ["ALLOCATION", "REQUEST"]:
+        # Apply context filter
+        if query_context in ["ALLOCATION", "REQUEST", "OVERRIDE"]:
             shifts = shifts.filter(context=query_context)
 
+        # Apply employee-specific filter
         if is_employee_specific == "true" and employee_id:
-            shifts = shifts.filter(employee=int(employee_id))
+            try:
+                shifts = shifts.filter(employee=int(employee_id))
+            except ValueError:
+                return Response({"detail": "Invalid employee_id"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Apply search filter
         if search:
             shifts = shifts.filter(
-                Q(employee__user__fullname__icontains=search)
-                | Q(employee__user__email__icontains=search)
+                Q(employee__user__fullname__icontains=search) |
+                Q(employee__user__email__icontains=search)
             )
 
+        # Apply date filter
+        if date:
+            try:
+                filter_date = parse_date(date)
+                if not filter_date:
+                    return Response({"detail": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Calculate weekday (SystemDay level: 1=Monday, ..., 7=Sunday)
+                weekday = filter_date.weekday() + 1
+
+                # Filter one-time shifts for the exact date
+                one_time_shifts = shifts.filter(
+                    is_recurring=False,
+                    date=filter_date
+                )
+
+                # Filter recurring shifts that apply to the date's weekday
+                recurring_shifts = shifts.filter(
+                    is_recurring=True,
+                    start_date__lte=filter_date,
+                    shift__shift_day__day__level=weekday
+                ).filter(
+                    Q(end_date__isnull=True) | Q(end_date__gte=filter_date)
+                )
+
+                # Combine shifts
+                shifts = one_time_shifts | recurring_shifts
+                shifts = shifts.distinct()
+            except ValueError:
+                return Response({"detail": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Apply sorting
         try:
             shifts = self.apply_sorting(shifts, request)
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Paginate and serialize
         paginator = CustomPageNumberPagination()
         paginated_shifts = paginator.paginate_queryset(shifts, request)
         serializer = EmployeeShiftSerializer(paginated_shifts, many=True)
