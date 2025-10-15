@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import apiRequest from "@/lib/apiRequest";
+
 import {
 	Select,
 	SelectContent,
@@ -25,13 +27,10 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { showErrorToast } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { showErrorToast, cn, AUDIT_LOGS_API } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
-import apiRequest from "@/lib/apiRequest";
-import { IPaginatedResponse } from "@/types/types.utils";
-import type { IAuditLog } from "@/types/types.utils";
+import type { IAuditLog, IPaginatedResponse } from "@/types/types.utils";
 
 const safeStringify = (value: any): string => {
 	if (value === undefined || value === null) {
@@ -84,7 +83,6 @@ const extractAssetName = (log: IAuditLog): string => {
 		if (log.description) {
 			const parts = log.description.split("for ");
 			if (parts.length > 1) {
-				// Grab everything after "for " and trim trailing period or whatever
 				return parts[1].replace(/\.$/, "").trim();
 			}
 		}
@@ -213,7 +211,6 @@ export default function AuditLogsPage() {
 	const [loading, setLoading] = useState(false);
 	const [initialLoad, setInitialLoad] = useState(true);
 	const [hasMore, setHasMore] = useState(true);
-	const [nextUrl, setNextUrl] = useState<string | null>(null);
 	const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
 	const [searchTerm, setSearchTerm] = useState("");
@@ -226,6 +223,9 @@ export default function AuditLogsPage() {
 	const observerRef = useRef<IntersectionObserver | null>(null);
 	const loadMoreRef = useRef<HTMLDivElement | null>(null);
 	const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const nextUrlRef = useRef<string | null>(null);
+	const loadingRef = useRef(false);
+	const hasMoreRef = useRef(true);
 
 	useEffect(() => {
 		if (searchTimeoutRef.current) {
@@ -283,14 +283,19 @@ export default function AuditLogsPage() {
 	const fetchAuditLogs = useCallback(
 		async (isInitial = false) => {
 			if (!currentInstitution) return;
-			if (loading && !isInitial) return;
-			if (!isInitial && !hasMore) return;
+			if (loadingRef.current && !isInitial) {
+				return;
+			}
+			if (!isInitial && !hasMoreRef.current) {
+				return;
+			}
 
 			try {
 				setLoading(true);
+				loadingRef.current = true;
 
 				let url: string;
-				if (isInitial || !nextUrl) {
+				if (isInitial || !nextUrlRef.current) {
 					const params = new URLSearchParams();
 					if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
 					if (actionFilter !== "all") params.append("action", actionFilter);
@@ -300,11 +305,17 @@ export default function AuditLogsPage() {
 					params.append("institution_id", String(currentInstitution.id));
 					url = `/audit/institutions/audit-logs/?${params.toString()}`;
 				} else {
-					url = nextUrl;
+					url = nextUrlRef.current;
 				}
 
+				console.log("Fetching URL:", url);
 				const response = await apiRequest.get(url);
 				const data = response.data as IPaginatedResponse<IAuditLog>;
+				console.log("Received:", {
+					count: data.count,
+					results: data.results.length,
+					next: data.next,
+				});
 
 				if (isInitial) {
 					setAuditLogs(data.results);
@@ -312,13 +323,15 @@ export default function AuditLogsPage() {
 					setAuditLogs((prev) => [...prev, ...data.results]);
 				}
 
-				setNextUrl(data.next);
+				nextUrlRef.current = data.next;
 				setHasMore(!!data.next);
+				hasMoreRef.current = !!data.next;
 			} catch (err) {
 				console.error("Error fetching audit logs:", err);
 				showErrorToast({ error: err, defaultMessage: "Failed to fetch audit logs" });
 			} finally {
 				setLoading(false);
+				loadingRef.current = false;
 				setInitialLoad(false);
 			}
 		},
@@ -328,8 +341,9 @@ export default function AuditLogsPage() {
 	useEffect(() => {
 		if (currentInstitution) {
 			setAuditLogs([]);
-			setNextUrl(null);
+			nextUrlRef.current = null;
 			setHasMore(true);
+			hasMoreRef.current = true;
 			setInitialLoad(true);
 			fetchAuditLogs(true);
 		}
@@ -344,35 +358,52 @@ export default function AuditLogsPage() {
 	]);
 
 	useEffect(() => {
-		if (loading || !hasMore || !loadMoreRef.current) return;
+		console.log(
+			"Setting up observer, hasMore:",
+			hasMore,
+			"loadMoreRef exists:",
+			!!loadMoreRef.current,
+		);
 
-		if (observerRef.current) {
-			observerRef.current.disconnect();
+		if (!loadMoreRef.current || !hasMore) {
+			console.log("Observer not set up - missing ref or no more data");
+			return;
 		}
+
+		const currentLoader = loadMoreRef.current;
 
 		const observer = new IntersectionObserver(
 			(entries) => {
-				if (entries[0].isIntersecting && hasMore && !loading) {
+				console.log("Observer callback triggered:", {
+					isIntersecting: entries[0].isIntersecting,
+					intersectionRatio: entries[0].intersectionRatio,
+					hasMore: hasMoreRef.current,
+					loading: loadingRef.current,
+					boundingRect: entries[0].boundingClientRect,
+				});
+				if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
 					fetchAuditLogs(false);
 				}
 			},
-			{ threshold: 0.5 },
+			{ threshold: 0.1, rootMargin: "100px" },
 		);
 
-		observer.observe(loadMoreRef.current);
+		observer.observe(currentLoader);
 		observerRef.current = observer;
 
 		return () => {
-			if (observerRef.current) {
-				observerRef.current.disconnect();
+			if (currentLoader) {
+				observer.unobserve(currentLoader);
 			}
+			observer.disconnect();
 		};
-	}, [loading, hasMore, fetchAuditLogs]);
+	}, [fetchAuditLogs, hasMore, auditLogs.length]);
 
 	const handleRefresh = () => {
 		setAuditLogs([]);
-		setNextUrl(null);
+		nextUrlRef.current = null;
 		setHasMore(true);
+		hasMoreRef.current = true;
 		setInitialLoad(true);
 		fetchAuditLogs(true);
 	};
@@ -599,11 +630,18 @@ export default function AuditLogsPage() {
 						})}
 
 						{hasMore && (
-							<div ref={loadMoreRef} className="flex justify-center pt-4 pb-8">
-								{loading && auditLogs.length > 0 && (
+							<div
+								ref={loadMoreRef}
+								className="flex justify-center pt-4 pb-8 min-h-[120px] grayt-600"
+							>
+								{loading && auditLogs.length > 0 ? (
 									<div className="flex items-center gap-2 text-xs text-gray-500">
 										<div className="h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
 										Loading more entries...
+									</div>
+								) : (
+									<div className="text-xs text-gray-600 font-medium">
+										Scroll for more (Loaded: {auditLogs.length})
 									</div>
 								)}
 							</div>

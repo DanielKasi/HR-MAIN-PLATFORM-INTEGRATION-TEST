@@ -168,6 +168,7 @@ import {
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
 	ITaxRuleCategory,
+	IAuditLog,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -484,6 +485,84 @@ export const deleteJobPosition = async ({ jobPositionId }: { jobPositionId: numb
 	} catch (error) {
 		// console.error("Error deleting job position/title:", error);
 	}
+};
+
+export const AUDIT_LOGS_API = {
+	getPaginated: async ({
+		institutionId,
+		page = 1,
+		search,
+		action,
+		content_type__model,
+		date_from,
+		date_to,
+		ordering,
+	}: {
+		institutionId: number;
+		page?: number;
+		search?: string;
+		action?: string;
+		content_type__model?: string;
+		date_from?: string;
+		date_to?: string;
+		ordering?: string;
+	}): Promise<IPaginatedResponse<IAuditLog>> => {
+		try {
+			const params = new URLSearchParams({
+				page: page.toString(),
+				institution_id: institutionId.toString(),
+			});
+
+			if (search) {
+				params.append("search", search);
+			}
+			if (action && action !== "all") {
+				params.append("action", action);
+			}
+			if (content_type__model && content_type__model !== "all") {
+				params.append("content_type__model", content_type__model);
+			}
+			if (date_from) {
+				params.append("date_from", date_from);
+			}
+			if (date_to) {
+				params.append("date_to", date_to);
+			}
+			if (ordering) {
+				params.append("ordering", ordering);
+			}
+
+			const endpoint = `/audit/institutions/audit-logs/?${params.toString()}`;
+			const response = await apiRequest.get(endpoint);
+
+			return response.data as IPaginatedResponse<IAuditLog>;
+		} catch (error) {
+			console.error("Error fetching paginated audit logs:", error);
+			throw error;
+		}
+	},
+
+	getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAuditLog>> => {
+		try {
+			const response = await apiRequest.get(forceUrlToHttps(url));
+
+			return response.data as IPaginatedResponse<IAuditLog>;
+		} catch (error) {
+			console.error("Error fetching audit logs from URL:", error);
+			throw error;
+		}
+	},
+
+	getById: async ({ auditLogId }: { auditLogId: number }): Promise<IAuditLog> => {
+		try {
+			const response = await apiRequest.get(`/audit/institutions/audit-logs/${auditLogId}/`);
+
+			return response.data as IAuditLog;
+		} catch (error) {
+			console.error("Error fetching audit log:", error);
+			throw error;
+		}
+	},
 };
 
 export const createJobPosition = async ({
