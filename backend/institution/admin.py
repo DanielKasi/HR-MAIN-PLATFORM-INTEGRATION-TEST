@@ -7,6 +7,7 @@ from .models import (
     InstitutionBankType,
     InstitutionBankAccount,
     InstitutionWorkingDays,
+    InstitutionDay,
     InstitutionTax,
     InstitutionTaxRule,
     InstitutionKYCDocument,
@@ -40,6 +41,7 @@ admin.site.register(Department)
 admin.site.register(InstitutionBankType)
 admin.site.register(InstitutionBankAccount)
 admin.site.register(InstitutionWorkingDays)
+admin.site.register(InstitutionDay)
 admin.site.register(InstitutionTax)
 admin.site.register(InstitutionTaxRule)
 admin.site.register(InstitutionKYCDocument)
