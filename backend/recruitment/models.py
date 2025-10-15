@@ -34,6 +34,21 @@ class RequiredDocument(SoftDeletableTimeStampedModel):
             f"{self.document_name} ({'Optional' if self.is_optional else 'Required'})"
         )
 
+class JobPositionDocumentTemplate(SoftDeletableTimeStampedModel):
+    job_position = models.ForeignKey('JobPosition', on_delete=models.CASCADE, related_name='document_template')
+    document_template = models.ForeignKey('documents.DocumentTemplate', on_delete=models.CASCADE, related_name='job_position_templates')
+    purpose = models.CharField(
+        max_length=50,
+        choices=[
+            ('contract', 'Contract'),
+            ('offer_letter', 'Offer Letter'),
+            ('pip', 'Performance Improvement Plan'),
+        ],
+        help_text="The purpose of this document template for the job position."
+    )
+
+    def __str__(self):
+        return f"{self.job_position.name} - {self.get_purpose_display()}"    
 
 class JobPosition(BaseApprovableModel):
     JOB_POSITION_STATUS_CHOICES = [
@@ -42,18 +57,17 @@ class JobPosition(BaseApprovableModel):
     ]
     name = models.CharField(max_length=255)
     description = models.TextField()
-    # TODO: Make department non-nullable in future
     department = models.ForeignKey(
         "institution.Department",
         on_delete=models.CASCADE,
         related_name="job_positions",
         null=True,
     )
-    offer_letter_template = models.FileField(
-        upload_to="job_positions/offer_letters/", blank=True, null=True
+    document_templates = models.ManyToManyField(
+        'documents.DocumentTemplate',
+        through='JobPositionDocumentTemplate',
+        related_name='job_positions'
     )
-
-    # Salary range fields
     salary_min = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -68,7 +82,6 @@ class JobPosition(BaseApprovableModel):
         null=True,
         help_text="Maximum salary for this position",
     )
-
     reports_to = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -83,13 +96,6 @@ class JobPosition(BaseApprovableModel):
         blank=True,
         null=True,
         help_text="The specific employee this job position reports to",
-    )
-    contract_template = models.ForeignKey(
-        "documents.DocumentTemplate",
-        on_delete=models.SET_NULL,
-        related_name="job_positions",
-        blank=True,
-        null=True,
     )
     job_position_status = models.CharField(
         max_length=20,
@@ -187,6 +193,7 @@ class JobPosition(BaseApprovableModel):
                     self.approval_status = 'active'
                     self.job_position_status = 'active'
             self.save()
+
 
 
 class JobPositionAdvert(BaseApprovableModel):
