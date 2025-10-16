@@ -42,7 +42,7 @@ export default function AddEventPage() {
 		event_mode: "physical" as "physical" | "online" | "hybrid",
 		department: null as number | null,
 		specific_employees: [] as string[],
-		frequency: "once" as "once" | "daily" | "weekly" | "monthly" | "yearly",
+		frequency: "" as "once" | "daily" | "weekly" | "monthly" | "yearly" | "",
 		institution: selectedInstitution?.id,
 	});
 
@@ -98,7 +98,7 @@ export default function AddEventPage() {
 				event_mode: "physical" as "physical" | "online" | "hybrid",
 				department: null,
 				specific_employees: [] as string[],
-				frequency: "once" as "once" | "daily" | "weekly" | "monthly" | "yearly",
+				frequency: "",
 				institution: selectedInstitution?.id,
 			});
 			setCurrentStep(1);
@@ -332,7 +332,7 @@ export default function AddEventPage() {
 														value={formData.title}
 														onChange={(e) => handleInputChange("title", e.target.value)}
 														placeholder="Event Title"
-														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3"
+														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3 "
 														required
 													/>
 												</div>
@@ -345,10 +345,11 @@ export default function AddEventPage() {
 														type="date"
 														value={formData.date}
 														onChange={(e) => handleInputChange("date", e.target.value)}
-														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3"
+														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl [&::-webkit-calendar-picker-indicator]:opacity-40 px-3"
 														style={{
 															colorScheme: "light",
 														}}
+														placeholder="--/--/----"
 														required
 													/>
 												</div>
@@ -362,44 +363,18 @@ export default function AddEventPage() {
 														value={formData.frequency}
 														onValueChange={(value: string) => handleInputChange("frequency", value)}
 													>
-														<SelectTrigger className="h-12 text-base rounded-xl border-slate-200 [&[data-placeholder]]:text-slate-500">
-															{" "}
+														<SelectTrigger className="h-12 text-base rounded-xl border-slate-200">
 															<SelectValue placeholder="Select event frequency" />
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value="once">
-																<div className="flex items-center gap-2">
-																	<Calendar className="h-4 w-4" />
-																	One-time Event
-																</div>
-															</SelectItem>
-															<SelectItem value="daily">
-																<div className="flex items-center gap-2">
-																	<Repeat className="h-4 w-4" />
-																	Daily
-																</div>
-															</SelectItem>
-															<SelectItem value="weekly">
-																<div className="flex items-center gap-2">
-																	<Repeat className="h-4 w-4" />
-																	Weekly
-																</div>
-															</SelectItem>
-															<SelectItem value="monthly">
-																<div className="flex items-center gap-2">
-																	<Repeat className="h-4 w-4" />
-																	Monthly
-																</div>
-															</SelectItem>
-															<SelectItem value="yearly">
-																<div className="flex items-center gap-2">
-																	<Repeat className="h-4 w-4" />
-																	Yearly
-																</div>
-															</SelectItem>
+															<SelectItem value="once">One-time Event</SelectItem>
+															<SelectItem value="daily">Daily</SelectItem>
+															<SelectItem value="weekly">Weekly</SelectItem>
+															<SelectItem value="monthly">Monthly</SelectItem>
+															<SelectItem value="yearly">Yearly</SelectItem>
 														</SelectContent>
 													</Select>
-												</div>
+												</div>{" "}
 												<div className="space-y-3">
 													<Label htmlFor="time" className="text-base font-medium">
 														Time
@@ -409,7 +384,7 @@ export default function AddEventPage() {
 														type="time"
 														value={formData.time}
 														onChange={(e) => handleInputChange("time", e.target.value)}
-														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3"
+														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3 [&::-webkit-calendar-picker-indicator]:opacity-50 "
 													/>
 												</div>
 											</div>
