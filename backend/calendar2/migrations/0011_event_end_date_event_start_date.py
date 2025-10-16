@@ -23,6 +23,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='event',
             name='date',
-            field=models.DateField(),
+            field=models.DateField(blank=True, null=True),
         ),
     ]
