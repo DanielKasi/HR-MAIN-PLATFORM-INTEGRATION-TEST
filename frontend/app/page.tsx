@@ -44,7 +44,7 @@ export default function HomePage() {
 					<div className="flex items-center justify-between rounded-2xl bg-white px-6 py-4 shadow-sm">
 						<div className="flex items-center gap-6">
 							<div className="flex items-center gap-3">
-								<img src="/images/logo.png" alt="PERACOSOFT Logo" className="h-10 w-10" />
+								<img src="/images/logo.PNG" alt="PERACOSOFT Logo" className="h-10 w-10" />
 								<span className="text-2xl font-bold text-myblack">PERACOSOFT</span>
 							</div>
 						</div>

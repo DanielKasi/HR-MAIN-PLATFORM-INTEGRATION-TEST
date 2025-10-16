@@ -1866,14 +1866,15 @@ export interface ISystemWorkingDay {
 
 export interface IInstitutionDay {
 	id: number;
+	day_id: number;
 	day_name: string;
 	opening_time: string;
 	closing_time: string;
 }
 export interface IInstitutionDayFormData {
 	day_id: number;
-	opening_time?: string;
-	closing_time?: string;
+	opening_time?: string | null;
+	closing_time?: string | null;
 }
 
 // Institution Working Days interface

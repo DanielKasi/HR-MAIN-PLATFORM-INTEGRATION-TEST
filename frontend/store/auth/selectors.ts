@@ -34,13 +34,6 @@ export const selectSelectedBranchLoading = createSelector(
 	(slice) => slice.selectedBranch.loading,
 );
 
-export const selectSelectedTill = createSelector([authSlice], (slice) => slice.selectedTill.value);
-
-export const selectSelectedTillLoading = createSelector(
-	[authSlice],
-	(slice) => slice.selectedTill.loading,
-);
-
 export const selectAttachedInstitutions = createSelector(
 	[authSlice],
 	(slice) => slice.InstitutionsAttached.value || [],
@@ -67,4 +60,14 @@ export const selectLogoutWarningVisible = createSelector(
 export const selectRefreshInProgress = createSelector(
 	[authSlice],
 	(slice) => slice.refreshInProgress,
+);
+
+export const selectRelatedEmployeeLoading = createSelector(
+	[authSlice],
+	(slice) => slice.relatedEmployee.loading,
+);
+
+export const selectRelatedEmployee = createSelector(
+	[authSlice],
+	(slice) => slice.relatedEmployee.value,
 );

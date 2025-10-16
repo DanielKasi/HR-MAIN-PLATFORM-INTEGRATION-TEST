@@ -22,9 +22,19 @@ export function capitalizeEachWord(str: string) {
 		.join(" ");
 }
 
-export const formatDate = (dateString: string) => {
+export const formatDate = (dateString: string, withTime?: boolean) => {
 	if (!dateString) {
 		return "Unknown";
+	}
+	if (withTime) {
+		return new Date(dateString).toLocaleDateString("en-US", {
+			month: "short",
+			day: "numeric",
+			year: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+			hourCycle: "h12",
+		});
 	}
 	return new Date(dateString).toLocaleDateString("en-US", {
 		month: "short",
@@ -330,7 +340,7 @@ export const showBrowserNotification = ({ notification }: { notification: INotif
 		console.log("\n\n Click triggered for notification: ", notification);
 		new Notification(notification.message, {
 			body: `${notification.id}: Received at ${new Date(notification.timestamp).toLocaleString()} `,
-			icon: "/icon.png", // Optional: Replace with your app's icon
+			icon: "/icon.PNG", // Optional: Our app's icon
 			tag: notification.id.toString(), // Prevents duplicate notifications
 		});
 	};

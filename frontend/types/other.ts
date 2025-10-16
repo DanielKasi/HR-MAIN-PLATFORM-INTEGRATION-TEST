@@ -135,12 +135,6 @@ export interface BulkEmployeeUploadResult {
 	warnings?: any[];
 }
 
-export interface ITill {
-	id: number;
-	name: string;
-	branch: number;
-}
-
 export interface SeparationPolicy {
 	id: number;
 	separation_type: number;

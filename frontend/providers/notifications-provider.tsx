@@ -117,7 +117,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			try {
 				await serviceWorkerRef.current.showNotification("Alert", {
 					body: notification.message || "",
-					icon: "/icon.png",
+					icon: "/icon.PNG",
 					tag: notification.id.toString(),
 					data: { url, notificationId: notification.id },
 				});
