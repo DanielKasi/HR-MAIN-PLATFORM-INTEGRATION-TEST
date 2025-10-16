@@ -271,7 +271,13 @@ export default function AddEventPage() {
 											<div
 												className={`
                         w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300
-                        ${shouldBeFilled ? "bg-primary text-white" : "bg-slate-200 text-slate-600"}
+                        ${
+													isActive
+														? "bg-blue-50 text-primary border-2 border-primary"
+														: isCompleted
+															? "bg-blue-50 text-primary border-2 border-primary"
+															: "bg-white text-slate-600 border-2 border-slate-300"
+												}
                         ${canClick ? "hover:shadow-md" : ""}
                       `}
 											>
@@ -307,32 +313,32 @@ export default function AddEventPage() {
 					</div>
 				</div>
 
-				<div className="flex flex-col lg:flex-row gap-8">
+				<div className="flex flex-col lg:flex-row ">
 					{/* Main Form */}
 					<div className="flex-1">
 						<div className="">
-							<div className="p-6">
+							<div className="">
 								<div className={`space-y-6 ${loading ? "pointer-events-none opacity-60" : ""}`}>
 									{currentStep === 1 && (
 										<div className="space-y-6">
 											{/* Row 1: Event Title and Event Date */}
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 												<div className="space-y-3">
-													<Label htmlFor="title" className="text-[#232E3F] font-medium">
-														Event Title *
+													<Label htmlFor="title" className="text-base font-medium">
+														Event Title
 													</Label>
 													<input
 														id="title"
 														value={formData.title}
 														onChange={(e) => handleInputChange("title", e.target.value)}
-														placeholder="Enter event title"
+														placeholder="Event Title"
 														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3"
 														required
 													/>
 												</div>
 												<div className="space-y-3">
-													<Label htmlFor="date" className="text-[#232E3F] font-medium">
-														Event Date *
+													<Label htmlFor="date" className="text-base font-medium">
+														Event Date
 													</Label>
 													<input
 														id="date"
@@ -351,13 +357,14 @@ export default function AddEventPage() {
 											{/* Row 2: Event Frequency and Time */}
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 												<div className="space-y-3">
-													<Label className="text-base font-medium">Event Frequency *</Label>
+													<Label className="text-base font-medium">Event Frequency</Label>
 													<Select
 														value={formData.frequency}
 														onValueChange={(value: string) => handleInputChange("frequency", value)}
 													>
-														<SelectTrigger className="h-12 text-base rounded-xl border-slate-200">
-															<SelectValue placeholder="Select frequency" />
+														<SelectTrigger className="h-12 text-base rounded-xl border-slate-200 [&[data-placeholder]]:text-slate-500">
+															{" "}
+															<SelectValue placeholder="Select event frequency" />
 														</SelectTrigger>
 														<SelectContent>
 															<SelectItem value="once">
@@ -410,13 +417,13 @@ export default function AddEventPage() {
 											{/* Row 3: Event Description */}
 											<div className="space-y-3">
 												<Label htmlFor="description" className="text-base font-medium">
-													Event Description *
+													Event Description
 												</Label>
 												<Textarea
 													id="description"
 													value={formData.description}
 													onChange={(e) => handleInputChange("description", e.target.value)}
-													placeholder="Describe the event, agenda, and important details..."
+													placeholder="Type description"
 													rows={6}
 													className="text-base border-slate-200 resize-none rounded-xl"
 													required
@@ -605,12 +612,12 @@ export default function AddEventPage() {
 
 													{formData.target_audience === "specific_employees" && (
 														<div className="space-y-3">
-															<Label className="text-base font-medium">Select Employees</Label>
+															<Label className="text-base font-medium">Search User</Label>
 
 															<div className="relative">
 																<input
 																	type="text"
-																	placeholder="Search employees..."
+																	placeholder="Select Users"
 																	value={employeeSearchTerm}
 																	onChange={(e) => setEmployeeSearchTerm(e.target.value)}
 																	className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
