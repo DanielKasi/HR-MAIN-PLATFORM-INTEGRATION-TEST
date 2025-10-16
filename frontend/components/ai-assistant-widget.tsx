@@ -599,7 +599,8 @@ export default function AIAssistantWidget() {
 							onClick={() => setIsOpen(true)}
 							onMouseEnter={() => setShowTooltip(true)}
 							onMouseLeave={() => setShowTooltip(false)}
-							className="relative bg-gradient-to-br from-red-600 via-orange-700 to-red-700 hover:from-red-700 hover:via-orange-800 hover:to-red-800 text-white rounded-full h-14 w-14 p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden"
+							className="relative bg-gradient-to-br from-red-600 via-orange-700 to-red-700 hover:from-red-700 hover:via-orange-800 hover:to-red-800 text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden"
+							style={{ width: "52px", height: "52px" }}
 						>
 							<div className="absolute inset-0 bg-gradient-to-br from-red-400 via-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
 
@@ -617,7 +618,8 @@ export default function AIAssistantWidget() {
 					) : (
 						<Button
 							onClick={() => setIsOpen(false)}
-							className="bg-gradient-to-br from-red-600 to-orange-700 hover:from-orange-700 hover:to-red-800 text-white rounded-full h-14 w-14 p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110"
+							className="bg-gradient-to-br from-red-600 to-orange-700 hover:from-orange-700 hover:to-red-800 text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110"
+							style={{ width: "52px", height: "52px" }}
 						>
 							<X className="h-6 w-6" />
 						</Button>

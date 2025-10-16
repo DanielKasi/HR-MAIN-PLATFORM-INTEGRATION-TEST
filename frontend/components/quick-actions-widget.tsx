@@ -180,9 +180,10 @@ const QuickActionsWidget = () => {
 							onClick={() => setIsOpen(!isOpen)}
 							onMouseEnter={() => setShowTooltip(true)}
 							onMouseLeave={() => setShowTooltip(false)}
-							className={`pointer-events-auto relative bg-black hover:bg-gray-900 text-white rounded-full h-14 w-14 p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden button-rotate ${
+							className={`pointer-events-auto relative bg-black hover:bg-gray-900 text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden button-rotate ${
 								isOpen ? "open" : ""
 							}`}
+							style={{ width: "52px", height: "52px" }}
 						>
 							<div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 							<div className="relative z-10 flex items-center justify-center">
