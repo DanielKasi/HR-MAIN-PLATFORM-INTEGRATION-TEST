@@ -82,7 +82,7 @@ export function EventsAndHolidaysWidget({
 
 	return (
 		<Card className={`h-fit shadow-sm border-none ${className}`}>
-			<CardHeader className="pb-2">
+			<CardHeader className="pb-2 sticky top-0 z-10 bg-white">
 				<div className="flex border-b">
 					<button
 						onClick={() => setActiveTab("holidays")}
