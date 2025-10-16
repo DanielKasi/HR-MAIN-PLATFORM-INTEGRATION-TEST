@@ -30,6 +30,7 @@ from .serializers import (
     SignatureSerializer,
     UserOTPVerificationSerializer,
     UserPasswordResetSerializer,
+    UserPermissionSerializer,
     UserResendOTPVerificationSerializer,
     UserSendForgotPasswordTokenSerializer,
     ResendOTPSerializer,
@@ -1287,6 +1288,8 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
         serializer = SignatureSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
     
+
+    
 class SignatureDetailView(APIView):
 
     @extend_schema(
@@ -1381,4 +1384,51 @@ class SignatureDetailView(APIView):
             serializer.save()
             signature.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+    
+
+class UserPermissionDetailView(APIView):
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=UserPermissionSerializer,
+                description="Permissions modified successfully"
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="UserPermission not found.",
+            ),
+        },
+        tags=["User Permissions"]
+    )
+    @transaction.atomic
+    @method_decorator(permission_required('can_edit_staff_roles', raise_exception=True))
+    def patch(self, request, user_id):
+        """
+        Add one or more permissions to a user.
+        """
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"error": f"User with id {user_id} does not exist."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = request.data.copy()
+        data['user_id'] = str(user_id)
+
+        serializer = UserPermissionSerializer(data=data)
+        if serializer.is_valid():
+            if 'permission_ids' in serializer.validated_data:
+                user_permissions = serializer.update(user, serializer.validated_data)
+                response_data = UserPermissionSerializer(user_permissions, many=True).data
+                message = f"Permissions added to user {user.email}"
+            else:
+                user_permission = serializer.save()
+                response_data = UserPermissionSerializer(user_permission).data
+                message = f"Permission {user_permission.permission.permission_name} added to user {user.email}"
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+           

@@ -95,6 +95,8 @@ class Event(BaseApprovableModel):
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     date = models.DateField()
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
 
     target_audience = models.CharField(
         max_length=20, choices=TARGET_AUDIENCE_CHOICES, default="all"
@@ -131,9 +133,21 @@ class Event(BaseApprovableModel):
 
 
     def __str__(self):
-        return f"{self.title} on {self.date} at {self.institution.institution_name}"
+        return f"{self.title} from {self.start_date} to {self.end_date} at {self.institution.institution_name}"
 
     def save(self, *args, **kwargs):
+        if self.start_date and not self.date:
+            self.date = self.start_date
+
+        if not self.end_date and self.start_date:
+            self.end_date = self.start_date
+
+        if not self.end_date and self.start_date:
+            self.end_date = self.start_date
+
+        if self.end_date and self.start_date and self.end_date < self.start_date:
+            raise ValueError("End date cannot be before start date")
+        
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
@@ -174,8 +188,12 @@ class Event(BaseApprovableModel):
     def _add_event_to_calendar(self):
         from calendar2.models import Calendar, EventOccurrence
 
-        start_date = self.date
-        end_date = self.repeat_until if self.repeat_until else self.date
+        if self.start_date == self.end_date:
+            start_date = self.start_date
+            end_date = self.repeat_until if self.repeat_until else self.start_date
+        else:
+            start_date = self.start_date
+            end_date = self.end_date
 
         if self.frequency == "weekly":
             delta = timedelta(weeks=1)
@@ -184,17 +202,22 @@ class Event(BaseApprovableModel):
         elif self.frequency == "yearly":
             delta = relativedelta(years=1)
         elif self.frequency == "once":
-            year = self.date.year
-            calendar, _ = Calendar.objects.get_or_create(
-                institution=self.institution,
-                year=year,
-            )
-            EventOccurrence.objects.get_or_create(
+            # Handle both single-day and multi-day "once" events
+            if self.start_date == self.end_date:
+                year = self.start_date.year
+                calendar, _ = Calendar.objects.get_or_create(
+                    institution = self.institution,
+                    year=year
+                )
+
+                EventOccurrence.objects.get_or_create(
                 event=self,
-                date=self.date,
+                date=self.start_date,
                 calendar=calendar,
-            )
-            return
+                )
+                return
+            else:
+                delta = timedelta(days=1)
         else:
             delta = timedelta(days=1)
 
@@ -222,6 +245,10 @@ class Event(BaseApprovableModel):
             )
 
             current_date += delta
+
+            if self.frequency != "once" and self.repeat_until:
+                if current_date > self.repeat_until:
+                    break
 
         EventOccurrence.objects.bulk_create(
             occurrences_to_create,
