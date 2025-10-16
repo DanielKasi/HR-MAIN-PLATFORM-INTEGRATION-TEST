@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, Users, MapPin, Video, Repeat, Clock } from "lucide-react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
+
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -268,11 +271,7 @@ export default function AddEventPage() {
 											<div
 												className={`
                         w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300
-                        ${
-													shouldBeFilled
-														? "bg-primary text-white shadow-lg"
-														: "bg-slate-200 text-slate-600"
-												}
+                        ${shouldBeFilled ? "bg-primary text-white" : "bg-slate-200 text-slate-600"}
                         ${canClick ? "hover:shadow-md" : ""}
                       `}
 											>
@@ -322,12 +321,12 @@ export default function AddEventPage() {
 													<Label htmlFor="title" className="text-[#232E3F] font-medium">
 														Event Title *
 													</Label>
-													<Input
+													<input
 														id="title"
 														value={formData.title}
 														onChange={(e) => handleInputChange("title", e.target.value)}
 														placeholder="Enter event title"
-														className="h-12 text-base border-slate-200"
+														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3"
 														required
 													/>
 												</div>
@@ -340,7 +339,7 @@ export default function AddEventPage() {
 														type="date"
 														value={formData.date}
 														onChange={(e) => handleInputChange("date", e.target.value)}
-														className="h-12 w-full text-gray-500 border border-slate-200 rounded-md px-3"
+														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3"
 														style={{
 															colorScheme: "light",
 														}}
@@ -357,7 +356,7 @@ export default function AddEventPage() {
 														value={formData.frequency}
 														onValueChange={(value: string) => handleInputChange("frequency", value)}
 													>
-														<SelectTrigger className="h-12 text-base border-slate-200">
+														<SelectTrigger className="h-12 text-base rounded-xl border-slate-200">
 															<SelectValue placeholder="Select frequency" />
 														</SelectTrigger>
 														<SelectContent>
@@ -403,7 +402,7 @@ export default function AddEventPage() {
 														type="time"
 														value={formData.time}
 														onChange={(e) => handleInputChange("time", e.target.value)}
-														className="h-12 w-full text-gray-500 border border-slate-200 rounded-md px-3"
+														className="h-12 w-full text-gray-500 border border-slate-200 rounded-xl px-3"
 													/>
 												</div>
 											</div>
@@ -419,7 +418,7 @@ export default function AddEventPage() {
 													onChange={(e) => handleInputChange("description", e.target.value)}
 													placeholder="Describe the event, agenda, and important details..."
 													rows={6}
-													className="text-base border-slate-200 resize-none"
+													className="text-base border-slate-200 resize-none rounded-xl"
 													required
 												/>
 											</div>
@@ -434,47 +433,44 @@ export default function AddEventPage() {
 												<div className="flex flex-col md:flex-row gap-3">
 													{[
 														{
-															value: "physical",
-															label: "Physical",
-															icon: MapPin,
-															desc: "In-person event",
-														},
-														{
 															value: "online",
 															label: "Online",
-															icon: Video,
-															desc: "Virtual meeting",
+															icon: "hugeicons:presentation-online",
+														},
+														{
+															value: "physical",
+															label: "Physical",
+															icon: "hugeicons:user-multiple-02",
 														},
 														{
 															value: "hybrid",
 															label: "Hybrid",
-															icon: Users,
-															desc: "Both online & physical",
+															icon: "hugeicons:user-switch",
 														},
-													].map((mode) => {
-														const Icon = mode.icon;
-
-														return (
-															<div
-																key={mode.value}
-																className={`
+													].map((mode) => (
+														<div
+															key={mode.value}
+															className={`
                                   p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 flex-1
                                   ${
 																		formData.event_mode === mode.value
-																			? "border-blue-500 bg-blue-50"
+																			? "border-blue-200 bg-blue-50"
 																			: "border-slate-200 hover:border-slate-300"
 																	}
                                 `}
-																onClick={() => handleInputChange("event_mode", mode.value)}
-															>
-																<div className="flex items-center gap-3 mb-2">
-																	<Icon className="h-5 w-5 text-slate-600" />
-																	<span className="font-medium text-slate-900">{mode.label}</span>
-																</div>
-																<p className="text-sm text-slate-600">{mode.desc}</p>
+															onClick={() => handleInputChange("event_mode", mode.value)}
+														>
+															<div className="flex flex-col items-center mb-2">
+																<Icon
+																	icon={mode.icon}
+																	width="35"
+																	height="35"
+																	className="text-slate-600"
+																/>
+																<span className="text-slate-900 font-medium">{mode.label}</span>
 															</div>
-														);
-													})}
+														</div>
+													))}
 												</div>
 											</div>
 
@@ -541,7 +537,7 @@ export default function AddEventPage() {
 																<SelectContent>
 																	{departmentsLoading ? (
 																		<div className="p-4 text-center text-slate-500">
-																			<div className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+																			<div className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-xl animate-spin mx-auto mb-2" />
 																			Loading departments...
 																		</div>
 																	) : departments.length === 0 ? (
