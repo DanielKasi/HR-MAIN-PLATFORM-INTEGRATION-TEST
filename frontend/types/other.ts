@@ -1,9 +1,8 @@
 import { Permission, UserProfile } from "./user.types";
-import { IBaseApprovable } from "./approvals.types";
 import { IInstitutionDocument } from "./types.utils";
 import { Branch } from "./branch.types";
 
-import { PERMISSION_CODES } from "@/constants";
+import { IOwnerShipHistory } from "./institution.types";
 
 export interface IProductCategoryDetail {
 	id: number;
@@ -43,6 +42,7 @@ export interface IUserInstitution {
 	user_inactivity_time: number; // In minutes ,
 	country_code: string;
 	documents?: IInstitutionDocument[];
+	transfer_history: IOwnerShipHistory[];
 }
 
 export interface IUserInstitutionFormData {

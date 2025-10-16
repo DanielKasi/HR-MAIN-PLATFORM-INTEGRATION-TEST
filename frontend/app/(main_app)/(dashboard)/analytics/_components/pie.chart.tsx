@@ -4,13 +4,7 @@ import * as React from "react";
 import { Cell, Label, LabelList, Pie, PieChart } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	ChartContainer,
-	ChartLegend,
-	ChartLegendContent,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { sentenceCase } from "@/lib/helpers/index";
 import {
 	Select,
@@ -92,7 +86,7 @@ export default function Piechart({
 	return (
 		<Card className={`flex flex-col shadow-none border ${className}`}>
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
+				<CardTitle className="text-lg font-semibold text-slate-900">{title}</CardTitle>
 				{select && groups?.length > 0 && !isArrayData && (
 					<div className="flex items-center gap-4">
 						<Select
@@ -117,91 +111,72 @@ export default function Piechart({
 				)}
 			</CardHeader>
 			<CardContent className="flex-1 flex items-center justify-center">
-				<div className="flex-grow">
-					<ChartContainer
-						config={chartConfig}
-						className="mx-auto aspect-square w-full h-full max-h-[250px]"
+				<ChartContainer
+					config={chartConfig}
+					className="mx-auto aspect-square w-full h-full max-h-[250px]"
+				>
+					<PieChart
+						margin={{
+							top: 20,
+							bottom: 10,
+						}}
 					>
-						<PieChart
-							margin={{
-								top: 20,
-								bottom: 10,
-							}}
+						<ChartTooltip active cursor={false} content={<ChartTooltipContent hideLabel />} />
+						<Pie
+							data={items}
+							dataKey={dataKey}
+							nameKey={nameKey}
+							outerRadius={!donut ? 100 : 120}
+							innerRadius={!donut ? 0 : 60}
+							strokeWidth={5}
+							paddingAngle={!donut ? 0 : 1}
+							legendType="circle"
+							cornerRadius={!donut ? 0 : 5}
 						>
-							<ChartTooltip active cursor={false} content={<ChartTooltipContent hideLabel />} />
-							<Pie
-								data={items}
-								dataKey={dataKey}
-								nameKey={nameKey}
-								outerRadius={!donut ? 100 : 120}
-								innerRadius={!donut ? 0 : 60}
-								strokeWidth={5}
-								paddingAngle={!donut ? 0 : 1}
-								legendType="circle"
-								cornerRadius={!donut ? 0 : 5}
-							>
-								{items.map((_, index) => (
-									<Cell key={`cell-${index}`} fill={colors[index]} />
-								))}
-								{donut && totalStr ? (
-									<Label
-										content={({ viewBox }) => {
-											if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-												return (
-													<text
+							{items.map((_, index) => (
+								<Cell key={`cell-${index}`} fill={colors[index]} />
+							))}
+							{donut && totalStr ? (
+								<Label
+									content={({ viewBox }) => {
+										if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+											return (
+												<text
+													x={viewBox.cx}
+													y={viewBox.cy}
+													textAnchor="middle"
+													dominantBaseline="middle"
+												>
+													<tspan
 														x={viewBox.cx}
 														y={viewBox.cy}
-														textAnchor="middle"
-														dominantBaseline="middle"
+														className="fill-foreground text-3xl font-bold"
 													>
-														<tspan
-															x={viewBox.cx}
-															y={viewBox.cy}
-															className="fill-foreground text-3xl font-bold"
-														>
-															{total.toLocaleString()}
-														</tspan>
-														<tspan
-															x={viewBox.cx}
-															y={(viewBox.cy || 0) + 24}
-															className="fill-muted-foreground"
-														>
-															{totalStr}
-														</tspan>
-													</text>
-												);
-											}
-										}}
-									/>
-								) : null}
-								{labelList ? (
-									<LabelList
-										className="fill-background text-sm"
-										stroke="none"
-										formatter={(v: number) => ((100 * v) / total).toFixed(1) + "%"}
-									/>
-								) : null}
-							</Pie>
-						</PieChart>
-					</ChartContainer>
-				</div>
-				<div className="flex-grow gap-4 flex flex-col">
-					{items.map((item, i) => (
-						<div key={`item-${i}`} className="flex items-center gap-1 md:gap-3">
-							<div
-								style={{ backgroundColor: colors[i] }}
-								className="w-2 md:size-4 !aspect-square !inline-block rounded-full"
-							/>
-							{renderLegend ? (
-								renderLegend(item)
-							) : (
-								<p className="text-base text-gray-600 inline-block">
-									<span> {sentenceCase(item[nameKey] as string)} </span>
-								</p>
-							)}
-						</div>
-					))}
-				</div>
+														{total.toLocaleString()}
+													</tspan>
+													<tspan
+														x={viewBox.cx}
+														y={(viewBox.cy || 0) + 24}
+														className="fill-muted-foreground"
+													>
+														{totalStr}
+													</tspan>
+												</text>
+											);
+										}
+									}}
+								/>
+							) : null}
+							{labelList ? (
+								<LabelList
+									className="fill-background text-sm"
+									stroke="none"
+									formatter={(v: number) => ((100 * v) / total).toFixed(1) + "%"}
+								/>
+							) : null}
+						</Pie>
+					</PieChart>
+				</ChartContainer>
 			</CardContent>
 		</Card>
 	);
