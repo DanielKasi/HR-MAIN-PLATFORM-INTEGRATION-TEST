@@ -43,7 +43,7 @@ const CustomTreemapContent = (props: any) => {
 							height={height}
 							fill={fillColor}
 							stroke="white"
-							strokeWidth={2}
+							strokeWidth={3}
 							opacity={isHovered ? 0.8 : 1}
 						/>
 						<text
