@@ -332,7 +332,7 @@ export default function AddEventPage() {
 													/>
 												</div>
 												<div className="space-y-3">
-													<Label htmlFor="date" className="text-base font-medium">
+													<Label htmlFor="date" className="text-[#232E3F] font-medium">
 														Event Date *
 													</Label>
 													<input
