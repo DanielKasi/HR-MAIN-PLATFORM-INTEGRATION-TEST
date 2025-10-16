@@ -177,6 +177,8 @@ class EventListCreateView(APIView):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         date = request.query_params.get("date", None)
+        start_date = request.query_params.get("start_date", None)
+        end_date = request.query_params.get("end_date", None)
         mode = request.query_params.get("mode", None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
@@ -184,17 +186,28 @@ class EventListCreateView(APIView):
         events = Event.objects.filter(institution=institution, deleted_at__isnull=True)
 
         if date:
-            events = events.filter(date=date)
+            events = events.filter(
+                Q(date=date) | 
+                Q(start_date__lte=date, end_date__gte=date) |  
+                Q(occurrences__date=date)  
+            ).distinct()
+        
+        if start_date and end_date:
+            events = events.filter(
+                Q(start_date__lte=end_date, end_date__gte=start_date)  
+            )
 
         if mode:
             events = events.filter(event_mode=mode)
         if search_query:
             events = events.filter(
-                Q(title__icontains=search_query)
-                | Q(description__icontains=search_query)
-                | Q(date__icontains=search_query)
-                | Q(frequency__icontains=search_query)
-                | Q(target_audience__icontains=search_query)
+                Q(title__icontains=search_query) | 
+                Q(description__icontains=search_query) | 
+                Q(date__icontains=search_query) |
+                Q(start_date__icontains=search_query) |
+                Q(frequency__icontains=search_query) |
+                Q(end_date__icontains=search_query) |
+                Q(target_audience__icontains=search_query)
             )
         paginator = CustomPageNumberPagination()
         paginated_events = paginator.paginate_queryset(events, request)
