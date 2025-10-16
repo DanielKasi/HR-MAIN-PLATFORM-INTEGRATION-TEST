@@ -20,7 +20,7 @@ export function EventsAndHolidaysWidget({
 	const [events, setEvents] = useState<IEvent[]>([]);
 	const [activeTab, setActiveTab] = useState<"holidays" | "events">("holidays");
 	const [loading, setLoading] = useState(true);
-	const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
+	const [currentYear] = useState<number>(new Date().getFullYear());
 
 	const fetchData = async () => {
 		setLoading(true);

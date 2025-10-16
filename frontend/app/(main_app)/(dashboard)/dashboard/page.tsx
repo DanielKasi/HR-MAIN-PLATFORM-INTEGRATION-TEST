@@ -116,18 +116,9 @@ export default function Dashboard() {
 
 					<div className="flex items-center gap-3">
 						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
-							<Link
-								href={"/employees/add-employee"}
-								className="flex items-center justify-start gap-3"
-							>
-								<Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
-								<span className="hidden lg:inline">Add Employee</span>
-							</Link>
-						</Button>
-						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
-							<Link href={"/job-adverts/create"} className="flex items-center justify-start gap-3">
-								<Icon icon="hugeicons:advertisiment" className="!w-6 !h-6" />
-								<span className="hidden lg:inline">Post Job Opening</span>
+							<Link href="" className="flex items-center justify-start gap-3">
+								<Icon icon="hugeicons:location-user-02" className="!w-6 !h-6" />
+								<span className="hidden lg:inline">Send Spotcheck</span>
 							</Link>
 						</Button>
 						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
@@ -139,10 +130,19 @@ export default function Dashboard() {
 								<span className="hidden lg:inline">Add event</span>
 							</Link>
 						</Button>
+						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
+							<Link
+								href={"/employees/add-employee"}
+								className="flex items-center justify-start gap-3"
+							>
+								<Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
+								<span className="hidden lg:inline">Add Employee</span>
+							</Link>
+						</Button>
 					</div>
 				</div>
 
-				<TasksCards branchId={null} />
+				{/* <TasksCards branchId={null} /> */}
 
 				<div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
 					{/* Main Content */}

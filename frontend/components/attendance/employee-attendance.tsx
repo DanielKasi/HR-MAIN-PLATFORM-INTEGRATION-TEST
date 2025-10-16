@@ -26,7 +26,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
 			{selectedInstitution ? (
 				<AttendanceRecordsTable
 					showingOnDashboard={showingOnDashboard}
-					searchTerm={searchTerm}
+					// searchTerm={searchTerm}
 					attendanceRefreshRef={attendanceRefreshRef}
 					scope={scope}
 				/>
