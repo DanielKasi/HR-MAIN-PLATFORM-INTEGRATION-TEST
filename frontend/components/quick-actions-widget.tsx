@@ -27,14 +27,14 @@ const QuickActionsWidget = () => {
 			label: "Add Employee",
 			icon: <Users className="h-4 w-4 text-white" />,
 			bgColor: "bg-blue-600 hover:bg-blue-700",
-			href: "",
+			href: "/employees/add-employee",
 		},
 		{
 			id: "add-event",
 			label: "Add Event",
 			icon: <Calendar className="h-4 w-4 text-white" />,
 			bgColor: "bg-blue-600 hover:bg-blue-700",
-			href: "",
+			href: "/events-holidays/events/add",
 		},
 		{
 			id: "create-report",
@@ -48,7 +48,7 @@ const QuickActionsWidget = () => {
 			label: "View Attendance",
 			icon: <Clock className="h-4 w-4 text-white" />,
 			bgColor: "bg-blue-600 hover:bg-blue-700",
-			href: "",
+			href: "/employees/attendance",
 		},
 		{
 			id: "analytics",
@@ -140,7 +140,7 @@ const QuickActionsWidget = () => {
 
 			<div ref={containerRef} className="fixed bottom-24 right-6 z-50 pointer-events-none">
 				{isOpen && (
-					<div className="absolute bottom-full right-0 mb-4 pointer-events-auto flex flex-col items-center gap-3">
+					<div className="absolute bottom-full right-1/2 transform translate-x-1/2 mb-4 pointer-events-auto flex flex-col items-center gap-3">
 						{quickActions.map((action) => (
 							<div key={action.id} className="relative">
 								{hoveredAction === action.id && (
@@ -165,7 +165,7 @@ const QuickActionsWidget = () => {
 					</div>
 				)}
 
-				<div className="flex flex-col items-end pointer-events-auto">
+				<div className="flex flex-col items-center pointer-events-auto">
 					<div className="relative">
 						{showTooltip && !isOpen && (
 							<div className="absolute bottom-16 right-0 mb-2 px-3 py-2 bg-white text-black text-sm rounded-lg shadow-lg animate-in fade-in duration-200 whitespace-nowrap">
