@@ -13,6 +13,24 @@ class EventSerializer(BaseApprovableSerializer):
     class Meta:
         model = Event
         fields = '__all__'
+
+    def validate(self, data):
+        date = data.get('date')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        if date and not start_date:
+            data['start_date'] = date
+
+        if start_date and not end_date:
+            data['end_date'] = start_date
+
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError({
+                "end_date": "End date cannot be before start date."
+            })
+            
+        return data
  
 
 
