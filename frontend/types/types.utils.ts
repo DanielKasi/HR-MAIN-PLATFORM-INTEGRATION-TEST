@@ -1877,7 +1877,6 @@ export interface IInstitutionDayFormData {
 	closing_time?: string | null;
 }
 
-// Institution Working Days interface
 export interface IInstitutionWorkingDays {
 	id: number;
 	institution: number;

@@ -26,7 +26,7 @@ export default function InstitutionWorkingDays() {
 	const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([]);
 	const [institutionWorkingDays, setInstitutionWorkingDays] =
 		useState<IInstitutionWorkingDays | null>(null);
-	const [selectedDays, setSelectedDays] = useState<number[]>([]);
+	const [selectedDays, setSelectedDays] = useState<IInstitutionDayFormData[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -42,10 +42,13 @@ export default function InstitutionWorkingDays() {
 
 	useEffect(() => {
 		if (institutionWorkingDays) {
-			const currentDayIds = institutionWorkingDays.institution_days.map((day) => day.id).sort();
-			const selectedDayIds = [...selectedDays].sort();
-
-			setHasChanges(JSON.stringify(currentDayIds) !== JSON.stringify(selectedDayIds));
+			const current = institutionWorkingDays.institution_days
+				.map((d) => `${d.day_id}-${d.opening_time || ""}-${d.closing_time || ""}`)
+				.sort();
+			const selected = selectedDays
+				.map((d) => `${d.day_id}-${d.opening_time || ""}-${d.closing_time || ""}`)
+				.sort();
+			setHasChanges(JSON.stringify(current) !== JSON.stringify(selected));
 		} else {
 			setHasChanges(selectedDays.length > 0);
 		}
@@ -65,7 +68,13 @@ export default function InstitutionWorkingDays() {
 
 			setInstitutionWorkingDays(currentWorkingDays);
 			if (currentWorkingDays) {
-				setSelectedDays(currentWorkingDays.institution_days.map((day) => day.id));
+				setSelectedDays(
+					currentWorkingDays.institution_days.map((day) => ({
+						day_id: day.day_id,
+						opening_time: day.opening_time,
+						closing_time: day.closing_time,
+					})),
+				);
 			} else {
 				setSelectedDays([]);
 			}
@@ -78,20 +87,8 @@ export default function InstitutionWorkingDays() {
 	};
 
 	const handleWorkingDaysUpdate = async (days: IInstitutionDayFormData[]) => {
-		console.log(
-			"\n\n Updating institution working days  with ids : ",
-			days,
-			"\n\n And institution days : ",
-			institutionWorkingDays?.institution_days,
-		);
-
-		// 		id: number;
-		// day_code: string;
-		// day_name: string;
-		// level: number;
 		if (!selectedInstitution) {
 			toast.error("No institution selected");
-
 			return;
 		}
 		if (days.length === 0) {
@@ -100,16 +97,6 @@ export default function InstitutionWorkingDays() {
 		}
 		try {
 			setIsSaving(true);
-			// const matchingDays = institutionWorkingDays?.institution_days
-			// 	.filter((inst_day) => day_ids.find((day_id) => inst_day.id === day_id))
-			// 	.map((day) => ({
-			// 		day_id: day.id,
-			// 		opening_time: day.opening_time,
-			// 		closing_time: day.closing_time,
-			// 	}));
-			// if (!matchingDays) {
-			// 	throw new Error("No matching days !");
-			// }
 			const formData: IInstitutionWorkingDaysFormData = { institution_days: days };
 			let updatedWorkingDays: IInstitutionWorkingDays;
 
@@ -122,11 +109,16 @@ export default function InstitutionWorkingDays() {
 				updatedWorkingDays = await institutionAPI.createWorkingDays(formData);
 			}
 			setInstitutionWorkingDays(updatedWorkingDays);
-			setSelectedDays(updatedWorkingDays.institution_days.map((day) => day.id));
+			setSelectedDays(
+				updatedWorkingDays.institution_days.map((day) => ({
+					day_id: day.day_id,
+					opening_time: day.opening_time || null,
+					closing_time: day.closing_time || null,
+				})),
+			);
 			setHasChanges(false);
 		} catch (error: any) {
 			const errorMessage = error?.message || error?.detail || "Failed to save working days";
-
 			toast.error(errorMessage);
 			throw error;
 		} finally {
