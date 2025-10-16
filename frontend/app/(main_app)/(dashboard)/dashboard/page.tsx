@@ -96,7 +96,7 @@ export default function Dashboard() {
 	}
 
 	return (
-		<div className="min-h-screen bg-transparent p-6">
+		<div className="min-h-screen bg-transparent p-4">
 			<div className="space-y-6">
 				{/* Header */}
 
@@ -197,7 +197,7 @@ export default function Dashboard() {
 								<AnnouncementCarousel />
 							</div>
 							<div className="">
-								<SimpleCalendarWidget />
+								<SimpleCalendarWidget className="max-h-[21rem]" />
 								{/* <MinimalCalendar /> */}
 							</div>
 						</div>

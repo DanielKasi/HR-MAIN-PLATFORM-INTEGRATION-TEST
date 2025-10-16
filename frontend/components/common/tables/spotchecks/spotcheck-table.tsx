@@ -18,6 +18,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { showErrorToast, spotcheckAPI } from "@/lib/utils";
+import { replaceUnderscore } from "@/lib/helpers";
 
 const getStatusColor = (status: string) => {
 	switch (status) {
@@ -159,7 +160,7 @@ export default function SpotchecksTable({
                       <TableCell>{spotcheck?.duration ? formatDuration(spotcheck?.duration) : "Not available"}</TableCell> */}
 											<TableCell className="text-right">
 												<Badge className={getStatusColor(spotcheck.status.code)}>
-													{spotcheck.status.status_name.replace("_", " ") || "Unknown"}
+													{replaceUnderscore(spotcheck.status.status_name) || "Unknown"}
 												</Badge>
 											</TableCell>
 										</TableRow>

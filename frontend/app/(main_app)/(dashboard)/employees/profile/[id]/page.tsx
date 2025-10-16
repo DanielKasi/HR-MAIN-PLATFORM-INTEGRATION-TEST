@@ -63,6 +63,8 @@ import EmployeeDocumentRequestsTable from "../../_components/employee-document-r
 import EmployeeSignatures from "@/components/employee/employee-signature";
 import EmployeeDevices from "../../_components/employee-devices";
 import EmployeeDevicesLogs from "../../_components/employee-device-log";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -591,17 +593,21 @@ export default function EmployeeProfile() {
 														</div>
 													)}
 												</div>
-												<div className="!flex !items-center justify-start">
-													<Button
-														variant={"link"}
-														onClick={handleResendWelcomeEmail}
-														disabled={resendingEmail}
-														size={"sm"}
-														className="underline-offset-4 underline font-semibold !pl-0 mt-2"
-													>
-														{resendingEmail ? "Sending..." : "Send reset password link"}
-													</Button>
-												</div>
+												<ProtectedComponent
+													permissionCode={PERMISSION_CODES.CAN_RESEND_PASSWORD_LINK}
+												>
+													<div className="!flex !items-center justify-start">
+														<Button
+															variant={"link"}
+															onClick={handleResendWelcomeEmail}
+															disabled={resendingEmail}
+															size={"sm"}
+															className="underline-offset-4 underline font-semibold !pl-0 mt-2"
+														>
+															{resendingEmail ? "Resending..." : "Resend password link"}
+														</Button>
+													</div>
+												</ProtectedComponent>
 											</div>
 
 											{/* Right side - Job info and badges - show below on mobile, beside on desktop */}

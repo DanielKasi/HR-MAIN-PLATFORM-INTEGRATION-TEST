@@ -3,10 +3,11 @@ import { ActionWithPayLoad, Action, createAction } from "../storeUtils";
 import { AUTH_ACTION_TYPES } from "./types";
 import { AuthError } from "./reducer";
 
-import { ITill, StoredColorData, IUserInstitution } from "@/types/other";
+import { StoredColorData, IUserInstitution } from "@/types/other";
 import { Permission, IUser } from "@/types/user.types";
 import { Branch } from "@/types/branch.types";
 import { getAuthError } from "@/utils/error-utils";
+import { IEmployee } from "@/types/types.utils";
 
 type UpdateThemeAction = ActionWithPayLoad<AUTH_ACTION_TYPES.UPDATE_THEME, StoredColorData>;
 type RemoveThemeAction = Action<AUTH_ACTION_TYPES.REMOVE_THEME>;
@@ -39,9 +40,6 @@ type SetSelectedInstitution = ActionWithPayLoad<
 >;
 type SetSelectedBranch = ActionWithPayLoad<AUTH_ACTION_TYPES.SET_SELECTED_BRANCH, Branch>;
 
-type SetSelectedTill = ActionWithPayLoad<AUTH_ACTION_TYPES.SET_SELECTED_TILL, ITill>;
-type ClearSelectedTill = Action<AUTH_ACTION_TYPES.CLEAR_SELECTED_TILL>;
-
 type SetAttachedInstitutions = ActionWithPayLoad<
 	AUTH_ACTION_TYPES.SET_ATTACHED_INSTITUTIONS,
 	IUserInstitution[]
@@ -56,6 +54,16 @@ type SetTemporaryPermissions = ActionWithPayLoad<
 	Permission[]
 >;
 type ClearTemporaryPermissions = Action<AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS>;
+
+type FetchRelatedEmployeeStart = ActionWithPayLoad<
+	AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_START,
+	{ userId: number }
+>;
+type FetchRelatedEmployeeSuccess = ActionWithPayLoad<
+	AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_SUCCESS,
+	IEmployee
+>;
+type FetchRelatedEmployeeFailure = Action<AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_FAILURE>;
 
 export type AuthAction =
 	| LoginStart
@@ -75,8 +83,6 @@ export type AuthAction =
 	| FetchUpToDateInstitution
 	| SetTemporaryPermissions
 	| ClearTemporaryPermissions
-	| SetSelectedTill
-	| ClearSelectedTill
 	| Action<AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED>
 	| Action<AUTH_ACTION_TYPES.SHOW_LOGOUT_WARNING>
 	| Action<AUTH_ACTION_TYPES.HIDE_LOGOUT_WARNING>
@@ -84,7 +90,10 @@ export type AuthAction =
 	| Action<AUTH_ACTION_TYPES.CANCEL_LOGOUT>
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_START>
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_SUCCESS>
-	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE>;
+	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE>
+	| FetchRelatedEmployeeStart
+	| FetchRelatedEmployeeFailure
+	| FetchRelatedEmployeeSuccess;
 
 export const loginStart = (username: string, password: string): LoginStart =>
 	createAction(AUTH_ACTION_TYPES.LOGIN_START, { username, password });
@@ -112,12 +121,6 @@ export const setSelectedInstitution = (Institution: IUserInstitution): SetSelect
 
 export const setSelectedBranch = (branch: Branch): SetSelectedBranch =>
 	createAction(AUTH_ACTION_TYPES.SET_SELECTED_BRANCH, branch);
-
-export const setSelectedTill = (till: ITill): SetSelectedTill =>
-	createAction(AUTH_ACTION_TYPES.SET_SELECTED_TILL, till);
-
-export const clearSelectedTill = (): ClearSelectedTill =>
-	createAction(AUTH_ACTION_TYPES.CLEAR_SELECTED_TILL);
 
 export const setAttachedInstitutions = (
 	Institutions: IUserInstitution[],
@@ -157,3 +160,25 @@ export const refreshAccessTokenFailure = () =>
 	createAction(AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE);
 export const setInactivityTimeout = (timeout: number) =>
 	createAction(AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT, timeout);
+
+export const fetchRelatedEmployeeStart = ({
+	userId,
+}: {
+	userId: number;
+}): FetchRelatedEmployeeStart => {
+	console.log("\n\n Starting related employee fetch in state action ...");
+	return createAction(AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_START, { userId });
+};
+export const fetchRelatedEmployeeSuccess = ({
+	employee,
+}: {
+	employee: IEmployee;
+}): FetchRelatedEmployeeSuccess => {
+	console.log("\n\n Success on related employee fetch in state action ...");
+	return createAction(AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_SUCCESS, employee);
+};
+
+export const fetchRelatedEmployeeFailure = (): FetchRelatedEmployeeFailure => {
+	console.log("\n\nFailure on related employee fetch in state action ...");
+	return createAction(AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_FAILURE);
+};

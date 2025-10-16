@@ -22,7 +22,7 @@ export interface IDeviceFormData {
 export interface IDeviceEmployeeAttachment {
 	id: number;
 	device: { id: number; serial_number: string };
-	employee: { id: number; name: string; employee_id: string };
+	employee_details: { id: number; name: string; employee_id: string };
 	is_admin: boolean;
 	created_at: string;
 	updated_at: string;

@@ -7,6 +7,7 @@ import type {
 	IDay,
 	IDayType,
 	IInstitutionDay,
+	IInstitutionDayFormData,
 	IInstitutionWorkingDays,
 	ISystemWorkingDay,
 } from "@/types/types.utils";
@@ -18,6 +19,8 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 
 interface WorkingDaysManagerProps {
 	scope:
@@ -27,7 +30,7 @@ interface WorkingDaysManagerProps {
 	// 	onUpdate: (args: {type:"institution", days: IDay[]} |{type:"branch",
 	// 	dayId:number, action:"add"|"remove", dayType:"PHYSICAL"|"REMOTE", day_name:string, days?:IBranchDayFormData[]},
 	// ) => Promise<void>; // args: number[] for institution, { dayId, dayType } for branch add, or day_name for remove
-	onInstitutionDaysUpdate?: (day_ids: number[]) => Promise<void>;
+	onInstitutionDaysUpdate?: (days: IInstitutionDayFormData[]) => Promise<void>;
 	onBranchDaysUpdate?: (args: {
 		dayId: number;
 		action?: "add" | "remove";
@@ -55,6 +58,8 @@ export function WorkingDaysManager({
 	const [addDayType, setAddDayType] = useState<"PHYSICAL" | "REMOTE" | null>(null);
 	const [pendingAddDayId, setPendingAddDayId] = useState<number | null>(null);
 	const [sortedDays, setSortedDays] = useState<ISystemWorkingDay[]>([]);
+	const [currentDayStartTime, setCurrentDayStartTime] = useState<string | null>(null);
+	const [currentDayEndTime, setCurrentDayEndTime] = useState<string | null>(null);
 
 	// Initialize selected days when workingDays changes
 	React.useEffect(() => {
@@ -130,13 +135,18 @@ export function WorkingDaysManager({
 
 	// Institution handlers
 	const handleRemoveDay = async (dayId: number) => {
+		if (scope.type !== "institution") {
+			return;
+		}
 		setRemovingDayId(dayId);
 		setIsAutoSaving(true);
+		const newDays = scope.institutionWorkingDays?.institution_days.filter(
+			(day) => day.day_id !== dayId,
+		);
 		const newSelectedDays = selectedDays.filter((id) => id !== dayId);
-
 		setSelectedDays(newSelectedDays);
 		try {
-			await onInstitutionDaysUpdate?.(newSelectedDays);
+			await onInstitutionDaysUpdate?.(newDays || []);
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedDays(selectedDays);
@@ -147,13 +157,28 @@ export function WorkingDaysManager({
 		}
 	};
 	const handleAddDay = async (dayId: number) => {
+		if (scope.type !== "institution") {
+			return;
+		}
+		if (!!currentDayStartTime !== !!currentDayEndTime) {
+			toast.error("Make sure to set both the start and end time or don't set any");
+		}
 		setAddingDayId(dayId);
 		setIsAutoSaving(true);
+		const newDays: IInstitutionDayFormData[] = [
+			...(scope.institutionWorkingDays?.institution_days.filter((day) => day.day_id !== dayId) ||
+				[]),
+			{
+				day_id: dayId,
+				opening_time: currentDayStartTime || undefined,
+				closing_time: currentDayEndTime || undefined,
+			},
+		];
 		const newSelectedDays = [...selectedDays, dayId];
 
 		setSelectedDays(newSelectedDays);
 		try {
-			await onInstitutionDaysUpdate?.(newSelectedDays);
+			await onInstitutionDaysUpdate?.(newDays);
 			setHasChanges(false);
 		} catch (error) {
 			setSelectedDays(selectedDays);
@@ -223,23 +248,13 @@ export function WorkingDaysManager({
 		setPendingAddDayId(dayId);
 	};
 
-	const handleSave = async () => {
-		try {
-			await onInstitutionDaysUpdate?.(selectedDays);
-			setHasChanges(false);
-			toast.success("Working days updated successfully");
-		} catch (error) {
-			toast.error("Failed to update working days");
-		}
-	};
+	// const handleReset = () => {
+	// 	if (scope.type === "institution" && scope.institutionWorkingDays?.institution_days) {
+	// 		const dayIds = scope.institutionWorkingDays.institution_days.map((day) => day.id);
 
-	const handleReset = () => {
-		if (scope.type === "institution" && scope.institutionWorkingDays?.institution_days) {
-			const dayIds = scope.institutionWorkingDays.institution_days.map((day) => day.id);
-
-			setSelectedDays(dayIds);
-		}
-	};
+	// 		setSelectedDays(dayIds);
+	// 	}
+	// };
 
 	// if (
 	// 	scope.type === "institution" &&
@@ -426,31 +441,57 @@ export function WorkingDaysManager({
 									)}
 									{/* Add type selector popover/dialog */}
 									{pendingAddDayId === day.id && !isSelected && (
-										<div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-20 bg-white border rounded shadow p-2 flex gap-2">
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={async () => await handleAddBranchDay(day.id, "PHYSICAL")}
-											>
-												Physical
-											</Button>
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={async () => await handleAddBranchDay(day.id, "REMOTE")}
-											>
-												Remote
-											</Button>
-											<Button
-												size="sm"
-												variant="ghost"
-												onClick={() => {
-													setPendingAddDayId(null);
-													setAddDayType(null);
-												}}
-											>
-												Cancel
-											</Button>
+										<div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-20 bg-white border rounded shadow p-2">
+											<div className="flex items-center justify-start gap-2">
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={async () => await handleAddBranchDay(day.id, "PHYSICAL")}
+												>
+													Physical
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={async () => await handleAddBranchDay(day.id, "REMOTE")}
+												>
+													Remote
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onClick={() => {
+														setPendingAddDayId(null);
+														setAddDayType(null);
+													}}
+												>
+													Cancel
+												</Button>
+											</div>
+											<div className="grid grid-cols-2 gap-4">
+												<div className="">
+													<Label htmlFor="start_time">Start Time</Label>
+													<Input
+														type="time"
+														id="start_time"
+														value={currentDayStartTime || ""}
+														onChange={(e) => {
+															setCurrentDayStartTime(e.target.value);
+														}}
+													/>
+												</div>
+												<div className="">
+													<Label htmlFor="end_time">End Time</Label>
+													<Input
+														type="time"
+														id="end_time"
+														value={currentDayEndTime || ""}
+														onChange={(e) => {
+															setCurrentDayEndTime(e.target.value);
+														}}
+													/>
+												</div>
+											</div>
 										</div>
 									)}
 								</div>

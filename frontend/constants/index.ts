@@ -70,6 +70,7 @@ export enum PERMISSION_CODES {
 	CAN_VIEW_AI_ASSISTANT = "can_view_ai_assistant",
 
 	// Employee Management
+	CAN_RESEND_PASSWORD_LINK = "can_resend_password_link",
 	CAN_CREATE_EMPLOYEES = "can_create_employees",
 	CAN_VIEW_EMPLOYEES = "can_view_employees",
 	CAN_EDIT_EMPLOYEES = "can_edit_employees",

@@ -40,11 +40,14 @@ import {
 	showLogoutWarning,
 	userActivityDetected,
 	logoutStart,
+	fetchRelatedEmployeeSuccess,
+	fetchRelatedEmployeeFailure,
 } from "./actions";
 import {
 	selectInactivityTimeout,
 	selectRefreshInProgress,
 	selectRefreshToken,
+	selectRelatedEmployeeLoading,
 	selectSelectedInstitution,
 	selectUser,
 } from "./selectors";
@@ -59,6 +62,8 @@ import {
 
 import { IUserInstitution } from "@/types/other";
 import { IUser } from "@/types/user.types";
+import { IEmployee } from "@/types/types.utils";
+import { EMPLOYEE_API } from "@/lib/utils";
 
 interface InactivityRaceResult {
 	timeout?: unknown;
@@ -231,6 +236,24 @@ function* inactivityWatcher() {
 	}
 }
 
+function* fetchRelatedEmployee({
+	payload,
+}: ActionWithPayLoad<AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_START, { userId: number }>) {
+	try {
+		// const relatedEmployeeLoading: boolean = yield select(selectRelatedEmployeeLoading);
+		// if (relatedEmployeeLoading) {
+		// 	console.log("\n\n Early return from saga with related employee loading ", relatedEmployeeLoading)
+		// 	throw Error("Related employee already loading ...");
+		// }
+		const employee: IEmployee = yield call(EMPLOYEE_API.getByUserId, { user_id: payload.userId });
+		if (employee) {
+			yield put(fetchRelatedEmployeeSuccess({ employee }));
+		}
+	} catch (error) {
+		yield put(fetchRelatedEmployeeFailure());
+	}
+}
+
 export function* watchLogin() {
 	yield takeLatest(AUTH_ACTION_TYPES.LOGIN_START, login);
 }
@@ -250,6 +273,10 @@ export function* watchUpToDateInstitutionFetch() {
 	yield takeLatest(AUTH_ACTION_TYPES.FETCH_UP_TO_DATE_INSTITUTION, fetchRemoteInstitution);
 }
 
+export function* watchUserRelatedEmployeeFetch() {
+	yield takeLatest(AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_START, fetchRelatedEmployee);
+}
+
 export function* authSaga() {
 	yield all([
 		fork(watchLogin),
@@ -258,5 +285,6 @@ export function* authSaga() {
 		fork(watchFetchRemoteUser),
 		fork(watchUpToDateInstitutionFetch),
 		// fork(inactivityWatcher),
+		fork(watchUserRelatedEmployeeFetch),
 	]);
 }

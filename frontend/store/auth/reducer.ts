@@ -3,8 +3,9 @@ import { AUTH_ACTION_TYPES } from "./types";
 import { IUser } from "@/types/user.types";
 import { Branch } from "@/types/branch.types";
 import { Permission } from "@/types/user.types";
-import { ITill, IUserInstitution, StoredColorData } from "@/types/other";
+import { IUserInstitution, StoredColorData } from "@/types/other";
 import { CUSTOM_CODES } from "@/constants";
+import { IEmployee } from "@/types/types.utils";
 
 export type AuthError = {
 	customCode: CUSTOM_CODES;
@@ -31,12 +32,12 @@ export type AuthState = {
 		value: Branch | null;
 		loading: boolean;
 	};
-	selectedTill: {
-		value: ITill | null;
+	relatedEmployee: {
 		loading: boolean;
+		value: IEmployee | null;
 	};
 	temporaryPermissions: Permission[];
-	inactivityTimeout: number; // In milliseconds
+	inactivityTimeout: number;
 	logoutWarningVisible: boolean;
 	refreshInProgress: boolean;
 };
@@ -49,10 +50,10 @@ const intialAuthState: AuthState = {
 		value: null,
 		error: null,
 	},
+	relatedEmployee: { loading: false, value: null },
 	InstitutionsAttached: { loading: false, value: [] },
 	selectedInstitution: { loading: false, value: null },
 	selectedBranch: { loading: false, value: null },
-	selectedTill: { loading: false, value: null },
 	temporaryPermissions: [],
 	inactivityTimeout: 0,
 	logoutWarningVisible: false,
@@ -114,25 +115,6 @@ export const authReducer = (
 					value: action.payload as Branch,
 				},
 			};
-		case AUTH_ACTION_TYPES.SET_SELECTED_TILL:
-			return {
-				...state,
-				selectedTill: {
-					...state.selectedBranch,
-					value: action.payload as ITill,
-					loading: false,
-				},
-			};
-
-		case AUTH_ACTION_TYPES.CLEAR_SELECTED_TILL:
-			return {
-				...state,
-				selectedTill: {
-					...state.selectedBranch,
-					value: null,
-					loading: false,
-				},
-			};
 
 		case AUTH_ACTION_TYPES.SET_USER:
 			return {
@@ -190,6 +172,23 @@ export const authReducer = (
 		case AUTH_ACTION_TYPES.REFRESH_TOKENS_SUCCESS:
 		case AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE:
 			return { ...state, refreshInProgress: false, logoutWarningVisible: false };
+
+		case AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_START:
+			return { ...state, relatedEmployee: { ...state.relatedEmployee, loading: true } };
+		case AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_FAILURE:
+			return {
+				...state,
+				relatedEmployee: { ...state.relatedEmployee, loading: false, value: null },
+			};
+		case AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_SUCCESS:
+			return {
+				...state,
+				relatedEmployee: {
+					...state.relatedEmployee,
+					loading: false,
+					value: action.payload as IEmployee,
+				},
+			};
 		default:
 			return state;
 	}

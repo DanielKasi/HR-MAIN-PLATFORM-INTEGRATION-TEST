@@ -2,7 +2,7 @@ self.addEventListener("push", (event) => {
 	const payload = event.data ? event.data.json() : { title: "HR Notification", body: "New alert" };
 	const options = {
 		body: payload.body,
-		icon: "/icon.png", // Replace with your app's icon
+		icon: "/icon.PNG", // Replace with your app's icon
 		// badge: '/badge.png', // Optional: Replace with your badge
 		data: { url: payload?.url || "/" }, // URL to open on click
 		tag: payload.tag || "hr-notification", // Dedupe notifications

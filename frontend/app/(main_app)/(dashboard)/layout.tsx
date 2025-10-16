@@ -320,11 +320,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 									<Icon icon={"hugeicons:menu-05"} className="w-5 h-5" />
 								)}
 							</button>
-							<h1 className="text-xl font-bold truncate">PERACOSOFT</h1>
+							{selectedInstitution && <h1 className="text-xl font-bold truncate">PERACOSOFT</h1>}
 						</div>
 
 						<div className="flex-1 flex justify-center min-w-0">
-							{!isMobile && <InstitutionBranchSelector />}
+							{!isMobile && selectedInstitution && <InstitutionBranchSelector />}
 						</div>
 
 						<div className="flex items-center gap-4 min-w-0">
@@ -380,6 +380,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 											<span>Settings</span>
 										</DropdownMenuItem>
 									)}
+
+									{currentUser && currentUser.id === selectedInstitution?.institution_owner_id && (
+										<DropdownMenuItem
+											className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+											onClick={() => router.push("/admin/settings?tab=ownership_transfer")}
+										>
+											<Icon icon="hugeicons:folder-transfer" className="!w-4 !h-4" />
+											<span>Ownership Transfer</span>
+										</DropdownMenuItem>
+									)}
+
 									<DropdownMenuSeparator className="my-1" />
 									<DropdownMenuItem
 										className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"

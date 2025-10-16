@@ -5,13 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,7 +30,6 @@ import {
 	Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { apiGet, apiPost } from "@/lib/apiRequest";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { useDispatch, useSelector } from "react-redux";
 import type { IUser, Role } from "@/types/user.types";
@@ -46,17 +38,9 @@ import { handleApiError } from "@/lib/apiErrorHandler";
 import { institutionAPI, ROLES_API, showErrorToast, usersAPI } from "@/lib/utils";
 import RoleSearchableSelect from "@/components/selects/role-searchable-select";
 import { IOwnerShipHistory, IOwnershipTransferFormData } from "@/types/institution.types";
-import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
 import UserSearchableSelect from "@/components/selects/user-searchable-select";
 
-interface StaffProfile {
-	id: string;
-	name: string;
-	email: string;
-	roles: string[];
-}
-
-export default function OwnershipTransferPage() {
+export default function InstitutionOwnershipTransferTab() {
 	const [selectedNewOwner, setSelectedNewOwner] = useState<number | null>(null);
 	const [newOwner, setNewOwner] = useState<IUser | null>(null);
 	const [postTransferAction, setPostTransferAction] = useState<"new_role" | "deactivate" | "">("");
@@ -64,7 +48,6 @@ export default function OwnershipTransferPage() {
 	const [newRole, setNewRole] = useState<Role | null>(null);
 	const [transferReason, setTransferReason] = useState("");
 	const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
-	const [teamMembers, setTeamMembers] = useState<StaffProfile[]>([]);
 	// const [currentOwner, setCurrentOwner] = useState<IUser | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isTransferring, setIsTransferring] = useState(false);
@@ -240,18 +223,18 @@ export default function OwnershipTransferPage() {
 				{/* Header */}
 				<div className="space-y-2">
 					<div className="flex items-center space-x-3">
-						<h1 className="text-2xl sm:text-3xl font-bold">Transfer Ownership</h1>
+						<h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transfer Ownership</h1>
 					</div>
-					<p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4 sm:px-0">
+					<p className="text-base sm:text-lg text-muted-foreground sm:px-0">
 						Transfer ownership of your institution to another team member. Choose what happens to
 						your account after the transfer.
 					</p>
 				</div>
 
 				{/* Two Column Layout */}
-				<div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-8">
+				<div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-8">
 					{/* Left Column - Main Content */}
-					<div className="lg:col-span-3 space-y-8">
+					<div className="md:col-span-2 lg:col-span-3 space-y-8">
 						{/* Current Owner Card */}
 						<Card className="border-2 border-yellow-200 bg-yellow-50/50">
 							<CardHeader>
@@ -310,7 +293,7 @@ export default function OwnershipTransferPage() {
 							<CardContent className="space-y-4 sm:space-y-6">
 								{/* Step 1: Select New Owner */}
 								<div className="space-y-3">
-									<Label className="text-base font-semibold">Step 1: Select New Owner</Label>
+									<Label className="text-base font-semibold">Step 1: Select New Super User</Label>
 									<UserSearchableSelect
 										value={selectedNewOwner ? [selectedNewOwner] : []}
 										onValueChange={(values) => {
@@ -434,7 +417,7 @@ export default function OwnershipTransferPage() {
 										value={transferReason}
 										onChange={(e) => setTransferReason(e.target.value)}
 										rows={4}
-										className="resize-none"
+										className="resize-none rounded-xl"
 									/>
 								</div>
 
@@ -551,7 +534,7 @@ export default function OwnershipTransferPage() {
 					</div>
 
 					{/* Right Column - Ownership History */}
-					<div className="lg:col-span-1">
+					<div className="md:col-span-2 lg:col-span-1">
 						<Card className="lg:sticky lg:top-6 overflow-y-auto max-h-[400px] lg:max-h-[calc(90vh-6rem)]">
 							<CardHeader>
 								<CardTitle className="flex items-center space-x-2">
