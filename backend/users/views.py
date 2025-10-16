@@ -45,7 +45,6 @@ from .models import (
     Permission,
     PermissionCategory,
     Signature,
-    UserPermission,
     UserType,
     OTPModel,
     Profile,
@@ -1386,46 +1385,50 @@ class SignatureDetailView(APIView):
             signature.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+    
 
 class UserPermissionDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
     @extend_schema(
-        request=UserPermissionSerializer,
-        responses={200: UserPermissionSerializer(many=True)},
-        description="Update user permissions in bulk.",
-        summary="Update user permissions",
-        tags=["User Management"],
+        responses={
+            200: OpenApiResponse(
+                response=UserPermissionSerializer,
+                description="Permissions modified successfully"
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="UserPermission not found.",
+            ),
+        },
+        tags=["User Permissions"]
     )
+    @transaction.atomic
+    @method_decorator(permission_required('can_edit_staff_roles', raise_exception=True))
     def patch(self, request, user_id):
+        """
+        Add one or more permissions to a user.
+        """
         try:
-            from django.contrib.auth import get_user_model
-
-            User = get_user_model()
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
             return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": f"User with id {user_id} does not exist."},
+                status=status.HTTP_404_NOT_FOUND
             )
 
         data = request.data.copy()
-        data["user_id"] = user_id
+        data['user_id'] = str(user_id)
 
-        serializer = UserPermissionSerializer(user, data=data, partial=True)
+        serializer = UserPermissionSerializer(data=data)
         if serializer.is_valid():
-            result = serializer.save()
-
-            if isinstance(result, list):
-                return Response(
-                    serializer.to_representation(result), status=status.HTTP_200_OK
-                )
+            if 'permission_ids' in serializer.validated_data:
+                user_permissions = serializer.update(user, serializer.validated_data)
+                response_data = UserPermissionSerializer(user_permissions, many=True).data
+                message = f"Permissions added to user {user.email}"
             else:
-                user_permissions = UserPermission.objects.filter(
-                    user=user
-                ).select_related("permission")
-                response_serializer = UserPermissionSerializer(
-                    user_permissions, many=True
-                )
-                return Response(response_serializer.data, status=status.HTTP_200_OK)
+                user_permission = serializer.save()
+                response_data = UserPermissionSerializer(user_permission).data
+                message = f"Permission {user_permission.permission.permission_name} added to user {user.email}"
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)       
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+           

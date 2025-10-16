@@ -50,8 +50,8 @@ def get_gender_salutation(user):
 
     gender_salutations = {
         "male": "Mr.",
-        "female": "Madam",
-        "other": "",  # No salutation for 'other' or when gender is not specified
+        "female": "Ms.",
+        "other": "Mr./Ms."
     }
 
     return gender_salutations.get(user.gender.lower(), "")
@@ -377,3 +377,5 @@ accounts_increased_by_credits = [
 def get_system_parameter(code):
     ...
     # return SystemParameters.objects.get(code=code)
+
+

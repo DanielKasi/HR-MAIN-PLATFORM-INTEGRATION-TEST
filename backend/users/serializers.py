@@ -16,9 +16,6 @@ from utilities.password_validator import validate_password_strength
 from general.serializers import BaseApprovableSerializer
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions
-from utilities.helpers import get_all_dependencies
-from django.utils import timezone   
-from django.db.models import Q
 
 
 class PermissionCategorySerializer(serializers.ModelSerializer):
@@ -47,7 +44,7 @@ class PermissionSerializer(serializers.ModelSerializer):
         ]
 
 
-class RoleSerializer(serializers.ModelSerializer):
+class RoleSerializer(BaseApprovableSerializer):
     permissions_details = serializers.SerializerMethodField()
     permissions = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Permission.objects.all(), write_only=True, required=False
@@ -57,7 +54,7 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = '__all__'
 
-        extra_kwargs = {"shop": {"required": False}}
+        extra_kwargs = {"institution": {"required": False}}
 
     def get_permissions_details(self, obj):
         permissions = Permission.objects.filter(roles__role=obj)
@@ -65,76 +62,24 @@ class RoleSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         permissions = validated_data.pop("permissions", [])
-
-        dependencies = get_all_dependencies(permissions)
-
-        all_permissions = list(set(permissions) | dependencies)
-
         role = Role.objects.create(**validated_data)
 
         RolePermission.objects.bulk_create(
-            [RolePermission(role=role, permission=p) for p in all_permissions]
+            [RolePermission(role=role, permission=p) for p in permissions]
         )
 
         return role
 
     def update(self, instance, validated_data):
-        from django.db import transaction
-
         permissions = validated_data.pop("permissions", [])
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
 
-        dependencies = get_all_dependencies(permissions)
-
-        all_permissions = list(set(permissions) | dependencies)
-
-        with transaction.atomic():
-            old_permissions = Permission.objects.filter(roles__role=instance)
-            old_permission_ids = set(old_permissions.values_list("id", flat=True))
-
-            for attr, value in validated_data.items():
-                setattr(instance, attr, value)
-            instance.save()
-
-            RolePermission.objects.filter(role=instance).delete()
-            RolePermission.objects.bulk_create(
-                [RolePermission(role=instance, permission=p) for p in all_permissions]
-            )
-
-            new_permission_ids = set([p.id for p in all_permissions])
-
-            permissions_to_remove = old_permission_ids - new_permission_ids
-            permissions_to_add = new_permission_ids - old_permission_ids
-
-            users_with_role = UserRole.objects.filter(role=instance).select_related(
-                "user"
-            )
-            user_ids = [user_role.user.id for user_role in users_with_role]
-
-            if user_ids:
-                if permissions_to_remove:
-                    deleted_count = UserPermission.objects.filter(
-                        user__id__in=user_ids,
-                        permission__id__in=permissions_to_remove,
-                    ).delete()[0]
-
-                # Add new permissions to users
-                if permissions_to_add:
-                    user_permissions_to_create = []
-
-                    for user_role in users_with_role:
-                        for permission_id in permissions_to_add:
-                            if not UserPermission.objects.filter(
-                                user=user_role.user, permission__id=permission_id
-                            ).exists():
-                                user_permissions_to_create.append(
-                                    UserPermission(
-                                        user=user_role.user,
-                                        permission_id=permission_id,
-                                    )
-                                )
-
-                    if user_permissions_to_create:
-                        UserPermission.objects.bulk_create(user_permissions_to_create)
+        RolePermission.objects.filter(role=instance).delete()
+        RolePermission.objects.bulk_create(
+            [RolePermission(role=instance, permission=p) for p in permissions]
+        )
 
         return instance
 
@@ -145,7 +90,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(), write_only=True, required=False
     )
     branches = serializers.SerializerMethodField()
-    user_permissions = serializers.SerializerMethodField()
+
     email = serializers.EmailField(required=True, validators=[])
     password = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
@@ -160,21 +105,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "is_password_verified",
         ]
         extra_kwargs = {"password": {"write_only": True}}
-
-    def get_user_permissions(self, obj):
-        from users.models import UserPermission
-
-        user_permissions = (
-            UserPermission.objects.filter(user=obj)
-            .filter(
-                Q(is_temporary=False)
-                | Q(is_temporary=True, valid_until__gt=timezone.now())
-            )
-            .select_related("permission")
-        )
-        return PermissionSerializer(
-            [up.permission for up in user_permissions], many=True
-        ).data    
 
     def get_roles(self, obj):
         roles = [ur.role for ur in obj.user_roles.all()]
@@ -203,10 +133,25 @@ class CustomUserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         roles_ids = validated_data.pop("roles_ids", [])
         user = CustomUser.objects.create_user(**validated_data)
+
+        # Create UserRole and corresponding UserPermission entries
         for role_id in roles_ids:
             try:
                 role = Role.objects.get(id=role_id)
+                # Create UserRole
                 UserRole.objects.create(user=user, role=role)
+                # Get permissions associated with the role
+                role_permissions = Permission.objects.filter(roles__role=role)
+                # Create UserPermission entries
+                UserPermission.objects.bulk_create(
+                    [
+                        UserPermission(user=user, permission=permission)
+                        for permission in role_permissions
+                        if not UserPermission.objects.filter(
+                            user=user, permission=permission, deleted_at__isnull=True
+                        ).exists()
+                    ]
+                )
             except Role.DoesNotExist:
                 raise serializers.ValidationError(
                     {"error": f"Role with id {role_id} does not exist."}
@@ -223,17 +168,143 @@ class CustomUserSerializer(serializers.ModelSerializer):
             instance.set_password(validated_data["password"])
         instance.save()
 
+        # Delete existing UserRole and UserPermission entries
         UserRole.objects.filter(user=instance).delete()
+        UserPermission.objects.filter(user=instance, deleted_at__isnull=True).delete()
+
+        # Create new UserRole and corresponding UserPermission entries
         for role_id in roles_ids:
             try:
                 role = Role.objects.get(id=role_id)
                 UserRole.objects.create(user=instance, role=role)
+                # Get permissions associated with the role
+                role_permissions = Permission.objects.filter(roles__role=role)
+                # Create UserPermission entries
+                UserPermission.objects.bulk_create(
+                    [
+                        UserPermission(user=instance, permission=permission)
+                        for permission in role_permissions
+                        if not UserPermission.objects.filter(
+                            user=instance, permission=permission, deleted_at__isnull=True
+                        ).exists()
+                    ]
+                )
             except Role.DoesNotExist:
                 raise serializers.ValidationError(
                     {"error": f"Role with id {role_id} does not exist."}
                 )
 
         return instance
+    
+class UserPermissionSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializer(read_only=True)
+    user_id = serializers.UUIDField(write_only=True)
+
+    permission = PermissionSerializer(read_only=True)
+    permission_id = serializers.UUIDField(write_only=True)
+
+    permission_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        write_only=True,
+        required=False,
+    )
+
+    class Meta:
+        model = UserPermission
+        fields = [
+            "id",
+            "user",
+            "user_id",
+            "permission",
+            "permission_id",
+            "permission_ids",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_permission_ids(self, value):
+        from .models import Permission
+
+        value = [str(v) for v in value]
+        existing_ids = set(str(p.id) for p in Permission.objects.filter(id__in=value))
+        invalid_ids = set(value) - existing_ids
+
+        if invalid_ids:
+            raise serializers.ValidationError(
+                f"Invalid permission IDs: {list(invalid_ids)}"
+            )
+        return value
+
+    def validate(self, attrs):
+        has_single = "permission_id" in attrs
+        has_bulk = "permission_ids" in attrs
+
+        if has_single and has_bulk:
+            raise serializers.ValidationError(
+                "Provide either permission_id or permission_ids, not both"
+            )
+
+        if not has_single and not has_bulk:
+            raise serializers.ValidationError(
+                "Either permission_id or permission_ids is required"
+            )
+
+        return attrs
+
+    def create(self, validated_data):
+        """Handle single permission creation"""
+        user_id = validated_data.pop("user_id")
+        permission_id = validated_data.pop("permission_id")
+        user = CustomUser.objects.get(id=user_id)
+        permission = Permission.objects.get(id=permission_id)
+
+        if UserPermission.objects.filter(
+            user=user, permission=permission, deleted_at__isnull=True
+        ).exists():
+            raise serializers.ValidationError(
+                f"User {user.email} already has the permission {permission.permission_name}."
+            )
+
+        return UserPermission.objects.create(user=user, permission=permission)
+
+    def update(self, instance, validated_data):
+        """Handle both single and bulk updates"""
+        if "permission_ids" in validated_data:
+            return self._update_bulk(instance, validated_data)
+        return super().update(instance, validated_data)
+
+    def _update_bulk(self, instance, validated_data):
+        user_id = validated_data.get("user_id")
+        user = CustomUser.objects.get(id=user_id)
+        permission_ids = validated_data["permission_ids"]
+
+        # Fetch permissions
+        permissions = Permission.objects.filter(id__in=permission_ids)
+
+        # Check for duplicates
+        existing_permissions = set(
+            UserPermission.objects.filter(
+                user=user, permission__id__in=permission_ids, deleted_at__isnull=True
+            ).values_list("permission__id", flat=True)
+        )
+
+        # Create only new permissions
+        user_permissions = [
+            UserPermission(user=user, permission=perm)
+            for perm in permissions
+            if str(perm.id) not in existing_permissions
+        ]
+
+        if user_permissions:
+            UserPermission.objects.bulk_create(user_permissions)
+        else:
+            raise serializers.ValidationError("All provided permissions already exist for the user.")
+
+        return user_permissions
+
+    def to_representation(self, instance):
+        if isinstance(instance, list):
+            return [super().to_representation(item) for item in instance]
+        return super().to_representation(instance)    
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -270,93 +341,6 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.save()
         return user
 
-
-class UserPermissionSerializer(serializers.ModelSerializer):
-    user = CustomUserSerializer(read_only=True)
-    user_id = serializers.UUIDField(write_only=True)
-
-    permission = PermissionSerializer(read_only=True)
-    permission_id = serializers.UUIDField(write_only=True)
-
-    permission_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        write_only=True,
-        required=False,
-    )
-
-    class Meta:
-        model = UserPermission
-        fields = '__all__'
-        read_only_fields = ["id", "created_at", "updated_at"]
-
-    def validate_permission_ids(self, value):
-        from .models import Permission
-
-        value = [str(v) for v in value]
-
-        existing_ids = set(str(p.id) for p in Permission.objects.filter(id__in=value))
-
-        invalid_ids = set(value) - existing_ids
-
-        if invalid_ids:
-            raise serializers.ValidationError(
-                f"Invalid permission IDs: {list(invalid_ids)}"
-            )
-
-        return value
-
-    def validate(self, attrs):
-        has_single = "permission_id" in attrs
-        has_bulk = "permission_ids" in attrs
-
-        if has_single and has_bulk:
-            raise serializers.ValidationError(
-                "Provide either permission_id or permission_ids, not both"
-            )
-
-        if not has_single and not has_bulk:
-            raise serializers.ValidationError(
-                "Either permission_id or permission_ids is required"
-            )
-
-        return attrs
-
-    def update(self, instance, validated_data):
-        """Handle both single and bulk updates"""
-        if "permission_ids" in validated_data:
-            return self._update_bulk(instance, validated_data)
-        else:
-            return super().update(instance, validated_data)
-
-    def _update_bulk(self, instance, validated_data):
-        print(f"Validated data: {validated_data}")
-        user = instance.user if hasattr(instance, "user") else instance
-        permission_ids = validated_data["permission_ids"]
-
-        base_permissions = list(Permission.objects.filter(id__in=permission_ids))
-
-        dependencies = get_all_dependencies(base_permissions)
-
-        all_permissions = set(base_permissions) | dependencies
-
-        UserPermission.objects.filter(user=user).delete()
-
-        user_permissions = [
-            UserPermission(
-                user=user,
-                permission=perm,
-            )
-            for perm in all_permissions
-        ]
-
-        UserPermission.objects.bulk_create(user_permissions)
-
-        return user_permissions
-
-    def to_representation(self, instance):
-        if isinstance(instance, list):
-            return [super().to_representation(item) for item in instance]
-        return super().to_representation(instance)
 
 class ProfileRequestSerializer(serializers.Serializer):
     from institution.models import Institution

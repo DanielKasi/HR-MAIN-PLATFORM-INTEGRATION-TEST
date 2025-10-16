@@ -7,7 +7,6 @@ from .views import (
     SignatureListCreateView,
     UserDetailAPIView,
     UserListAPIView,
-    UserPermissionDetailView,
     VerifyOTPAPIView,
     ResendOTPAPIView,
     RoleListAPIView,
@@ -80,9 +79,4 @@ urlpatterns = [
     path("change-password/", ChangePasswordAPIView.as_view(), name="change-password"),
         path('signatures/', SignatureListCreateView.as_view(), name='signature-list-create'),
     path('signatures/<int:pk>/', SignatureDetailView.as_view(), name='signature-detail'),
-     path(
-        "<int:user_id>/permissions/",
-        UserPermissionDetailView.as_view(),
-        name="user-permissions",
-    ),
 ]
