@@ -12,6 +12,7 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 
 import CreateOrganisationWizard from "./create-organisation/page";
+import QuickActionsWidget from "@/components/quick-actions-widget";
 
 import { PERMISSION_CODES } from "@/constants";
 import { selectAttachedInstitutions } from "@/store/auth/selectors";
@@ -404,6 +405,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						)}
 						{/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
 					</div>
+
+					<QuickActionsWidget />
 
 					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_AI_ASSISTANT}>
 						<div className="mb-4 sm:mb-0">

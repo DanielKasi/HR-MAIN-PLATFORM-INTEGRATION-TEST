@@ -321,7 +321,6 @@ export default function AddEventPage() {
 								<div className={`space-y-6 ${loading ? "pointer-events-none opacity-60" : ""}`}>
 									{currentStep === 1 && (
 										<div className="space-y-6">
-											{/* Row 1: Event Title and Event Date */}
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 												<div className="space-y-3">
 													<Label htmlFor="title" className="text-base font-medium">
@@ -349,7 +348,6 @@ export default function AddEventPage() {
 														style={{
 															colorScheme: "light",
 														}}
-														placeholder="--/--/----"
 														required
 													/>
 												</div>

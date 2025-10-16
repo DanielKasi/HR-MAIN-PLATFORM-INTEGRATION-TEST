@@ -198,14 +198,12 @@ export default function Dashboard() {
 							</div>
 							<div className="">
 								<SimpleCalendarWidget />
-								{/* <MinimalCalendar /> */}
 							</div>
 						</div>
 						<EventsAndHolidaysWidget className="!max-h-[22rem] !h-full overflow-y-auto" />
 					</div>
 				</div>
 
-				{/* full page div */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{data?.employees_per_department && (
 						<DepartmentTreeMap
