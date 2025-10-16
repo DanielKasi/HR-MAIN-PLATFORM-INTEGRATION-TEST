@@ -22,36 +22,12 @@ import {
 	Clock,
 } from "lucide-react";
 
-import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
 import { Separator } from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 import { PERMISSION_CODES } from "@/constants";
 
 export default function AdminPage() {
-	const [branches, setBranches] = useState<Branch[]>([]);
-	const [errorMessage, setErrorMessage] = useState("");
-	const [showJournalEntries, setShowJournalEntries] = useState(false);
-
-	const fetchBranches = () => {
-		fetchAndSetData(
-			fetchInstitutionBranchesFromAPI,
-			setBranches,
-			setErrorMessage,
-			"Failed to fetch branches",
-		);
-	};
-
-	useEffect(() => {
-		fetchBranches();
-	}, []);
-
-	// Handle successful theme color update
-	const handleThemeUpdateSuccess = () => {
-		// We could show a success toast/notification here
-		// console.log("Theme color updated successfully");
-	};
-
 	return (
 		<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_PAGE}>
 			<div className="space-y-8">
@@ -209,16 +185,6 @@ export default function AdminPage() {
 									>
 										<LampDesk className="w-5 h-5 text-gray-500" />
 										<span>Working days</span>
-									</Link>
-								</div>
-
-								<div className="">
-									<Link
-										href="/admin/ownership-transfer"
-										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-									>
-										<Icon icon="hugeicons:folder-transfer" className="!w-5 !h-5" />
-										<span>Ownership Transfer</span>
 									</Link>
 								</div>
 							</div>

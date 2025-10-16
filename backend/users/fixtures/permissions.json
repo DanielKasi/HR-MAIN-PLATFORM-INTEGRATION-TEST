@@ -49,6 +49,11 @@
 
   "Employee Management": [
     {
+      "code":"can_resend_password_link",
+      "name": "Can Resend Pasword LInk",
+      "description": "Allows resending a password link to an existing employee"
+    },
+    {
       "code": "can_create_employees",
       "name": "Can Create Employees",
       "description": "Allows creating new employee records"

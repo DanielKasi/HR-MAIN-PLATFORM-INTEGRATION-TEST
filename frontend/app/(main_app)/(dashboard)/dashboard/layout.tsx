@@ -1,56 +1,48 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { IEmployee } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedPage from "@/components/ProtectedPage";
-import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
+import {
+	selectRelatedEmployee,
+	selectRelatedEmployeeLoading,
+	selectSelectedInstitution,
+	selectUser,
+} from "@/store/auth/selectors";
 import FixedLoader from "@/components/fixed-loader";
-import { EMPLOYEE_API, showErrorToast } from "@/lib/utils";
+import { hasPermission } from "@/lib/helpers";
+import { useDispatch } from "react-redux";
+import { fetchRelatedEmployeeStart } from "@/store/auth/actions";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const currentUser = useSelector(selectUser);
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [relatedEmployee, setRelatedEmployee] = useState<IEmployee | null>(null);
-	const [loading, setLoading] = useState(false);
+	const relatedEmployee = useSelector(selectRelatedEmployee);
+	const relatedEmployeeloading = useSelector(selectRelatedEmployeeLoading);
 
 	const router = useRouter();
+	const dispatch = useDispatch();
 
 	useEffect(() => {
-		if (currentInstitution && currentUser) {
-			if (currentUser.id !== currentInstitution.institution_owner_id) {
-				fetchRelatedEmployeeByUserId();
-			}
+		if (currentUser && !relatedEmployeeloading && !relatedEmployee) {
+			// if (currentUser.id !== currentInstitution.institution_owner_id) {
+			dispatch(fetchRelatedEmployeeStart({ userId: currentUser.id }));
+			// }
 		}
-	}, [currentInstitution, currentUser]);
+	}, [currentUser, relatedEmployeeloading, relatedEmployee]);
 
 	useEffect(() => {
-		if (relatedEmployee) {
+		console.log("\n\n Related employee at layout mount : ", relatedEmployee);
+		if (relatedEmployee && !hasPermission(PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD)) {
 			router.push(`employees/profile/${relatedEmployee.id}`);
 		}
 	}, [relatedEmployee]);
 
-	const fetchRelatedEmployeeByUserId = async () => {
-		if (!currentUser) {
-			return;
-		}
-		setLoading(true);
-		try {
-			const employee = await EMPLOYEE_API.getByUserId({ user_id: currentUser.id });
-
-			setRelatedEmployee(employee);
-		} catch (error) {
-			showErrorToast({ error, defaultMessage: "Failed to fetch related employee" });
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	if (!currentInstitution || !currentUser || loading) {
-		return <FixedLoader />;
+	if (!currentInstitution || !currentUser || relatedEmployeeloading) {
+		return <FixedLoader className="bg-white/70" />;
 	}
 
 	return (

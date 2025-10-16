@@ -1,8 +1,8 @@
 "use client";
 
 import type React from "react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { Icon } from "@iconify/react";
@@ -18,6 +18,7 @@ import { BranchSpotcheckConfigurations } from "@/components/settings/branch-spot
 import { LocationComparisonConfigurations } from "@/components/settings/location-comparison-configurations";
 import { InstitutionBonusPointSettingsTable } from "@/components/performance/bonus-points/institution-bonus-points-settings-table";
 import { Integrations } from "@/components/integrations/integrations";
+import InstitutionOwnershipTransferTab from "../ownership-transfer/page";
 
 export default function SettingsPage() {
 	const [activeTab, setActiveTab] = useState<
@@ -30,6 +31,7 @@ export default function SettingsPage() {
 		| "branch_spotcheck"
 		| "bonus_point_settings"
 		| "integrations"
+		| "ownership_transfer"
 	>("institution");
 	const [confirmationDialog, setConfirmationDialog] = useState({
 		isOpen: false,
@@ -38,7 +40,8 @@ export default function SettingsPage() {
 		onConfirm: () => {},
 	});
 	const [documentsRefreshTrigger, setDocumentsRefreshTrigger] = useState(0);
-
+	const searchParams = useSearchParams();
+	const destinationTabParam = searchParams.get("tab") as typeof activeTab;
 	const router = useRouter();
 
 	const renderKYCDocuments = () => (
@@ -47,6 +50,12 @@ export default function SettingsPage() {
 			onDocumentChange={() => setDocumentsRefreshTrigger((prev) => prev + 1)}
 		/>
 	);
+
+	useEffect(() => {
+		if (searchParams && destinationTabParam === "ownership_transfer") {
+			setActiveTab("ownership_transfer");
+		}
+	}, [searchParams]);
 
 	const renderInstitutionSettings = () => <InstitutionSettings />;
 
@@ -63,6 +72,8 @@ export default function SettingsPage() {
 	const renderBonusPointSettings = () => <InstitutionBonusPointSettingsTable />;
 
 	const renderIntegrations = () => <Integrations />;
+
+	const renderOwnershipTransfer = () => <InstitutionOwnershipTransferTab />;
 
 	return (
 		<div className="min-h-screen bg-gray-50 rounded-lg">
@@ -88,7 +99,7 @@ export default function SettingsPage() {
 						<div className="flex lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
 							<button
 								onClick={() => setActiveTab("institution")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "institution"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
@@ -96,7 +107,7 @@ export default function SettingsPage() {
 							>
 								<Icon
 									icon="hugeicons:building-06"
-									className={`w-5 h-5 ${activeTab === "institution" ? "text-primary" : "text-gray-900"}`}
+									className={`!w-6 !h-6 ${activeTab === "institution" ? "text-primary" : "text-gray-900"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -117,14 +128,44 @@ export default function SettingsPage() {
 							</button>
 
 							<button
+								onClick={() => setActiveTab("ownership_transfer")}
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+									activeTab === "ownership_transfer"
+										? "bg-red-50 border border-red-200"
+										: "hover:bg-gray-50"
+								}`}
+							>
+								<Icon
+									icon="hugeicons:crown-03"
+									className={`!w-6 !h-6 ${activeTab === "ownership_transfer" ? "text-primary" : "text-gray-900"}`}
+								/>
+								<div className="whitespace-nowrap lg:whitespace-normal">
+									<div
+										className={`font-medium text-sm lg:text-base ${
+											activeTab === "ownership_transfer" ? "text-primary" : "text-gray-900"
+										}`}
+									>
+										Institution Ownership Transfer
+									</div>
+									<div
+										className={`text-xs lg:text-sm hidden lg:block ${
+											activeTab === "ownership_transfer" ? "text-[#6B7280]" : "text-[#6B7280]"
+										}`}
+									>
+										Change the super user of this institution, who will have full previledges
+									</div>
+								</div>
+							</button>
+
+							<button
 								onClick={() => setActiveTab("kyc")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "kyc" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
 								}`}
 							>
 								<Icon
 									icon="hugeicons:document-attachment"
-									className={`w-5 h-5 ${activeTab === "kyc" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "kyc" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -146,13 +187,13 @@ export default function SettingsPage() {
 
 							<button
 								onClick={() => setActiveTab("penalties")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "penalties" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
 								}`}
 							>
 								<Icon
 									icon="hugeicons:settings-02"
-									className={`w-5 h-5 ${activeTab === "penalties" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "penalties" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -174,7 +215,7 @@ export default function SettingsPage() {
 
 							<button
 								onClick={() => setActiveTab("branch_penalties")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "branch_penalties"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
@@ -182,7 +223,7 @@ export default function SettingsPage() {
 							>
 								<Icon
 									icon="hugeicons:building-04"
-									className={`w-5 h-5 ${activeTab === "branch_penalties" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "branch_penalties" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -204,7 +245,7 @@ export default function SettingsPage() {
 
 							<button
 								onClick={() => setActiveTab("location_comparison")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "location_comparison"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
@@ -212,7 +253,7 @@ export default function SettingsPage() {
 							>
 								<Icon
 									icon="hugeicons:location-01"
-									className={`w-5 h-5 ${activeTab === "location_comparison" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "location_comparison" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -234,7 +275,7 @@ export default function SettingsPage() {
 
 							<button
 								onClick={() => setActiveTab("institution_spotcheck")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "institution_spotcheck"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
@@ -242,7 +283,7 @@ export default function SettingsPage() {
 							>
 								<Icon
 									icon="hugeicons:clock-01"
-									className={`w-5 h-5 ${activeTab === "institution_spotcheck" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "institution_spotcheck" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -264,7 +305,7 @@ export default function SettingsPage() {
 
 							<button
 								onClick={() => setActiveTab("branch_spotcheck")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "branch_spotcheck"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
@@ -272,7 +313,7 @@ export default function SettingsPage() {
 							>
 								<Icon
 									icon="hugeicons:clock-02"
-									className={`w-5 h-5 ${activeTab === "branch_spotcheck" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "branch_spotcheck" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -294,7 +335,7 @@ export default function SettingsPage() {
 
 							<button
 								onClick={() => setActiveTab("bonus_point_settings")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "bonus_point_settings"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
@@ -302,7 +343,7 @@ export default function SettingsPage() {
 							>
 								<Icon
 									icon="hugeicons:award-02"
-									className={`w-5 h-5 ${activeTab === "bonus_point_settings" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "bonus_point_settings" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -324,7 +365,7 @@ export default function SettingsPage() {
 
 							<button
 								onClick={() => setActiveTab("integrations")}
-								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
 									activeTab === "integrations"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
@@ -332,7 +373,7 @@ export default function SettingsPage() {
 							>
 								<Icon
 									icon="hugeicons:plug-01"
-									className={`w-5 h-5 ${activeTab === "integrations" ? "text-primary" : "text-gray-500"}`}
+									className={`!w-6 !h-6 ${activeTab === "integrations" ? "text-primary" : "text-gray-500"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
@@ -374,7 +415,9 @@ export default function SettingsPage() {
 													? renderBonusPointSettings()
 													: activeTab === "integrations"
 														? renderIntegrations()
-														: renderBonusPointSettings()}
+														: activeTab === "ownership_transfer"
+															? renderOwnershipTransfer()
+															: renderBonusPointSettings()}
 				</div>
 			</div>
 

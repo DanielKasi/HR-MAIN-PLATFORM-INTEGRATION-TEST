@@ -491,7 +491,7 @@ class ResendWelcomeLink(APIView):
         description="Resends the welcome email to an employee. Generates a new password if the user hasn't verified their email yet.",
         parameters=[
             OpenApiParameter(
-                name="employee_id",  # Changed from "id" to match URL parameter
+                name="employee_id",
                 type=int,
                 location=OpenApiParameter.PATH,
                 description="Employee ID",
@@ -533,7 +533,8 @@ class ResendWelcomeLink(APIView):
             500: {"description": "Server error"},
         },
     )
-    def post(self, request, employee_id):  # Added 'self' here
+    @method_decorator(permission_required('can_resend_password_link', raise_exception=True))
+    def post(self, request, employee_id):  
         try:
             employee = Employee.objects.select_related('user').get(id=employee_id)
         except Employee.DoesNotExist:
@@ -560,6 +561,7 @@ class ResendWelcomeLink(APIView):
             user.fullname,
             new_password,
             company_name=company_name,
+            gender=employee.gender,  
         )
 
         return Response(
@@ -820,6 +822,7 @@ class EmployeeCreateAPIView(APIView):
                     employee.user.fullname,
                     data["user"]["password"],
                     company_name=request.user.profile.institution.institution_name,
+                    gender=employee.gender,
                 )
             employee.confirm_create()
             return Response(
@@ -853,6 +856,7 @@ class EmployeeCreateAPIView(APIView):
                 employee.user.fullname,
                 final_data["user"]["password"],
                 company_name=request.user.profile.institution.institution_name,
+                gender=employee.gender,
             )
         employee.confirm_create()
         return Response(
@@ -1711,6 +1715,7 @@ class EmployeeCreateAPIView(APIView):
                             employee.user.fullname,
                             employee_data["user"]["password"],
                             company_name=institution.institution_name,
+                            gender=employee_data["gender"],
                         )
                 if row_warnings:
                     warnings.append(

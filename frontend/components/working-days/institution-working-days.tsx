@@ -6,6 +6,7 @@ import type {
 	IWorkingDaysFormData,
 	IInstitutionWorkingDaysFormData,
 	IDay,
+	IInstitutionDayFormData,
 } from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
@@ -76,30 +77,40 @@ export default function InstitutionWorkingDays() {
 		}
 	};
 
-	const handleWorkingDaysUpdate = async (day_ids: number[]) => {
+	const handleWorkingDaysUpdate = async (days: IInstitutionDayFormData[]) => {
+		console.log(
+			"\n\n Updating institution working days  with ids : ",
+			days,
+			"\n\n And institution days : ",
+			institutionWorkingDays?.institution_days,
+		);
+
+		// 		id: number;
+		// day_code: string;
+		// day_name: string;
+		// level: number;
 		if (!selectedInstitution) {
 			toast.error("No institution selected");
 
 			return;
 		}
-		if (day_ids.length === 0) {
+		if (days.length === 0) {
 			toast.error("Please select at least one working day");
-
 			return;
 		}
 		try {
 			setIsSaving(true);
-			const matchingDays = institutionWorkingDays?.institution_days
-				.filter((inst_day) => day_ids.find((day_id) => inst_day.id === day_id))
-				.map((day) => ({
-					day_id: day.id,
-					opening_time: day.opening_time,
-					closing_time: day.closing_time,
-				}));
-			if (!matchingDays) {
-				throw new Error("No matching days !");
-			}
-			const formData: IInstitutionWorkingDaysFormData = { institution_days: matchingDays };
+			// const matchingDays = institutionWorkingDays?.institution_days
+			// 	.filter((inst_day) => day_ids.find((day_id) => inst_day.id === day_id))
+			// 	.map((day) => ({
+			// 		day_id: day.id,
+			// 		opening_time: day.opening_time,
+			// 		closing_time: day.closing_time,
+			// 	}));
+			// if (!matchingDays) {
+			// 	throw new Error("No matching days !");
+			// }
+			const formData: IInstitutionWorkingDaysFormData = { institution_days: days };
 			let updatedWorkingDays: IInstitutionWorkingDays;
 
 			if (institutionWorkingDays) {

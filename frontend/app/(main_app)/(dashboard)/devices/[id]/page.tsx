@@ -75,7 +75,7 @@ export default function DeviceDetailsPage() {
 		{
 			key: "employee",
 			header: "Employee",
-			cell: (attachment) => attachment.employee.name,
+			cell: (attachment) => attachment.employee_details?.name || "Unknown",
 		},
 		{
 			key: "actions",
@@ -180,7 +180,7 @@ export default function DeviceDetailsPage() {
 						onClose={() => setAttachmentToDelete(null)}
 						onConfirm={() => handleDeleteAttachment(attachmentToDelete)}
 						title="Delete Attachment"
-						description={`Are you sure you want to delete the attachment for "${attachmentToDelete.employee.name}"?`}
+						description={`Are you sure you want to delete the attachment for "${attachmentToDelete.employee_details?.name || ""}"?`}
 						confirmText="Delete"
 						cancelText="Cancel"
 						disabled={submitting}

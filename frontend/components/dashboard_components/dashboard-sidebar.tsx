@@ -18,6 +18,7 @@ import { PERMISSION_CODES } from "@/constants";
 import { EMPLOYEE_API, showErrorToast } from "@/lib/utils";
 import {
 	selectAccessToken,
+	selectRelatedEmployee,
 	selectSelectedInstitution,
 	selectUser,
 	selectUserLoading,
@@ -33,19 +34,16 @@ export default function DashboardSideBar() {
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const isMobile = useMobile();
 	const currentUser = useSelector(selectUser);
-	const accessToken = useSelector(selectAccessToken);
-	const userIsLoading = useSelector(selectUserLoading);
 	const isSideBarOpen = useSelector(selectSideBarOpened);
 	const dispatch = useDispatch();
 	const router = useRouter();
 	const [filteredNavItems, setFilteredNavItems] = useState<NavItem[]>([]);
-	const [relatedEmployee, setRelatedEmployee] = useState<IEmployee | null>(null);
 	const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 	const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
 	const [InstitutionName, setInstitutionName] = useState("PERACOSOFT");
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [scrollPercentage, setScrollPercentage] = useState(0);
-	const [fetchingRelatedEmployee, setFetchingRelatedEmployee] = useState(false);
+	const relatedEmployee = useSelector(selectRelatedEmployee);
 
 	useEffect(() => {
 		const scrollElement = document.getElementById("mobile-nav-scroll");
@@ -95,57 +93,40 @@ export default function DashboardSideBar() {
 	}, [mobileMenuOpen, isMobile]);
 
 	useEffect(() => {
+		let filtered: NavItem[] = [];
 		if (selectedInstitution) {
 			setInstitutionLogo(selectedInstitution.institution_logo);
 			setInstitutionName(selectedInstitution.institution_name);
+			filtered = navItems
+				.map((item) => {
+					if (item.submenu && item.submenu.length > 0) {
+						const filteredSubmenu = item.submenu.filter(
+							(subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
+						);
+
+						return { ...item, submenu: filteredSubmenu };
+					}
+
+					return item;
+				})
+				.filter((item) => {
+					return !item.requiredPermission || hasPermission(item.requiredPermission);
+				});
+		} else {
+			filtered = [
+				{
+					title: "Create Organization",
+					href: "/dashboard",
+					icon: <Icon icon="hugeicons:building-05" className="!w-6 !h-6" />,
+				},
+			];
 		}
-
-		const filtered = navItems
-			.map((item) => {
-				if (item.submenu && item.submenu.length > 0) {
-					const filteredSubmenu = item.submenu.filter(
-						(subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
-					);
-
-					return { ...item, submenu: filteredSubmenu };
-				}
-
-				return item;
-			})
-			.filter((item) => {
-				return !item.requiredPermission || hasPermission(item.requiredPermission);
-			});
 
 		setFilteredNavItems(filtered);
-	}, [router, currentUser, selectedInstitution]);
-
-	useEffect(() => {
-		if (selectedInstitution && currentUser) {
-			if (currentUser.id !== selectedInstitution.institution_owner_id) {
-				// console.log("\n\n Fetching related employee by user id ");
-				fetchRelatedEmployeeByUserId();
-			}
-		}
-	}, [selectedInstitution, currentUser]);
+	}, [router, currentUser, selectedInstitution, relatedEmployee]);
 
 	const toggleExpand = (title: string) => {
 		setExpandedItems((prev) => ({ [title]: !prev[title] }));
-	};
-
-	const fetchRelatedEmployeeByUserId = async () => {
-		if (!currentUser || fetchingRelatedEmployee) {
-			return;
-		}
-		try {
-			setFetchingRelatedEmployee(true);
-			const employee = await EMPLOYEE_API.getByUserId({ user_id: currentUser.id });
-
-			setRelatedEmployee(employee);
-		} catch (error) {
-			showErrorToast({ error, defaultMessage: "Failed to fetch related employee" });
-		} finally {
-			setFetchingRelatedEmployee(false);
-		}
 	};
 
 	const onCloseSidebar = () => {
@@ -161,12 +142,6 @@ export default function DashboardSideBar() {
 			),
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD,
 		},
-		// {
-		// 	title: "Announcements",
-		// 	href: "/announcements",
-		// 	icon: <Icon icon="hugeicons:megaphone-01" className="!w-6 !h-6" width="28" height="28" />,
-		// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD,
-		// },
 		{
 			title: "Recruitment",
 			href: "#1",
@@ -189,83 +164,67 @@ export default function DashboardSideBar() {
 			title: "Employees",
 			href: "#1",
 			icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
-			submenu: relatedEmployee
-				? [
-						{
-							title: "Analytics",
-							href: "/analytics/employees",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-						{ title: "My Profile", href: `/employees/profile/${relatedEmployee.id}` },
-						{
-							title: "Employee Information",
-							href: "/employees/employee-list",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-						{
-							title: "Document Requests",
-							href: "/employees/document-requests",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_DOCUMENT_REQUESTS,
-						},
-						{
-							title: "Shifts",
-							href: "/employees/shift-requests",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-						{
-							title: "Employee Types",
-							href: "/employees/employee-types",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-						{
-							title: "Work Types",
-							href: "/employees/work-types",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-						// {
-						// 	title: "Rotating Shift Assign",
-						// 	href: "#",
-						// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						// },
-						// {
-						// 	title: "Rotating Work Type Assign",
-						// 	href: "#",
-						// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						// },
-						{
-							title: "Disciplinary Actions",
-							href: "/employees/discipline",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-						// {
-						// 	title: "Policies",
-						// 	href: "#",
-						// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						// },
-						{
-							title: "Organization Chart",
-							href: "/organization-chart",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-					]
-				: [
-						{ title: "Analytics", href: "/analytics/employees" },
-						{ title: "Employee Information", href: "/employees/employee-list" },
-						{
-							title: "Document Requests",
-							href: "/employees/document-requests",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_DOCUMENT_REQUESTS,
-						},
-						{ title: "Shifts", href: "/employees/shift-requests" },
-						{ title: "Employee Types", href: "/employees/employee-types" },
-						{ title: "Work Types", href: "/employees/work-types" },
-						// { title: "Rotating Shift Assign", href: "#" },
-						// { title: "Rotating Work Type Assign", href: "#" },
-						{ title: "Disciplinary Actions", href: "/employees/discipline" },
-						// { title: "Policies", href: "#" },
-						{ title: "Organization Chart", href: "/organization-chart" },
-					],
-			// requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+			submenu: [
+				{
+					title: "Analytics",
+					href: "/analytics/employees",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				},
+				...(relatedEmployee
+					? [{ title: "My Profile", href: `/employees/profile/${relatedEmployee.id}` }]
+					: []),
+
+				{
+					title: "Employee Information",
+					href: "/employees/employee-list",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				},
+				{
+					title: "Document Requests",
+					href: "/employees/document-requests",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_DOCUMENT_REQUESTS,
+				},
+				{
+					title: "Shifts",
+					href: "/employees/shift-requests",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				},
+				{
+					title: "Employee Types",
+					href: "/employees/employee-types",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				},
+				{
+					title: "Work Types",
+					href: "/employees/work-types",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				},
+				// {
+				// 	title: "Rotating Shift Assign",
+				// 	href: "#",
+				// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				// },
+				// {
+				// 	title: "Rotating Work Type Assign",
+				// 	href: "#",
+				// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				// },
+				{
+					title: "Disciplinary Actions",
+					href: "/employees/discipline",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				},
+				// {
+				// 	title: "Policies",
+				// 	href: "#",
+				// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				// },
+				{
+					title: "Organization Chart",
+					href: "/organization-chart",
+					requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+				},
+			],
 		},
 		{
 			title: "Attendance",
@@ -445,15 +404,28 @@ export default function DashboardSideBar() {
 					<div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
 						<div className="flex items-center gap-3">
 							<div className="!w-10 !h-10 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
-								{InstitutionLogo ? (
-									<Image
-										alt="Institution Logo"
-										className="object-cover object-center !w-full !h-full"
-										fill
-										src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
-									/>
+								{selectedInstitution ? (
+									<>
+										{InstitutionLogo ? (
+											<Image
+												alt="Institution Logo"
+												className="object-cover object-center !w-full !h-full"
+												fill
+												src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
+											/>
+										) : (
+											<Icon icon="hugeicons:building-05" width="24" height="24" />
+										)}
+									</>
 								) : (
-									<Icon icon="hugeicons:building-05" width="24" height="24" />
+									<>
+										<Image
+											alt="Peracosoft Logo"
+											className="object-cover !bg-transparent object-center !w-full !h-full"
+											fill
+											src={`/images/logo.PNG`}
+										/>
+									</>
 								)}
 							</div>
 							{isSideBarOpen && (

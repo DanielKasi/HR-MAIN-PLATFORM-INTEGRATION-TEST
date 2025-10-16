@@ -8,6 +8,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.http import HttpRequest
+from utilities.helpers import get_personalized_greeting
 from communication.views import add_notification
 from employee.models import Employee, EmployeeBirthdayTask
 from settings.models import EmailProviderConfig
@@ -26,22 +27,25 @@ import socket
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_employee_welcome_email(
     self,
-    domain,
+    domain: str,
     email: str,
     fullname: str,
     password: str,
     company_name: Optional[str] = None,
     site_id: Optional[int] = None,
+    gender: Optional[str] = None,  # Added to support user object compatibility
 ) -> bool:
     """
     Send welcome email with login credentials to new employee.
 
     Args:
+        domain (str): Domain for building URLs
         email (str): Employee's email address
         fullname (str): Employee's full name
         password (str): Temporary password for initial login
         company_name (str, optional): Company name for personalization
         site_id (int, optional): Site ID to build proper URLs
+        gender (str, optional): User's gender for salutation
 
     Returns:
         bool: True if email sent successfully, False otherwise
@@ -49,11 +53,14 @@ def send_employee_welcome_email(
     Raises:
         Exception: Re-raises email sending exceptions after retries
     """
-
     try:
         # Validate inputs
         if not all([email, fullname, password]):
             raise ValueError("Email, fullname, and password are required")
+
+        # Create a user-like object for get_personalized_greeting
+        from types import SimpleNamespace
+        user = SimpleNamespace(email=email, fullname=fullname, gender=gender)
 
         # Get site information for building URLs
         if site_id:
@@ -65,8 +72,7 @@ def send_employee_welcome_email(
             site = Site.objects.get_current()
 
         # Build the full login URL
-
-        protocol = "http" if getattr(settings, "USE_HTTPS", False) else "https"
+        protocol = "https" if getattr(settings, "USE_HTTPS", True) else "http"
         login_path = getattr(settings, "LOGIN_URL", "/accounts/login/")
         if not login_path.startswith("/"):
             login_path = "/" + login_path
@@ -74,11 +80,13 @@ def send_employee_welcome_email(
 
         # Prepare email content
         company = company_name if company_name else "Company Name"
+        greeting = get_personalized_greeting(user)
 
         subject = f"Welcome to {company} - Your Account Details"
 
         # Template context
         context = {
+            "greeting": f"Dear {greeting}",
             "fullname": fullname,
             "email": email,
             "password": password,
@@ -86,7 +94,7 @@ def send_employee_welcome_email(
             "login_url": login_url,
             "support_email": getattr(settings, "SUPPORT_EMAIL", "support@company.com"),
             "site_domain": domain,
-            "site_name": domain,  # Will be adjusted to use name insteady of domain
+            "site_name": site.name if hasattr(site, 'name') else domain,
         }
 
         # Render HTML template
@@ -102,7 +110,7 @@ def send_employee_welcome_email(
         except Exception as e:
             logging.warning(f"Failed to render text template: {e}")
             plain_message = f"""
-Dear {fullname},
+{context['greeting']},
 
 Welcome to {company}! We're excited to have you join our team.
 
@@ -157,7 +165,6 @@ This is an automated message. Please do not reply to this email.
             raise self.retry(exc=exc)
         else:
             raise exc
-
 
 @shared_task
 def send_bulk_welcome_emails(

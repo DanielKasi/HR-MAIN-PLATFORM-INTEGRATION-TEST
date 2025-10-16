@@ -1,0 +1,33 @@
+{{ greeting }},
+
+Welcome to {{ company_name }}! We're excited to have you join our team.
+
+Your employee account has been created successfully with the following login credentials:
+
+┌─────────────────────────────┐
+│ LOGIN CREDENTIALS           │
+├─────────────────────────────┤
+│ Email:    {{ email|truncatechars:15 }} │
+│ Password: {{ password|truncatechars:15 }} │
+└─────────────────────────────┘
+
+IMPORTANT SECURITY NOTICE:
+🔐 Please log in and change your password immediately for security reasons
+🔐 Use a strong password with at least 8 characters, including numbers and symbols
+🔐 Do not share your login credentials with anyone
+
+Next Steps:
+1. Visit our login page: {{ login_url }}
+2. Log in with the credentials above
+3. Change your password in your profile settings
+4. Complete your profile information
+
+If you encounter any issues or have questions, please don't hesitate to contact our support team at {{ support_email }}.
+
+We look forward to working with you!
+
+Best regards,
+The {{ company_name }} Team
+
+---
+This is an automated message. Please do not reply to this email.

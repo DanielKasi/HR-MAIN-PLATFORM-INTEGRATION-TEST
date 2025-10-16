@@ -1866,14 +1866,15 @@ export interface ISystemWorkingDay {
 
 export interface IInstitutionDay {
 	id: number;
+	day_id: number;
 	day_name: string;
 	opening_time: string;
 	closing_time: string;
 }
 export interface IInstitutionDayFormData {
 	day_id: number;
-	opening_time?: string;
-	closing_time?: string;
+	opening_time?: string | null;
+	closing_time?: string | null;
 }
 
 // Institution Working Days interface
@@ -2183,6 +2184,17 @@ export interface IInstitutionAnalytics {
 	payroll_by_department: {
 		dept: string;
 		payroll: number;
+	}[];
+	employees_by_gender: {
+		// Add this property
+		gender: string;
+		count: number;
+	}[];
+	employees_by_department: {
+		// Fixed the properties
+		department: string;
+		count: number;
+		year?: number;
 	}[];
 }
 

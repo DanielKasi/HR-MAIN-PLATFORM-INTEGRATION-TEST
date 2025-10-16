@@ -631,6 +631,7 @@ class Command(BaseCommand):
                     employee.user.email,
                     employee.user.fullname,
                     password,
+                    employee.gender,
                 )
                 employee.user.welcome_email_sent = True
                 employee.user.save()

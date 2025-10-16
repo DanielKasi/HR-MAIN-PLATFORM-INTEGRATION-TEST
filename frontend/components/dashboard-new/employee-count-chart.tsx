@@ -54,7 +54,9 @@ export function EmployeeCountChart({ data, onRefresh, loading }: EmployeeCountCh
 	return (
 		<Card className="shadow-sm border-none">
 			<CardHeader className="flex flex-row items-center justify-between">
-				<CardTitle className="text-base font-medium">Employees Count Over Years</CardTitle>
+				<CardTitle className="text-lg font-semibold text-slate-900">
+					Employees Count Over Years
+				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<div className="h-64">
@@ -75,7 +77,7 @@ export function EmployeeCountChart({ data, onRefresh, loading }: EmployeeCountCh
 							<Tooltip content={<CustomTooltip />} />
 							<Bar
 								dataKey="count"
-								fill="#EF4444"
+								fill="#0CA0F5"
 								className="hover:!bg-transparent cursor-pointer"
 								radius={[4, 4, 0, 0]}
 							/>

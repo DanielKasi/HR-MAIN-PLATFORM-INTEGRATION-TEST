@@ -15,7 +15,6 @@ import { formatDate } from "@/lib/helpers";
 
 const AnnouncementCarousel: React.FC = () => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	// const [announcements, setAnnouncements] = useState<IAnnouncement[]>([]);
 	const [acknowledgmentAnnouncements, setAcknowledgmentAnnouncements] = useState<IAcknowledgment[]>(
 		[],
 	);
@@ -75,7 +74,7 @@ const AnnouncementCarousel: React.FC = () => {
 
 	if (acknowledgmentAnnouncements.length === 0) {
 		return (
-			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full">
+			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full !min-h-full">
 				<CardHeader className="flex flex-row items-center justify-between py-2">
 					<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
 					<Link href="/announcements">
@@ -89,24 +88,31 @@ const AnnouncementCarousel: React.FC = () => {
 
 	return (
 		<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full overflow-hidden">
-			<CardHeader className="flex flex-row items-center justify-between py-2">
+			<CardHeader className="flex flex-row items-start justify-between py-2">
 				<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
-				<Link href="/announcements">
-					<ChevronRight className="w-4 h-4 text-gray-400" />
+				<Link
+					className="flex items-center justify-end gap-2 text-xs md:text-sm underline underline-offset-2 decoration-primary text-primary"
+					href="/announcements"
+				>
+					<span className="">View All</span>
+					<ChevronRight className="w-4 h-4 text-primary" />
 				</Link>
 			</CardHeader>
-			<div
-				className="relative overflow-hidden cursor-pointer h-full max-h-[calc(100%-5.5rem)]"
-				onClick={() =>
-					router.push(`/announcements/${acknowledgmentAnnouncements[currentIndex].announcement.id}`)
-				}
-			>
+
+			<div className="relative overflow-hidden cursor-pointer h-full max-h-[calc(100%-4.5rem)]">
 				<div
 					className="flex transition-transform duration-500 ease-in-out "
 					style={{ transform: `translateX(-${currentIndex * 100}%)` }}
 				>
 					{acknowledgmentAnnouncements.map((acknowledgement) => (
 						<div key={acknowledgement.id} className="min-w-full px-6 text-sm">
+							{acknowledgement.announcement.created_at && (
+								<div className="flex items-center justify-between gap-4 mt-4">
+									<span className="text-xs text-gray-600">
+										{formatDate(acknowledgement.announcement.created_at, true)}
+									</span>
+								</div>
+							)}
 							<p className="flex items-center justify-between gap-4 mb-4">
 								<span className="truncate text-gray-600">
 									<strong>{acknowledgement.announcement.title}</strong>
@@ -117,19 +123,19 @@ const AnnouncementCarousel: React.FC = () => {
 									{acknowledgement.announcement.content}
 								</p>
 							</div>
-							{acknowledgement.announcement.created_at && (
-								<div className="flex items-center justify-between gap-4 mt-4">
-									<span className="text-xs text-gray-600">
-										{formatDate(acknowledgement.announcement.created_at)}
-									</span>
-								</div>
-							)}
+							<Link
+								className="flex items-center justify-start w-full mt-2 gap-2 text-xs md:text-sm underline underline-offset-2 decoration-primary text-primary"
+								href={`/announcements/${acknowledgmentAnnouncements[currentIndex].announcement.id}`}
+							>
+								<span className="">Read More</span>
+								<ChevronRight className="w-4 h-4 text-primary" />
+							</Link>
 						</div>
 					))}
 				</div>
 			</div>
 			{acknowledgmentAnnouncements.length && (
-				<div className="flex items-center justify-center min-h-10 z-100 gap-2 mt-2 mb-2">
+				<div className="flex items-center justify-center min-h-6 z-100 gap-2 mb-2">
 					{acknowledgmentAnnouncements.slice(0, 3).map((_, index) => (
 						<button
 							key={index}

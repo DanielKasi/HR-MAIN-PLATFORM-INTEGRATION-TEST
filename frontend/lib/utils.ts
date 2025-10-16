@@ -170,6 +170,7 @@ import {
 	ITaxRuleCategory,
 	IAuditLog,
 	IInstitutionWorkingDaysFormData,
+	IBranchDayFormData,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -7984,7 +7985,7 @@ export const branchesAPI = {
 			return response.data as IBranchWorkingDays;
 		},
 		create: async (data: {
-			branch_days: Array<{ day_id: number; day_type: "REMOTE" | "PHYSICAL" }>;
+			branch_days: IBranchDayFormData[];
 		}): Promise<IBranchWorkingDays | null> => {
 			const response = await apiRequest.post(`/institution/branch-working-days/`, data);
 
@@ -7993,7 +7994,7 @@ export const branchesAPI = {
 
 		update: async (
 			branchDaysId: number,
-			data: { branch_days: Array<{ day_id: number; day_type: "REMOTE" | "PHYSICAL" }> },
+			data: { branch_days: IBranchDayFormData[] },
 		): Promise<IBranchWorkingDays | null> => {
 			const response = await apiRequest.patch(
 				`/institution/branch-working-day-detail/${branchDaysId}/`,

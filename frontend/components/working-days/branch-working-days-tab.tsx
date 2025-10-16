@@ -76,6 +76,8 @@ export default function BranchWorkingDaysTab() {
 		dayId: number;
 		action?: "add" | "remove";
 		dayType: "PHYSICAL" | "REMOTE";
+		opening_time?: string;
+		closing_time?: string;
 		day_name?: string;
 		days?: IBranchDayFormData[];
 	}) => {
@@ -87,7 +89,7 @@ export default function BranchWorkingDaysTab() {
 		try {
 			setIsSaving(true);
 			const currentDays = branchWorkingDays?.branch_days || [];
-			let newDays: Omit<IBranchDay, "id" | "day_name">[] = [];
+			let newDays: IBranchDayFormData[] = [];
 
 			if (args.action === "add") {
 				const validDayId = systemWorkingDays.find((d) => d.id === args.dayId);
@@ -133,7 +135,7 @@ export default function BranchWorkingDaysTab() {
 				return;
 			}
 
-			const transformForAPI = (days: any[]) => {
+			const transformForAPI = (days: typeof newDays) => {
 				return days.map((day) => {
 					const branchDay = currentDays.find((cd) => cd.id === day.day_id);
 
@@ -145,12 +147,16 @@ export default function BranchWorkingDaysTab() {
 						return {
 							day_id: systemDay?.id || day.day_id,
 							day_type: day.day_type,
+							opening_time: args.opening_time,
+							closing_time: args.closing_time,
 						};
 					}
 
 					return {
 						day_id: day.day_id,
 						day_type: day.day_type,
+						opening_time: args.opening_time,
+						closing_time: args.closing_time,
 					};
 				});
 			};
@@ -177,31 +183,7 @@ export default function BranchWorkingDaysTab() {
 				}
 			}
 		} catch (error: any) {
-			let errorMessage = "Failed to update branch working days";
-
-			if (error?.detail?.branch_days) {
-				const branchDaysErrors = error.detail.branch_days;
-				const errorMessages = branchDaysErrors
-					.map((dayError: any) => {
-						if (dayError.day_id && Array.isArray(dayError.day_id)) {
-							return dayError.day_id.join(", ");
-						}
-						return JSON.stringify(dayError);
-					})
-					.filter(Boolean);
-
-				errorMessage =
-					errorMessages.length > 0
-						? `Validation errors: ${errorMessages.join("; ")}`
-						: errorMessage;
-			} else if (error?.message) {
-				errorMessage = error.message;
-			} else if (typeof error?.detail === "string") {
-				errorMessage = error.detail;
-			}
-
-			toast.error(errorMessage);
-			throw error;
+			showErrorToast({ error, defaultMessage: "Failed to update branch working days" });
 		} finally {
 			setIsSaving(false);
 		}

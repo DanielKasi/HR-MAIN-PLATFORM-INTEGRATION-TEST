@@ -91,7 +91,7 @@ export const configureAppStore = () => {
 
 	// store.subscribe(() => {
 	// 	const state = store.getState();
-	// 	console.log("\n\n Current miscellaneous : ", state.miscellaneous);
+	// 	console.log("\n\n Current related employee object : ", state.auth.relatedEmployee);
 	// });
 
 	return store;
