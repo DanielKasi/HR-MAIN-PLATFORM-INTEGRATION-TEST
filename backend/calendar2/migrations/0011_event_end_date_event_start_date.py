@@ -20,9 +20,9 @@ class Migration(migrations.Migration):
             name='start_date',
             field=models.DateField(blank=True, null=True),
         ),
-        migrations.AddField(
-            model_name='event',
-            name='date',
-            field=models.DateField(blank=True, null=True),
-        ),
+        # migrations.AddField(
+        #     model_name='event',
+        #     name='date',
+        #     field=models.DateField(),
+        # ), this was never deleted and 
     ]
