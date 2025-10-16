@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Plus, Users, Calendar, Settings, FileText, Clock, TrendingUp } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 interface QuickAction {
 	id: string;
 	label: string;
-	icon: React.ReactNode;
+	icon: string;
 	bgColor: string;
 	href?: string;
 	action?: () => void;
@@ -25,42 +25,42 @@ const QuickActionsWidget = () => {
 		{
 			id: "add-employee",
 			label: "Add Employee",
-			icon: <Users className="h-4 w-4 text-white" />,
+			icon: "hugeicons:user-multiple-02",
 			bgColor: "bg-blue-600 hover:bg-blue-700",
 			href: "/employees/add-employee",
 		},
 		{
 			id: "add-event",
 			label: "Add Event",
-			icon: <Calendar className="h-4 w-4 text-white" />,
+			icon: "hugeicons:date-time",
 			bgColor: "bg-blue-600 hover:bg-blue-700",
 			href: "/events-holidays/events/add",
 		},
 		{
 			id: "create-report",
 			label: "Create Report",
-			icon: <FileText className="h-4 w-4 text-white" />,
+			icon: "hugeicons:google-doc",
 			bgColor: "bg-blue-600 hover:bg-blue-700",
 			href: "",
 		},
 		{
 			id: "view-attendance",
 			label: "View Attendance",
-			icon: <Clock className="h-4 w-4 text-white" />,
+			icon: "hugeicons:time-02",
 			bgColor: "bg-blue-600 hover:bg-blue-700",
 			href: "/employees/attendance",
 		},
 		{
 			id: "analytics",
 			label: "Analytics",
-			icon: <TrendingUp className="h-4 w-4 text-white" />,
+			icon: "hugeicons:analysis-text-link",
 			bgColor: "bg-blue-600 hover:bg-blue-700",
 			href: "",
 		},
 		{
 			id: "settings",
 			label: "Settings",
-			icon: <Settings className="h-4 w-4 text-white" />,
+			icon: "hugeicons:settings-01",
 			bgColor: "bg-blue-600 hover:bg-blue-700",
 			href: "",
 		},
@@ -158,7 +158,7 @@ const QuickActionsWidget = () => {
 									onMouseLeave={() => setHoveredAction(null)}
 									className={`action-circle relative h-10 w-10 rounded-full ${action.bgColor} text-white shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-110 flex items-center justify-center pointer-events-auto`}
 								>
-									{action.icon}
+									<Icon icon={action.icon} width="20" height="20" />
 								</button>
 							</div>
 						))}
@@ -186,7 +186,7 @@ const QuickActionsWidget = () => {
 						>
 							<div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 							<div className="relative z-10 flex items-center justify-center">
-								<Plus className="h-6 w-6" />
+								<Icon icon="hugeicons:plus-sign" width="24" height="24" />
 							</div>
 						</Button>
 					</div>
