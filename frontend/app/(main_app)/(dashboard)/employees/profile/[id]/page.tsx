@@ -369,7 +369,7 @@ export default function EmployeeProfile() {
 			{ id: "penalties", label: "Penalties", hasData: true },
 			{ id: "shifts", label: "Shifts", hasData: true },
 			{ id: "performance", label: "Performance", hasData: true },
-			{ id: "devices", label: "Devices", hasData: true },
+			{ id: "devices", label: "Attached Devices", hasData: true },
 		],
 		[tabDataCache],
 	);

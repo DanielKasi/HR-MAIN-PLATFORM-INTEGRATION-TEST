@@ -68,6 +68,7 @@ from institution.utils import generate_compliant_password
 from django.db import transaction
 from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
+from django.db.models import Q
 
 
 logger = logging.getLogger(__name__)
@@ -145,6 +146,13 @@ class UserListAPIView(APIView, SortableAPIMixin):
         queryset = CustomUser.objects.filter(
             profile__institution=user_institution
         )
+        search_query = request.query_params.get("search")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(fullname__icontains=search_query) |
+                Q(email__icontains=search_query)
+            )
         
         queryset = queryset.prefetch_related(
             "user_roles__role__permissions__permission",

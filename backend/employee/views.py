@@ -4915,7 +4915,7 @@ class ActivateEmployeeView(APIView):
 class EmployeeLogListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
     allowed_ordering_fields = ['employee__name', 'device__serial_number', 'record_reference', 'date', 'time', 'created_at']
-    default_ordering = ['date', 'time']
+    default_ordering = ['-date', '-time']
 
     @extend_schema(
         request=OpenApiTypes.OBJECT,
