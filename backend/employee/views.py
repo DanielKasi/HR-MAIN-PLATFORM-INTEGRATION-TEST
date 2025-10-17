@@ -316,16 +316,16 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
         search_query = query_params.get("search")
         if search_query:
             queryset = queryset.filter(
-                Q(employee_id__icontains=search_query) |
-                Q(user__fullname__icontains=search_query) |
-                Q(user__email__icontains=search_query) |
-                Q(email__icontains=search_query) |
-                Q(work_type__name__icontains=search_query) |
-                Q(employee_type__name__icontains=search_query) |
-                Q(position__name__icontains=search_query) |
-                Q(department__name__icontains=search_query) |
-                Q(phone_number__icontains=search_query) |
-                Q(skills__icontains=search_query)
+                # Q(employee_id__icontains=search_query) |
+                Q(user__fullname__icontains=search_query) 
+                # Q(user__email__icontains=search_query) |
+                # Q(email__icontains=search_query) |
+                # Q(work_type__name__icontains=search_query) |
+                # Q(employee_type__name__icontains=search_query) |
+                # Q(position__name__icontains=search_query) |
+                # Q(department__name__icontains=search_query) |
+                # Q(phone_number__icontains=search_query) |
+                # Q(skills__icontains=search_query)
             )
 
         department_id = query_params.get("department_id")
