@@ -119,7 +119,6 @@ export default function EmployeePage() {
 
 						{/* Charts Grid */}
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-							{/* Department Distribution - Full width on mobile, then half */}
 							<div className="lg:col-span-2 xl:col-span-1">
 								<DepartmentTreeMap
 									data={data.employees_by_department}
