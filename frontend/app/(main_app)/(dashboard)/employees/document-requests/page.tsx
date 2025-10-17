@@ -60,8 +60,8 @@ export default function DocumentRequestListPage() {
 		{
 			key: "document_type",
 			header: (
-				<div className="flex items-center justify-start gap-4">
-					<span>Document Type</span>
+				<div className="flex items-center justify-start gap-2 sm:gap-4">
+					<span className="text-xs sm:text-sm">Document Type</span>
 					<Button
 						onClick={() =>
 							setOrdering((prev) => (prev === "document_type" ? "-document_type" : "document_type"))
@@ -69,35 +69,45 @@ export default function DocumentRequestListPage() {
 						size="sm"
 						variant={ordering.includes("document_type") ? "default" : "outline"}
 						type="button"
+						className="h-6 w-6 sm:h-8 sm:w-8 p-0"
 					>
-						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+						<Icon icon="hugeicons:sorting-02" className="!h-3 !w-3 sm:!h-4 sm:!w-4" />
 					</Button>
 				</div>
 			),
-			cell: (request) => <span className="capitalize">{request.document_type}</span>,
+			cell: (request) => (
+				<div className="text-xs sm:text-sm font-medium capitalize">{request.document_type}</div>
+			),
 		},
 		{
 			key: "description",
 			header: "Description",
-			cell: (request) =>
-				request.description?.substring(0, 50) +
-					(request.description && request.description.length > 50 ? "..." : "") || "Unknown",
+			cell: (request) => (
+				<div className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[200px]">
+					{request.description?.substring(0, 50) +
+						(request.description && request.description.length > 50 ? "..." : "") || "Unknown"}
+				</div>
+			),
 		},
 		{
 			key: "document_format",
 			header: "Document Format",
-			cell: (request) => <span className="capitalize">{request.document_format}</span>,
+			cell: (request) => (
+				<div className="text-xs sm:text-sm capitalize">{request.document_format}</div>
+			),
 		},
 		{
 			key: "due_date",
 			header: "Due Date",
-			cell: (request) => request.due_date || "Unknown",
+			cell: (request) => (
+				<div className="text-xs sm:text-sm whitespace-nowrap">{request.due_date || "Unknown"}</div>
+			),
 		},
 		{
 			key: "requested_to",
 			header: "Requested to",
 			cell: (request) => (
-				<Badge variant={"secondary"}>
+				<Badge variant={"secondary"} className="text-xs whitespace-nowrap">
 					{request.employees.length} employee{request.employees.length > 1 ? `s` : ""}
 				</Badge>
 			),
@@ -109,25 +119,25 @@ export default function DocumentRequestListPage() {
 			cell: (request) => (
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<MoreVertical className="h-4 w-4" />
+						<Button variant="ghost" className="h-6 w-6 sm:h-8 sm:w-8 p-0">
+							<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => openDetails(request)}>
-							<Eye className="h-4 w-4 mr-2" /> View Details
+					<DropdownMenuContent align="start" className="w-40 sm:w-48">
+						<DropdownMenuItem onClick={() => openDetails(request)} className="text-xs sm:text-sm">
+							<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> View Details
 						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => openEdit(request)}>
-							<Edit className="h-4 w-4 mr-2" /> Edit
+						<DropdownMenuItem onClick={() => openEdit(request)} className="text-xs sm:text-sm">
+							<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Edit
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() => {
 								setRequestToDelete(request);
 								setDeleteConfirmOpen(true);
 							}}
-							className="text-red-600"
+							className="text-red-600 text-xs sm:text-sm"
 						>
-							<Trash2 className="h-4 w-4 mr-2" /> Delete
+							<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Delete
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -136,13 +146,14 @@ export default function DocumentRequestListPage() {
 	];
 
 	return (
-		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
-			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold">Document Requests</h1>
-				<div className="flex items-center justify-end gap-4">
+		<div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white rounded-lg min-h-screen">
+			{/* Header Section */}
+			<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+				<h1 className="text-xl sm:text-2xl font-bold">Document Requests</h1>
+				<div className="flex items-center justify-end">
 					<Button
 						onClick={() => router.push("/employees/document-requests/create")}
-						className="rounded-xl"
+						className="rounded-xl w-full sm:w-auto text-sm sm:text-base"
 					>
 						<Plus className="h-4 w-4 mr-2" />
 						Create Request
@@ -150,11 +161,12 @@ export default function DocumentRequestListPage() {
 				</div>
 			</div>
 
+			{/* Search Section */}
 			<div className="flex items-center gap-4">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
-						className="pl-9 w-full max-w-md lg:max-w-xl"
+						className="pl-9 w-full"
 						placeholder="Search requests..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
@@ -162,6 +174,7 @@ export default function DocumentRequestListPage() {
 				</div>
 			</div>
 
+			{/* Table Section */}
 			<PaginatedTable<IDocumentRequest>
 				fetchFirstPage={async () => {
 					if (!currentInstitution) throw new Error("No institution selected");
@@ -180,8 +193,10 @@ export default function DocumentRequestListPage() {
 				skeletonRows={10}
 				refreshRef={tableRefreshRef}
 				emptyState={
-					<div className="text-center py-12">
-						<p className="text-muted-foreground mb-4">No document requests found</p>
+					<div className="text-center py-8 sm:py-12">
+						<p className="text-muted-foreground mb-4 text-sm sm:text-base">
+							No document requests found
+						</p>
 					</div>
 				}
 			/>

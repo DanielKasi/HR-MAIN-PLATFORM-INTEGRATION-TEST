@@ -41,6 +41,7 @@ export default function EmployeesPage() {
 	const [minSalary, setMinSalary] = useState<string>("");
 	const [maxSalary, setMaxSalary] = useState<string>("");
 	const [departmentSearchTerm, setDepartmentSearchTerm] = useState<(string | number)[]>([]);
+	const [showFilters, setShowFilters] = useState(false);
 
 	const clearJobPosition = () => {
 		setPositionSearchTerm([]);
@@ -95,18 +96,18 @@ export default function EmployeesPage() {
 
 	return (
 		<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEES}>
-			<div className="flex flex-col w-full h-full p-4 bg-white rounded-lg min-h-screen">
-				<CardHeader className="space-y-4 mb-4">
-					<CardTitle className="flex flex-row items-center justify-between">
+			<div className="flex flex-col w-full h-full p-3 sm:p-4 bg-white rounded-lg min-h-screen">
+				<CardHeader className="space-y-4 mb-4 p-0 sm:p-6">
+					<CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 						<h1 className="text-xl md:text-2xl font-bold">Employees</h1>
 
-						<div className="flex flex-row items-center gap-2">
+						<div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 w-full sm:w-auto">
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button className="rounded-2xl">
-											<span className="hidden md:inline">Add Employee</span>
-											<UserPlus className="md:hidden" />
+										<Button className="rounded-2xl w-full xs:w-auto">
+											<span className="hidden sm:inline">Add Employee</span>
+											<UserPlus className="sm:hidden" />
 											<ChevronDown className="h-4 w-4 ml-2" />
 										</Button>
 									</DropdownMenuTrigger>
@@ -126,25 +127,30 @@ export default function EmployeesPage() {
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EXPORT_EMPLOYEES}>
 								<Button
 									disabled={isExportingToExcel}
-									className="rounded-xl"
+									className="rounded-xl w-full xs:w-auto"
 									onClick={handleExportEmployees}
 								>
 									{isExportingToExcel ? (
-										<Loader />
+										<Loader className="h-4 w-4" />
 									) : (
-										<Icon icon="hugeicons:file-export" className="!w-5 !h-5" />
+										<Icon icon="hugeicons:file-export" className="!w-4 !h-4 sm:!w-5 sm:!h-5" />
 									)}
-									<span className="text">
+									<span className="ml-2 hidden sm:inline">
 										{isExportingToExcel ? "Exporting" : "Export to Excel"}
+									</span>
+									<span className="ml-2 sm:hidden">
+										{isExportingToExcel ? "Exporting" : "Export"}
 									</span>
 								</Button>
 							</ProtectedComponent>
 						</div>
 					</CardTitle>
 
-					<div className="flex flex-col lg:flex lg:flex-row gap-4 items-start lg:items-end mt-12 overflow-visible">
-						<div className="relative w-full lg:max-w-xl ">
-							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+					{/* Search and Filters Section */}
+					<div className="flex flex-col gap-4 mt-6 sm:mt-12 overflow-visible">
+						{/* Search Bar */}
+						<div className="relative w-full">
+							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
 								placeholder="Search employees, departments, positions, or emails..."
 								value={searchTerm}
@@ -152,38 +158,77 @@ export default function EmployeesPage() {
 								className="pl-10 text-sm"
 							/>
 						</div>
-						<div className="grid grid-cols-2 items-end gap-3 px-4 min-w-fit">
-							<JobPositionSearchableSelect
-								value={positionSearchTerm}
-								onValueChange={setPositionSearchTerm}
-								placeholder="Job positions..."
-								className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
-								multiple={false}
-								showSelectedItems={true}
-							/>
-							<DepartmentSearchableSelect
-								value={departmentSearchTerm}
-								onValueChange={setDepartmentSearchTerm}
-								placeholder="Departments..."
-								className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
-								multiple={false}
-								showSelectedItems={true}
-							/>
-						</div>
 
-						{/* Salary Range Inputs */}
-						<div className="flex gap-2 items-center">
-							<FormatNumberInput
-								placeholder="Min salary"
-								value={minSalary}
-								onChange={(formatted, numericValue) => setMinSalary(formatted)}
-							/>
-							<span className="text-gray-400">-</span>
-							<FormatNumberInput
-								placeholder="Max salary"
-								value={maxSalary}
-								onChange={(formatted, numericValue) => setMaxSalary(formatted)}
-							/>
+						{/* Filter Toggle for Mobile */}
+						<Button
+							variant="outline"
+							onClick={() => setShowFilters(!showFilters)}
+							className="sm:hidden flex items-center gap-2"
+						>
+							<Icon icon="hugeicons:filter" className="h-4 w-4" />
+							Filters
+							{(positionSearchTerm.length > 0 ||
+								departmentSearchTerm.length > 0 ||
+								minSalary ||
+								maxSalary) && <span className="ml-1 h-2 w-2 bg-blue-500 rounded-full"></span>}
+						</Button>
+
+						{/* Filters - Hidden on mobile by default, shown when toggled */}
+						<div
+							className={`${showFilters ? "flex flex-col" : "hidden"} sm:flex sm:flex-col lg:flex-row gap-4 items-start lg:items-end`}
+						>
+							<div className="grid grid-cols-1 xs:grid-cols-2 gap-3 w-full">
+								<JobPositionSearchableSelect
+									value={positionSearchTerm}
+									onValueChange={setPositionSearchTerm}
+									placeholder="Job positions..."
+									className="w-full"
+									multiple={false}
+									showSelectedItems={true}
+								/>
+								<DepartmentSearchableSelect
+									value={departmentSearchTerm}
+									onValueChange={setDepartmentSearchTerm}
+									placeholder="Departments..."
+									className="w-full"
+									multiple={false}
+									showSelectedItems={true}
+								/>
+							</div>
+
+							{/* Salary Range Inputs */}
+							<div className="flex flex-col xs:flex-row gap-2 items-start xs:items-center w-full xs:w-auto">
+								<div className="flex gap-2 items-center w-full xs:w-auto">
+									<FormatNumberInput
+										placeholder="Min salary"
+										value={minSalary}
+										onChange={(formatted, numericValue) => setMinSalary(formatted)}
+										className="w-full xs:w-[120px]"
+									/>
+									<span className="text-gray-400">-</span>
+									<FormatNumberInput
+										placeholder="Max salary"
+										value={maxSalary}
+										onChange={(formatted, numericValue) => setMaxSalary(formatted)}
+										className="w-full xs:w-[120px]"
+									/>
+								</div>
+
+								{/* Clear Filters Button */}
+								{(searchTerm ||
+									positionSearchTerm.length > 0 ||
+									departmentSearchTerm.length > 0 ||
+									minSalary ||
+									maxSalary) && (
+									<Button
+										variant="outline"
+										onClick={clearFilters}
+										className="w-full xs:w-auto mt-2 xs:mt-0"
+									>
+										Clear Filters
+									</Button>
+								)}
+							</div>
 						</div>
 					</div>
 				</CardHeader>

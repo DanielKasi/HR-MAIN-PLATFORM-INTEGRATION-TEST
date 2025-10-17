@@ -418,9 +418,9 @@ export default function EmployeeProfile() {
 			<div className="min-h-screen bg-[#f7f7fb] flex items-center justify-center px-4">
 				<div className="text-center max-w-md w-full">
 					<p className="text-[#e21732] mb-4">{error || "Employee not found"}</p>
-					<div className="space-y-2 space-x-8 gap-4">
+					<div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
 						<Link href="/employees/employee-list">
-							<Button className="text-white w-full rounded-xl md:w-auto">Back to Employees</Button>
+							<Button className="text-white w-full sm:w-auto rounded-xl">Back to Employees</Button>
 						</Link>
 						<Button
 							variant="outline"
@@ -428,7 +428,7 @@ export default function EmployeeProfile() {
 								setError(null);
 								window.location.reload();
 							}}
-							className="w-full md:w-auto"
+							className="w-full sm:w-auto"
 						>
 							Retry
 						</Button>
@@ -483,9 +483,9 @@ export default function EmployeeProfile() {
 			) : (
 				<>
 					{employee && (
-						<div className="w-full md:px-4 md:pb-8">
+						<div className="w-full px-4 sm:px-6 pb-4 sm:pb-8">
 							{/* Header section with back arrow, name, and action buttons */}
-							<div className="flex flex-row md:flex-row md:items-center justify-between py-4 mb-2 gap-4">
+							<div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 mb-2 gap-4">
 								<div className="flex items-center justify-start gap-4">
 									<Link href="/employees/employee-list">
 										<Button variant="outline" className="!h-10 !w-10 !rounded-full !aspect-square">
@@ -493,22 +493,22 @@ export default function EmployeeProfile() {
 										</Button>
 									</Link>
 
-									<h1 className="text-lg md:text-2xl font-bold text-gray-800 flex items-center justify-start gap-2 md:gap-3">
+									<h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 flex items-center justify-start gap-2 md:gap-3">
 										<span>{employee?.name || employee.user?.fullname || "Unknown Employee"}</span>
-										<Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] font-medium self-start md:self-auto">
+										<Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] font-medium self-start md:self-auto text-xs sm:text-sm">
 											{employee.is_active ? "Active" : "Inactive"}
 										</Badge>
 									</h1>
 								</div>
-								<div className="flex items-center gap-3 px-3">
+								<div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-start sm:justify-end">
 									<Link href={`/employees/update-employee/${employee.id}`}>
 										<Button
 											variant="outline"
 											size={isMobile ? "sm" : "default"}
-											className=" flex items-center gap-2"
+											className="flex items-center gap-2"
 										>
 											<Edit className="w-4 h-4" />
-											<span className="hidden md:inline">Edit</span>
+											<span className="hidden sm:inline">Edit</span>
 										</Button>
 									</Link>
 									<Button
@@ -517,7 +517,7 @@ export default function EmployeeProfile() {
 										className="flex items-center gap-2"
 									>
 										<Trash2 className="w-4 h-4" />
-										<span className="hidden md:inline">Delete</span>
+										<span className="hidden sm:inline">Delete</span>
 									</Button>
 
 									<Button
@@ -527,18 +527,18 @@ export default function EmployeeProfile() {
 										className="flex items-center gap-2 shadow-sm"
 									>
 										<FileText className="h-4 w-4" />
-										<span className="hidden md:inline">Generate Document</span>
+										<span className="hidden sm:inline">Generate Document</span>
 									</Button>
 								</div>
 							</div>
 
 							<ApprovableInstancePageLayout instance={employee} onInstanceRefresh={fetchEmployee}>
-								<div className="bg-white md:rounded-lg md:shadow-sm md:border border-[#e8e8f2] mb-6">
-									<div className="p-4 md:p-6">
-										<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
-											<div className="flex flex-col">
-												<div className="flex flex-col md:flex-row md:items-start gap-4 mb-4">
-													<Avatar className="w-16 h-16 md:w-20 md:h-20 border-4 border-white shadow-lg flex-shrink-0 self-center md:self-start">
+								<div className="bg-white rounded-lg shadow-sm border border-[#e8e8f2] mb-6">
+									<div className="p-4 sm:p-6">
+										<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6">
+											<div className="flex flex-col flex-1">
+												<div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-4">
+													<Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-white shadow-lg flex-shrink-0 self-center sm:self-start">
 														<AvatarImage
 															src={
 																employee.employee_profile_picture
@@ -548,22 +548,22 @@ export default function EmployeeProfile() {
 															alt="Profile picture"
 															className="object-cover"
 														/>
-														<AvatarFallback className="text-lg md:text-xl bg-[#f0f0f6] text-gray-800">
+														<AvatarFallback className="text-lg sm:text-xl bg-[#f0f0f6] text-gray-800">
 															{getEmployeeInitials(employee)}
 														</AvatarFallback>
 													</Avatar>
 
-													<div className="flex flex-col text-center md:text-left">
-														<h2 className="text-lg md:text-xl font-bold text-gray-800 mb-1">
+													<div className="flex flex-col text-center sm:text-left flex-1">
+														<h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
 															{employee?.name || employee.user?.fullname || "Unknown Employee"}
 															{employee.user?.gender && (
-																<span className="block md:inline text-[#9ca3af] text-sm font-normal md:ml-2">
+																<span className="block sm:inline text-[#9ca3af] text-sm font-normal sm:ml-2">
 																	{employee.user.gender}
 																</span>
 															)}
 														</h2>
 
-														<div className="flex items-center justify-center md:justify-start gap-2">
+														<div className="flex items-center justify-center sm:justify-start gap-2">
 															<Building className="w-4 h-4 text-[#9ca3af]" />
 															<span className="text-gray-800 font-medium">
 																{employee.position?.name || "No Position"}
@@ -573,21 +573,21 @@ export default function EmployeeProfile() {
 												</div>
 
 												{/* Contact info - stack vertically on mobile, horizontal on larger screens */}
-												<div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 text-sm">
-													<div className="flex items-center justify-center md:justify-start gap-2">
+												<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-sm">
+													<div className="flex items-center justify-center sm:justify-start gap-2">
 														<Mail className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
 														<span className="text-gray-800 break-all">{employee.email}</span>
 													</div>
 													{employee.phone_number && (
-														<div className="flex items-center justify-center md:justify-start gap-2">
+														<div className="flex items-center justify-center sm:justify-start gap-2">
 															<Phone className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
 															<span className="text-gray-800">{employee.phone_number}</span>
 														</div>
 													)}
 													{employee.address && (
-														<div className="flex items-center justify-center md:justify-start gap-2">
+														<div className="flex items-center justify-center sm:justify-start gap-2">
 															<MapPin className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
-															<span className="text-gray-800 text-center md:text-left">
+															<span className="text-gray-800 text-center sm:text-left">
 																{employee.address}
 															</span>
 														</div>
@@ -611,12 +611,12 @@ export default function EmployeeProfile() {
 											</div>
 
 											{/* Right side - Job info and badges - show below on mobile, beside on desktop */}
-											<div className="flex flex-col min-w-[16rem] items-center lg:items-start gap-4 mt-6 pt-6 border-t border-[#e8e8f2] lg:mt-0 lg:pt-0 lg:border-t-0 lg:flex-row lg:gap-4 lg:flex-shrink-0">
+											<div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center lg:items-start gap-4 sm:gap-6 lg:gap-4 mt-6 pt-6 border-t border-[#e8e8f2] lg:mt-0 lg:pt-0 lg:border-t-0 lg:flex-shrink-0">
 												{/* Vertical divider line - only on desktop */}
 												<div className="hidden lg:block h-16 w-px bg-[#e8e8f2]"></div>
 
-												<div className="flex flex-col items-center lg:items-start gap-3 ">
-													<div className="text-center lg:text-left">
+												<div className="flex flex-col items-center sm:items-start gap-3 text-center sm:text-left">
+													<div>
 														<div className="font-semibold text-sm text-gray-800">
 															{employee.position?.name || "No Position"}
 														</div>
@@ -627,7 +627,7 @@ export default function EmployeeProfile() {
 
 													{/* Salary Information */}
 													{employee.salary && (
-														<div className="text-center lg:text-left">
+														<div>
 															<div className="text-xs text-[#848496] mb-1">Monthly Salary</div>
 															<div className="font-bold text-lg text-gray-800">
 																{formatCurrency(employee.salary)}
@@ -635,7 +635,7 @@ export default function EmployeeProfile() {
 														</div>
 													)}
 
-													<div className="flex gap-2">
+													<div className="flex gap-2 flex-wrap justify-center sm:justify-start">
 														{employee.work_type && typeof employee.work_type !== "number" && (
 															<Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] text-xs px-2 py-1">
 																{employee.work_type?.name}
@@ -656,15 +656,15 @@ export default function EmployeeProfile() {
 
 								<div className="grid grid-cols-1 gap-6">
 									<div className="">
-										<Card className="bg-white border-[#e8e8f2] border-none p-0 shadow-none md:shadow-sm md:border">
-											<CardHeader className="border-b border-[#e8e8f2] pb-0">
-												<div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
-													<div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max px-8">
+										<Card className="bg-white border-[#e8e8f2] border-none p-0 shadow-none sm:shadow-sm sm:border">
+											<CardHeader className="border-b border-[#e8e8f2] pb-0 px-4 sm:px-6">
+												<div className="flex gap-2 sm:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
+													<div className="flex gap-2 sm:gap-4 lg:gap-8 min-w-max px-4 sm:px-0">
 														{tabConfig.map((tab) => (
 															<button
 																key={tab.id}
 																onClick={() => handleTabChange(tab.id as any)}
-																className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+																className={`pb-4 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																	activeTab === tab.id
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
@@ -680,7 +680,7 @@ export default function EmployeeProfile() {
 												</div>
 											</CardHeader>
 
-											<CardContent className="p-4 md:p-6">
+											<CardContent className="p-4 sm:p-6">
 												{activeTab === "attendance" && (
 													<>
 														<SingleEmployeeAttendance employee={employee} />
@@ -688,12 +688,12 @@ export default function EmployeeProfile() {
 												)}
 
 												{activeTab === "general_info" && (
-													<Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
-														<CardContent className="p-4 md:p-6 space-y-6">
-															<div className="!flex flex-col md:flex-row !items-center justify-between">
-																<div className="flex items-center  gap-8">
-																	<p className="flex items-center font-semibold gap-2">
-																		<Mail className="w-5 h-5" />
+													<Card className="bg-white border-none p-0 shadow-none sm:shadow-sm sm:border sm:border-[#e8e8f2]">
+														<CardContent className="p-4 sm:p-6 space-y-6">
+															<div className="!flex flex-col sm:flex-row !items-center justify-between gap-4">
+																<div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+																	<p className="flex items-center font-semibold gap-2 text-sm sm:text-base">
+																		<Mail className="w-4 sm:w-5 h-4 sm:h-5" />
 																		Company Email
 																	</p>
 																	<p className="text-sm font-semibold text-gray-900">
@@ -704,7 +704,7 @@ export default function EmployeeProfile() {
 																			onClick={handleGenerateCompanyEmail}
 																			disabled={generatingEmail}
 																			size={"sm"}
-																			className="rounded-full"
+																			className="rounded-full w-full sm:w-auto"
 																		>
 																			{generatingEmail ? "Generating..." : "Generate"}
 																		</Button>
@@ -712,7 +712,7 @@ export default function EmployeeProfile() {
 																</div>
 															</div>
 															<div>
-																<div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+																<div className="space-y-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 																	{employee.salary && (
 																		<div>
 																			<label className="text-sm font-medium text-[#848496]">
@@ -829,9 +829,9 @@ export default function EmployeeProfile() {
 																			<label className="text-sm font-medium text-[#848496]">
 																				Children
 																			</label>
-																			<div className="text-gray-800 font-medium grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+																			<div className="text-gray-800 font-medium grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
 																				{employee.children.map((child, idx) => (
-																					<span key={idx}>
+																					<span key={idx} className="text-sm">
 																						{child.name} ({child.gender})
 																					</span>
 																				))}
@@ -846,7 +846,7 @@ export default function EmployeeProfile() {
 																			<label className="text-sm font-medium text-[#848496]">
 																				Bank Accounts
 																			</label>
-																			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+																			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 																				{employee.bank_accounts.map((account, idx) => (
 																					<div key={idx}>
 																						{account.bank && (
@@ -887,24 +887,28 @@ export default function EmployeeProfile() {
 																	</h3>
 																	<div className="space-y-3">
 																		{employee.educations.map((education, idx) => (
-																			<div key={idx}>
-																				<div className="flex items-center justiify-start gap-8">
-																					<label className="text-xs text-[#848496]">
+																			<div key={idx} className="space-y-2">
+																				<div className="flex flex-col sm:flex-row sm:items-center justify-start gap-2 sm:gap-8">
+																					<label className="text-xs text-[#848496] sm:w-20">
 																						Institution
 																					</label>
-																					<p className="text-gray-800 font-medium capitalize">
+																					<p className="text-gray-800 font-medium capitalize text-sm">
 																						{education.institution}
 																					</p>
 																				</div>
-																				<div className="flex items-center justiify-start gap-8">
-																					<label className="text-xs text-[#848496]">Year</label>
-																					<p className="text-gray-800 font-medium capitalize">
+																				<div className="flex flex-col sm:flex-row sm:items-center justify-start gap-2 sm:gap-8">
+																					<label className="text-xs text-[#848496] sm:w-20">
+																						Year
+																					</label>
+																					<p className="text-gray-800 font-medium capitalize text-sm">
 																						{education.year}
 																					</p>
 																				</div>
-																				<div className="flex items-center justiify-start gap-8">
-																					<label className="text-xs text-[#848496]">Award</label>
-																					<p className="text-gray-800 font-medium capitalize">
+																				<div className="flex flex-col sm:flex-row sm:items-center justify-start gap-2 sm:gap-8">
+																					<label className="text-xs text-[#848496] sm:w-20">
+																						Award
+																					</label>
+																					<p className="text-gray-800 font-medium capitalize text-sm">
 																						{education.qualification?.name || ""}
 																					</p>
 																				</div>
@@ -919,9 +923,12 @@ export default function EmployeeProfile() {
 															{employee.work_experiences.length ? (
 																<div>
 																	<label className="text-xs text-[#848496]">Work Experience</label>
-																	<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+																	<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 																		{employee.work_experiences.map((exp, idx) => (
-																			<div key={idx} className="flex flex-col items-start gap-4">
+																			<div
+																				key={idx}
+																				className="flex flex-col items-start gap-2 p-3 border rounded-lg"
+																			>
 																				<label className="text-xs text-[#848496]">
 																					Company : {exp.company}
 																				</label>
@@ -954,6 +961,7 @@ export default function EmployeeProfile() {
 													</Card>
 												)}
 
+												{/* Other tab contents remain the same as they use responsive components */}
 												{activeTab === "discipline" && (
 													<EmployeeDiscipline
 														employeeId={employeeId}
@@ -965,10 +973,10 @@ export default function EmployeeProfile() {
 													<div className="space-y-6">
 														{/* Leave Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-8">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
 																<button
 																	onClick={() => setLeaveSubTab("balances")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		leaveSubTab === "balances"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -981,7 +989,7 @@ export default function EmployeeProfile() {
 																</button>
 																<button
 																	onClick={() => setLeaveSubTab("applications")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		leaveSubTab === "applications"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1012,14 +1020,15 @@ export default function EmployeeProfile() {
 													</div>
 												)}
 
+												{/* Other tabs (assets, payroll, documents, etc.) remain the same */}
 												{activeTab === "assets" && (
 													<div className="space-y-6">
 														{/* Asset Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-8">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
 																<button
 																	onClick={() => setAssetSubTab("requests")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		assetSubTab === "requests"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1032,7 +1041,7 @@ export default function EmployeeProfile() {
 																</button>
 																<button
 																	onClick={() => setAssetSubTab("allocations")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		assetSubTab === "allocations"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1082,10 +1091,10 @@ export default function EmployeeProfile() {
 													<div className="space-y-6">
 														{/* Documents Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-8">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
 																<button
 																	onClick={() => setDocumentsSubTab("contracts")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		documentsSubTab === "contracts"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1099,7 +1108,7 @@ export default function EmployeeProfile() {
 
 																<button
 																	onClick={() => setDocumentsSubTab("document_requests")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		documentsSubTab === "document_requests"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1112,7 +1121,7 @@ export default function EmployeeProfile() {
 																</button>
 																<button
 																	onClick={() => setDocumentsSubTab("signatures")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		documentsSubTab === "signatures"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1145,14 +1154,15 @@ export default function EmployeeProfile() {
 													</div>
 												)}
 
+												{/* Other tabs (spotchecks, penalties, shifts, performance, devices) remain the same */}
 												{activeTab === "spotchecks" && employee && (
 													<div className="space-y-6">
 														{/* Spotcheck Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-8">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
 																<button
 																	onClick={() => setSpotcheckSubTab("spotchecks")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		spotcheckSubTab === "spotchecks"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1168,7 +1178,7 @@ export default function EmployeeProfile() {
 																</button>
 																<button
 																	onClick={() => setSpotcheckSubTab("configs")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		spotcheckSubTab === "configs"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1192,13 +1202,13 @@ export default function EmployeeProfile() {
 
 														{spotcheckSubTab === "configs" && (
 															<div className="space-y-6">
-																<div className="flex items-center justify-between border-b pb-4">
-																	<h2 className="text-2xl font-bold text-gray-900">
+																<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+																	<h2 className="text-xl sm:text-2xl font-bold text-gray-900">
 																		Employee Spotcheck Configuration
 																	</h2>
 																	<Button
 																		onClick={handleCreateSpotcheckConfig}
-																		className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
+																		className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2 w-full sm:w-auto"
 																	>
 																		<Plus className="w-4 h-4" />
 																		<span>
@@ -1211,8 +1221,8 @@ export default function EmployeeProfile() {
 
 																{/* Current Configuration Display */}
 																{spotcheckSetting ? (
-																	<div className="bg-green-50 border border-green-200 rounded-lg p-6">
-																		<div className="flex items-center justify-between mb-4">
+																	<div className="bg-green-50 border border-green-200 rounded-lg p-4 sm:p-6">
+																		<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
 																			<div className="flex items-center space-x-3">
 																				<div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
 																					<Settings className="w-4 h-4 text-white" />
@@ -1226,7 +1236,7 @@ export default function EmployeeProfile() {
 																					variant="outline"
 																					size="sm"
 																					onClick={handleCreateSpotcheckConfig}
-																					className="text-green-700 border-green-300 hover:bg-green-100 bg-transparent"
+																					className="text-green-700 border-green-300 hover:bg-green-100 bg-transparent w-full sm:w-auto"
 																				>
 																					<Edit className="w-4 h-4 mr-1" />
 																					Edit
@@ -1235,7 +1245,7 @@ export default function EmployeeProfile() {
 																					variant="outline"
 																					size="sm"
 																					onClick={handleDeleteSpotcheckConfig}
-																					className="text-red-700 border-red-300 hover:bg-red-100 bg-transparent"
+																					className="text-red-700 border-red-300 hover:bg-red-100 bg-transparent w-full sm:w-auto"
 																					disabled={loadingSpotcheckConfig}
 																				>
 																					<Trash2 className="w-4 h-4 mr-1" />
@@ -1243,7 +1253,7 @@ export default function EmployeeProfile() {
 																				</Button>
 																			</div>
 																		</div>
-																		<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+																		<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 																			<div className="bg-white rounded-lg p-4 border border-green-200">
 																				<div className="text-sm text-gray-600 mb-1">
 																					Lower Threshold
@@ -1279,7 +1289,7 @@ export default function EmployeeProfile() {
 																		</div>
 																	</div>
 																) : (
-																	<div className="bg-red-50 border border-red-200 rounded-lg p-6">
+																	<div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6">
 																		<div className="flex items-center space-x-3">
 																			<div className="w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center">
 																				<Settings className="w-4 h-4 text-white" />
@@ -1303,19 +1313,19 @@ export default function EmployeeProfile() {
 																		open={isSpotcheckFormOpen}
 																		onOpenChange={setIsSpotcheckFormOpen}
 																	>
-																		<DialogContent className="sm:max-w-[600px] rounded-2xl border-0 shadow-2xl">
+																		<DialogContent className="sm:max-w-[600px] rounded-2xl border-0 shadow-2xl mx-4">
 																			<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-																				<DialogTitle className="text-2xl font-bold text-gray-900">
+																				<DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900">
 																					{spotcheckSetting
 																						? "Update Employee Spotcheck Configuration"
 																						: "Create Employee Spotcheck Configuration"}
 																				</DialogTitle>
-																				<DialogDescription className="text-gray-600 text-base">
+																				<DialogDescription className="text-gray-600 text-sm sm:text-base">
 																					Configure spotcheck settings for{" "}
 																					{employee?.name || "this employee"}.
 																				</DialogDescription>
 																			</DialogHeader>
-																			<div className="grid grid-cols-1 gap-6 py-6">
+																			<div className="grid grid-cols-1 gap-4 sm:gap-6 py-4 sm:py-6">
 																				<div className="space-y-3">
 																					<Label
 																						htmlFor="lower_threshold"
@@ -1439,7 +1449,7 @@ export default function EmployeeProfile() {
 																	open={isDeleteModalOpen}
 																	onOpenChange={setIsDeleteModalOpen}
 																>
-																	<DialogContent className="sm:max-w-[400px] rounded-2xl border-0 shadow-2xl">
+																	<DialogContent className="sm:max-w-[400px] rounded-2xl border-0 shadow-2xl mx-4">
 																		<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
 																			<DialogTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
 																				<div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -1502,10 +1512,10 @@ export default function EmployeeProfile() {
 												{activeTab === "devices" && employee && (
 													<div className="space-y-6">
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-8">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
 																<button
 																	onClick={() => setDevicesSubTab("devices")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		devicesSubTab === "devices"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"
@@ -1521,7 +1531,7 @@ export default function EmployeeProfile() {
 																</button>
 																<button
 																	onClick={() => setDevicesSubTab("logs")}
-																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
 																		devicesSubTab === "logs"
 																			? "text-gray-800 font-semibold"
 																			: "text-[#848496] hover:text-gray-800"

@@ -291,23 +291,26 @@ export default function EmployeeTypeManagement() {
 	}
 
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
+		<div className="flex flex-col w-full h-full p-4 sm:p-6 lg:p-8 bg-white rounded-lg min-h-screen">
 			<div className="w-full bg-white">
 				<CardHeader className="space-y-4 p-0 mb-6">
-					<CardTitle className="flex flex-row items-start md:items-center justify-between gap-4">
-						<h1 className="text-xl md:text-2xl font-bold">Employee Types</h1>
-						<Button onClick={handleCreate} className="">
-							<Plus className="h-4 w-4 md:mr-2" />
-							<span className="hidden md:inline">Add Employee Type</span>
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+						<CardTitle className="w-full">
+							<h1 className="text-xl sm:text-2xl font-bold">Employee Types</h1>
+						</CardTitle>
+						<Button onClick={handleCreate} className="w-full sm:w-auto">
+							<Plus className="h-4 w-4 mr-0 sm:mr-2" />
+							<span className="hidden sm:inline">Add Employee Type</span>
+							<span className="sm:hidden">Add New</span>
 						</Button>
-					</CardTitle>
-					<div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl">
+					</div>
+					<div className="relative w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
 							placeholder="Search employee types..."
 							value={searchTerm}
 							onChange={(e) => handleSearchChange(e.target.value)}
-							className="pl-10 text-sm"
+							className="pl-10 text-sm w-full"
 						/>
 					</div>
 				</CardHeader>
@@ -376,11 +379,11 @@ export default function EmployeeTypeManagement() {
 
 						return (
 							<div className="overflow-x-auto">
-								<div className="">
-									<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0 mt-6">
+								<div className="min-w-[600px] lg:min-w-0">
+									<Table className="w-full [&_th]:border-0 [&_td]:border-0 mt-6">
 										<TableHeader className="bg-gray-50/50">
 											<TableRow>
-												<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
+												<TableHead className="font-semibold text-gray-900 py-3 px-3 sm:px-4 text-xs sm:text-sm">
 													<div className="flex items-center gap-2">
 														<span>Name</span>
 														<Button
@@ -388,15 +391,16 @@ export default function EmployeeTypeManagement() {
 															size="sm"
 															variant={ordering === "name" ? "default" : "outline"}
 															type="button"
+															className="h-6 w-6 p-0 hidden xs:inline-flex"
 														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+															<Icon icon="hugeicons:sorting-02" className="!h-3 !w-3" />
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
+												<TableHead className="font-semibold text-gray-900 py-3 px-3 sm:px-4 text-xs sm:text-sm hidden sm:table-cell">
 													Description
 												</TableHead>
-												<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm">
+												<TableHead className="font-semibold text-gray-900 py-3 px-3 sm:px-4 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm">
 													Actions
 												</TableHead>
 											</TableRow>
@@ -405,14 +409,14 @@ export default function EmployeeTypeManagement() {
 											{list.length === 0 ? (
 												<TableRow>
 													<TableCell
-														colSpan={4}
+														colSpan={3}
 														className="text-center py-8 sm:py-12 text-gray-500 bg-white"
 													>
 														<div className="flex flex-col items-center gap-2">
 															<div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
 																<Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
 															</div>
-															<span className="text-sm sm:text-base">
+															<span className="text-sm sm:text-base text-center px-4">
 																{searchTerm
 																	? "No employee types found matching your search."
 																	: "No employee types found."}
@@ -437,12 +441,21 @@ export default function EmployeeTypeManagement() {
 														key={type.id}
 														className="bg-white hover:bg-gray-50 transition-colors duration-150"
 													>
-														<TableCell className="py-3 sm:py-4 px-4 sm:px-6">
+														<TableCell className="py-3 px-3 sm:px-4">
 															<div className="font-medium text-gray-900 text-sm sm:text-base">
 																{type.name}
 															</div>
+															<div className="text-gray-600 text-xs mt-1 sm:hidden">
+																{type.description ? (
+																	<span className="line-clamp-2">{type.description}</span>
+																) : (
+																	<span className="text-gray-400 italic">
+																		No description provided
+																	</span>
+																)}
+															</div>
 														</TableCell>
-														<TableCell className="py-3 sm:py-4 px-4 sm:px-6 max-w-xs sm:max-w-md">
+														<TableCell className="py-3 px-3 sm:px-4 max-w-xs sm:max-w-md hidden sm:table-cell">
 															<div className="text-gray-700 leading-relaxed text-xs sm:text-sm">
 																{type.description ? (
 																	<span className="line-clamp-2">{type.description}</span>
@@ -453,13 +466,13 @@ export default function EmployeeTypeManagement() {
 																)}
 															</div>
 														</TableCell>
-														<TableCell className="py-3 sm:py-4 px-4 sm:px-6 text-center">
+														<TableCell className="py-3 px-3 sm:px-4 text-center">
 															<DropdownMenu>
 																<DropdownMenuTrigger asChild>
 																	<Button
 																		variant="ghost"
 																		size="sm"
-																		className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 rounded-full"
+																		className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 rounded-full mx-auto"
 																		disabled={employeeTypeToDelete?.id === type.id}
 																	>
 																		{employeeTypeToDelete?.id === type.id ? (
@@ -467,6 +480,7 @@ export default function EmployeeTypeManagement() {
 																		) : (
 																			<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
 																		)}
+																		<span className="sr-only">Actions</span>
 																	</Button>
 																</DropdownMenuTrigger>
 																<DropdownMenuContent

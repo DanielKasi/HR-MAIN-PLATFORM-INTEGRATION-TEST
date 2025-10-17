@@ -118,71 +118,64 @@ export default function EmployeePage() {
 						</div>
 
 						{/* Charts Grid */}
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-							<div className="lg:col-span-2 xl:col-span-1">
-								<DepartmentTreeMap
-									data={data.employees_by_department}
-									title={"Employees per Department"}
-								/>
-							</div>
+						<div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+							{/* Department Distribution */}
+							<DepartmentTreeMap
+								data={data.employees_by_department}
+								title={"Employees per Department"}
+							/>
 
 							{/* Gender Distribution Pie Chart */}
-							<div className="lg:col-span-2 xl:col-span-1">
-								<DonutChart
-									title="Gender Distribution"
-									totalStr="Total Employees"
-									data={data.employees_by_gender}
-									colors={["#415180", "#0CA0F5"]}
-									label={"Gender"}
-									dataKey={"count"}
-									nameKey={"gender"}
-									labelList
-									donut
-								/>
-							</div>
+							<DonutChart
+								title="Gender Distribution"
+								totalStr="Total Employees"
+								data={data.employees_by_gender}
+								colors={["#0CA0F5", "#415180"]}
+								label={"Gender"}
+								dataKey={"count"}
+								nameKey={"gender"}
+								labelList
+								donut
+							/>
 
 							{/* Employee count by department */}
-							<div className="lg:col-span-2 xl:col-span-1">
-								<BarVChart
-									title={"Employee By department"}
-									label={""}
-									data={{
-										"2021-2025": [
-											{ year: "2021", count: 12 },
-											{ year: "2022", count: 20 },
-											{ year: "2023", count: 40 },
-											{ year: "2024", count: 30 },
-											{ year: "2025", count: 50 },
-										],
-									}}
-									dataKey={"count"}
-									nameKey={"year"}
-									colors={colors}
-									gap
-									rounded
-								/>
-							</div>
+							<BarVChart
+								title={"Employee By department"}
+								label={""}
+								data={{
+									"2021-2025": [
+										{ year: "2021", count: 12 },
+										{ year: "2022", count: 20 },
+										{ year: "2023", count: 40 },
+										{ year: "2024", count: 30 },
+										{ year: "2025", count: 50 },
+									],
+								}}
+								dataKey={"count"}
+								nameKey={"year"}
+								colors={colors}
+								gap
+								rounded
+							/>
 
 							{/* Work Type Comparison */}
-							<div className="lg:col-span-2 xl:col-span-1">
-								<BarVChart
-									title={"Work Type Distribution"}
-									label={""}
-									data={{
-										"2025": [
-											{ worktype: "full-time", count: 12 },
-											{ worktype: "part-time", count: 20 },
-											{ worktype: "internship", count: 4 },
-											{ worktype: "contract", count: 5 },
-										],
-									}}
-									dataKey={"count"}
-									nameKey={"worktype"}
-									colors={colors}
-									gap
-									rounded
-								/>
-							</div>
+							<BarVChart
+								title={"Work Type Distribution"}
+								label={""}
+								data={{
+									"2025": [
+										{ worktype: "full-time", count: 12 },
+										{ worktype: "part-time", count: 20 },
+										{ worktype: "internship", count: 4 },
+										{ worktype: "contract", count: 5 },
+									],
+								}}
+								dataKey={"count"}
+								nameKey={"worktype"}
+								colors={colors}
+								gap
+								rounded
+							/>
 						</div>
 					</div>
 					<ReportDialog
