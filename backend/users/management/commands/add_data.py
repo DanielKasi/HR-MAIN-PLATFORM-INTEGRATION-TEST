@@ -21,7 +21,7 @@ from institution.models import (
     InstitutionTaxRule,
     TaxRuleCategory,
 )
-from employee.models import Employee, QualificationAward
+from employee.models import Employee, QualificationAward, Education
 from settings.models import SystemDay
 from employee.tasks import send_employee_welcome_email
 from employee.views import generate_compliant_password
@@ -30,7 +30,7 @@ import uuid
 from datetime import time
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, create tax rules, schedule birthday emails, and generate usernames for users without usernames"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, create tax rules, schedule birthday emails, generate usernames for users without usernames, and sync education qualifications"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -67,6 +67,108 @@ class Command(BaseCommand):
         self.generate_usernames()
         self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
+        self.sync_education_qualifications()
+
+    def sync_education_qualifications(self):
+        """Update education records with null qualifications by assigning appropriate QualificationAwards."""
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Syncing education qualifications...\n")
+        )
+
+        # Define mapping of education names to qualification awards
+        qualification_mapping = {
+            'primary': 'PLE',
+            'o level': 'UCE',
+            'a level': 'UACE',
+            'diploma': 'Diploma',
+            'bachelor': "Bachelor's Degree",
+            'master': "Master's Degree",
+            'phd': 'PhD',
+            'doctor': 'PhD',
+            'bsc': "Bachelor's Degree",  # Map 'bsc' to Bachelor's Degree
+            'bgh': 'Diploma',           # Assume 'bgh' is a typo or unclear, map to Diploma
+            '1': "Bachelor's Degree",   # Map ambiguous '1' to Bachelor's Degree as fallback
+            'certificate': "Bachelor's Degree",  # Fallback for generic or unclear certificate-level entries
+        }
+
+        # Fetch all available QualificationAwards
+        qualification_awards = QualificationAward.objects.all()
+        awards_dict = {award.name: award for award in qualification_awards}
+
+        # Fetch education records with null qualifications
+        education_records = Education.objects.filter(qualification__isnull=True).select_related('employee__user')
+
+        if not education_records.exists():
+            self.stdout.write(
+                self.style.NOTICE("No education records found with null qualifications.")
+            )
+            return
+
+        updated_count = 0
+        skipped_count = 0
+        unmatched_records = []
+
+        for education in education_records:
+            try:
+                education_name = education.name.lower().strip() if education.name else ''
+                matched_award_name = None
+
+                # Find matching qualification award based on education name
+                for key, award_name in qualification_mapping.items():
+                    if key in education_name:
+                        matched_award_name = award_name
+                        break
+
+                # If no match found, use Bachelor's Degree as fallback
+                if not matched_award_name:
+                    matched_award_name = "Bachelor's Degree"
+
+                if matched_award_name and matched_award_name in awards_dict:
+                    education.qualification = awards_dict[matched_award_name]
+                    education.save()
+                    updated_count += 1
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f"  ✅ Updated education record for employee "
+                            f"'{education.employee.user.fullname if education.employee.user else 'Unnamed'}' "
+                            f"with qualification '{matched_award_name}'"
+                        )
+                    )
+                else:
+                    skipped_count += 1
+                    unmatched_records.append(
+                        f"Employee '{education.employee.user.fullname if education.employee.user else 'Unnamed'}': "
+                        f"No matching qualification for '{education.name}'"
+                    )
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  ⏭️ Skipped education record for employee "
+                            f"'{education.employee.user.fullname if education.employee.user else 'Unnamed'}': "
+                            f"No matching qualification found for '{education.name}'"
+                        )
+                    )
+
+            except Exception as e:
+                skipped_count += 1
+                unmatched_records.append(
+                    f"Employee '{education.employee.user.fullname if education.employee.user else 'Unnamed'}': "
+                    f"Error - {str(e)}"
+                )
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"  ❌ Failed to update education record for employee "
+                        f"'{education.employee.user.fullname if education.employee.user else 'Unnamed'}': {str(e)}"
+                    )
+                )
+
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Education Qualifications Summary"))
+        self.stdout.write(self.style.NOTICE(f"  ➕ Updated: {updated_count} education record(s)"))
+        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skipped_count} education record(s)"))
+        if unmatched_records:
+            self.stdout.write(self.style.WARNING("\nUnmatched education records:"))
+            for record in unmatched_records:
+                self.stdout.write(self.style.WARNING(f"  - {record}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Education qualifications synced successfully!"))
 
     def generate_usernames(self):
         """Generate usernames for CustomUser records without usernames."""
