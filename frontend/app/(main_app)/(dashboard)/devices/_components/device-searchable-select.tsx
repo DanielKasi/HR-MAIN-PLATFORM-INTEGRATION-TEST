@@ -88,7 +88,7 @@ export const DeviceSearchableSelect = memo(
 					fetchFirstPage={fetchFirstPage}
 					fetchFromUrl={fetchFromUrl}
 					getItemId={(device) => device.id}
-					getItemLabel={(device) => device.serial_number || ""}
+					getItemLabel={(device) => `${device.name} - ${device.serial_number || ""}`}
 					getItemValue={(device) => device.id.toString()}
 					selectedItems={selectedItems}
 					onSelect={handleSelect}

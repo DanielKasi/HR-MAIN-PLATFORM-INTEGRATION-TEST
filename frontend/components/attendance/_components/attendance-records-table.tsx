@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { IAttendance, IEmployee } from "@/types/types.utils";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import moment from "moment";
 
 interface AttendanceRecordsTableProps {
 	selectedDate?: string;
@@ -38,8 +39,8 @@ export function AttendanceRecordsTable({
 	const formatTime = (timeString: string | null) => {
 		if (!timeString) return "—";
 		try {
-			const date = new Date(timeString);
-			return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+			const time = moment(timeString, "HH:mm:ss");
+			return time.format("HH:mm:ss");
 		} catch {
 			return timeString;
 		}

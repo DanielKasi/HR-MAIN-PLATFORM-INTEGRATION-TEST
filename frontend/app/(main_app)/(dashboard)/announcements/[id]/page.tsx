@@ -82,16 +82,18 @@ export default function AnnouncementDetailsPage() {
 
 	return (
 		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
-			<div className="flex justify-between items-center">
+			<div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
 				<div className="flex items-center justify-start gap-4">
 					<Link href="/announcements">
 						<Button variant="outline" className="rounded-full aspect-square h-10 w-10">
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
 					</Link>
-					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">{announcement.title}</h1>
+					<h1 className="text-xl lg:text-2xlfont-semibold max-w-full text-wrap">
+						{announcement.title}
+					</h1>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex justify-start items-start  lg:items-center gap-2">
 					<Button
 						variant="outline"
 						className="rounded-xl"
@@ -111,24 +113,18 @@ export default function AnnouncementDetailsPage() {
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+			<div className="">
 				<div className="space-y-4">
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+					<div className="bg-white  border-gray-200 shadow-sm p-6">
 						<h2 className="text-lg font-medium mb-4">Details</h2>
 						<div className="space-y-3 text-sm text-gray-600">
-							<div className="flex justify-between">
-								<span>Type</span>
-								<span className="font-medium capitalize">
-									{announcement.content_type_name || "Unknown"}
-								</span>
-							</div>
-							<div className="flex justify-between">
+							<div className="flex justify-between lg:justify-start gap-6">
 								<span>Requires Acknowledgment</span>
 								<Badge variant={announcement.requires_acknowledgment ? "default" : "secondary"}>
 									{announcement.requires_acknowledgment ? "Yes" : "No"}
 								</Badge>
 							</div>
-							<div className="flex justify-between">
+							<div className="flex justify-between lg:justify-start gap-6">
 								<span>Created</span>
 								<span className="font-medium">{announcement.created_at?.split("T")[0]}</span>
 							</div>
@@ -137,7 +133,7 @@ export default function AnnouncementDetailsPage() {
 				</div>
 
 				<div className="space-y-4">
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+					<div className="bg-white border-gray-200 shadow-sm p-6">
 						<h2 className="text-lg font-medium mb-4">Content</h2>
 						<p className="text-sm text-gray-600 whitespace-pre-wrap">
 							{announcement.content || "No content"}
@@ -146,7 +142,7 @@ export default function AnnouncementDetailsPage() {
 				</div>
 
 				<div className="space-y-4">
-					<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+					<div className="bg-white border-gray-200 shadow-sm p-6">
 						<h2 className="text-lg font-medium mb-4">
 							Targets ({announcement.target_employees.length})
 						</h2>

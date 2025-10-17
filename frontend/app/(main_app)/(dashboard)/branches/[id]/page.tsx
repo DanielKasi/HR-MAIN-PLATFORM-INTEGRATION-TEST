@@ -44,16 +44,6 @@ export default function BranchDetailPage() {
 	const [addingDayId, setAddingDayId] = useState<number | null>(null);
 	const [removingDayId, setRemovingDayId] = useState<number | null>(null);
 
-	// const defaultDays: IBranchDay[] = [
-	//   {day_id: 0, id:1, day_name: "Monday", day_code: "", day_type: ""},
-	//   {day_id: 0,id:2, day_name: "Tuesday", day_code: "", day_type: ""},
-	//   {day_id: 0, day_name: "Wednesday", day_code: "", day_type: ""},
-	//   {day_id: 0, day_name: "Thursday", day_code: "", day_type: ""},
-	//   {day_id: 0, day_name: "Friday", day_code: "", day_type: ""},
-	//   {day_id: 0, day_name: "Saturday", day_code: "", day_type: ""},
-	//   {day_id: 0, day_name: "Sunday", day_code: "", day_type: ""},
-	// ];
-
 	const fetchBranch = async () => {
 		setIsLoading(true);
 		try {

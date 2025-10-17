@@ -24,6 +24,8 @@ import BarHChart from "../analytics/_components/barh.chart";
 import colors from "../analytics/_components/colors";
 import DonutChart from "@/app/(main_app)/(dashboard)/analytics/_components/pie.chart";
 import DepartmentTreeMap from "@/app/(main_app)/(dashboard)/analytics/employees/department.treemap";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function Dashboard() {
 	const [data, setData] = useState<IInstitutionAnalytics | null>(null);
@@ -115,12 +117,14 @@ export default function Dashboard() {
 					</h1>
 
 					<div className="flex items-center gap-4">
-						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
-							<Link href="" className="flex items-center justify-start gap-4">
-								<Icon icon="hugeicons:location-user-02" className="!w-6 !h-6" />
-								<span className="hidden lg:inline">Send Spotcheck</span>
-							</Link>
-						</Button>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_SEND_SPOTCHECK}>
+							<Button variant="outline" size="sm" className="rounded-xl flex items-center">
+								<Link href="" className="flex items-center justify-start gap-4">
+									<Icon icon="hugeicons:location-user-02" className="!w-6 !h-6" />
+									<span className="hidden lg:inline">Send Spotcheck</span>
+								</Link>
+							</Button>
+						</ProtectedComponent>
 						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
 							<Link
 								href={"/events-holidays/events/add"}

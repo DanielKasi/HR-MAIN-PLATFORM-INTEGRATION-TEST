@@ -55,6 +55,7 @@ import { PERMISSION_CODES } from "@/constants";
 import { fetchUpToDateInstitution } from "@/store/auth/actions";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { BankAccountSearchableSelect } from "@/components/selects/bank-accounts-select";
+import { showErrorToast } from "@/lib/utils";
 
 export default function BranchesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
@@ -70,8 +71,8 @@ export default function BranchesPage() {
 	const [newBranch, setNewBranch] = useState<BranchFormData>({
 		branch_name: "",
 		branch_location: "",
-		branch_latitude: "",
-		branch_longitude: "",
+		branch_latitude: null,
+		branch_longitude: null,
 		branch_phone_number: "",
 		branch_email: "",
 		branch_opening_time: "",
@@ -124,8 +125,8 @@ export default function BranchesPage() {
 		setNewBranch({
 			branch_name: editBranch?.branch_name || "",
 			branch_location: editBranch?.branch_location || "",
-			branch_latitude: editBranch?.branch_latitude || "",
-			branch_longitude: editBranch?.branch_longitude || "",
+			branch_latitude: editBranch?.branch_latitude || null,
+			branch_longitude: editBranch?.branch_longitude || null,
 			branch_phone_number: editBranch?.branch_phone_number || "",
 			branch_email: editBranch?.branch_email || "",
 			branch_opening_time: editBranch?.branch_opening_time || "",
@@ -139,8 +140,8 @@ export default function BranchesPage() {
 		setNewBranch({
 			branch_name: "",
 			branch_location: "",
-			branch_latitude: "",
-			branch_longitude: "",
+			branch_latitude: null,
+			branch_longitude: null,
 			branch_phone_number: "",
 			branch_email: "",
 			branch_opening_time: "",
@@ -172,8 +173,6 @@ export default function BranchesPage() {
 				institution: selectedInstitution.id,
 				paying_bank_account: newBranch.paying_bank_account || undefined,
 			};
-			console.log("\n\n Sent branch data : ", branchData);
-			// return;
 
 			const response = await apiRequest.post("institution/branch/", branchData);
 
@@ -182,8 +181,8 @@ export default function BranchesPage() {
 				setNewBranch({
 					branch_name: "",
 					branch_location: "",
-					branch_latitude: "",
-					branch_longitude: "",
+					branch_latitude: null,
+					branch_longitude: null,
 					branch_phone_number: "",
 					branch_email: "",
 					branch_opening_time: "",
@@ -199,7 +198,10 @@ export default function BranchesPage() {
 				setErrorMessage("Failed to add branch");
 			}
 		} catch (error: any) {
-			toast.error("An unexpected error occurred while adding the branch.");
+			showErrorToast({
+				error,
+				defaultMessage: "An unexpected error occurred while adding the branch",
+			});
 		} finally {
 			setIsAddDialogOpen(false);
 		}
@@ -208,7 +210,11 @@ export default function BranchesPage() {
 	const handleEditBranch = async () => {
 		if (!editBranch) return;
 		try {
-			const response = await apiRequest.patch(`institution/branch/${editBranch.id}/`, newBranch);
+			const response = await apiRequest.patch(`institution/branch/${editBranch.id}/`, {
+				...newBranch,
+				branch_longitude: newBranch.branch_longitude || null,
+				branch_latitude: newBranch.branch_latitude || null,
+			} as BranchFormData);
 
 			if (response.status === 200) {
 				setIsAddDialogOpen(false);
@@ -270,15 +276,15 @@ export default function BranchesPage() {
 							setEditBranch({
 								...editBranch,
 								branch_location: address,
-								branch_latitude: latitude.toString(),
-								branch_longitude: longitude.toString(),
+								branch_latitude: latitude || null,
+								branch_longitude: longitude || null,
 							});
 						} else {
 							setNewBranch((prev) => ({
 								...prev,
 								branch_location: address,
-								branch_latitude: latitude.toString(),
-								branch_longitude: longitude.toString(),
+								branch_latitude: latitude || null,
+								branch_longitude: longitude || null,
 							}));
 						}
 						toast.info("Your current location has been set.");
@@ -585,8 +591,8 @@ export default function BranchesPage() {
 										onCoordinatesChange={(lat, lon) =>
 											setNewBranch((prev) => ({
 												...prev,
-												branch_latitude: lat,
-												branch_longitude: lon,
+												branch_latitude: Number(lat) || null,
+												branch_longitude: Number(lon) || null,
 											}))
 										}
 									/>

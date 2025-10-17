@@ -113,38 +113,39 @@ export default function LoginPage() {
 	}, [OTPSentMessage]);
 
 	const getUsernameValue = () => {
-		switch (authMethod) {
-			case "email":
-				return email.trim();
-			case "username":
-				return username.trim();
-			case "phone":
-				return phoneData.isValid ? `${phoneData.countryCode}${phoneData.phoneNumber}` : "";
-			default:
-				return "";
-		}
+		return username.trim();
+		// switch (authMethod) {
+		// 	case "email":
+		// 		return email.trim();
+		// 	case "username":
+		// 		return username.trim();
+		// 	case "phone":
+		// 		return phoneData.isValid ? `${phoneData.countryCode}${phoneData.phoneNumber}` : "";
+		// 	default:
+		// 		return "";
+		// }
 	};
 
 	const isFormValid = () => {
 		if (!password.trim()) return false;
-
-		switch (authMethod) {
-			case "email":
-				return email.trim() !== "";
-			case "username":
-				return username.trim() !== "";
-			case "phone":
-				return phoneData.isValid;
-			default:
-				return false;
-		}
+		return username.trim() !== "";
+		// switch (authMethod) {
+		// 	case "email":
+		// 		return email.trim() !== "";
+		// 	case "username":
+		// 		return username.trim() !== "";
+		// 	case "phone":
+		// 		return phoneData.isValid;
+		// 	default:
+		// 		return false;
+		// }
 	};
 
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		if (!isFormValid()) {
-			setErrorMessage(`You need to provide a password and ${authMethod}!`);
+			setErrorMessage(`You need to provide valid credentials !`);
 			return;
 		}
 
@@ -223,7 +224,7 @@ export default function LoginPage() {
 								)}
 							</p>
 						)}
-
+						{/* 
 						<Tabs
 							value={authMethod}
 							onValueChange={(value) => setAuthMethod(value as AuthMethod)}
@@ -257,11 +258,11 @@ export default function LoginPage() {
 
 							<TabsContent value="username" className="space-y-2">
 								<div className="grid gap-2 space-y-1">
-									<Label htmlFor="username">Username</Label>
+									<Label htmlFor="username">Email, Username or Phone Number</Label>
 									<Input
 										required
 										id="username"
-										placeholder="Enter your username"
+										placeholder="Enter your username, email or Phone number"
 										type="text"
 										value={username}
 										onChange={(e) => setUsername(e.target.value)}
@@ -278,7 +279,19 @@ export default function LoginPage() {
 									onChange={setPhoneData}
 								/>
 							</TabsContent>
-						</Tabs>
+						</Tabs> */}
+
+						<div className="grid gap-2 space-y-1">
+							<Label htmlFor="username">Email, Username or Phone Number</Label>
+							<Input
+								required
+								id="username"
+								placeholder="Enter your username, email or Phone number"
+								type="text"
+								value={username}
+								onChange={(e) => setUsername(e.target.value)}
+							/>
+						</div>
 
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between">
