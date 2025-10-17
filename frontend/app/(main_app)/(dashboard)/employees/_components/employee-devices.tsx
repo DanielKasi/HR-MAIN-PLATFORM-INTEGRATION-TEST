@@ -7,14 +7,7 @@ import { DEVICES_API } from "@/lib/api/devices.utils";
 import { IDevice } from "@/types/devices.types";
 import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-} from "@/components/ui/dialog";
+
 import { DeviceEmployeeAttachmentFormDialog } from "../../devices/_components/device-employee-attachment-form-dialog";
 import { IEmployee } from "@/types/types.utils";
 import { getPaginatedFromUrl } from "@/lib/api/_api.utils";
@@ -27,6 +20,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 interface EmployeeDevicesProps {
 	employee: IEmployee;
@@ -162,10 +157,12 @@ export default function EmployeeDevices({ employee }: EmployeeDevicesProps) {
 	return (
 		<div>
 			<div className="flex justify-end mb-4">
-				<Button onClick={() => setShowAttachmentDialog(true)} className="rounded-2xl">
-					<Plus className="h-4 w-4 mr-2" />
-					Attach to Device
-				</Button>
+				<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ATTACH_EMPLOYEES_TO_DEVICE}>
+					<Button onClick={() => setShowAttachmentDialog(true)} className="rounded-2xl">
+						<Plus className="h-4 w-4 mr-2" />
+						Attach to Device
+					</Button>
+				</ProtectedComponent>
 			</div>
 			<PaginatedTable<IDevice>
 				fetchFirstPage={async () =>

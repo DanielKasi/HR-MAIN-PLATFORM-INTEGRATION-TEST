@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
 import { showErrorToast, spotcheckAPI } from "@/lib/utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 interface Props {
 	employee: IEmployee;
@@ -48,9 +50,11 @@ export default function EmployeeSpotchecks({ employee }: Props) {
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<h3 className="text-lg font-semibold">Spotchecks</h3>
-				<Button className="rounded-full " onClick={() => setOpen(true)}>
-					Send Spotcheck
-				</Button>
+				<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_SEND_SPOTCHECK}>
+					<Button className="rounded-full " onClick={() => setOpen(true)}>
+						Send Spotcheck
+					</Button>
+				</ProtectedComponent>
 			</div>
 
 			<SpotchecksTable scope={{ type: "employee", employee }} refreshTableRef={refreshRef} />

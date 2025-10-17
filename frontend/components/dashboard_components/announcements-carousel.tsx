@@ -19,28 +19,28 @@ const AnnouncementCarousel: React.FC = () => {
 		[],
 	);
 	const [currentIndex, setCurrentIndex] = useState(0);
-	const [loading, setLoading] = useState(true);
+	const [loading, setLoading] = useState(false);
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
 
 	useEffect(() => {
-		const fetchAcknowlegmentAnnouncements = async () => {
-			if (!currentInstitution) return;
-			try {
-				setLoading(true);
-				const response = await ACKNOWLEDGMENTS_API.getPaginated({
-					page: 1,
-				});
-				setAcknowledgmentAnnouncements(response.results);
-			} catch (err) {
-				showErrorToast({ error: err, defaultMessage: "Failed to fetch announcements" });
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		fetchAcknowlegmentAnnouncements();
 	}, [currentInstitution]);
+
+	const fetchAcknowlegmentAnnouncements = async () => {
+		if (!currentInstitution) return;
+		try {
+			setLoading(true);
+			const response = await ACKNOWLEDGMENTS_API.getPaginated({
+				page: 1,
+			});
+			setAcknowledgmentAnnouncements(response.results);
+		} catch (err) {
+			showErrorToast({ error: err, defaultMessage: "Failed to fetch announcements" });
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	// Auto-cycle announcements every 10 seconds
 	useEffect(() => {
@@ -122,9 +122,7 @@ const AnnouncementCarousel: React.FC = () => {
 								<div className="w-full flex flex-col gap-2">
 									<div className="min-h-[4rem] mb-auto">
 										<p className="text-base text-gray-600 line-clamp-6">
-											{/* {acknowledgement.announcement.content} */}
-											Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis rhoncus mi.
-											Etiam
+											{acknowledgement.announcement.content}
 										</p>
 									</div>
 									<Link

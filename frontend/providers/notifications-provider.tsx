@@ -101,32 +101,32 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	}, []);
 
 	// Show browser notification for a single new notification
-	const showSingleBrowserNotification = useCallback(
-		async (notification: INotification) => {
-			if (typeof Notification === "undefined") return;
+	// const showSingleBrowserNotification = useCallback(
+	// 	async (notification: INotification) => {
+	// 		if (typeof Notification === "undefined") return;
 
-			if (Notification.permission === "default") {
-				await requestNotificationPermission();
-			}
+	// 		if (Notification.permission === "default") {
+	// 			await requestNotificationPermission();
+	// 		}
 
-			if (Notification.permission !== "granted" || !serviceWorkerRef.current) {
-				return;
-			}
+	// 		if (Notification.permission !== "granted" || !serviceWorkerRef.current) {
+	// 			return;
+	// 		}
 
-			const url = `${getNotificationPath(notification)}?notificationId=${notification.id}`;
-			try {
-				await serviceWorkerRef.current.showNotification("Alert", {
-					body: notification.message || "",
-					icon: "/icon.PNG",
-					tag: notification.id.toString(),
-					data: { url, notificationId: notification.id },
-				});
-			} catch (err) {
-				console.warn("Failed to show notification", err);
-			}
-		},
-		[requestNotificationPermission],
-	);
+	// 		const url = `${getNotificationPath(notification)}?notificationId=${notification.id}`;
+	// 		try {
+	// 			await serviceWorkerRef.current.showNotification("Alert", {
+	// 				body: notification.message || "",
+	// 				icon: "/icon.PNG",
+	// 				tag: notification.id.toString(),
+	// 				data: { url, notificationId: notification.id },
+	// 			});
+	// 		} catch (err) {
+	// 			console.warn("Failed to show notification", err);
+	// 		}
+	// 	},
+	// 	[requestNotificationPermission],
+	// );
 
 	// Mark as read API call
 	const markNotificationAsRead = useCallback(
@@ -163,11 +163,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 					} else {
 						dispatch(receiveNotification(notif));
 					}
-
-					// Only show browser notification if it's truly new (and not an announcement?)
-					if (!notif.model_name?.toLowerCase().includes("announcement")) {
-						showSingleBrowserNotification(notif);
-					}
+					// if (!notif.model_name?.toLowerCase().includes("announcement")) {
+					// 	showSingleBrowserNotification(notif);
+					// }
 				}
 			}
 		} catch (error) {
@@ -178,7 +176,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		} finally {
 			isFetchingRef.current = false;
 		}
-	}, [apiUrl, dispatch, showSingleBrowserNotification]);
+	}, [apiUrl, dispatch]);
 
 	return <>{children}</>;
 };

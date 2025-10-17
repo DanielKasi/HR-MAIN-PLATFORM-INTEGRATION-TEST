@@ -9,7 +9,7 @@ import { MAIN_DOMAIN_URL } from "@/constants";
 const axiosJsonInstance = axios.create({
 	baseURL: process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`,
 	headers: {},
-	timeout: 30000,
+	timeout: 40000,
 	validateStatus: (status) => status !== 401 && status !== 403,
 });
 

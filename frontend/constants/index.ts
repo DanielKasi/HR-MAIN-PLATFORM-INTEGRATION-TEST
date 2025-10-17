@@ -81,6 +81,17 @@ export enum PERMISSION_CODES {
 	CAN_TERMINATE_EMPLOYEES = "can_terminate_employees",
 	CAN_EXPORT_EMPLOYEES = "can_export_employees_to_excel",
 
+	CAN_GENERATE_EMPLOYEE_COMPANY_EMAIL = "can_generate_employee_company_email",
+	CAN_VIEW_EMPLOYEE_SPOTCHECK_CONFIGURATIONS = "can_view_employee_spotcheck_configurations",
+	CAN_EDIT_EMPLOYEE_SPOTCHECK_CONFIGURATIONS = "can_edit_employee_spotcheck_configurations",
+	CAN_DELETE_EMPLOYEE_SPOTCHECK_CONFIGURATIONS = "can_delete_employee_spotcheck_configurations",
+	CAN_GENERATE_DOCUMENT = "can_generate_document",
+	CAN_SEND_SPOTCHECK = "can_send_spotcheck",
+	CAN_CREATE_EMPLOYEE_BONUS_POINTS = "can_create_employee_bonus_point",
+	CAN_EDIT_EMPLOYEE_BONUS_POINTS = "can_edit_employee_bonus_point",
+	CAN_DELETE_EMPLOYEE_BONUS_POINTS = "can_delete_employee_bonus_point",
+	CAN_ATTACH_EMPLOYEES_TO_DEVICE = "can_attach_employees_to_device",
+
 	// Document requests
 
 	CAN_VIEW_DOCUMENT_REQUESTS = "can_view_document_requests",
