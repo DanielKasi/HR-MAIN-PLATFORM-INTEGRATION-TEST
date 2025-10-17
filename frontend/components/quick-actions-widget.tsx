@@ -156,7 +156,7 @@ const QuickActionsWidget = () => {
 									onClick={() => handleActionClick(action)}
 									onMouseEnter={() => setHoveredAction(action.id)}
 									onMouseLeave={() => setHoveredAction(null)}
-									className={`action-circle relative h-10 w-10 rounded-full ${action.bgColor} text-white shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-110 flex items-center justify-center pointer-events-auto`}
+									className={`action-circle relative h-10 w-10 rounded-full bg-primary text-white shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-110 flex items-center justify-center pointer-events-auto`}
 								>
 									<Icon icon={action.icon} width="20" height="20" />
 								</button>
@@ -180,7 +180,7 @@ const QuickActionsWidget = () => {
 							onClick={() => setIsOpen(!isOpen)}
 							onMouseEnter={() => setShowTooltip(true)}
 							onMouseLeave={() => setShowTooltip(false)}
-							className={`pointer-events-auto relative bg-black hover:bg-gray-900 text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden button-rotate ${
+							className={`pointer-events-auto relative text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden button-rotate ${
 								isOpen ? "open" : ""
 							}`}
 							style={{ width: "52px", height: "52px" }}

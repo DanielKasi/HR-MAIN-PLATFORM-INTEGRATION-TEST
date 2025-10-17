@@ -51,7 +51,7 @@ export const BankAccountSearchableSelect = memo(
 				if (!currentInstitution) {
 					throw new Error("No institution found!");
 				}
-				return await bankAccountsAPI.getAll(query?.search);
+				return await bankAccountsAPI.getAll(query);
 			},
 			[currentInstitution],
 		);
