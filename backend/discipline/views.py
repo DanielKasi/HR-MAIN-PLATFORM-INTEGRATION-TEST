@@ -1,20 +1,16 @@
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
-from django.db.models import Q
+from drf_spectacular.utils import extend_schema
 from utilities.sortable_api import SortableAPIMixin
 from .models import DisciplineType, DisciplinaryAction
 from .serializers import DisciplinaryActionSerializer, DisciplineTypeSerializer
 from utilities.pagination import CustomPageNumberPagination
 from institution.models import Institution
 from django.db import transaction
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 
 
@@ -27,7 +23,7 @@ class DisciplinaryActionAPIView(APIView, SortableAPIMixin):
         responses=DisciplinaryActionSerializer(many=True),
         summary="List all disciplinary actions",
     )
-    @method_decorator(permission_required('can_view_discipline_cases', raise_exception=True))
+    # @method_decorator(permission_required('can_view_discipline_cases', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id", None)
@@ -81,7 +77,7 @@ class DisciplinaryActionAPIView(APIView, SortableAPIMixin):
         responses=DisciplinaryActionSerializer,
         summary="Create a new disciplinary action",
     )
-    @method_decorator(permission_required('can_create_discipline_cases', raise_exception=True))
+    # @method_decorator(permission_required('can_create_discipline_cases', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = DisciplinaryActionSerializer(data=request.data)
@@ -98,7 +94,7 @@ class DisciplinaryActionDetailAPIView(APIView):
         responses=DisciplinaryActionSerializer,
         summary="Retrieve a disciplinary action by ID",
     )
-    @method_decorator(permission_required('can_view_discipline_cases', raise_exception=True))
+    # @method_decorator(permission_required('can_view_discipline_cases', raise_exception=True))
     def get(self, request, pk):
         action = get_object_or_404(DisciplinaryAction, pk=pk)
         serializer = DisciplinaryActionSerializer(action)
@@ -109,7 +105,7 @@ class DisciplinaryActionDetailAPIView(APIView):
         responses=DisciplinaryActionSerializer,
         summary="Update a disciplinary action (partial)",
     )
-    @method_decorator(permission_required('can_edit_discipline_cases', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_discipline_cases', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         action = get_object_or_404(DisciplinaryAction, pk=pk)
@@ -124,7 +120,7 @@ class DisciplinaryActionDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a disciplinary action")
-    @method_decorator(permission_required('can_delete_discipline_cases', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_discipline_cases', raise_exception=True))
     def delete(self, request, pk):
         action = get_object_or_404(DisciplinaryAction, pk=pk)
         action.approval_status = 'under_deletion'

@@ -6,7 +6,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from django.db import transaction
-from rest_framework import serializers
 from django.db.utils import IntegrityError
 from django.db.models import Max
 from drf_spectacular.utils import extend_schema, OpenApiResponse
@@ -38,7 +37,7 @@ from institution.models import Institution
 from django.db.models import Q, Count
 from django.db import transaction
 from utilities.sortable_api import SortableAPIMixin
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 
 
@@ -54,7 +53,7 @@ class OnBoardingListAPI(APIView, SortableAPIMixin):
         summary="Create Onboarding Record",
         tags=["Onboarding"],
     )
-    @method_decorator(permission_required('can_create_onboarding_records', raise_exception=True))
+    # @method_decorator(permission_required('can_create_onboarding_records', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = OnBoardingSerializer(data=request.data)
@@ -69,7 +68,7 @@ class OnBoardingListAPI(APIView, SortableAPIMixin):
         summary="List Onboarding Records by Institution",
         tags=["Onboarding"],
     )
-    @method_decorator(permission_required('can_view_onboarding_records', raise_exception=True))
+    # @method_decorator(permission_required('can_view_onboarding_records', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         status = request.query_params.get('status', None)
@@ -107,7 +106,7 @@ class OnBoardingDetailAPI(APIView):
         summary="Get Onboarding Record",
         tags=["Onboarding"],
     )
-    @method_decorator(permission_required('can_view_onboarding_records', raise_exception=True))
+    # @method_decorator(permission_required('can_view_onboarding_records', raise_exception=True))
     def get(self, request, onboarding_id):
         try:
             onboarding = OnBoarding.objects.get(id=onboarding_id)
@@ -122,7 +121,7 @@ class OnBoardingDetailAPI(APIView):
         summary="Update Onboarding Record",
         tags=["Onboarding"],
     )
-    @method_decorator(permission_required('can_edit_onboarding_records', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_onboarding_records', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, onboarding_id):
         try:
@@ -256,7 +255,7 @@ class OffboardingStageListCreateView(APIView, SortableAPIMixin):
         summary="Create Offboarding Stage",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_create_offboarding_stages', raise_exception=True))
+    # @method_decorator(permission_required('can_create_offboarding_stages', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = OffboardingStageSerializer(
@@ -273,7 +272,7 @@ class OffboardingStageListCreateView(APIView, SortableAPIMixin):
         summary="List Offboarding Stages",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_offboarding_stages', raise_exception=True))
+    # @method_decorator(permission_required('can_view_offboarding_stages', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get('search', None)
         user = request.user
@@ -312,7 +311,7 @@ class OffboardingStageDetailView(APIView):
         summary="Get Offboarding Stage",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_offboarding_stages', raise_exception=True))
+    # @method_decorator(permission_required('can_view_offboarding_stages', raise_exception=True))
     def get(self, request, stage_id):
         try:
             stage = OffboardingStage.objects.get(id=stage_id)
@@ -327,7 +326,7 @@ class OffboardingStageDetailView(APIView):
         summary="Update Offboarding Stage",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_edit_offboarding_stages', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_offboarding_stages', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, stage_id):
         try:
@@ -349,7 +348,7 @@ class OffboardingStageDetailView(APIView):
         summary="Delete Offboarding Stage",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_delete_offboarding_stages', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_offboarding_stages', raise_exception=True))
     def delete(self, request, stage_id):
         try:
             stage = OffboardingStage.objects.get(id=stage_id)
@@ -371,7 +370,7 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView, SortableAPIMixin
         summary="Create Institution Employee Separation Type",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_create_separation_types', raise_exception=True))
+    # @method_decorator(permission_required('can_create_separation_types', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = InstitutionEmployeeSeparationTypesSerializer(
@@ -388,7 +387,7 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView, SortableAPIMixin
         summary="List Institution Employee Separation Types",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_separation_types', raise_exception=True))
+    # @method_decorator(permission_required('can_view_separation_types', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get('search', None)
         user = request.user
@@ -428,7 +427,7 @@ class InstitutionEmployeeSeparationTypesDetailView(APIView):
         summary="Get Institution Employee Separation Type",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_separation_types', raise_exception=True))
+    # @method_decorator(permission_required('can_view_separation_types', raise_exception=True))
     def get(self, request, separation_type_id):
         try:
             separation_type = InstitutionEmployeeSeparationTypes.objects.get(
@@ -445,7 +444,7 @@ class InstitutionEmployeeSeparationTypesDetailView(APIView):
         summary="Update Institution Employee Separation Type",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_edit_separation_types', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_separation_types', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, separation_type_id):
         try:
@@ -469,7 +468,7 @@ class InstitutionEmployeeSeparationTypesDetailView(APIView):
         summary="Delete Institution Employee Separation Type",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_delete_separation_types', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_separation_types', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, separation_type_id):
         try:
@@ -494,7 +493,7 @@ class InstitutionSeparationPolicyListCreateView(APIView, SortableAPIMixin):
         summary="Create Institution Separation Policy",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_create_separation_policies', raise_exception=True))
+    # @method_decorator(permission_required('can_create_separation_policies', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = InstitutionSeparationPolicySerializer(
@@ -511,7 +510,7 @@ class InstitutionSeparationPolicyListCreateView(APIView, SortableAPIMixin):
         summary="List Institution Separation Policies",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_separation_policies', raise_exception=True))
+    # @method_decorator(permission_required('can_view_separation_policies', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get('search', None)
         user = request.user
@@ -551,7 +550,7 @@ class InstitutionSeparationPolicyDetailView(APIView):
         summary="Get Institution Separation Policy",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_separation_policies', raise_exception=True))
+    # @method_decorator(permission_required('can_view_separation_policies', raise_exception=True))
     def get(self, request, policy_id):
         try:
             policy = InstitutionSeparationPolicy.objects.get(id=policy_id)
@@ -566,7 +565,7 @@ class InstitutionSeparationPolicyDetailView(APIView):
         summary="Update Institution Separation Policy",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_edit_separation_policies', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_separation_policies', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, policy_id):
         try:
@@ -588,7 +587,7 @@ class InstitutionSeparationPolicyDetailView(APIView):
         summary="Delete Institution Separation Policy",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_delete_separation_policies', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_separation_policies', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, policy_id):
         try:
@@ -610,7 +609,7 @@ class ResignationRequestListCreateView(APIView, SortableAPIMixin):
         summary="Create Resignation Request",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_create_resignation_requests', raise_exception=True))
+    # @method_decorator(permission_required('can_create_resignation_requests', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         employee = getattr(request.user, "employee", None)
@@ -639,7 +638,7 @@ class ResignationRequestListCreateView(APIView, SortableAPIMixin):
         summary="List Resignation Requests",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_resignation_requests', raise_exception=True))
+    # @method_decorator(permission_required('can_view_resignation_requests', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
@@ -674,7 +673,7 @@ class ResignationRequestDetailView(APIView):
         summary="Get Resignation Request",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_resignation_requests', raise_exception=True))
+    # @method_decorator(permission_required('can_view_resignation_requests', raise_exception=True))
     def get(self, request, resignation_request_id):
         try:
             resignation_request = ResignationRequest.objects.get(
@@ -691,7 +690,7 @@ class ResignationRequestDetailView(APIView):
         summary="Update Resignation Request",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_edit_resignation_requests', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_resignation_requests', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, resignation_request_id):
         try:
@@ -715,7 +714,7 @@ class ResignationRequestDetailView(APIView):
         summary="Delete Resignation Request",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_delete_resignation_requests', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_resignation_requests', raise_exception=True))
     def delete(self, request, resignation_request_id):
         try:
             resignation_request = ResignationRequest.objects.get(
@@ -915,7 +914,7 @@ class TerminationInitiationListCreateView(APIView, SortableAPIMixin):
         summary="Initiate Employee Termination",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_create_termination_initiations'))
+    # @method_decorator(permission_required('can_create_termination_initiations'))
     @transaction.atomic()
     def post(self, request):
 
@@ -938,7 +937,7 @@ class TerminationInitiationListCreateView(APIView, SortableAPIMixin):
         summary="List Termination Initiations",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_termination_initiations', raise_exception=True))
+    # @method_decorator(permission_required('can_view_termination_initiations', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
@@ -974,7 +973,7 @@ class TerminationInitiationDetailView(APIView):
         summary="Get Termination Initiation",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_view_termination_initiations'))
+    # @method_decorator(permission_required('can_view_termination_initiations'))
     def get(self, request, termination_initiation_id):
         try:
             termination_initiation = TerminationInitiation.objects.get(
@@ -991,7 +990,7 @@ class TerminationInitiationDetailView(APIView):
         summary="Update Termination Initiation",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_edit_termination_initiations'))
+    # @method_decorator(permission_required('can_edit_termination_initiations'))
     def patch(self, request, termination_initiation_id):
         try:
             termination_initiation = TerminationInitiation.objects.get(
@@ -1014,7 +1013,7 @@ class TerminationInitiationDetailView(APIView):
         summary="Delete Termination Initiation",
         tags=["Offboarding"],
     )
-    @method_decorator(permission_required('can_delete_termination_initiations'))
+    # @method_decorator(permission_required('can_delete_termination_initiations'))
     def delete(self, request, termination_initiation_id):
         try:
             termination_initiation = TerminationInitiation.objects.get(
