@@ -73,7 +73,7 @@ def send_employee_welcome_email(
 
         # Build the full login URL
         protocol = "https" if getattr(settings, "USE_HTTPS", True) else "http"
-        login_path = getattr(settings, "LOGIN_URL", "/accounts/login/")
+        login_path = getattr(settings, "LOGIN_URL", "/login/")
         if not login_path.startswith("/"):
             login_path = "/" + login_path
         login_url = f"{protocol}://{domain}{login_path}"

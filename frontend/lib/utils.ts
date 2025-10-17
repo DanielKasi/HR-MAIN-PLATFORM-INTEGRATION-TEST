@@ -1572,11 +1572,21 @@ export const getPaginatedEmployees = async (params: {
 	page?: number;
 	search?: string;
 	ordering?: string;
-	positionSearch?: string;
-	departmentSearch?: string;
-	minSalary?: string;
-	maxSalary?: string;
+	position_id?: string;
+	department_id?: string;
+	work_type_id?: number;
+	employee_type_id?: number;
+	payroll_branch_id?: number;
+	gender?: "male" | "female" | "other";
+	marital_status?: "single" | "married" | "divorced";
+	salary_min?: string;
+	salary_max?: string;
 	employees_under?: number;
+	has_children?: boolean;
+	date_of_joining_from?: string;
+	date_of_joining_to?: string;
+	age_min?: number;
+	age_max?: number;
 }) => {
 	const urlParams = new URLSearchParams({});
 

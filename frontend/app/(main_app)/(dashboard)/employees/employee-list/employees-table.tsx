@@ -283,13 +283,13 @@ export function EmployeesTable({
 						page: 1,
 						ordering,
 						search: searchTerm || undefined,
-						positionSearch: positionSearchTermString || undefined,
-						departmentSearch:
+						position_id: positionSearchTermString || undefined,
+						department_id:
 							departmentSearchTerm && departmentSearchTerm.length > 0
 								? departmentSearchTerm.join(",")
 								: undefined,
-						minSalary: minSalary ? removeCommas(minSalary) : undefined,
-						maxSalary: maxSalary ? removeCommas(maxSalary) : undefined,
+						salary_min: minSalary ? removeCommas(minSalary) : undefined,
+						salary_max: maxSalary ? removeCommas(maxSalary) : undefined,
 					});
 
 					if (
@@ -322,13 +322,13 @@ export function EmployeesTable({
 			page: 1,
 			ordering,
 			search: searchTerm || undefined,
-			positionSearch: positionSearchTermString || undefined,
-			departmentSearch:
+			position_id: positionSearchTermString || undefined,
+			department_id:
 				departmentSearchTerm && departmentSearchTerm.length > 0
 					? departmentSearchTerm.join(",")
 					: undefined,
-			minSalary: minSalary ? removeCommas(minSalary) : undefined,
-			maxSalary: maxSalary ? removeCommas(maxSalary) : undefined,
+			salary_min: minSalary ? removeCommas(minSalary) : undefined,
+			salary_max: maxSalary ? removeCommas(maxSalary) : undefined,
 		});
 
 		if (

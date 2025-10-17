@@ -453,7 +453,7 @@ class EmployeeDetailAPIView(APIView):
             ),
         ],
     )
-    @method_decorator(permission_required('can_view_employees', raise_exception=True))
+    # @method_decorator(permission_required('can_view_employees', raise_exception=True))
     def get(self, request, employee_id):
         """
         Retrieve details of a specific employee.
