@@ -9,9 +9,15 @@ interface EmployeeCountChartProps {
 	data?: Array<{ year: number; count: number }>;
 	onRefresh: () => void;
 	loading: boolean;
+	className?: string;
 }
 
-export function EmployeeCountChart({ data, onRefresh, loading }: EmployeeCountChartProps) {
+export function EmployeeCountChart({
+	data,
+	onRefresh,
+	loading,
+	className = "",
+}: EmployeeCountChartProps) {
 	const [filteredData, setFilteredData] = useState<Array<{ year: number; count: number }>>([]);
 
 	useEffect(() => {
@@ -52,7 +58,7 @@ export function EmployeeCountChart({ data, onRefresh, loading }: EmployeeCountCh
 	};
 
 	return (
-		<Card className="shadow-sm border-none">
+		<Card className={`shadow-sm border-none ${className}`}>
 			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle className="text-lg font-semibold text-slate-900">
 					Employees Count Over Years

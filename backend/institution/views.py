@@ -103,7 +103,8 @@ logger = logging.getLogger(__name__)
 
 
 def home(request):
-    return HttpResponseRedirect(f"{settings.FRONTEND_URL}")
+    base_url = settings.FRONTEND_URL.rstrip('/')
+    return HttpResponseRedirect(f"{base_url}/login")
 
 
 class UserChatsView(APIView):

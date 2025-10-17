@@ -26,7 +26,6 @@ import { cn, showErrorToast } from "@/lib/utils";
 import apiRequest from "@/lib/apiRequest";
 import { IBranchWorkingDays, IBranchDay } from "@/types/types.utils";
 import { Branch } from "@/types/branch.types";
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function BranchDetailPage() {
