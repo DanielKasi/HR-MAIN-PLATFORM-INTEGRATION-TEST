@@ -110,7 +110,6 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 		const year = date.getFullYear();
 		const month = date.getMonth();
 
-		// Create dates using UTC to avoid timezone issues
 		const firstDay = new Date(Date.UTC(year, month, 1));
 		const lastDay = new Date(Date.UTC(year, month + 1, 0));
 		const daysInMonth = lastDay.getUTCDate();
@@ -150,12 +149,15 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 	const isToday = (date: Date) => {
 		const today = new Date();
 
-		// Compare date components directly to avoid timezone issues
 		return (
 			date.getFullYear() === today.getFullYear() &&
 			date.getMonth() === today.getMonth() &&
 			date.getDate() === today.getDate()
 		);
+	};
+
+	const isSunday = (date: Date) => {
+		return date.getDay() === 0;
 	};
 
 	const getEventModeIcon = (mode: string) => {
@@ -174,8 +176,6 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 	const getEventsForDate = (date: Date) => {
 		if (!calendar) return { events: [], holidays: [] };
 
-		// Create a date string in YYYY-MM-DD format using local date components
-		// This avoids timezone issues when comparing dates
 		const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 		const events = calendar.event_occurrences
@@ -270,8 +270,13 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 				<CardContent>
 					{/* Day Headers */}
 					<div className="grid grid-cols-7 gap-1 mb-2">
-						{DAYS.map((day) => (
-							<div key={day} className="p-2 text-center text-xs font-medium text-slate-500">
+						{DAYS.map((day, idx) => (
+							<div
+								key={day}
+								className={`p-2 text-center text-xs font-medium ${
+									idx === 0 ? "text-red-600" : "text-slate-500"
+								}`}
+							>
 								<>{day}</>
 							</div>
 						))}
@@ -286,6 +291,7 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 
 							const { events, holidays } = getEventsForDate(day);
 							const hasEvents = events.length > 0 || holidays.length > 0;
+							const sunday = isSunday(day);
 
 							return (
 								<div
@@ -295,9 +301,11 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
                     ${
 											isToday(day)
 												? "bg-[#0CA0F5]/60 text-white font-medium"
-												: hasEvents
-													? "bg-slate-100 text-slate-900 hover:bg-slate-200"
-													: "text-slate-700 hover:bg-slate-50"
+												: sunday
+													? " text-red-600  font-medium"
+													: hasEvents
+														? " text-slate-900 hover:bg-slate-200"
+														: "text-slate-700 hover:bg-slate-50"
 										}
                   `}
 									onMouseEnter={(e) => handleMouseEnter(day, e)}

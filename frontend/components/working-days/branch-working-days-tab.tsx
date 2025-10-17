@@ -72,15 +72,16 @@ export default function BranchWorkingDaysTab() {
 		setIsLoading(false);
 	};
 
-	const handleBranchWorkingDaysUpdate = async (args: {
-		dayId: number;
-		action?: "add" | "remove";
-		dayType: "PHYSICAL" | "REMOTE";
-		opening_time?: string;
-		closing_time?: string;
-		day_name?: string;
-		days?: IBranchDayFormData[];
-	}) => {
+	const transformForAPI = (days: IBranchDayFormData[]) => {
+		return days.map((day) => ({
+			day_id: day.day_id,
+			day_type: day.day_type,
+			opening_time: day.opening_time || null,
+			closing_time: day.closing_time || null,
+		}));
+	};
+
+	const handleBranchWorkingDaysUpdate = async (days: IBranchDayFormData[]) => {
 		if (!selectedBranch) {
 			toast.error("No branch selected");
 			return;
@@ -88,86 +89,13 @@ export default function BranchWorkingDaysTab() {
 
 		try {
 			setIsSaving(true);
-			const currentDays = branchWorkingDays?.branch_days || [];
-			let newDays: IBranchDayFormData[] = [];
-
-			if (args.action === "add") {
-				const validDayId = systemWorkingDays.find((d) => d.id === args.dayId);
-
-				if (!validDayId) {
-					toast.error("Invalid day selected. Please refresh and try again.");
-					return;
-				}
-
-				newDays = [
-					...currentDays.map((d) => ({ day_id: d.id, day_type: d.day_type })),
-					{
-						day_id: args.dayId,
-						day_type: args.dayType,
-					},
-				];
-			} else if (args.action === "remove") {
-				const remainingDays = currentDays.filter(
-					(d) => d.day_name.toLowerCase() !== args.day_name?.toLowerCase(),
-				);
-
-				newDays = remainingDays.map((d) => {
-					const systemDay = systemWorkingDays.find(
-						(sd) => sd.day_name.toLowerCase() === d.day_name.toLowerCase(),
-					);
-
-					return {
-						day_id: systemDay?.id || d.id,
-						day_type: d.day_type,
-					};
-				});
-			} else if (args.action === "save" && args.days) {
-				for (const day of args.days) {
-					const validDayId = systemWorkingDays.find((d) => d.id === day.day_id);
-
-					if (!validDayId) {
-						toast.error(`Invalid day ID ${day.day_id}. Please refresh and try again.`);
-						return;
-					}
-				}
-				newDays = args.days;
-			} else {
-				return;
-			}
-
-			const transformForAPI = (days: typeof newDays) => {
-				return days.map((day) => {
-					const branchDay = currentDays.find((cd) => cd.id === day.day_id);
-
-					if (branchDay) {
-						const systemDay = systemWorkingDays.find(
-							(sd) => sd.day_name.toLowerCase() === branchDay.day_name.toLowerCase(),
-						);
-
-						return {
-							day_id: systemDay?.id || day.day_id,
-							day_type: day.day_type,
-							opening_time: args.opening_time,
-							closing_time: args.closing_time,
-						};
-					}
-
-					return {
-						day_id: day.day_id,
-						day_type: day.day_type,
-						opening_time: args.opening_time,
-						closing_time: args.closing_time,
-					};
-				});
-			};
-
-			const apiPayload = transformForAPI(newDays);
+			// Assume transformForAPI handles the form data including times
+			const apiPayload = transformForAPI(days); // Update this function to include opening_time and closing_time
 
 			if (!branchWorkingDays) {
 				const created = await branchesAPI.WORKING_DAYS.create({
 					branch_days: apiPayload,
 				});
-
 				if (created) {
 					setBranchWorkingDays(created);
 					toast.success("Branch working days created");
@@ -176,7 +104,6 @@ export default function BranchWorkingDaysTab() {
 				const updated = await branchesAPI.WORKING_DAYS.update(branchWorkingDays.id, {
 					branch_days: apiPayload,
 				});
-
 				if (updated) {
 					setBranchWorkingDays(updated);
 					toast.success("Branch working days updated");
