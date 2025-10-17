@@ -1,7 +1,6 @@
 "use client";
-
-import { Treemap, ResponsiveContainer } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Treemap } from "recharts";
+import { ChartContainer } from "@/components/ui/chart";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -17,7 +16,7 @@ interface DepartmentTreeMapProps {
 }
 
 const CustomTreemapContent = (props: any) => {
-	const { children } = props;
+	const { children, onHover, hoveredIndex } = props;
 
 	if (!children || children.length === 0) return null;
 
@@ -28,9 +27,15 @@ const CustomTreemapContent = (props: any) => {
 
 				const colors = ["#0CA0F5", "#3DB3F7", "#5DC2F9", "#7DD1FB", "#9DE0FD"];
 				const fillColor = colors[index % colors.length];
+				const isHovered = hoveredIndex === index;
 
 				return (
-					<g key={index}>
+					<g
+						key={index}
+						onMouseEnter={() => onHover(index)}
+						onMouseLeave={() => onHover(null)}
+						style={{ cursor: "pointer" }}
+					>
 						<rect
 							x={x}
 							y={y}
@@ -38,7 +43,8 @@ const CustomTreemapContent = (props: any) => {
 							height={height}
 							fill={fillColor}
 							stroke="white"
-							strokeWidth={2}
+							strokeWidth={3}
+							opacity={isHovered ? 0.8 : 1}
 						/>
 						<text
 							x={x + width / 2}
@@ -47,6 +53,7 @@ const CustomTreemapContent = (props: any) => {
 							fill="white"
 							fontSize="9"
 							fontWeight="bold"
+							pointerEvents="none"
 						>
 							{department}
 						</text>
@@ -56,6 +63,7 @@ const CustomTreemapContent = (props: any) => {
 							textAnchor="middle"
 							fill="white"
 							fontSize="10"
+							pointerEvents="none"
 						>
 							{/* {count} */}
 						</text>
@@ -67,6 +75,9 @@ const CustomTreemapContent = (props: any) => {
 };
 
 export default function DepartmentTreeMap({ data, chartConfig, title }: DepartmentTreeMapProps) {
+	const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
+	const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0 });
+
 	const departmentConfig = React.useMemo(() => {
 		const config: Record<string, { label: string; color: string }> = {};
 		const colors = [
@@ -81,32 +92,54 @@ export default function DepartmentTreeMap({ data, chartConfig, title }: Departme
 			"#6DCBFA",
 			"#0890E8",
 		];
-		data.forEach((item, index) => {
-			config[item.department] = {
-				label: item.department,
-				color: colors[index % colors.length],
-			};
-		});
+		if (Array.isArray(data)) {
+			data.forEach((item, index) => {
+				config[item.department] = {
+					label: item.department,
+					color: colors[index % colors.length],
+				};
+			});
+		}
 
 		return config;
 	}, [data]);
+
+	const handleHover = (index: number | null) => {
+		setHoveredIndex(index);
+	};
+
+	const handleMouseMove = (e: React.MouseEvent) => {
+		setTooltipPos({ x: e.clientX, y: e.clientY });
+	};
 
 	return (
 		<Card className="shadow-none border rounded-xl">
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
 				<CardTitle className="text-lg font-semibold text-slate-900">{title}</CardTitle>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="relative" onMouseMove={handleMouseMove}>
 				<ChartContainer config={departmentConfig} className="w-full h-full max-h-[400px]">
 					<Treemap
 						data={data}
 						dataKey="count"
 						nameKey="department"
-						content={<CustomTreemapContent />}
-					>
-						<ChartTooltip content={<ChartTooltipContent />} />
-					</Treemap>
+						content={<CustomTreemapContent onHover={handleHover} hoveredIndex={hoveredIndex} />}
+					/>
 				</ChartContainer>
+				{hoveredIndex !== null && data[hoveredIndex] && (
+					<div
+						className="fixed bg-white text-black px-3 py-2 rounded-md shadow-lg text-sm z-50 pointer-events-none whitespace-nowrap"
+						style={{
+							left: `${tooltipPos.x + 10}px`,
+							top: `${tooltipPos.y + 10}px`,
+						}}
+					>
+						<p className="text-xs text-slate-500">
+							{data[hoveredIndex].department}{" "}
+							<span className="font-semibold"> {data[hoveredIndex].count}</span>
+						</p>
+					</div>
+				)}
 			</CardContent>
 		</Card>
 	);
