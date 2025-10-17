@@ -35,6 +35,7 @@ from .serializers import (
     DocumentRequestSerializer,
     EmployeeAttendanceSerializer,
     EmployeeCompanyEmailSerializer,
+    EmployeeMinimalSerializer,
     EmployeeMonthlyHourAccountSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
@@ -250,7 +251,7 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
 class EmployeeListAPIView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
     allowed_ordering_fields = ["user", "email", "department", "is_active", "position", "date_of_joining", "salary"]
-    default_ordering = ["user"]
+    default_ordering = ["name"]
 
     @extend_schema(
         request=None,

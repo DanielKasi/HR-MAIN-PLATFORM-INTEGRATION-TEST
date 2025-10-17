@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema,  OpenApiTypes
 
 from utilities.pagination import CustomPageNumberPagination
 from .models import (
@@ -956,6 +956,40 @@ class DownloadPayslipPDFView(APIView):
 class PenaltyWaiveRequestListCreateView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ['penalty', 'created_at', 'reason', 'is_active', 'request_date', 'notes']
     default_ordering = ['branch']
+
+    @extend_schema(
+        parameters=[
+            {
+                "name": "search",
+                "type": "str",
+                "description": "Search by employee full name or penalty type",
+            },
+            {
+                "name": "employee_id",
+                "type": "str",
+                "description": "Filter by employee ID",
+            },
+            {
+                "name": "ordering",
+                "type": "str",
+                "description": "Sort by fields (e.g., 'penalty,-request_date,reason')",
+            },
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PenaltyWaiveRequestSerializer(many=True),
+                description="List of penalty waive requests.",
+            ),
+            400: OpenApiResponse(
+                description="Invalid ordering field.",
+            ),
+            404: OpenApiResponse(
+                description="Institution not found.",
+            ),
+        },
+        tags=["Penalty WaiveRequest"],
+    )
+    # @method_decorator(permission_required('can_view_penalty_waive_requests', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
@@ -986,19 +1020,35 @@ class PenaltyWaiveRequestListCreateView(APIView, SortableAPIMixin):
         try:
             waive_requests = self.apply_sorting(waive_requests, request)
         except ValueError as e:
-            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(waive_requests, request)
         serializer = PenaltyWaiveRequestSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data) 
 
+    @extend_schema(
+        request=PenaltyWaiveRequestSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=PenaltyWaiveRequestSerializer,
+                description="Penalty waive request created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["Penalty WaiveRequest"],
+    )
+    # @method_decorator(permission_required('can_waive_penalty', raise_exception=True))
     def post(self, request):
         serializer = PenaltyWaiveRequestSerializer(data=request.data)
         if serializer.is_valid():
             instance = serializer.save()
+            instance.confirm_create()  
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class EmployeePenaltyListAPIView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ['employee', 'created_at', 'attendance', 'is_active', 'spot_check', 'date', 'penalty_type', 'amount']
@@ -1007,6 +1057,7 @@ class EmployeePenaltyListAPIView(APIView, SortableAPIMixin):
     @extend_schema(
         tags=['Employee Penalties'],
     )
+    # @method_decorator(permission_required('can_view_employee_penalties', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
