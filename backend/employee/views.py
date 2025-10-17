@@ -453,7 +453,7 @@ class EmployeeDetailAPIView(APIView):
             ),
         ],
     )
-    @method_decorator(permission_required('can_view_employees', raise_exception=True))
+    # @method_decorator(permission_required('can_view_employees', raise_exception=True))
     def get(self, request, employee_id):
         """
         Retrieve details of a specific employee.
@@ -4915,7 +4915,7 @@ class ActivateEmployeeView(APIView):
 class EmployeeLogListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
     allowed_ordering_fields = ['employee__name', 'device__serial_number', 'record_reference', 'date', 'time', 'created_at']
-    default_ordering = ['date', 'time']
+    default_ordering = ['-date', '-time']
 
     @extend_schema(
         request=OpenApiTypes.OBJECT,

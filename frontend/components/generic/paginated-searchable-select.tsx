@@ -342,7 +342,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			{open && (
 				<div
 					className={cn(
-						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg !z-[0] max-h-64 overflow-hidden",
+						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg !z-[60] max-h-64 overflow-hidden",
 						popoverClassName,
 					)}
 				>
