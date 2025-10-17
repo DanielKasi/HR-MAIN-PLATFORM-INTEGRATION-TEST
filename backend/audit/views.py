@@ -2,16 +2,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from django.db.models import Q
 from audit.models import AuditLog
-from institution.models import Institution
 from .serializers import AuditLogSerializer
 from utilities.sortable_api import SortableAPIMixin
 from utilities.pagination import CustomPageNumberPagination
 from django.utils.dateparse import parse_date
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 
 class InstitutionAuditLogsView(APIView, SortableAPIMixin):
@@ -39,7 +37,7 @@ class InstitutionAuditLogsView(APIView, SortableAPIMixin):
         },
         tags=["Audit Logs"],
     )
-    @method_decorator(permission_required('can_view_audit_logs', raise_exception=True))
+    # @method_decorator(permission_required('can_view_audit_logs', raise_exception=True))
     def get(self, request):
         search_query = request.query_params.get("search", None)
         action = request.query_params.get("action", None)

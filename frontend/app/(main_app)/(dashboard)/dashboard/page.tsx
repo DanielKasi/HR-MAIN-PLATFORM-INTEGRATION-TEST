@@ -24,6 +24,8 @@ import BarHChart from "../analytics/_components/barh.chart";
 import colors from "../analytics/_components/colors";
 import DonutChart from "@/app/(main_app)/(dashboard)/analytics/_components/pie.chart";
 import DepartmentTreeMap from "@/app/(main_app)/(dashboard)/analytics/employees/department.treemap";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function Dashboard() {
 	const [data, setData] = useState<IInstitutionAnalytics | null>(null);
@@ -97,7 +99,7 @@ export default function Dashboard() {
 
 	return (
 		<div className="min-h-screen bg-transparent p-4">
-			<div className="space-y-6">
+			<div className="space-y-4">
 				{/* Header */}
 
 				<div className="flex items-center justify-between">
@@ -114,17 +116,19 @@ export default function Dashboard() {
 						</span>
 					</h1>
 
-					<div className="flex items-center gap-3">
-						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
-							<Link href="" className="flex items-center justify-start gap-3">
-								<Icon icon="hugeicons:location-user-02" className="!w-6 !h-6" />
-								<span className="hidden lg:inline">Send Spotcheck</span>
-							</Link>
-						</Button>
+					<div className="flex items-center gap-4">
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_SEND_SPOTCHECK}>
+							<Button variant="outline" size="sm" className="rounded-xl flex items-center">
+								<Link href="" className="flex items-center justify-start gap-4">
+									<Icon icon="hugeicons:location-user-02" className="!w-6 !h-6" />
+									<span className="hidden lg:inline">Send Spotcheck</span>
+								</Link>
+							</Button>
+						</ProtectedComponent>
 						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
 							<Link
 								href={"/events-holidays/events/add"}
-								className="flex items-center justify-start gap-3"
+								className="flex items-center justify-start gap-4"
 							>
 								<Icon icon="hugeicons:calendar-add-01" className="!w-6 !h-6" />
 								<span className="hidden lg:inline">Add event</span>
@@ -133,7 +137,7 @@ export default function Dashboard() {
 						<Button variant="outline" size="sm" className="rounded-xl flex items-center">
 							<Link
 								href={"/employees/add-employee"}
-								className="flex items-center justify-start gap-3"
+								className="flex items-center justify-start gap-4"
 							>
 								<Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
 								<span className="hidden lg:inline">Add Employee</span>
@@ -144,34 +148,43 @@ export default function Dashboard() {
 
 				{/* <TasksCards branchId={null} /> */}
 
-				<div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-					{/* Main Content */}
-					<div className="lg:col-span-4 flex flex-col gap-6">
-						{/* Metrics and Calendar Row */}
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-							<div className="md:col-span-4">
-								<MetricCards data={data?.basic_counts} onRefresh={refreshData} loading={loading} />
+				{/* Main Content */}
+				<div className="flex flex-col gap-10 max-md:h-max">
+					<div className="grid grid-cols-1 lg:grid-cols-3 !max-h-full gap-4 h-[38rem] max-lg:h-max !max-lg:w-full">
+						<div className="col-span-2 flex flex-col justify-between gap-4 h-full">
+							<MetricCards data={data?.basic_counts} onRefresh={refreshData} loading={loading} />
+
+							{/* Payroll Chart */}
+							<PayrollChart
+								data={data?.payroll_summary}
+								totalCurrentYear={totalCurrentYear}
+								growthPercentage={growthPercentage}
+								onRefresh={refreshData}
+								loading={loading}
+							/>
+						</div>
+						<div className="h-full col-span-1 flex flex-col justify-between gap-4 !w-full">
+							<div className="max-h-[60%] h-full">
+								<AnnouncementCarousel />
+							</div>
+							<div className="max-h-[40%] h-full">
+								<SimpleCalendarWidget className="max-h-full !w-full !h-full" />
 							</div>
 						</div>
+					</div>
 
-						{/* Payroll Chart */}
-						<PayrollChart
-							data={data?.payroll_summary}
-							totalCurrentYear={totalCurrentYear}
-							growthPercentage={growthPercentage}
-							onRefresh={refreshData}
-							loading={loading}
-						/>
-
-						{/* Charts Grid */}
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{/* Charts Grid */}
+					<div className="!mt-7 flex !h-[22rem]">
+						<div className="grid grid-cols-1 !w-full lg:grid-cols-3 gap-4 !h-full">
 							<EmployeeCountChart
+								className="!h-full"
 								data={data?.employees_per_department}
 								onRefresh={refreshData}
 								loading={loading}
 							/>
 							{data && (
 								<DonutChart
+									className="!h-full"
 									title="Gender Distribution"
 									totalStr="Total Employees"
 									data={[
@@ -187,25 +200,13 @@ export default function Dashboard() {
 									donut
 								/>
 							)}
-						</div>
-					</div>
 
-					{/* Sidebar */}
-					<div className="flex flex-col gap-6 lg:col-span-2">
-						<div className="flex flex-col gap-4">
-							<div className="min-h-[13.5rem]">
-								<AnnouncementCarousel />
-							</div>
-							<div className="">
-								<SimpleCalendarWidget className="max-h-[21rem]" />
-								{/* <MinimalCalendar /> */}
-							</div>
+							<EventsAndHolidaysWidget className=" !h-full overflow-y-auto" />
 						</div>
-						<EventsAndHolidaysWidget className="!max-h-[22rem] !h-full overflow-y-auto" />
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 					{data?.employees_per_department && (
 						<DepartmentTreeMap
 							data={data.employees_per_department.map((item) => ({

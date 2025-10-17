@@ -345,7 +345,7 @@ export default function AIAssistantWidget() {
 									)}
 									{showHistory && <div className="w-8 h-8" />}
 									<div className="flex items-center gap-2">
-										<div className="w-6 h-6 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center">
+										<div className="w-6 h-6 bg-gradient-to-br from-primary/50 to-primary-hover rounded-full flex items-center justify-center">
 											<Sparkles className="h-3 w-3 text-white" />
 										</div>
 										<h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
@@ -447,8 +447,8 @@ export default function AIAssistantWidget() {
 											<div className="flex-1 flex flex-col min-h-0">
 												<div className="flex-1 overflow-y-auto">
 													<div className="flex flex-col items-center justify-center p-4 sm:p-6 min-h-full">
-														<div className="w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-red-200">
-															<div className="w-8 sm:w-10 h-8 sm:h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center">
+														<div className="w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-br from-primary/20 to-primary-hover/30 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-red-200">
+															<div className="w-8 sm:w-10 h-8 sm:h-10 bg-gradient-to-br from-primary/70 to-primary rounded-full flex items-center justify-center">
 																<Sparkles className="h-4 sm:h-5 w-4 sm:w-5 text-white animate-pulse" />
 															</div>
 														</div>
@@ -599,15 +599,15 @@ export default function AIAssistantWidget() {
 							onClick={() => setIsOpen(true)}
 							onMouseEnter={() => setShowTooltip(true)}
 							onMouseLeave={() => setShowTooltip(false)}
-							className="relative bg-gradient-to-br from-red-600 via-orange-700 to-red-700 hover:from-red-700 hover:via-orange-800 hover:to-red-800 text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden"
+							className="relative bg-gradient-to-br from-primary via-primary-hover/20 to-primary-hover text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden"
 							style={{ width: "52px", height: "52px" }}
 						>
-							<div className="absolute inset-0 bg-gradient-to-br from-red-400 via-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
+							<div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-hover/30 to-primary-hover opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
 
 							<div className="relative z-10 flex items-center justify-center">
 								<div className="relative">
 									<Bot className="h-6 w-6 transform group-hover:scale-110 transition-transform duration-300" />
-									<div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-pulse">
+									<div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-secondary to-primary rounded-full flex items-center justify-center animate-pulse">
 										<Sparkles className="h-2 w-2 text-white" />
 									</div>
 								</div>
@@ -618,7 +618,7 @@ export default function AIAssistantWidget() {
 					) : (
 						<Button
 							onClick={() => setIsOpen(false)}
-							className="bg-gradient-to-br from-red-600 to-orange-700 hover:from-orange-700 hover:to-red-800 text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110"
+							className="bg-gradient-to-br from-primary via-primary-hover/20 to-primary-hover text-white rounded-full p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110"
 							style={{ width: "52px", height: "52px" }}
 						>
 							<X className="h-6 w-6" />

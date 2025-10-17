@@ -8,8 +8,8 @@ export interface Branch {
 	institution_name: string;
 	branch_phone_number?: string;
 	branch_location: string;
-	branch_longitude: string;
-	branch_latitude: string;
+	branch_latitude?: number | null;
+	branch_longitude?: number | null;
 	branch_email?: string;
 	branch_opening_time?: string;
 	branch_closing_time?: string;
@@ -19,14 +19,14 @@ export interface Branch {
 export interface BranchFormData {
 	branch_name: string;
 	branch_location: string;
-	branch_latitude: string;
-	branch_longitude: string;
+	branch_latitude?: number | null;
+	branch_longitude?: number | null;
 	branch_phone_number: string;
 	branch_email: string;
 	branch_opening_time: string;
 	branch_closing_time: string;
 	institution: number;
-	paying_bank_account: number;
+	paying_bank_account?: number;
 }
 
 export interface Branch extends IBaseApprovable {}

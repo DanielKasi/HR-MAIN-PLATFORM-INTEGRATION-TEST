@@ -1572,11 +1572,21 @@ export const getPaginatedEmployees = async (params: {
 	page?: number;
 	search?: string;
 	ordering?: string;
-	positionSearch?: string;
-	departmentSearch?: string;
-	minSalary?: string;
-	maxSalary?: string;
+	position_id?: string;
+	department_id?: string;
+	work_type_id?: number;
+	employee_type_id?: number;
+	payroll_branch_id?: number;
+	gender?: "male" | "female" | "other";
+	marital_status?: "single" | "married" | "divorced";
+	salary_min?: string;
+	salary_max?: string;
 	employees_under?: number;
+	has_children?: boolean;
+	date_of_joining_from?: string;
+	date_of_joining_to?: string;
+	age_min?: number;
+	age_max?: number;
 }) => {
 	const urlParams = new URLSearchParams({});
 
@@ -5614,15 +5624,11 @@ export const AttendanceAPI = {
 
 export const bankTypesAPI = {
 	getAll: async (searchParams?: string) => {
-		try {
-			const response = await apiRequest.get(
-				`/institution/bank-type/${searchParams ? `${searchParams}` : ""}`,
-			);
+		const response = await apiRequest.get(
+			`/institution/bank-type/?${searchParams ? `${searchParams}` : ""}`,
+		);
 
-			return response.data as IPaginatedResponse<IBankType>;
-		} catch (error) {
-			throw error;
-		}
+		return response.data as IPaginatedResponse<IBankType>;
 	},
 	getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IBankType>> => {
 		const response = await apiRequest.get(forceUrlToHttps(url));
@@ -5665,17 +5671,17 @@ export const bankTypesAPI = {
 };
 
 export const bankAccountsAPI = {
-	getAll: async (searchParams?: string) => {
-		try {
-			const url = searchParams
-				? `/institution/bank-account/${searchParams}`
-				: `/institution/bank-account/`;
-			const response = await apiRequest.get(forceUrlToHttps(url));
+	getAll: async (searchParams?: { search?: string; page?: number }) => {
+		const urlParams = new URLSearchParams();
+		Object.entries(searchParams || { page: 1 }).forEach(([key, value]) => {
+			if (value) {
+				urlParams.append(key, value.toString());
+			}
+		});
+		const url = `/institution/bank-account/?${urlParams.toString()}`;
+		const response = await apiRequest.get(forceUrlToHttps(url));
 
-			return response.data as IPaginatedResponse<IBankAccount>;
-		} catch (error) {
-			throw error;
-		}
+		return response.data as IPaginatedResponse<IBankAccount>;
 	},
 	getPaginatedFromUrl: async ({ url }: { url: string }) => {
 		const response = await apiRequest.get(forceUrlToHttps(url));
@@ -5964,7 +5970,13 @@ export const payrollAPI = {
 };
 
 export const ROLES_API = {
-	getPaginatedFirstPage: async ({ institutionId }: { institutionId: number }) => {
+	getPaginatedFirstPage: async ({
+		institutionId,
+		search,
+	}: {
+		institutionId: number;
+		search?: string;
+	}) => {
 		const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
 
 		return response.data as IPaginatedResponse<Role>;
@@ -6509,14 +6521,9 @@ export const assetsAPI = {
 	}: {
 		url: string;
 	}): Promise<IPaginatedResponse<IAssetRequest>> => {
-		try {
-			const response = await apiRequest.get(forceUrlToHttps(url));
+		const response = await apiRequest.get(forceUrlToHttps(url));
 
-			return response.data as IPaginatedResponse<IAssetRequest>;
-		} catch (error) {
-			console.error("Error fetching asset requests from URL:", error);
-			throw error;
-		}
+		return response.data as IPaginatedResponse<IAssetRequest>;
 	},
 
 	getAssetRequestById: async (id: number): Promise<IAssetRequest> => {
@@ -6593,28 +6600,24 @@ export const assetsAPI = {
 		employeeId?: string;
 		ordering?: string;
 	}): Promise<IPaginatedResponse<IAssetAllocation>> => {
-		try {
-			const params = new URLSearchParams({
-				page: page.toString(),
-			});
+		const params = new URLSearchParams({
+			page: page.toString(),
+		});
 
-			if (search) {
-				params.append("search", search);
-			}
-			if (status && status !== "all") {
-				params.append("allocation_status", status);
-			}
-			if (employeeId) {
-				params.append("employee_id", employeeId);
-			}
-			ordering && params.append("ordering", ordering);
-			const endpoint = `/assets/asset-allocations/?${params.toString()}`;
-			const response = await apiRequest.get(endpoint);
-
-			return response.data as IPaginatedResponse<IAssetAllocation>;
-		} catch (error) {
-			throw error;
+		if (search) {
+			params.append("search", search);
 		}
+		if (status && status !== "all") {
+			params.append("allocation_status", status);
+		}
+		if (employeeId) {
+			params.append("employee_id", employeeId);
+		}
+		ordering && params.append("ordering", ordering);
+		const endpoint = `/assets/asset-allocations/?${params.toString()}`;
+		const response = await apiRequest.get(endpoint);
+
+		return response.data as IPaginatedResponse<IAssetAllocation>;
 	},
 
 	getPaginatedAssetAllocationsFromUrl: async ({
@@ -7976,6 +7979,7 @@ export const branchesAPI = {
 
 		return response.data as IPaginatedResponse<Branch>;
 	},
+
 	WORKING_DAYS: {
 		getAll: async ({ branchId }: { branchId: number }): Promise<IBranchWorkingDays | null> => {
 			const response = await apiRequest.get(

@@ -551,8 +551,39 @@ class EmployeeSerializer(BaseApprovableSerializer):
         data.pop("position_details", None)
         return data
 
-  
 
+class EmployeeMinimalSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
+    position = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Employee
+        fields = ['name', 'department', 'position', 'user', 'is_active'] 
+
+    def get_user(self, obj):
+        if obj.user:
+            return {
+                "id": obj.user.id,
+                "email": obj.user.email,
+            }
+        return None
+    
+    def get_department(self, obj):
+        if obj.department:
+            return {
+                "name": obj.department.name,
+                "id": obj.department.id,
+            }
+        return None
+    
+    def get_position(self, obj):
+        if obj.position:
+            return {
+                "name": obj.position.name,
+                "id": obj.position.id,
+            }
+        return None
 
 class EmployeeDaySerializer(BaseApprovableSerializer):
     day = serializers.PrimaryKeyRelatedField(queryset=SystemDay.objects.all())

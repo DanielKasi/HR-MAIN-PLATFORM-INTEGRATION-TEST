@@ -110,6 +110,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const [canViewSettings, setCanViewSettings] = useState(false);
 	const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
+	const [isAdminHovered, setIsAdminHovered] = useState(false);
+
+	const handleMouseEnter = () => {
+		setIsAdminHovered(true);
+	};
+
+	const handleMouseLeave = () => {
+		setIsAdminHovered(false);
+	};
+
 	const [InstitutionId, setInstitutionId] = useState<string | null>(null);
 	// const [isPathLoading, setIsPathLoading] = useState(false);
 
@@ -336,8 +346,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 								<Link
 									href={"/admin"}
 									className="text-gray-900 rounded-full bg-white hover:bg-gray-100 p-3 border-none outline-none relative"
+									onMouseEnter={handleMouseEnter}
+									onMouseLeave={handleMouseLeave}
 								>
 									<Icon icon="hugeicons:shield-01" width="24" height="24" />
+									<span
+										className={`text-gray-100 px-2 py-1 rounded-sm z-10 bg-gray-600 text-xs font-medium absolute top-full left-1/2 transform -translate-x-1/2 mt-1 pointer-events-none whitespace-nowrap transition-all duration-200 ease-in-out ${isAdminHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+									>
+										Admin
+									</span>
+									<span className="sr-only">Admin</span>
 								</Link>
 							</ProtectedComponent>
 							{/* <TaskNotification /> */}
@@ -372,6 +390,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 											<div className="text-xs text-gray-500 truncate">{userRole || "Staff"}</div>
 										</div>
 									</DropdownMenuItem>
+
+									{/* TODO : Provide these settings even when the user has no institution cause they already have an account */}
 									{isMounted && canViewSettings && (
 										<DropdownMenuItem
 											className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"

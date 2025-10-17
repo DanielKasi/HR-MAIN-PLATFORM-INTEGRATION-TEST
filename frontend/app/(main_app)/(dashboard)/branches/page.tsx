@@ -1,6 +1,7 @@
 "use client";
 
 import type { Branch, BranchFormData } from "@/types/branch.types";
+import { Icon } from "@iconify/react";
 
 import { useEffect, useState } from "react";
 import {
@@ -54,13 +55,13 @@ import { PERMISSION_CODES } from "@/constants";
 import { fetchUpToDateInstitution } from "@/store/auth/actions";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { BankAccountSearchableSelect } from "@/components/selects/bank-accounts-select";
+import { showErrorToast } from "@/lib/utils";
 
 export default function BranchesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [branches, setBranches] = useState<Branch[]>([]);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [gettingCurrentLocation, setGettingCurrentLocation] = useState(false);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -70,14 +71,13 @@ export default function BranchesPage() {
 	const [newBranch, setNewBranch] = useState<BranchFormData>({
 		branch_name: "",
 		branch_location: "",
-		branch_latitude: "",
-		branch_longitude: "",
+		branch_latitude: null,
+		branch_longitude: null,
 		branch_phone_number: "",
 		branch_email: "",
 		branch_opening_time: "",
 		branch_closing_time: "",
 		institution: selectedInstitution?.id ?? 0,
-		paying_bank_account: 0,
 	});
 	const [editBranch, setEditBranch] = useState<Branch | null>(null);
 
@@ -116,9 +116,39 @@ export default function BranchesPage() {
 
 	useEffect(() => {
 		if (selectedInstitution?.id) {
+			setNewBranch((prev) => ({ ...prev, institution: selectedInstitution.id }));
 			fetchBranches();
 		}
 	}, [selectedInstitution?.id]);
+
+	useEffect(() => {
+		setNewBranch({
+			branch_name: editBranch?.branch_name || "",
+			branch_location: editBranch?.branch_location || "",
+			branch_latitude: editBranch?.branch_latitude || null,
+			branch_longitude: editBranch?.branch_longitude || null,
+			branch_phone_number: editBranch?.branch_phone_number || "",
+			branch_email: editBranch?.branch_email || "",
+			branch_opening_time: editBranch?.branch_opening_time || "",
+			branch_closing_time: editBranch?.branch_closing_time || "",
+			institution: selectedInstitution?.id ?? 0,
+			paying_bank_account: editBranch?.paying_bank_account,
+		});
+	}, [editBranch]);
+
+	const resetBranchFormData = () => {
+		setNewBranch({
+			branch_name: "",
+			branch_location: "",
+			branch_latitude: null,
+			branch_longitude: null,
+			branch_phone_number: "",
+			branch_email: "",
+			branch_opening_time: "",
+			branch_closing_time: "",
+			institution: selectedInstitution?.id ?? 0,
+		});
+	};
 
 	// Ensure branches is always an array before filtering
 	const safeBranches = Array.isArray(branches) ? branches : [];
@@ -141,7 +171,9 @@ export default function BranchesPage() {
 			const branchData: BranchFormData = {
 				...newBranch,
 				institution: selectedInstitution.id,
+				paying_bank_account: newBranch.paying_bank_account || undefined,
 			};
+
 			const response = await apiRequest.post("institution/branch/", branchData);
 
 			if (response.status === 201) {
@@ -149,8 +181,8 @@ export default function BranchesPage() {
 				setNewBranch({
 					branch_name: "",
 					branch_location: "",
-					branch_latitude: "",
-					branch_longitude: "",
+					branch_latitude: null,
+					branch_longitude: null,
 					branch_phone_number: "",
 					branch_email: "",
 					branch_opening_time: "",
@@ -166,17 +198,26 @@ export default function BranchesPage() {
 				setErrorMessage("Failed to add branch");
 			}
 		} catch (error: any) {
-			toast.error("An unexpected error occurred while adding the branch.");
+			showErrorToast({
+				error,
+				defaultMessage: "An unexpected error occurred while adding the branch",
+			});
+		} finally {
+			setIsAddDialogOpen(false);
 		}
 	};
 
 	const handleEditBranch = async () => {
 		if (!editBranch) return;
 		try {
-			const response = await apiRequest.patch(`institution/branch/${editBranch.id}/`, editBranch);
+			const response = await apiRequest.patch(`institution/branch/${editBranch.id}/`, {
+				...newBranch,
+				branch_longitude: newBranch.branch_longitude || null,
+				branch_latitude: newBranch.branch_latitude || null,
+			} as BranchFormData);
 
 			if (response.status === 200) {
-				setIsEditDialogOpen(false);
+				setIsAddDialogOpen(false);
 				toast.success("The branch has been successfully updated.");
 
 				fetchBranches();
@@ -235,15 +276,15 @@ export default function BranchesPage() {
 							setEditBranch({
 								...editBranch,
 								branch_location: address,
-								branch_latitude: latitude.toString(),
-								branch_longitude: longitude.toString(),
+								branch_latitude: latitude || null,
+								branch_longitude: longitude || null,
 							});
 						} else {
 							setNewBranch((prev) => ({
 								...prev,
 								branch_location: address,
-								branch_latitude: latitude.toString(),
-								branch_longitude: longitude.toString(),
+								branch_latitude: latitude || null,
+								branch_longitude: longitude || null,
 							}));
 						}
 						toast.info("Your current location has been set.");
@@ -311,7 +352,7 @@ export default function BranchesPage() {
 					<div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between mt-12">
 						<div className="flex flex-1 items-center gap-4">
 							<div className="relative flex-1 max-w-2xl">
-								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+								<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 								<Input
 									className="w-full pl-8"
 									placeholder="Search branches by name or location..."
@@ -326,150 +367,10 @@ export default function BranchesPage() {
 						</div>
 
 						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
-							<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-								<DialogTrigger asChild>
-									<Button className="flex-shrink-0">
-										<Plus className="mr-2 h-4 w-4" />
-										Add Branch
-									</Button>
-								</DialogTrigger>
-								<DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
-									<DialogHeader>
-										<DialogTitle>Add New Branch</DialogTitle>
-										<DialogDescription>Create a new branch record.</DialogDescription>
-									</DialogHeader>
-									<ScrollArea className="flex-1 pr-4">
-										<div className="grid gap-4 py-4">
-											{["branch_name", "branch_phone_number", "branch_email"].map((field) => (
-												<div key={field} className="grid grid-cols-4 items-center gap-4">
-													<Label className="text-right" htmlFor={field}>
-														{field
-															.split("_")
-															.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-															.join(" ")}
-													</Label>
-													<Input
-														className="col-span-3"
-														id={field}
-														value={(newBranch as any)[field] || ""}
-														onChange={(e) =>
-															setNewBranch({
-																...newBranch,
-																[field]: e.target.value,
-															})
-														}
-													/>
-												</div>
-											))}
-
-											{/* Opening Time */}
-											<div className="grid grid-cols-4 items-center gap-4">
-												<Label className="text-right" htmlFor="branch_opening_time">
-													Opening Time
-												</Label>
-												<Input
-													className="col-span-3"
-													id="branch_opening_time"
-													type="time"
-													value={newBranch.branch_opening_time || ""}
-													onChange={(e) =>
-														setNewBranch({
-															...newBranch,
-															branch_opening_time: e.target.value,
-														})
-													}
-												/>
-											</div>
-
-											{/* Closing Time */}
-											<div className="grid grid-cols-4 items-center gap-4">
-												<Label className="text-right" htmlFor="branch_closing_time">
-													Closing Time
-												</Label>
-												<Input
-													className="col-span-3"
-													id="branch_closing_time"
-													type="time"
-													value={newBranch.branch_closing_time || ""}
-													onChange={(e) =>
-														setNewBranch({
-															...newBranch,
-															branch_closing_time: e.target.value,
-														})
-													}
-												/>
-											</div>
-
-											<div key="branch_location" className="grid grid-cols-4 items-start gap-4">
-												<Label className="text-right pt-2" htmlFor="branch_location">
-													Location
-												</Label>
-												<div className="col-span-3 flex flex-col gap-2">
-													<LocationAutocomplete
-														placeholder="Search for a location..."
-														value={newBranch.branch_location || ""}
-														onChange={(location) =>
-															setNewBranch((prev) => ({
-																...prev,
-																branch_location: location,
-															}))
-														}
-														onCoordinatesChange={(lat, lon) =>
-															setNewBranch((prev) => ({
-																...prev,
-																branch_latitude: lat,
-																branch_longitude: lon,
-															}))
-														}
-													/>
-													{newBranch.branch_location && (
-														<div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
-															{newBranch.branch_location}
-														</div>
-													)}
-													<Button
-														className="self-start mt-1 flex items-center"
-														disabled={gettingCurrentLocation}
-														size="sm"
-														type="button"
-														variant="outline"
-														onClick={getCurrentLocation}
-													>
-														{gettingCurrentLocation ? (
-															<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-														) : (
-															<MapPin className="mr-2 h-4 w-4" />
-														)}
-														Get Current Location
-													</Button>
-												</div>
-											</div>
-
-											<div className="grid grid-cols-4 items-center gap-4">
-												<Label className="text-right">Bank account</Label>
-												<BankAccountSearchableSelect
-													className="col-span-3"
-													value={[newBranch.paying_bank_account ?? 0]}
-													onValueChange={(values) => {
-														if (values.length) {
-															setNewBranch((prev) => ({
-																...prev,
-																paying_bank_account: Number(values[0]),
-															}));
-														}
-													}}
-												/>
-											</div>
-										</div>
-									</ScrollArea>
-									<DialogFooter className="pt-4">
-										<Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-											Cancel
-										</Button>
-										<Button onClick={handleAddBranch}>Save Branch</Button>
-									</DialogFooter>
-								</DialogContent>
-							</Dialog>
+							<Button className="flex-shrink-0" onClick={() => setIsAddDialogOpen(true)}>
+								<Plus className="mr-2 h-4 w-4" />
+								{"Add Branch"}
+							</Button>
 						</ProtectedComponent>
 					</div>
 
@@ -566,7 +467,7 @@ export default function BranchesPage() {
 															<DropdownMenuItem
 																onClick={() => {
 																	setEditBranch(branch);
-																	setIsEditDialogOpen(true);
+																	setIsAddDialogOpen(true);
 																}}
 															>
 																<Edit className="mr-2 h-4 w-4" />
@@ -594,132 +495,149 @@ export default function BranchesPage() {
 				</CardContent>
 			</div>
 
-			{/* Edit Branch Dialog */}
-			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+			<Dialog
+				open={isAddDialogOpen}
+				onOpenChange={(open) => {
+					if (!open) {
+						setIsAddDialogOpen(false);
+						setEditBranch(null);
+						resetBranchFormData();
+					}
+				}}
+			>
 				<DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
 					<DialogHeader>
-						<DialogTitle>Edit Branch</DialogTitle>
-						<DialogDescription>Edit branch details.</DialogDescription>
+						<DialogTitle>{editBranch ? "Edit Branch" : "Add New Branch"}</DialogTitle>
+						<DialogDescription>
+							{editBranch ? "Edit branch details" : "Create a new branch record"} .
+						</DialogDescription>
 					</DialogHeader>
-					{editBranch && (
-						<ScrollArea className="flex-1 pr-4">
-							<div className="grid gap-4 py-4">
-								{["branch_name", "branch_phone_number", "branch_email"].map((field) => (
-									<div key={field} className="grid grid-cols-4 items-center gap-4">
-										<Label className="text-right" htmlFor={`edit-${field}`}>
-											{field
-												.split("_")
-												.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-												.join(" ")}
-										</Label>
-										<Input
-											className="col-span-3"
-											id={`edit-${field}`}
-											value={(editBranch as any)[field] || ""}
-											onChange={(e) =>
-												setEditBranch({
-													...editBranch,
-													[field]: e.target.value,
-												})
-											}
-										/>
-									</div>
-								))}
-
-								{/* Opening Time */}
-								<div className="grid grid-cols-4 items-center gap-4">
-									<Label className="text-right" htmlFor="edit-branch_opening_time">
-										Opening Time
+					<ScrollArea className="flex-1 pr-4">
+						<div className="grid gap-4 py-4">
+							{["branch_name", "branch_phone_number", "branch_email"].map((field) => (
+								<div key={field} className="grid grid-cols-4 items-center gap-4">
+									<Label className="text-right" htmlFor={field}>
+										{field
+											.split("_")
+											.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+											.join(" ")}
 									</Label>
 									<Input
 										className="col-span-3"
-										id="edit-branch_opening_time"
-										type="time"
-										value={editBranch.branch_opening_time || ""}
+										id={field}
+										value={(newBranch as any)[field] || ""}
 										onChange={(e) =>
-											setEditBranch({
-												...editBranch,
-												branch_opening_time: e.target.value,
+											setNewBranch({
+												...newBranch,
+												[field]: e.target.value,
 											})
 										}
 									/>
 								</div>
+							))}
 
-								{/* Closing Time */}
-								<div className="grid grid-cols-4 items-center gap-4">
-									<Label className="text-right" htmlFor="edit-branch_closing_time">
-										Closing Time
-									</Label>
-									<Input
-										className="col-span-3"
-										id="edit-branch_closing_time"
-										type="time"
-										value={editBranch.branch_closing_time || ""}
-										onChange={(e) =>
-											setEditBranch({
-												...editBranch,
-												branch_closing_time: e.target.value,
-											})
+							{/* Opening Time */}
+							<div className="grid grid-cols-4 items-center gap-4">
+								<Label className="text-right" htmlFor="branch_opening_time">
+									Opening Time
+								</Label>
+								<Input
+									className="col-span-3"
+									id="branch_opening_time"
+									type="time"
+									value={newBranch.branch_opening_time || ""}
+									onChange={(e) =>
+										setNewBranch({
+											...newBranch,
+											branch_opening_time: e.target.value,
+										})
+									}
+								/>
+							</div>
+
+							{/* Closing Time */}
+							<div className="grid grid-cols-4 items-center gap-4">
+								<Label className="text-right" htmlFor="branch_closing_time">
+									Closing Time
+								</Label>
+								<Input
+									className="col-span-3"
+									id="branch_closing_time"
+									type="time"
+									value={newBranch.branch_closing_time || ""}
+									onChange={(e) =>
+										setNewBranch({
+											...newBranch,
+											branch_closing_time: e.target.value,
+										})
+									}
+								/>
+							</div>
+
+							<div key="branch_location" className="grid grid-cols-4 items-start gap-4">
+								<Label className="text-right pt-2" htmlFor="branch_location">
+									Location
+								</Label>
+								<div className="col-span-3 flex flex-col gap-2">
+									<LocationAutocomplete
+										placeholder="Search for a location..."
+										value={newBranch.branch_location || ""}
+										onChange={(location) =>
+											setNewBranch((prev) => ({
+												...prev,
+												branch_location: location,
+											}))
+										}
+										onCoordinatesChange={(lat, lon) =>
+											setNewBranch((prev) => ({
+												...prev,
+												branch_latitude: Number(lat) || null,
+												branch_longitude: Number(lon) || null,
+											}))
 										}
 									/>
-								</div>
-
-								<div key="branch_location" className="grid grid-cols-4 items-start gap-4">
-									<Label className="text-right pt-2" htmlFor="edit-branch_location">
-										Location
-									</Label>
-									<div className="col-span-3 flex flex-col gap-2">
-										<LocationAutocomplete
-											value={editBranch?.branch_location || ""}
-											onChange={(location) =>
-												setEditBranch((prev) =>
-													prev ? { ...prev, branch_location: location } : prev,
-												)
-											}
-											onCoordinatesChange={(lat, lon) =>
-												setEditBranch((prev) =>
-													prev
-														? {
-																...prev,
-																branch_latitude: lat,
-																branch_longitude: lon,
-															}
-														: prev,
-												)
-											}
-											placeholder="Search for a location..."
-										/>
-
-										{editBranch.branch_location && (
-											<div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
-												{editBranch.branch_location}
-											</div>
+									<Button
+										className="self-start mt-1 flex items-center"
+										disabled={gettingCurrentLocation}
+										size="sm"
+										type="button"
+										variant="outline"
+										onClick={getCurrentLocation}
+									>
+										{gettingCurrentLocation ? (
+											<Icon icon="hugeicons:loading-02" className="mr-2 h-4 w-4 animate-spin" />
+										) : (
+											<Icon icon="hugeicons:navigation-05" className="mr-2 !h-4 !w-4" />
 										)}
-										<Button
-											className="self-start mt-1 flex items-center"
-											disabled={gettingCurrentLocation}
-											size="sm"
-											type="button"
-											variant="outline"
-											onClick={getCurrentLocation}
-										>
-											{gettingCurrentLocation ? (
-												<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-											) : (
-												<MapPin className="mr-2 h-4 w-4" />
-											)}
-											Get Current Location
-										</Button>
-									</div>
+										Get Current Location
+									</Button>
 								</div>
 							</div>
-						</ScrollArea>
-					)}
-					<DialogFooter className="pt-4">
-						<Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-							Cancel
+
+							<div className="grid grid-cols-4 items-center gap-4">
+								<Label className="text-right">Bank account</Label>
+								<BankAccountSearchableSelect
+									className="col-span-3"
+									value={newBranch.paying_bank_account ? [newBranch.paying_bank_account] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											setNewBranch((prev) => ({
+												...prev,
+												paying_bank_account: Number(values[0]),
+											}));
+										}
+									}}
+								/>
+							</div>
+						</div>
+					</ScrollArea>
+					<DialogFooter className="pt-4 flex items-center">
+						<Button
+							className="w-full rounded-full"
+							onClick={editBranch ? handleEditBranch : handleAddBranch}
+						>
+							Save Branch
 						</Button>
-						<Button onClick={handleEditBranch}>Save Changes</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

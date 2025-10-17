@@ -39,7 +39,7 @@ from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
 from django.template import Template, Context
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 
 # Set up logging
@@ -54,7 +54,7 @@ class DocumentTypeListCreateAPIView(APIView, SortableAPIMixin):
         description="Retrieve a paginated list of document types for a given institution.",
         responses={200: DocumentTypeSerializer(many=True)},
     )
-    @method_decorator(permission_required('can_view_document_types', raise_exception=True))
+    # @method_decorator(permission_required('can_view_document_types', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         queryset = DocumentType.objects.filter(
@@ -83,7 +83,7 @@ class DocumentTypeListCreateAPIView(APIView, SortableAPIMixin):
         request=DocumentTypeSerializer,
         responses={201: DocumentTypeSerializer},
     )
-    @method_decorator(permission_required('can_create_document_types', raise_exception=True))
+    # @method_decorator(permission_required('can_create_document_types', raise_exception=True))
     @transaction.atomic()
     def post(self, request, institution_id):
         data = request.data.copy()
@@ -108,7 +108,7 @@ class DocumentTypeRetrieveUpdateDeleteAPIView(APIView):
         description="Retrieve a specific document type by ID",
         responses={200: DocumentTypeSerializer, 404: None},
     )
-    @method_decorator(permission_required('can_view_document_types', raise_exception=True))
+    # @method_decorator(permission_required('can_view_document_types', raise_exception=True))
     def get(self, request, pk):
         document_type = self.get_object(pk)
         if not document_type:
@@ -121,7 +121,7 @@ class DocumentTypeRetrieveUpdateDeleteAPIView(APIView):
         request=DocumentTypeSerializer,
         responses={200: DocumentTypeSerializer, 404: None},
     )
-    @method_decorator(permission_required('can_edit_document_types', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_document_types', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         document_type = self.get_object(pk)
@@ -140,7 +140,7 @@ class DocumentTypeRetrieveUpdateDeleteAPIView(APIView):
     @extend_schema(
         description="Delete a document type", responses={204: None, 404: None}
     )
-    @method_decorator(permission_required('can_delete_document_types', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_document_types', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         document_type = self.get_object(pk)
@@ -163,7 +163,7 @@ class DocumentTemplateListCreateAPIView(APIView, SortableAPIMixin):
         description="Create a new document template.",
         tags=["Document Templates"],
     )
-    @method_decorator(permission_required('can_create_document_templates', raise_exception=True))
+    # @method_decorator(permission_required('can_create_document_templates', raise_exception=True))
     @transaction.atomic()
     def post(self, request, institution_id):
         try:
@@ -209,7 +209,7 @@ class DocumentTemplateListCreateAPIView(APIView, SortableAPIMixin):
         description="Retrieve a list of document templates for an institution.",
         tags=["Document Templates"],
     )
-    @method_decorator(permission_required('can_view_document_templates', raise_exception=True))
+    # @method_decorator(permission_required('can_view_document_templates', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         try:
@@ -257,7 +257,7 @@ class DocumentTemplateDetailAPIView(APIView):
         description="Retrieve a specific document template by ID.",
         tags=["Document Templates"],
     )
-    @method_decorator(permission_required('can_view_document_templates', raise_exception=True))
+    # @method_decorator(permission_required('can_view_document_templates', raise_exception=True))
     def get(self, request, pk):
         template = self.get_object(pk)
         if not template:
@@ -274,7 +274,7 @@ class DocumentTemplateDetailAPIView(APIView):
         description="Update a document template.",
         tags=["Document Templates"],
     )
-    @method_decorator(permission_required('can_edit_document_templates', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_document_templates', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, pk):
         template = self.get_object(pk)
@@ -333,7 +333,7 @@ class DocumentTemplateDetailAPIView(APIView):
         description="Delete a document template.",
         tags=["Document Templates"],
     )
-    @method_decorator(permission_required('can_delete_document_templates', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_document_templates', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, pk):
         template = self.get_object(pk)

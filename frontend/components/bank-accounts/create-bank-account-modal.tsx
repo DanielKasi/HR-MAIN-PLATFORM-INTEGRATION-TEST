@@ -18,7 +18,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import BankAccountSearchableSelect from "../selects/bank-accounts-select";
 
 interface BankAccountFormModalProps {
 	isOpen: boolean;
@@ -49,7 +48,7 @@ export function BankAccountFormModal({
 		if (isOpen) {
 			if (editingAccount) {
 				setFormData({
-					institution_bank: editingAccount.institution_bank,
+					institution_bank: editingAccount.institution_bank.id,
 					account_name: editingAccount.account_name,
 					account_number: editingAccount.account_number,
 				});

@@ -41,7 +41,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LeaveBalancesAPI, getPaginatedEmployees, getLeaveTypes } from "@/lib/utils";
+import {
+	LeaveBalancesAPI,
+	getPaginatedEmployees,
+	getLeaveTypes,
+	showErrorToast,
+} from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { ILeaveBalance, IEmployee, ILeaveType } from "@/types/types.utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -154,8 +159,7 @@ export default function LeaveBalanceComponent() {
 				setEmployees(employeesData.results);
 				setLeaveTypes(leaveTypesData.filter((type) => type.is_active !== false));
 			} catch (error: any) {
-				console.error("Error fetching data:", error);
-				toast.error(error.message || "Failed to load data");
+				showErrorToast({ error, defaultMessage: "Failed to load data" });
 				setEmployees([]);
 				setLeaveTypes([]);
 			}

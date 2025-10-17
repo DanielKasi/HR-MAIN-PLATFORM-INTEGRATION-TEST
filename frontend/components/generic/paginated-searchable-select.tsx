@@ -128,16 +128,19 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		if (!fetchFirstPage || (!paginated && data?.results)) return;
 		if (data && data.next && !search) return;
 		setLoading(true);
-		fetchFirstPage({ search, ...query } as Q)
-			.then((res) => {
-				setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
-				setHasMore(!!res.next);
-			})
-			.catch((error) => {
-				console.error("Failed to fetch first page", error);
-				toast.error("Failed to load items");
-			})
-			.finally(() => setLoading(false));
+		const timeout = setTimeout(() => {
+			fetchFirstPage({ search, ...query } as Q)
+				.then((res) => {
+					setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
+					setHasMore(!!res.next);
+				})
+				.catch((error) => {
+					console.error("Failed to fetch first page", error);
+					toast.error("Failed to load items");
+				})
+				.finally(() => setLoading(false));
+		}, 1000);
+		return () => clearTimeout(timeout);
 	}, [paginated, fetchFirstPage, search, query, refreshTrigger, ...deps]);
 
 	// Infinite scroll with intersection observer
@@ -293,6 +296,11 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 							onChange={(e) => setSearch(e.target.value)}
 							className="flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground"
 							onClick={(e) => e.stopPropagation()}
+							onKeyDown={(e) => {
+								if (!open) {
+									setOpen(true);
+								}
+							}}
 							disabled={disabled}
 						/>
 					)
@@ -342,7 +350,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			{open && (
 				<div
 					className={cn(
-						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg !z-[0] max-h-64 overflow-hidden",
+						"absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg !z-[60] max-h-64 overflow-hidden",
 						popoverClassName,
 					)}
 				>

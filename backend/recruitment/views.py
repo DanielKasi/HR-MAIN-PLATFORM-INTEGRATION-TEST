@@ -44,7 +44,7 @@ from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from datetime import timedelta
 from django.db import transaction
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 
 
@@ -62,7 +62,7 @@ class JobPositionListAPI(APIView, SortableAPIMixin):
         summary="Create Job Position",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_create_job_positions', raise_exception=True))
+    # @method_decorator(permission_required('can_create_job_positions', raise_exception=True))
     @transaction.atomic()
     def post(self, request, institution_id):
         print(request.data)
@@ -79,7 +79,7 @@ class JobPositionListAPI(APIView, SortableAPIMixin):
         summary="List Job Positions",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_view_job_positions', raise_exception=True))
+    # @method_decorator(permission_required('can_view_job_positions', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         job_positions = JobPosition.objects.filter(
@@ -111,7 +111,7 @@ class JobPositionDetailAPI(APIView):
         summary="Get Job Position",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_view_job_positions', raise_exception=True))
+    # @method_decorator(permission_required('can_view_job_positions', raise_exception=True))
     def get(self, request, job_position_id):
         try:
             job_position = JobPosition.objects.get(id=job_position_id)
@@ -129,7 +129,7 @@ class JobPositionDetailAPI(APIView):
         summary="Update Job Position",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_edit_job_positions', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_job_positions', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, job_position_id):
         try:
@@ -154,7 +154,7 @@ class JobPositionDetailAPI(APIView):
         summary="Delete Job Position",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_delete_job_positions', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_job_positions', raise_exception=True))
     @transaction.atomic()
     def delete(self, request, job_position_id):
         try:
@@ -181,7 +181,7 @@ class JobPositionAdvertListAPI(APIView, SortableAPIMixin):
         summary="Create Job Position Advert",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_create_job_adverts', raise_exception=True))
+    # @method_decorator(permission_required('can_create_job_adverts', raise_exception=True))
     @transaction.atomic()
     def post(self, request, institution_id):
         print(request.data)
@@ -198,7 +198,7 @@ class JobPositionAdvertListAPI(APIView, SortableAPIMixin):
         summary="List Job Position Adverts",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_view_job_adverts', raise_exception=True))
+    # @method_decorator(permission_required('can_view_job_adverts', raise_exception=True))
     def get(self, request, institution_id=None):
         search_query = request.query_params.get('search', None)
         status = request.query_params.get('status', None)
@@ -244,7 +244,7 @@ class JobPositionAdvertDetailAPI(APIView):
         summary="Get Job Position Advert",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_view_job_adverts', raise_exception=True))
+    # @method_decorator(permission_required('can_view_job_adverts', raise_exception=True))
     def get(self, request, advert_id):
         try:
             advert = JobPositionAdvert.objects.get(id=advert_id)
@@ -261,7 +261,7 @@ class JobPositionAdvertDetailAPI(APIView):
         summary="Update Job Position Advert",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_edit_job_adverts', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_job_adverts', raise_exception=True))
     @transaction.atomic()
     def patch(self, request, advert_id):
         try:
@@ -284,7 +284,7 @@ class JobPositionAdvertDetailAPI(APIView):
         summary="Delete Job Position Advert",
         tags=["Recruitment"],
     ) 
-    @method_decorator(permission_required('can_delete_job_adverts', raise_exception=True))  
+    # @method_decorator(permission_required('can_delete_job_adverts', raise_exception=True))  
     @transaction.atomic()
     def delete(self, request, advert_id):
         try:
@@ -325,7 +325,7 @@ class JobAdvertApplicationListAPI(APIView, SortableAPIMixin):
         summary="List Job Applications",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_view_job_applications', raise_exception=True))
+    # @method_decorator(permission_required('can_view_job_applications', raise_exception=True))
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         status_filter = request.query_params.get('status', None)
@@ -365,7 +365,7 @@ class JobAdvertApplicationDetailAPI(APIView):
         summary="Get Job Application",
         tags=["Recruitment"],
     )
-    @method_decorator(permission_required('can_view_job_applications', raise_exception=True))
+    # @method_decorator(permission_required('can_view_job_applications', raise_exception=True))
     def get(self, request, application_id):
         try:
             application = JobAdvertApplication.objects.get(id=application_id)

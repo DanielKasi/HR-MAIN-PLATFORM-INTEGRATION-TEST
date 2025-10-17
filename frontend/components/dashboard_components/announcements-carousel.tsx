@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import { useSelector } from "react-redux";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -19,28 +19,28 @@ const AnnouncementCarousel: React.FC = () => {
 		[],
 	);
 	const [currentIndex, setCurrentIndex] = useState(0);
-	const [loading, setLoading] = useState(true);
+	const [loading, setLoading] = useState(false);
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
 
 	useEffect(() => {
-		const fetchAcknowlegmentAnnouncements = async () => {
-			if (!currentInstitution) return;
-			try {
-				setLoading(true);
-				const response = await ACKNOWLEDGMENTS_API.getPaginated({
-					page: 1,
-				});
-				setAcknowledgmentAnnouncements(response.results);
-			} catch (err) {
-				showErrorToast({ error: err, defaultMessage: "Failed to fetch announcements" });
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		fetchAcknowlegmentAnnouncements();
 	}, [currentInstitution]);
+
+	const fetchAcknowlegmentAnnouncements = async () => {
+		if (!currentInstitution) return;
+		try {
+			setLoading(true);
+			const response = await ACKNOWLEDGMENTS_API.getPaginated({
+				page: 1,
+			});
+			setAcknowledgmentAnnouncements(response.results);
+		} catch (err) {
+			showErrorToast({ error: err, defaultMessage: "Failed to fetch announcements" });
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	// Auto-cycle announcements every 10 seconds
 	useEffect(() => {
@@ -87,8 +87,8 @@ const AnnouncementCarousel: React.FC = () => {
 	}
 
 	return (
-		<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full overflow-hidden">
-			<CardHeader className="flex flex-row items-start justify-between py-2">
+		<Card className="md:col-span-2 shadow-sm  flex flex-col justify-between border-none bg-white !h-full overflow-hidden">
+			<CardHeader className="flex flex-row items-start justify-between !py-2 !pt-6">
 				<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
 				<Link
 					className="flex items-center justify-end gap-2 text-xs md:text-sm underline underline-offset-2 decoration-primary text-primary"
@@ -106,30 +106,34 @@ const AnnouncementCarousel: React.FC = () => {
 				>
 					{acknowledgmentAnnouncements.map((acknowledgement) => (
 						<div key={acknowledgement.id} className="min-w-full px-6 text-sm">
-							{acknowledgement.announcement.created_at && (
-								<div className="flex items-center justify-between gap-4 mt-4">
-									<span className="text-xs text-gray-600">
-										{formatDate(acknowledgement.announcement.created_at, true)}
-									</span>
-								</div>
-							)}
-							<p className="flex items-center justify-between gap-4 mb-4">
-								<span className="truncate text-gray-600">
-									<strong>{acknowledgement.announcement.title}</strong>
-								</span>
-							</p>
-							<div className="min-h-[4rem]">
-								<p className="text-sm text-gray-600 line-clamp-3">
-									{acknowledgement.announcement.content}
+							<div className="min-h-[80%]">
+								{acknowledgement.announcement.created_at && (
+									<div className="flex items-center justify-between gap-4 mt-4">
+										<span className="text-sm text-gray-600">
+											{formatDate(acknowledgement.announcement.created_at, true)}
+										</span>
+									</div>
+								)}
+
+								<p className="truncate text-gray-700 text-2xl font-semibold w-full mb-4">
+									{acknowledgement.announcement.title}
 								</p>
+
+								<div className="w-full flex flex-col gap-2">
+									<div className="min-h-[4rem] mb-auto">
+										<p className="text-base text-gray-600 line-clamp-6">
+											{acknowledgement.announcement.content}
+										</p>
+									</div>
+									<Link
+										className="flex items-center justify-start w-full mt-10 gap-2 text-xs md:text-sm underline underline-offset-2 decoration-primary text-primary"
+										href={`/announcements/${acknowledgmentAnnouncements[currentIndex].announcement.id}`}
+									>
+										<span className="">Read More</span>
+										<ChevronRight className="w-4 h-4 text-primary" />
+									</Link>
+								</div>
 							</div>
-							<Link
-								className="flex items-center justify-start w-full mt-2 gap-2 text-xs md:text-sm underline underline-offset-2 decoration-primary text-primary"
-								href={`/announcements/${acknowledgmentAnnouncements[currentIndex].announcement.id}`}
-							>
-								<span className="">Read More</span>
-								<ChevronRight className="w-4 h-4 text-primary" />
-							</Link>
 						</div>
 					))}
 				</div>

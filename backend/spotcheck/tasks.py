@@ -78,6 +78,7 @@ def check_spotcheck_response(spotcheck_id):
     return "responded"
 
 
+# TODO: Improve effeciency of this function so that we don't use n x n loops
 @shared_task
 def initiate_spotcheck_responses_from_attendance_records(
     attendance_record_ids
@@ -98,7 +99,7 @@ def initiate_spotcheck_responses_from_attendance_records(
         spot_checks = EmployeeSpotCheck.objects.filter(
             employee=employee,
             responded_at__isnull=True,
-        )
+        ) # This will use all spotchecks that haven't been responded to yet even those whose date and time is irrelevant to our attendance logs. Look into it more
 
         for spot_check in spot_checks:
 

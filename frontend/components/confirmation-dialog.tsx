@@ -34,20 +34,18 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
 	return (
 		<AlertDialog open={isOpen} onOpenChange={onClose}>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>{title}</AlertDialogTitle>
+			<AlertDialogContent className="min-w-min">
+				<AlertDialogHeader className="">
+					<AlertDialogTitle className="max-w-full !overflow-x-hidden line-clamp-1">
+						{title}
+					</AlertDialogTitle>
 					<AlertDialogDescription>{description}</AlertDialogDescription>
 				</AlertDialogHeader>
-				<AlertDialogFooter>
-					<AlertDialogCancel className="w-full rounded-full" disabled={disabled}>
+				<AlertDialogFooter className="grid grid-cols-2 !max-w-full  !w-fullgap-4">
+					<AlertDialogCancel className="rounded-full" disabled={disabled}>
 						{cancelText}
 					</AlertDialogCancel>
-					<AlertDialogAction
-						className="w-full rounded-full"
-						disabled={disabled}
-						onClick={onConfirm}
-					>
+					<AlertDialogAction className="rounded-full" disabled={disabled} onClick={onConfirm}>
 						{confirmText}
 					</AlertDialogAction>
 				</AlertDialogFooter>

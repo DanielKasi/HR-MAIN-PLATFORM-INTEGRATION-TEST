@@ -35,6 +35,7 @@ from .serializers import (
     DocumentRequestSerializer,
     EmployeeAttendanceSerializer,
     EmployeeCompanyEmailSerializer,
+    EmployeeMinimalSerializer,
     EmployeeMonthlyHourAccountSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
@@ -97,7 +98,7 @@ import json
 from .utilities import activate_employee, create_company_email, deactivate_employee, delete_company_email, generate_email, generate_employee_excel, reset_email_password
 from collections import defaultdict
 from django.contrib.sites.shortcuts import get_current_site
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 from django.utils.dateparse import parse_date
 
@@ -250,7 +251,7 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
 class EmployeeListAPIView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
     allowed_ordering_fields = ["user", "email", "department", "is_active", "position", "date_of_joining", "salary"]
-    default_ordering = ["user"]
+    default_ordering = ["name"]
 
     @extend_schema(
         request=None,
@@ -276,7 +277,7 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
             OpenApiParameter(name="age_max", type=OpenApiTypes.INT, description="Maximum age filter")
         ]
     )
-    @method_decorator(permission_required('can_view_employees', raise_exception=True))
+    # @method_decorator(permission_required('can_view_employees', raise_exception=True))
     def get(self, request, institution_id):
         try:
             # Base queryset
@@ -315,16 +316,16 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
         search_query = query_params.get("search")
         if search_query:
             queryset = queryset.filter(
-                Q(employee_id__icontains=search_query) |
-                Q(user__fullname__icontains=search_query) |
-                Q(user__email__icontains=search_query) |
-                Q(email__icontains=search_query) |
-                Q(work_type__name__icontains=search_query) |
-                Q(employee_type__name__icontains=search_query) |
-                Q(position__name__icontains=search_query) |
-                Q(department__name__icontains=search_query) |
-                Q(phone_number__icontains=search_query) |
-                Q(skills__icontains=search_query)
+                # Q(employee_id__icontains=search_query) |
+                Q(user__fullname__icontains=search_query) 
+                # Q(user__email__icontains=search_query) |
+                # Q(email__icontains=search_query) |
+                # Q(work_type__name__icontains=search_query) |
+                # Q(employee_type__name__icontains=search_query) |
+                # Q(position__name__icontains=search_query) |
+                # Q(department__name__icontains=search_query) |
+                # Q(phone_number__icontains=search_query) |
+                # Q(skills__icontains=search_query)
             )
 
         department_id = query_params.get("department_id")
@@ -453,7 +454,7 @@ class EmployeeDetailAPIView(APIView):
             ),
         ],
     )
-    @method_decorator(permission_required('can_view_employees', raise_exception=True))
+    # @method_decorator(permission_required('can_view_employees', raise_exception=True))
     def get(self, request, employee_id):
         """
         Retrieve details of a specific employee.
@@ -465,7 +466,7 @@ class EmployeeDetailAPIView(APIView):
 
         try:
             if by_user:
-                employee = Employee.objects.get(user_id=employee_id)
+                employee = Employee.objects.get(user__id=employee_id)
             else:
                 employee = Employee.objects.get(id=employee_id)
 
@@ -533,7 +534,7 @@ class ResendWelcomeLink(APIView):
             500: {"description": "Server error"},
         },
     )
-    @method_decorator(permission_required('can_resend_password_link', raise_exception=True))
+    # @method_decorator(permission_required('can_resend_password_link', raise_exception=True))
     def post(self, request, employee_id):  
         try:
             employee = Employee.objects.select_related('user').get(id=employee_id)
@@ -768,7 +769,7 @@ class EmployeeCreateAPIView(APIView):
             ),
         ],
     )
-    @method_decorator(permission_required('can_create_employees', raise_exception=True))
+    # @method_decorator(permission_required('can_create_employees', raise_exception=True))
     def post(self, request):
         site = get_current_site(request)
 
@@ -2190,7 +2191,7 @@ class EmployeeUpdateAPIView(APIView):
             ),
         ],
     )
-    @method_decorator(permission_required('can_edit_employees', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_employees', raise_exception=True))
     def patch(self, request, employee_id):
         try:
             employee = Employee.objects.get(pk=employee_id)
@@ -2258,7 +2259,7 @@ class EmployeeDeleteAPIView(APIView):
         summary="Delete Employee",
         tags=["Employee Management"],
     )
-    @method_decorator(permission_required('can_delete_employees', raise_exception=True))
+    # @method_decorator(permission_required('can_delete_employees', raise_exception=True))
     def delete(self, request, institution_id, employee_id):
         try:
             employee = Employee.objects.get(
@@ -2718,7 +2719,7 @@ class EmployeeAttendanceListCreateAPIView(APIView, SortableAPIMixin):
         responses=EmployeeAttendanceSerializer(many=True),
         description="Retrieve all attendance records or for a specific employee if employee_id is provided either in path or query param.",
     )
-    @method_decorator(permission_required('can_view_attendance_records', raise_exception=True))
+    # @method_decorator(permission_required('can_view_attendance_records', raise_exception=True))
     def get(self, request, employee_id=None):
         user = request.user.profile
         search_query = request.query_params.get("search", None)
@@ -2826,7 +2827,7 @@ class EmployeeAttendanceDetailAPIView(APIView):
         responses=EmployeeAttendanceSerializer,
         description="Retrieve an attendance record by ID",
     )
-    @method_decorator(permission_required('can_view_attendance_records', raise_exception=True))
+    # @method_decorator(permission_required('can_view_attendance_records', raise_exception=True))
     def get(self, request, pk):
         record = self.get_object(pk)
         serializer = EmployeeAttendanceSerializer(record)
@@ -2837,7 +2838,7 @@ class EmployeeAttendanceDetailAPIView(APIView):
         responses=EmployeeAttendanceSerializer,
         description="Update an attendance record by ID",
     )
-    @method_decorator(permission_required('can_edit_attendance_records', raise_exception=True))
+    # @method_decorator(permission_required('can_edit_attendance_records', raise_exception=True))
     def patch(self, request, pk):
         record = self.get_object(pk)
         record.approval_status = "under_update"
@@ -4915,7 +4916,7 @@ class ActivateEmployeeView(APIView):
 class EmployeeLogListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
     allowed_ordering_fields = ['employee__name', 'device__serial_number', 'record_reference', 'date', 'time', 'created_at']
-    default_ordering = ['date', 'time']
+    default_ordering = ['-date', '-time']
 
     @extend_schema(
         request=OpenApiTypes.OBJECT,
@@ -4953,7 +4954,7 @@ class EmployeeLogListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Employee Logs"],
     )
-    @method_decorator(permission_required('can_view_employee_logs', raise_exception=True))
+    # @method_decorator(permission_required('can_view_employee_logs', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get("search", None)

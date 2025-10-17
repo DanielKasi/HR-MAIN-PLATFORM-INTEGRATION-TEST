@@ -17,6 +17,8 @@ import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { BonusPointSettingsModal } from "./bonus-points-settings-modal";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 export function InstitutionBonusPointSettingsTable() {
 	const institution = useSelector(selectSelectedInstitution);
@@ -77,24 +79,30 @@ export function InstitutionBonusPointSettingsTable() {
 			key: "actions",
 			header: "Actions",
 			cell: (setting) => (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<MoreVertical className="h-4 w-4" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => handleEdit(setting)}>
-							<Edit className="h-4 w-4 mr-2" /> Edit
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={() => setBonusPointSettingToDelete(setting)}
-							className="text-red-600"
-						>
-							<Trash2 className="h-4 w-4 mr-2" /> Delete
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
+				<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_BONUS_POINTS}>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="ghost" className="h-8 w-8 p-0">
+								<MoreVertical className="h-4 w-4" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start">
+							<DropdownMenuItem onClick={() => handleEdit(setting)}>
+								<Edit className="h-4 w-4 mr-2" /> Edit
+							</DropdownMenuItem>
+							<ProtectedComponent
+								permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_BONUS_POINTS}
+							>
+								<DropdownMenuItem
+									onClick={() => setBonusPointSettingToDelete(setting)}
+									className="text-red-600"
+								>
+									<Trash2 className="h-4 w-4 mr-2" /> Delete
+								</DropdownMenuItem>
+							</ProtectedComponent>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</ProtectedComponent>
 			),
 		},
 	];
@@ -102,9 +110,11 @@ export function InstitutionBonusPointSettingsTable() {
 	return (
 		<div className="overflow-x-auto w-full">
 			<div className="flex justify-end mb-4 ">
-				<Button onClick={handleCreate} className="rounded-xl">
-					<Plus className="h-4 w-4 mr-2" /> Add Bonus Point Setting
-				</Button>
+				<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_BONUS_POINTS}>
+					<Button onClick={handleCreate} className="rounded-xl">
+						<Plus className="h-4 w-4 mr-2" /> Add Bonus Point Setting
+					</Button>
+				</ProtectedComponent>
 			</div>
 			<PaginatedTable<IBonusPointSettings>
 				fetchFirstPage={async () => await BONUS_POINT_SETTINGS_API.getPaginated({ page: 1 })}
