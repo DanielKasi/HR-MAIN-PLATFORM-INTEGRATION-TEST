@@ -40,23 +40,25 @@ export default function StatsCard({
 }: Props) {
 	const [color] = useState(bg && fg ? { bg, fg } : colors[index]);
 	return (
-		<Card className={`shadow-none border p-4 ${className}`}>
+		<Card className={`shadow-none border p-3 sm:p-4 ${className}`}>
 			<div className="flex items-start justify-between">
-				<div className="flex items-start gap-3">
-					<div className={`w-10 h-10 ${color.bg} rounded-xl p-2 flex items-center justify-center`}>
-						<Icon icon={icon} className={`!w-7 !h-7 ${color.fg}`} />
+				<div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+					<div
+						className={`w-8 h-8 sm:w-10 sm:h-10 ${color.bg} rounded-lg sm:rounded-xl p-1.5 sm:p-2 flex items-center justify-center flex-shrink-0`}
+					>
+						<Icon icon={icon} className={`!w-5 !h-5 sm:!w-7 sm:!h-7 ${color.fg}`} />
 					</div>
-					<div>
-						<p className="text-base text-gray-600">{title}</p>
-						<p className="text-2xl font-bold">{value}</p>
+					<div className="min-w-0 flex-1">
+						<p className="text-xs sm:text-sm md:text-base text-gray-600 truncate">{title}</p>
+						<p className="text-lg sm:text-xl md:text-2xl font-bold truncate">{value}</p>
 					</div>
 				</div>
 				{link && (
 					<Link
 						href={link}
-						className="!rounded-full aspect-square hover:bg-gray-100 border border-black/20 p-2 transition-colors"
+						className="!rounded-full aspect-square hover:bg-gray-100 border border-black/20 p-1.5 sm:p-2 transition-colors flex-shrink-0 ml-2"
 					>
-						<Icon icon="hugeicons:arrow-up-right-01" className="!size-4" />
+						<Icon icon="hugeicons:arrow-up-right-01" className="!size-3 sm:!size-4" />
 					</Link>
 				)}
 			</div>

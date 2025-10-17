@@ -88,88 +88,102 @@ export default function EmployeePage() {
 			initialData={initialData}
 			fetchData={getEmployeeDashboard}
 			content={(data) => (
-				<div className="bg-background p-6 min-h-screen">
-					<div className="space-y-8">
+				<div className="bg-background p-4 sm:p-6 min-h-screen">
+					<div className="space-y-6 sm:space-y-8">
 						{/* Header */}
-						<div className="flex flex-col md:flex-row items-center justify-between gap-8">
-							<div className="space-y-2">
-								<h1 className="text-4xl font-bold text-foreground">Employee Analytics Dashboard</h1>
-								<p className="text-lg text-muted-foreground">
+						<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-8">
+							<div className="space-y-1 sm:space-y-2">
+								<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
+									Employee Analytics Dashboard
+								</h1>
+								<p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
 									Comprehensive workforce insights and metrics
 								</p>
 							</div>
-							<div className="flex items-center justify-end gap-8">
-								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+							<div className="flex items-center justify-start sm:justify-end w-full sm:w-auto">
+								<Button
+									className="rounded-xl w-full sm:w-auto text-sm sm:text-base"
+									onClick={() => setIsReportsDialogOpen(true)}
+								>
 									Generate Reports
 								</Button>
 							</div>
 						</div>
 
 						{/* Key Metrics */}
-						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
 							{getCards(data).map((card, i) => (
 								<StatsCard key={i} index={i} {...card} />
 							))}
 						</div>
 
-						<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-							{/* Department Distribution Bar Chart */}
-							<DepartmentTreeMap
-								data={data.employees_by_department}
-								title={"Employees per Department"}
-							/>
+						{/* Charts Grid */}
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+							{/* Department Distribution - Full width on mobile, then half */}
+							<div className="lg:col-span-2 xl:col-span-1">
+								<DepartmentTreeMap
+									data={data.employees_by_department}
+									title={"Employees per Department"}
+								/>
+							</div>
 
 							{/* Gender Distribution Pie Chart */}
-							<DonutChart
-								title="Gender Distribution"
-								totalStr="Total Employees"
-								data={data.employees_by_gender}
-								colors={["#415180", "#FF3403"]}
-								label={"Gender"}
-								dataKey={"count"}
-								nameKey={"gender"}
-								labelList
-								donut
-							/>
+							<div className="lg:col-span-2 xl:col-span-1">
+								<DonutChart
+									title="Gender Distribution"
+									totalStr="Total Employees"
+									data={data.employees_by_gender}
+									colors={["#415180", "#0CA0F5"]}
+									label={"Gender"}
+									dataKey={"count"}
+									nameKey={"gender"}
+									labelList
+									donut
+								/>
+							</div>
 
-							{/* employee count by department */}
-							<BarVChart
-								title={"Employee By department"}
-								label={""}
-								data={{
-									"2021-2025": [
-										{ year: "2021", count: 12 },
-										{ year: "2022", count: 20 },
-										{ year: "2023", count: 40 },
-										{ year: "2024", count: 30 },
-										{ year: "2025", count: 50 },
-									],
-								}}
-								dataKey={"count"}
-								nameKey={"year"}
-								colors={colors}
-								gap
-								rounded
-							/>
+							{/* Employee count by department */}
+							<div className="lg:col-span-2 xl:col-span-1">
+								<BarVChart
+									title={"Employee By department"}
+									label={""}
+									data={{
+										"2021-2025": [
+											{ year: "2021", count: 12 },
+											{ year: "2022", count: 20 },
+											{ year: "2023", count: 40 },
+											{ year: "2024", count: 30 },
+											{ year: "2025", count: 50 },
+										],
+									}}
+									dataKey={"count"}
+									nameKey={"year"}
+									colors={colors}
+									gap
+									rounded
+								/>
+							</div>
 
 							{/* Work Type Comparison */}
-							<BarVChart
-								title={"Work Type Distribution"}
-								label={""}
-								data={{
-									"2025": [
-										{ worktype: "full-time", count: 12 },
-										{ worktype: "part-time", count: 20 },
-										{ worktype: "internship", count: 4 },
-										{ worktype: "contract", count: 5 },
-									],
-								}}
-								dataKey={"count"}
-								nameKey={"worktype"}
-								colors={colors}
-								gap
-								rounded
-							/>
+							<div className="lg:col-span-2 xl:col-span-1">
+								<BarVChart
+									title={"Work Type Distribution"}
+									label={""}
+									data={{
+										"2025": [
+											{ worktype: "full-time", count: 12 },
+											{ worktype: "part-time", count: 20 },
+											{ worktype: "internship", count: 4 },
+											{ worktype: "contract", count: 5 },
+										],
+									}}
+									dataKey={"count"}
+									nameKey={"worktype"}
+									colors={colors}
+									gap
+									rounded
+								/>
+							</div>
 						</div>
 					</div>
 					<ReportDialog

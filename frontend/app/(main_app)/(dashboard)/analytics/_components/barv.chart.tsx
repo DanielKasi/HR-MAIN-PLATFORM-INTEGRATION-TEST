@@ -59,10 +59,12 @@ export default function BarVChart({
 
 	return (
 		<Card className={`flex flex-col shadow-none border ${className}`}>
-			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
-				{headerSlot || null}
-				<div className="flex items-center gap-4">
+			<CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-0 gap-2 sm:gap-4">
+				<CardTitle className="text-lg sm:text-xl flex-grow text-center sm:text-left">
+					{title}
+				</CardTitle>
+				<div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2">
+					{headerSlot || null}
 					{select && category && (
 						<Select
 							defaultValue={category}
@@ -71,12 +73,12 @@ export default function BarVChart({
 								setItems(data[d]);
 							}}
 						>
-							<SelectTrigger className="text-slate-900">
+							<SelectTrigger className="text-slate-900 w-full sm:w-[140px] text-sm">
 								<SelectValue placeholder={category} />
 							</SelectTrigger>
 							<SelectContent>
 								{years.map((k) => (
-									<SelectItem key={k} value={k}>
+									<SelectItem key={k} value={k} className="text-sm">
 										{sentenceCase(k)}
 									</SelectItem>
 								))}
@@ -85,36 +87,51 @@ export default function BarVChart({
 					)}
 				</div>
 			</CardHeader>
-			<CardContent className="flex-1 flex items-center">
+			<CardContent className="flex-1 flex items-center p-2 sm:p-6">
 				<ChartContainer
 					config={chartConfig}
-					className="mx-auto aspect-square w-full h-full max-h-[400px]"
+					className="mx-auto w-full h-full max-h-[300px] sm:max-h-[350px] md:max-h-[400px] min-h-[250px]"
 				>
 					<BarChart
 						accessibilityLayer
 						data={items}
-						barCategoryGap={gap ? 10 : 0}
-						margin={{ top: 10, bottom: 10 }}
+						barCategoryGap={gap ? (window.innerWidth < 768 ? 8 : 10) : 0}
+						margin={{
+							top: 10,
+							bottom: 10,
+							left: window.innerWidth < 768 ? 5 : 10,
+							right: window.innerWidth < 768 ? 5 : 10,
+						}}
 					>
 						<CartesianGrid horizontal={false} />
 						<XAxis
 							dataKey={nameKey}
 							tickLine={false}
-							tickMargin={10}
+							tickMargin={window.innerWidth < 768 ? 5 : 10}
 							axisLine={false}
-							tickFormatter={(value) => sentenceCase(value)}
+							tickFormatter={(value) => {
+								const formatted = sentenceCase(value);
+								// Truncate long labels on mobile
+								return window.innerWidth < 768 && formatted.length > 8
+									? formatted.substring(0, 7) + "..."
+									: formatted;
+							}}
+							interval={window.innerWidth < 768 ? "preserveStartEnd" : 0}
+							fontSize={window.innerWidth < 768 ? 10 : 12}
 						/>
 						<YAxis
 							axisLine={false}
 							tickLine={false}
 							domain={[0, 1.25 * Math.max(...items.map((x) => x[dataKey] as number))]}
+							fontSize={window.innerWidth < 768 ? 10 : 12}
+							width={window.innerWidth < 768 ? 30 : 40}
 						/>
 						<ChartTooltip
 							active
 							cursor={false}
 							content={<ChartTooltipContent hideLabel hideIndicator />}
 						/>
-						<Bar dataKey={dataKey} radius={rounded ? [10, 10, 0, 0] : 0}>
+						<Bar dataKey={dataKey} radius={rounded ? [8, 8, 0, 0] : 0}>
 							{items.map((_, index) => (
 								<Cell key={`cell-${index}`} fill={colors[index]} />
 							))}
