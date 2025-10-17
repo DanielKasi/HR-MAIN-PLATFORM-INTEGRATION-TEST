@@ -188,6 +188,16 @@ class Event(BaseApprovableModel):
     def _add_event_to_calendar(self):
         from calendar2.models import Calendar, EventOccurrence
 
+        if not self.start_date:
+            # no start date means nothing to add
+            return
+
+        if not self.end_date:
+            self.end_date = self.start_date
+
+        if self.end_date and self.end_date < self.start_date:
+            raise ValueError("End date cannot be before start date")
+
         if self.start_date == self.end_date:
             start_date = self.start_date
             end_date = self.repeat_until if self.repeat_until else self.start_date
