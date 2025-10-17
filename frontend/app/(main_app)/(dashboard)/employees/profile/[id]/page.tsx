@@ -596,7 +596,7 @@ export default function EmployeeProfile() {
 												<ProtectedComponent
 													permissionCode={PERMISSION_CODES.CAN_RESEND_PASSWORD_LINK}
 												>
-													<div className="!flex !items-center justify-start">
+													<div className="!flex !items-center justify-center md:justify-start">
 														<Button
 															variant={"link"}
 															onClick={handleResendWelcomeEmail}

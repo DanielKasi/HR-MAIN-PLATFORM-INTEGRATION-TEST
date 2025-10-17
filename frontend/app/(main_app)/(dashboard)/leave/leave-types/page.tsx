@@ -175,94 +175,95 @@ const LeaveTypesPage = () => {
 	const hasFilters = searchTerm || statusFilter !== "all" || categoryFilter !== "all";
 
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
+		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-4 sm:py-6 md:py-8 min-h-screen">
 			{/* Header */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
 				<div>
 					<h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Leave Types</h1>
 				</div>
 			</div>
 
 			{/* Search and Filters */}
-			<div className="mb-6">
-				<div className=" border-gray-200">
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-						<div className="flex items-center gap-4 justify-between">
+			<div className="mb-4 sm:mb-6">
+				<div className="border-gray-200">
+					<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
+						<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
 							{/* Search bar */}
-							<div className="relative flex-shrink-0 max-w-md w-full">
-								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+							<div className="relative flex-1 min-w-0">
+								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
 								<Input
 									placeholder="Search leave types..."
 									value={searchTerm}
 									onChange={(e) => setSearchTerm(e.target.value)}
-									className="pl-10 text-sm sm:text-base"
+									className="pl-8 sm:pl-10 text-xs sm:text-sm"
 								/>
 							</div>
 
 							{/* Filters */}
-						</div>
-						<div className="flex gap-2 flex-shrink-0">
-							<Select
-								value={statusFilter}
-								onValueChange={(value: string) =>
-									setStatusFilter(value as "all" | "active" | "inactive")
-								}
-							>
-								<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-									<SelectValue placeholder="All Statuses" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all" className="text-sm sm:text-base">
-										All Statuses
-									</SelectItem>
-									<SelectItem value="active" className="text-sm sm:text-base">
-										Active
-									</SelectItem>
-									<SelectItem value="inactive" className="text-sm sm:text-base">
-										Inactive
-									</SelectItem>
-								</SelectContent>
-							</Select>
-
-							<Select
-								value={categoryFilter}
-								onValueChange={(value: string) =>
-									setCategoryFilter(
-										value as
-											| "all"
-											| "annual"
-											| "sick"
-											| "maternity"
-											| "paternity"
-											| "study"
-											| "unpaid",
-									)
-								}
-							>
-								<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-									<SelectValue placeholder="All Categories" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all" className="text-sm sm:text-base">
-										All Categories
-									</SelectItem>
-									{LEAVE_CATEGORIES.map((category) => (
-										<SelectItem
-											key={category.value}
-											value={category.value}
-											className="text-sm sm:text-base"
-										>
-											{category.label}
+							<div className="flex gap-2 flex-shrink-0">
+								<Select
+									value={statusFilter}
+									onValueChange={(value: string) =>
+										setStatusFilter(value as "all" | "active" | "inactive")
+									}
+								>
+									<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none text-xs sm:text-sm">
+										<SelectValue placeholder="All Statuses" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all" className="text-xs sm:text-sm">
+											All Statuses
 										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+										<SelectItem value="active" className="text-xs sm:text-sm">
+											Active
+										</SelectItem>
+										<SelectItem value="inactive" className="text-xs sm:text-sm">
+											Inactive
+										</SelectItem>
+									</SelectContent>
+								</Select>
+
+								<Select
+									value={categoryFilter}
+									onValueChange={(value: string) =>
+										setCategoryFilter(
+											value as
+												| "all"
+												| "annual"
+												| "sick"
+												| "maternity"
+												| "paternity"
+												| "study"
+												| "unpaid",
+										)
+									}
+								>
+									<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none text-xs sm:text-sm">
+										<SelectValue placeholder="All Categories" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all" className="text-xs sm:text-sm">
+											All Categories
+										</SelectItem>
+										{LEAVE_CATEGORIES.map((category) => (
+											<SelectItem
+												key={category.value}
+												value={category.value}
+												className="text-xs sm:text-sm"
+											>
+												{category.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
 								<Button
-									className="flex items-center gap-2 text-xs sm:text-sm rounded-[12px]"
+									className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm rounded-[12px] w-full sm:w-auto"
 									onClick={handleCreateLeaveType}
+									size="sm"
 								>
 									<Plus className="h-3 w-3 sm:h-4 sm:w-4" />
 									<span className="hidden sm:inline">Create Leave Type</span>
@@ -275,9 +276,8 @@ const LeaveTypesPage = () => {
 			</div>
 
 			{/* Leave Types Table */}
-
 			<div>
-				<CardContent className="p-0 -ml-3">
+				<CardContent className="p-0 -ml-3 sm:-ml-4">
 					<PaginatedTableWrapper<ILeaveType>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
@@ -301,12 +301,12 @@ const LeaveTypesPage = () => {
 							}, [refresh]);
 
 							if (loading) {
-								return <TableSkeleton rows={10} columns={8} />;
+								return <TableSkeleton rows={8} columns={6} />;
 							}
 
 							if (!data || data.results.length === 0) {
 								return (
-									<div className="text-center py-8 text-gray-500">
+									<div className="text-center py-8 text-gray-500 text-sm sm:text-base">
 										{searchTerm
 											? "No leave types found matching your search criteria"
 											: "No leave types found"}
@@ -326,15 +326,15 @@ const LeaveTypesPage = () => {
 
 							if (filteredResults.length === 0) {
 								return (
-									<div className="text-center py-8 text-gray-500">
+									<div className="text-center py-8 text-gray-500 text-sm sm:text-base">
 										No leave types found matching the selected filters.
 									</div>
 								);
 							}
 
 							return (
-								<div className="overflow-x-auto mt-10">
-									<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+								<div className="overflow-x-auto mt-6 sm:mt-10">
+									<Table className="min-w-[1000px] lg:min-w-full [&_th]:border-0 [&_td]:border-0">
 										<TableHeader className="bg-gray-50/50">
 											<TableRow>
 												<TableHead className="text-xs sm:text-sm">
@@ -342,10 +342,13 @@ const LeaveTypesPage = () => {
 													<Button
 														size="sm"
 														variant={ordering === "name" ? "default" : "outline"}
-														className="ml-2"
+														className="ml-1 sm:ml-2 h-6 w-6 sm:h-8 sm:w-8 p-0"
 														onClick={() => setOrdering(ordering === "name" ? "" : "name")}
 													>
-														<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+														<Icon
+															icon="hugeicons:sorting-02"
+															className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+														/>
 													</Button>
 												</TableHead>
 
@@ -354,10 +357,13 @@ const LeaveTypesPage = () => {
 													<Button
 														size="sm"
 														variant={ordering === "category" ? "default" : "outline"}
-														className="ml-2"
+														className="ml-1 sm:ml-2 h-6 w-6 sm:h-8 sm:w-8 p-0"
 														onClick={() => setOrdering(ordering === "category" ? "" : "category")}
 													>
-														<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+														<Icon
+															icon="hugeicons:sorting-02"
+															className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+														/>
 													</Button>
 												</TableHead>
 
@@ -366,10 +372,13 @@ const LeaveTypesPage = () => {
 													<Button
 														size="sm"
 														variant={ordering === "is_active" ? "default" : "outline"}
-														className="ml-2"
+														className="ml-1 sm:ml-2 h-6 w-6 sm:h-8 sm:w-8 p-0"
 														onClick={() => setOrdering(ordering === "is_active" ? "" : "is_active")}
 													>
-														<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+														<Icon
+															icon="hugeicons:sorting-02"
+															className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+														/>
 													</Button>
 												</TableHead>
 
@@ -378,14 +387,17 @@ const LeaveTypesPage = () => {
 													<Button
 														size="sm"
 														variant={ordering === "max_days_per_year" ? "default" : "outline"}
-														className="ml-2"
+														className="ml-1 sm:ml-2 h-6 w-6 sm:h-8 sm:w-8 p-0"
 														onClick={() =>
 															setOrdering(
 																ordering === "max_days_per_year" ? "" : "max_days_per_year",
 															)
 														}
 													>
-														<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+														<Icon
+															icon="hugeicons:sorting-02"
+															className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+														/>
 													</Button>
 												</TableHead>
 
@@ -394,14 +406,17 @@ const LeaveTypesPage = () => {
 													<Button
 														size="sm"
 														variant={ordering === "carry_forward_allowed" ? "default" : "outline"}
-														className="ml-2"
+														className="ml-1 sm:ml-2 h-6 w-6 sm:h-8 sm:w-8 p-0"
 														onClick={() =>
 															setOrdering(
 																ordering === "carry_forward_allowed" ? "" : "carry_forward_allowed",
 															)
 														}
 													>
-														<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+														<Icon
+															icon="hugeicons:sorting-02"
+															className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+														/>
 													</Button>
 												</TableHead>
 
@@ -413,12 +428,15 @@ const LeaveTypesPage = () => {
 													<Button
 														size="sm"
 														variant={ordering === "created_at" ? "default" : "outline"}
-														className="ml-2"
+														className="ml-1 sm:ml-2 h-6 w-6 sm:h-8 sm:w-8 p-0"
 														onClick={() =>
 															setOrdering(ordering === "created_at" ? "" : "created_at")
 														}
 													>
-														<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+														<Icon
+															icon="hugeicons:sorting-02"
+															className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+														/>
 													</Button>
 												</TableHead>
 
@@ -429,7 +447,7 @@ const LeaveTypesPage = () => {
 											{filteredResults.map((leaveType) => (
 												<TableRow key={leaveType.id}>
 													<TableCell className="font-medium">
-														<div className="flex items-center gap-2 sm:gap-3">
+														<div className="flex items-center gap-1 sm:gap-2">
 															<span className="text-xs sm:text-sm">{leaveType.name}</span>
 														</div>
 													</TableCell>
@@ -481,19 +499,19 @@ const LeaveTypesPage = () => {
 																		<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
 																	</Button>
 																</DropdownMenuTrigger>
-																<DropdownMenuContent align="end">
+																<DropdownMenuContent align="end" className="w-40 sm:w-48">
 																	<DropdownMenuItem
 																		onClick={() =>
 																			router.push(`/leave/leave-types/${leaveType.id}`)
 																		}
-																		className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
+																		className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																	>
-																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-gray-500" />
 																		View Details
 																	</DropdownMenuItem>
 																	<DropdownMenuItem
 																		onClick={() => handleEditLeaveType(leaveType)}
-																		className="text-xs sm:text-sm"
+																		className="text-xs sm:text-sm py-1.5 sm:py-2"
 																	>
 																		<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																		Edit
@@ -503,7 +521,7 @@ const LeaveTypesPage = () => {
 																			setDeletingLeaveType(leaveType);
 																			setIsDeleteDialogOpen(true);
 																		}}
-																		className="text-destructive text-xs sm:text-sm"
+																		className="text-destructive text-xs sm:text-sm py-1.5 sm:py-2"
 																	>
 																		<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																		Delete

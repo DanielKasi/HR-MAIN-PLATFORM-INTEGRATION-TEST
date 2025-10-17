@@ -52,11 +52,11 @@ export default function BarHChart({
 	}, []);
 
 	return (
-		<Card className={`flex flex-col shadow-none border ${className}`}>
-			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
+		<Card className={`flex flex-col shadow-none border w-full ${className}`}>
+			<CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-0 space-y-0 gap-3 sm:gap-4">
+				<CardTitle className="text-lg sm:text-xl lg:text-2xl flex-grow">{title}</CardTitle>
 				{select && groups?.length && (
-					<div className="flex items-center gap-4">
+					<div className="flex items-center gap-2 lg:gap-4 w-full sm:w-auto">
 						<Select
 							defaultValue={category}
 							onValueChange={(d) => {
@@ -64,7 +64,7 @@ export default function BarHChart({
 								setItems(data[d]);
 							}}
 						>
-							<SelectTrigger className="text-slate-900">
+							<SelectTrigger className="text-slate-900 w-full sm:min-w-[120px] lg:min-w-[140px]">
 								<SelectValue placeholder={category} />
 							</SelectTrigger>
 							<SelectContent>
@@ -78,20 +78,21 @@ export default function BarHChart({
 					</div>
 				)}
 			</CardHeader>
-			<CardContent className="flex-1 flex items-center">
+			<CardContent className="flex-1 flex items-center pt-3 sm:pt-4 lg:pt-6">
 				<ChartContainer
 					config={chartConfig}
-					className="mx-auto aspect-square w-full h-full max-h-[400px]"
+					className="mx-auto w-full h-full min-h-[250px] sm:min-h-[300px] lg:min-h-[400px] max-h-[500px]"
 				>
 					<BarChart
 						accessibilityLayer
 						data={items}
 						layout="vertical"
-						barCategoryGap={20}
+						barCategoryGap={16}
 						margin={{
-							top: 20,
-							left: 20,
-							bottom: 10,
+							top: 12,
+							left: 12,
+							right: 12,
+							bottom: 8,
 						}}
 					>
 						<CartesianGrid horizontal={false} />
@@ -101,6 +102,7 @@ export default function BarHChart({
 							axisLine={false}
 							tickFormatter={(v) => sentenceCase(v)}
 							domain={[0, 1.25 * Math.max(...items.map((x) => x[dataKey] as number))]}
+							tick={{ fontSize: 10, className: "text-xs sm:text-sm" }}
 						/>
 						<YAxis dataKey={nameKey} type="category" axisLine={false} hide />
 						<ChartTooltip
@@ -110,16 +112,22 @@ export default function BarHChart({
 						/>
 						<Bar
 							dataKey={dataKey}
-							radius={rounded ? 5 : 0}
+							radius={rounded ? 4 : 0}
 							fill="#0CA0F5"
 							background={{ fill: "hsl(var(--accent))" }}
 						>
-							<LabelList position="right" offset={8} className="text-sm fill-slate-600" />
+							<LabelList
+								position="right"
+								offset={6}
+								className="fill-slate-600 text-xs sm:text-sm"
+								fontSize={12}
+							/>
 							<LabelList
 								dataKey={nameKey}
 								position="insideTopLeft"
-								offset={-20}
-								className="text-base fill-slate-600"
+								offset={-16}
+								className="fill-slate-600 text-xs sm:text-sm lg:text-base"
+								fontSize={12}
 							/>
 						</Bar>
 					</BarChart>

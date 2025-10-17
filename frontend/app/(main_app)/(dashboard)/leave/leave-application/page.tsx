@@ -305,15 +305,17 @@ const LeaveApplicationsPage = () => {
 
 	if (!selectedInstitution?.id) {
 		return (
-			<div className="min-h-screen bg-white flex items-center justify-center">
+			<div className="min-h-screen bg-white flex items-center justify-center p-4">
 				<div className="flex flex-col items-center space-y-4 text-center">
 					<div className="relative">
-						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-						<Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+						<div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+						<Settings className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
 					</div>
 					<div className="space-y-2">
-						<h3 className="text-lg font-semibold text-gray-800">No Institution Selected</h3>
-						<p className="text-gray-600">
+						<h3 className="text-base sm:text-lg font-semibold text-gray-800">
+							No Institution Selected
+						</h3>
+						<p className="text-sm sm:text-base text-gray-600 max-w-sm">
 							Please select an institution to manage leave applications.
 						</p>
 					</div>
@@ -325,27 +327,27 @@ const LeaveApplicationsPage = () => {
 	return (
 		<div className="flex flex-col w-full min-h-screen bg-white">
 			{/* Header */}
-			<div className="flex flex-col gap-6 p-6">
+			<div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6">
 				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 					<div>
-						<h1 className="text-3xl font-bold text-gray-900">Leave Applications</h1>
+						<h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Leave Applications</h1>
 					</div>
 				</div>
 
 				{/* Search and Filters */}
-				<div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-start">
-					<div className="relative !w-full !max-w-md md:!max-w-lg">
+				<div className="flex flex-col gap-3 sm:gap-4">
+					<div className="relative w-full">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 						<Input
 							placeholder="Search leave applications..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="pl-10 "
+							className="pl-10 w-full"
 						/>
 					</div>
-					<div className="flex gap-2">
+					<div className="flex flex-col xs:flex-row gap-2 w-full">
 						<Select value={statusFilter} onValueChange={setStatusFilter}>
-							<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none rounded-xl">
+							<SelectTrigger className="w-full xs:w-[140px] sm:w-[150px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none rounded-xl">
 								<SelectValue placeholder="All Statuses" />
 							</SelectTrigger>
 							<SelectContent>
@@ -358,7 +360,7 @@ const LeaveApplicationsPage = () => {
 							</SelectContent>
 						</Select>
 						<Select value={leaveTypeFilter} onValueChange={setLeaveTypeFilter}>
-							<SelectTrigger className="w-full sm:w-[150px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none rounded-xl">
+							<SelectTrigger className="w-full xs:w-[160px] sm:w-[170px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none rounded-xl">
 								<SelectValue placeholder="All Leave Types" />
 							</SelectTrigger>
 							<SelectContent>
@@ -374,7 +376,7 @@ const LeaveApplicationsPage = () => {
 				</div>
 
 				{/* Table Content */}
-				<div className="flex-1 pb-6 min-h-0">
+				<div className="flex-1 pb-4 sm:pb-6 min-h-0 -mx-4 sm:mx-0">
 					<PaginatedTableWrapper<ILeaveRequest>
 						fetchFirstPage={() => fetchFirstPage(searchTerm)}
 						fetchFromUrl={fetchFromUrl}
@@ -389,9 +391,11 @@ const LeaveApplicationsPage = () => {
 
 							if (!data?.results?.length) {
 								return (
-									<div className="text-center py-12">
-										<FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-										<h3 className="text-lg font-semibold mb-2">No leave applications found</h3>
+									<div className="text-center py-8 sm:py-12 px-4">
+										<FileText className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+										<h3 className="text-base sm:text-lg font-semibold mb-2">
+											No leave applications found
+										</h3>
 									</div>
 								);
 							}
@@ -409,129 +413,156 @@ const LeaveApplicationsPage = () => {
 							});
 
 							return (
-								<div className="rounded-lg border bg-white">
+								<div className="rounded-lg border bg-white overflow-x-auto">
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead>
-													<div className="flex items-center gap-2">
-														<span>Employee</span>
+												<TableHead className="min-w-[140px] sm:min-w-[160px]">
+													<div className="flex items-center gap-1 sm:gap-2">
+														<span className="text-xs sm:text-sm">Employee</span>
 														<Button
 															size="sm"
 															variant={ordering === "employee" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-5 w-5 sm:h-6 sm:w-6 p-0"
 															onClick={() => setOrdering(ordering === "employee" ? "" : "employee")}
 														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+															<Icon
+																icon="hugeicons:sorting-02"
+																className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+															/>
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead>
-													<div className="flex items-center gap-2">
-														<span>Leave Type</span>
+												<TableHead className="min-w-[130px] sm:min-w-[150px]">
+													<div className="flex items-center gap-1 sm:gap-2">
+														<span className="text-xs sm:text-sm">Leave Type</span>
 														<Button
 															size="sm"
 															variant={ordering === "leave_type" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-5 w-5 sm:h-6 sm:w-6 p-0"
 															onClick={() =>
 																setOrdering(ordering === "leave_type" ? "" : "leave_type")
 															}
 														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+															<Icon
+																icon="hugeicons:sorting-02"
+																className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+															/>
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead>
-													<div className="flex items-center gap-2">
-														<span>Start Date</span>
+												<TableHead className="min-w-[110px] sm:min-w-[120px]">
+													<div className="flex items-center gap-1 sm:gap-2">
+														<span className="text-xs sm:text-sm">Start Date</span>
 														<Button
 															size="sm"
 															variant={ordering === "start_date" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-5 w-5 sm:h-6 sm:w-6 p-0"
 															onClick={() =>
 																setOrdering(ordering === "start_date" ? "" : "start_date")
 															}
 														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+															<Icon
+																icon="hugeicons:sorting-02"
+																className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+															/>
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead>
-													<div className="flex items-center gap-2">
-														<span>End Date</span>
+												<TableHead className="min-w-[110px] sm:min-w-[120px]">
+													<div className="flex items-center gap-1 sm:gap-2">
+														<span className="text-xs sm:text-sm">End Date</span>
 														<Button
 															size="sm"
 															variant={ordering === "end_date" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-5 w-5 sm:h-6 sm:w-6 p-0"
 															onClick={() => setOrdering(ordering === "end_date" ? "" : "end_date")}
 														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+															<Icon
+																icon="hugeicons:sorting-02"
+																className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+															/>
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead>
-													<div className="flex items-center gap-2">
-														<span>Duration</span>
+												<TableHead className="min-w-[120px] sm:min-w-[140px]">
+													<div className="flex items-center gap-1 sm:gap-2">
+														<span className="text-xs sm:text-sm">Duration</span>
 														<Button
 															size="sm"
 															variant={ordering === "duration_type" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-5 w-5 sm:h-6 sm:w-6 p-0"
 															onClick={() =>
 																setOrdering(ordering === "duration_type" ? "" : "duration_type")
 															}
 														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+															<Icon
+																icon="hugeicons:sorting-02"
+																className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+															/>
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead>Status</TableHead>
-												<TableHead>Reason</TableHead>
-												<TableHead className="w-[70px]">Actions</TableHead>
+												<TableHead className="min-w-[100px] sm:min-w-[110px]">
+													<span className="text-xs sm:text-sm">Status</span>
+												</TableHead>
+												<TableHead className="min-w-[150px] sm:min-w-[200px]">
+													<span className="text-xs sm:text-sm">Reason</span>
+												</TableHead>
+												<TableHead className="w-[60px] sm:w-[70px]">
+													<span className="text-xs sm:text-sm">Actions</span>
+												</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
 											{filteredResults.map((application) => (
 												<TableRow key={application.id?.toString() || Math.random()}>
 													<TableCell>
-														<div className="font-medium text-gray-900">
+														<div className="font-medium text-gray-900 text-xs sm:text-sm">
 															{getEmployeeName(application.employee)}
 														</div>
 													</TableCell>
 													<TableCell>
 														<Badge
-															className={`${getCategoryColor((application.leave_type as any)?.category || "annual")} border font-medium`}
+															className={`${getCategoryColor((application.leave_type as any)?.category || "annual")} border font-medium text-[10px] sm:text-xs`}
 														>
 															{getLeaveTypeName(application.leave_type)}
 														</Badge>
 													</TableCell>
 													<TableCell>
-														<span className="text-sm font-medium text-gray-900">
+														<span className="text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">
 															{new Date(application.start_date).toLocaleDateString()}
 														</span>
 													</TableCell>
 													<TableCell>
-														<span className="text-sm font-medium text-gray-900">
+														<span className="text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">
 															{new Date(application.end_date).toLocaleDateString()}
 														</span>
 													</TableCell>
 													<TableCell>
-														<span className="text-sm text-gray-900">
+														<span className="text-xs sm:text-sm text-gray-900">
 															{DURATION_TYPES.find((d) => d.value === application.duration_type)
 																?.label || application.duration_type}
 														</span>
 													</TableCell>
 													<TableCell>
 														<Badge
-															className={`${getStatusColor(application.status)} border font-medium flex items-center gap-1 w-fit`}
+															className={`${getStatusColor(application.status)} border font-medium flex items-center gap-1 w-fit text-[10px] sm:text-xs`}
 														>
 															{getStatusIcon(application.status)}
-															{application.status.charAt(0).toUpperCase() +
-																application.status.slice(1)}
+															<span className="hidden xs:inline">
+																{application.status.charAt(0).toUpperCase() +
+																	application.status.slice(1)}
+															</span>
+															<span className="xs:hidden">
+																{application.status.charAt(0).toUpperCase() +
+																	application.status.slice(1, 3)}
+															</span>
 														</Badge>
 													</TableCell>
 													<TableCell>
-														<div className="max-w-xs">
-															<p className="text-sm text-gray-900 line-clamp-2">
+														<div className="max-w-[150px] sm:max-w-xs">
+															<p className="text-xs sm:text-sm text-gray-900 line-clamp-2">
 																{application.reason}
 															</p>
 														</div>
@@ -539,8 +570,12 @@ const LeaveApplicationsPage = () => {
 													<TableCell>
 														<DropdownMenu>
 															<DropdownMenuTrigger asChild>
-																<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-																	<MoreVertical className="h-4 w-4" />
+																<Button
+																	variant="ghost"
+																	size="sm"
+																	className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+																>
+																	<MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 																</Button>
 															</DropdownMenuTrigger>
 															<DropdownMenuContent align="end">
@@ -559,9 +594,9 @@ const LeaveApplicationsPage = () => {
 																						getEmployeeName(application.employee),
 																					)
 																				}
-																				className="text-green-600"
+																				className="text-green-600 text-xs sm:text-sm"
 																			>
-																				<Check className="h-4 w-4 mr-2" />
+																				<Check className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																				Approve
 																			</DropdownMenuItem>
 																		</ProtectedComponent>
@@ -579,9 +614,9 @@ const LeaveApplicationsPage = () => {
 																						getEmployeeName(application.employee),
 																					)
 																				}
-																				className="text-red-600"
+																				className="text-red-600 text-xs sm:text-sm"
 																			>
-																				<X className="h-4 w-4 mr-2" />
+																				<X className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																				Reject
 																			</DropdownMenuItem>
 																		</ProtectedComponent>
@@ -599,9 +634,9 @@ const LeaveApplicationsPage = () => {
 																						getEmployeeName(application.employee),
 																					)
 																				}
-																				className="text-red-600"
+																				className="text-red-600 text-xs sm:text-sm"
 																			>
-																				<Trash2 className="h-4 w-4 mr-2" />
+																				<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																				Delete
 																			</DropdownMenuItem>
 																		</ProtectedComponent>
@@ -639,14 +674,14 @@ const LeaveApplicationsPage = () => {
 				open={confirmDialog.isOpen}
 				onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, isOpen: open })}
 			>
-				<DialogContent className="sm:max-w-[400px]">
+				<DialogContent className="sm:max-w-[400px] max-w-[90vw] mx-4">
 					<DialogHeader>
-						<DialogTitle className="text-xl font-semibold">
+						<DialogTitle className="text-lg sm:text-xl font-semibold">
 							{confirmDialog.type === "approve" && "Approve Application"}
 							{confirmDialog.type === "reject" && "Reject Application"}
 							{confirmDialog.type === "delete" && "Delete Application"}
 						</DialogTitle>
-						<DialogDescription>
+						<DialogDescription className="text-xs sm:text-sm">
 							{confirmDialog.type === "approve" &&
 								`Are you sure you want to approve ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
 							{confirmDialog.type === "reject" &&
@@ -655,7 +690,7 @@ const LeaveApplicationsPage = () => {
 								`Are you sure you want to delete ${confirmDialog.applicationName}'s leave application? Only pending applications can be deleted.`}
 						</DialogDescription>
 					</DialogHeader>
-					<div className="flex justify-end gap-3 mt-6">
+					<div className="flex justify-end gap-2 sm:gap-3 mt-4 sm:mt-6">
 						<Button
 							variant="outline"
 							onClick={() =>
@@ -667,6 +702,7 @@ const LeaveApplicationsPage = () => {
 								})
 							}
 							disabled={isSubmitting}
+							className="text-xs sm:text-sm"
 						>
 							Cancel
 						</Button>
@@ -677,11 +713,11 @@ const LeaveApplicationsPage = () => {
 									: confirmDialog.type === "reject"
 										? "bg-orange-600 hover:bg-orange-700"
 										: "bg-red-600 hover:bg-red-700"
-							} text-white`}
+							} text-white text-xs sm:text-sm`}
 							onClick={handleConfirmAction}
 							disabled={isSubmitting}
 						>
-							{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+							{isSubmitting && <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />}
 							{isSubmitting ? (
 								"Processing..."
 							) : (
