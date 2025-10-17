@@ -44,7 +44,7 @@ export function MetricCards({ data, onRefresh, loading }: MetricCardsProps) {
 			{metrics.map((metric, index) => (
 				<div key={index} className="flex w-full items-center justify-start gap-1">
 					<Card className="bg-transparent w-full min-w-max shadow-none border-none">
-						<CardContent className="p-6">
+						<CardContent className="p-4 px-2 xl:px-4">
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3">
 									<div
@@ -52,8 +52,10 @@ export function MetricCards({ data, onRefresh, loading }: MetricCardsProps) {
 									>
 										<Icon icon={metric.icon} className={`!w-7 !h-7 ${metric.iconColor}`} />
 									</div>
-									<div>
-										<p className="text-sm text-gray-600">{metric.title}</p>
+									<div className="w-full max-w-full">
+										<p className="text-sm line-clamp-1 text-gray-600 w-full max-w-full">
+											{metric.title}
+										</p>
 										<p className="text-2xl font-bold">{metric.value}</p>
 									</div>
 								</div>

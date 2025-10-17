@@ -26,7 +26,7 @@ export interface BranchFormData {
 	branch_opening_time: string;
 	branch_closing_time: string;
 	institution: number;
-	paying_bank_account: number;
+	paying_bank_account?: number;
 }
 
 export interface Branch extends IBaseApprovable {}

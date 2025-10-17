@@ -5675,17 +5675,17 @@ export const bankTypesAPI = {
 };
 
 export const bankAccountsAPI = {
-	getAll: async (searchParams?: string) => {
-		try {
-			const url = searchParams
-				? `/institution/bank-account/${searchParams}`
-				: `/institution/bank-account/`;
-			const response = await apiRequest.get(forceUrlToHttps(url));
+	getAll: async (searchParams?: { search?: string; page?: number }) => {
+		const urlParams = new URLSearchParams();
+		Object.entries(searchParams || { page: 1 }).forEach(([key, value]) => {
+			if (value) {
+				urlParams.append(key, value.toString());
+			}
+		});
+		const url = `/institution/bank-account/?${urlParams.toString()}`;
+		const response = await apiRequest.get(forceUrlToHttps(url));
 
-			return response.data as IPaginatedResponse<IBankAccount>;
-		} catch (error) {
-			throw error;
-		}
+		return response.data as IPaginatedResponse<IBankAccount>;
 	},
 	getPaginatedFromUrl: async ({ url }: { url: string }) => {
 		const response = await apiRequest.get(forceUrlToHttps(url));
