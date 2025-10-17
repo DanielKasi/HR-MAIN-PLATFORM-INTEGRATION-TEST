@@ -1568,7 +1568,7 @@ export default function UpdateEmployeeForm() {
 										selectedJobPositon ? selectedJobPositon.name : thisEmployee?.position.name
 									}
 									setPositions={setPositions}
-									value={[formData.position.toString() || ""]}
+									value={[formData.position || ""]}
 									onValueChange={(values) => {
 										if (values.length > 0) {
 											handleInputChange("position", Number(values[0]));

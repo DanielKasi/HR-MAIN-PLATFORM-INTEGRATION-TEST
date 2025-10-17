@@ -17,6 +17,8 @@ import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { BonusPointsModal } from "./bonus-points-modal";
 import { Plus } from "lucide-react";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 interface EmployeeBonusPointsTableProps {
 	employee: IEmployee;
@@ -97,15 +99,19 @@ export function EmployeeBonusPointsTable({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => handleEdit(bonusPoint)}>
-							<Edit className="h-4 w-4 mr-2" /> Edit
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={() => setBonusPointToDelete(bonusPoint)}
-							className="text-red-600"
-						>
-							<Trash2 className="h-4 w-4 mr-2" /> Delete
-						</DropdownMenuItem>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_BONUS_POINTS}>
+							<DropdownMenuItem onClick={() => handleEdit(bonusPoint)}>
+								<Edit className="h-4 w-4 mr-2" /> Edit
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_BONUS_POINTS}>
+							<DropdownMenuItem
+								onClick={() => setBonusPointToDelete(bonusPoint)}
+								className="text-red-600"
+							>
+								<Trash2 className="h-4 w-4 mr-2" /> Delete
+							</DropdownMenuItem>
+						</ProtectedComponent>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			),
@@ -115,10 +121,12 @@ export function EmployeeBonusPointsTable({
 	return (
 		<>
 			<div className="flex justify-end mb-4">
-				<Button onClick={handleCreate} className="rounded-full">
-					<Plus className="h-4 w-4 md:mr-2" />
-					<span className=" hidden md:inline-block">Add Bonus Point</span>
-				</Button>
+				<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_BONUS_POINTS}>
+					<Button onClick={handleCreate} className="rounded-full">
+						<Plus className="h-4 w-4 md:mr-2" />
+						<span className=" hidden md:inline-block">Add Bonus Point</span>
+					</Button>
+				</ProtectedComponent>
 			</div>
 			<PaginatedTable<IEmployeeBonusPoint>
 				fetchFirstPage={async () => await EMPLOYEE_BONUS_POINTS_API.getPaginated({ page: 1 })}

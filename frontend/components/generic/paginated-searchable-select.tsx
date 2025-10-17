@@ -296,6 +296,11 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 							onChange={(e) => setSearch(e.target.value)}
 							className="flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground"
 							onClick={(e) => e.stopPropagation()}
+							onKeyDown={(e) => {
+								if (!open) {
+									setOpen(true);
+								}
+							}}
 							disabled={disabled}
 						/>
 					)

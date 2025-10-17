@@ -176,7 +176,6 @@ export default function AddEventPage() {
 
 			setEmployees(fetchedEmployees.results || []);
 		} catch (error) {
-			console.error("Error fetching employees:", error);
 			toast({
 				title: "Error Loading Employees",
 				description: "Failed to load employees. Please try again.",

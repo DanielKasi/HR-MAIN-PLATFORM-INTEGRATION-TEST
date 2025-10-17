@@ -46,10 +46,9 @@
       "description": "Allows assigning roles to users"
     }
   ],
-
   "Employee Management": [
     {
-      "code":"can_resend_password_link",
+      "code": "can_resend_password_link",
       "name": "Can Resend Pasword LInk",
       "description": "Allows resending a password link to an existing employee"
     },
@@ -57,6 +56,56 @@
       "code": "can_create_employees",
       "name": "Can Create Employees",
       "description": "Allows creating new employee records"
+    },
+    {
+      "code": "can_generate_employee_company_email",
+      "name": "Can Generate Employees Company Email",
+      "description": "Allows generating employee company emails"
+    },
+    {
+      "code": "can_view_employee_spotcheck_configurations",
+      "name": "Can View Employee Spotcheck Configurations",
+      "description": "Allows viewing the spotcheck configurations on an employee"
+    },
+    {
+      "code": "can_edit_employee_spotcheck_configurations",
+      "name": "Can Edit Employee Spotcheck Configurations",
+      "description": "Allows editing the spotcheck configurations on an employee"
+    },
+    {
+      "code": "can_delete_employee_spotcheck_configurations",
+      "name": "Can Delete Employee Spotcheck Configurations",
+      "description": "Allows deleting the spotcheck configurations on an employee"
+    },
+    {
+      "code": "can_generate_document",
+      "name": "Can Generate Documents",
+      "description": "Allows generating documents in the system"
+    },
+        {
+      "code": "can_send_spotcheck",
+      "name": "Can Send Spotcheck To Employees",
+      "description": "Allows sending spotcheck to employees"
+    },
+            {
+      "code": "can_create_employee_bonus_point",
+      "name": "Can Create Employee Bonus Points",
+      "description": "Allows creating employee bonus points "
+    },
+                {
+      "code": "can_edit_employee_bonus_point",
+      "name": "Can Edit Employee Bonus Points",
+      "description": "Allows editing employee bonus points "
+    },
+                {
+      "code": "can_delete_employee_bonus_point",
+      "name": "Can Delete Employee Bonus Points",
+      "description": "Allows deleting employee bonus points "
+    },
+                    {
+      "code": "can_attach_employees_to_device",
+      "name": "Can Attach Employees to a device",
+      "description": "Allows attaching employees to a device "
     },
     {
       "code": "can_view_employees",
@@ -99,7 +148,6 @@
       "description": "Allows exporting employees' list to excel"
     }
   ],
-
   "Recruitment & Selection": [
     {
       "code": "can_create_job_positions",
@@ -184,11 +232,9 @@
     {
       "code": "can_manage_recruitment_pipeline",
       "name": "Can Manage Recruitment Pipeline",
-      "description": "Allows managing the recruitment pipeline" 
+      "description": "Allows managing the recruitment pipeline"
     }
-
   ],
-
   "Performance Management": [
     {
       "code": "can_view_performance_data",
@@ -226,7 +272,6 @@
       "description": "Allows creating performance management policies"
     }
   ],
-
   "Training & Development": [
     {
       "code": "can_view_training_programs",
@@ -264,120 +309,115 @@
       "description": "Allows viewing training effectiveness reports"
     }
   ],
-
   "Document Management": [
-  {
-    "code": "can_create_document_types",
-    "name": "Can Create Document Types",
-    "description": "Allows creating new document types"
-  },
-  {
-    "code": "can_view_document_types",
-    "name": "Can View Document Types",
-    "description": "Allows viewing document type listings"
-  },
-  {
-    "code": "can_edit_document_types",
-    "name": "Can Edit Document Types",
-    "description": "Allows editing existing document types"
-  },
-  {
-    "code": "can_delete_document_types",
-    "name": "Can Delete Document Types",
-    "description": "Allows deleting document types"
-  },
-  {
-    "code": "can_create_document_templates",
-    "name": "Can Create Document Templates",
-    "description": "Allows creating new document templates"
-  },
-  {
-    "code": "can_view_document_templates",
-    "name": "Can View Document Templates",
-    "description": "Allows viewing document template listings"
-  },
-  {
-    "code": "can_edit_document_templates",
-    "name": "Can Edit Document Templates",
-    "description": "Allows editing existing document templates"
-  },
-  {
-    "code": "can_delete_document_templates",
-    "name": "Can Delete Document Templates",
-    "description": "Allows deleting document templates"
-  },
-  {
-    "code": "can_upload_documents",
-    "name": "Can Upload Documents",
-    "description": "Allows uploading documents to the system"
-  },
-  {
-    "code": "can_view_documents",
-    "name": "Can View Documents",
-    "description": "Allows viewing documents stored in the system"
-  },
-  {
-    "code": "can_edit_documents",
-    "name": "Can Edit Documents",
-    "description": "Allows editing or replacing uploaded documents"
-  },
-  {
-    "code": "can_delete_documents",
-    "name": "Can Delete Documents",
-    "description": "Allows deleting documents from the system"
-  },
-  {
-    "code": "can_approve_documents",
-    "name": "Can Approve Documents",
-    "description": "Allows approving or reviewing documents submitted for approval"
-  },
-  {
-    "code": "can_archive_documents",
-    "name": "Can Archive Documents",
-    "description": "Allows archiving or marking documents as inactive"
-  },
-  {
-    "code": "can_view_document_requests",
-    "name": "Can View Document Requests",
-    "description": "Allows viewing document requests"
-  },
-  {
-    "code": "can_create_document_requests",
-    "name": "Can Create Document Requests",
-    "description": "Allows creating new document requests"
-  },
-  {
-    "code": "can_edit_document_requests",
-    "name": "Can Edit Document Requests",
-    "description": "Allows editing existing document requests"
-  },
-  {
-    "code": "can_delete_document_requests",
-    "name": "Can Delete Document Requests",
-    "description": "Allows deleting document requests"
-  }
-
-],
-
-"Device Management":[
-  {
-    "code": "can_view_devices",
-    "name": "Can View Devices",
-    "description": "Allows viewing devices"
-  },
-  {
-    "code": "can_edit_devices",
-    "name": "Can Edit Devices",
-    "description": "Allows editing devices"
-  },
-  {
-    "code": "can_view_employee_logs",
-    "name": "Can View Employee Logs",
-    "description": "Allows viewing employee logs"
-  }
-],
-
-
+    {
+      "code": "can_create_document_types",
+      "name": "Can Create Document Types",
+      "description": "Allows creating new document types"
+    },
+    {
+      "code": "can_view_document_types",
+      "name": "Can View Document Types",
+      "description": "Allows viewing document type listings"
+    },
+    {
+      "code": "can_edit_document_types",
+      "name": "Can Edit Document Types",
+      "description": "Allows editing existing document types"
+    },
+    {
+      "code": "can_delete_document_types",
+      "name": "Can Delete Document Types",
+      "description": "Allows deleting document types"
+    },
+    {
+      "code": "can_create_document_templates",
+      "name": "Can Create Document Templates",
+      "description": "Allows creating new document templates"
+    },
+    {
+      "code": "can_view_document_templates",
+      "name": "Can View Document Templates",
+      "description": "Allows viewing document template listings"
+    },
+    {
+      "code": "can_edit_document_templates",
+      "name": "Can Edit Document Templates",
+      "description": "Allows editing existing document templates"
+    },
+    {
+      "code": "can_delete_document_templates",
+      "name": "Can Delete Document Templates",
+      "description": "Allows deleting document templates"
+    },
+    {
+      "code": "can_upload_documents",
+      "name": "Can Upload Documents",
+      "description": "Allows uploading documents to the system"
+    },
+    {
+      "code": "can_view_documents",
+      "name": "Can View Documents",
+      "description": "Allows viewing documents stored in the system"
+    },
+    {
+      "code": "can_edit_documents",
+      "name": "Can Edit Documents",
+      "description": "Allows editing or replacing uploaded documents"
+    },
+    {
+      "code": "can_delete_documents",
+      "name": "Can Delete Documents",
+      "description": "Allows deleting documents from the system"
+    },
+    {
+      "code": "can_approve_documents",
+      "name": "Can Approve Documents",
+      "description": "Allows approving or reviewing documents submitted for approval"
+    },
+    {
+      "code": "can_archive_documents",
+      "name": "Can Archive Documents",
+      "description": "Allows archiving or marking documents as inactive"
+    },
+    {
+      "code": "can_view_document_requests",
+      "name": "Can View Document Requests",
+      "description": "Allows viewing document requests"
+    },
+    {
+      "code": "can_create_document_requests",
+      "name": "Can Create Document Requests",
+      "description": "Allows creating new document requests"
+    },
+    {
+      "code": "can_edit_document_requests",
+      "name": "Can Edit Document Requests",
+      "description": "Allows editing existing document requests"
+    },
+    {
+      "code": "can_delete_document_requests",
+      "name": "Can Delete Document Requests",
+      "description": "Allows deleting document requests"
+    }
+  ],
+  "Device Management": [
+    {
+      "code": "can_view_devices",
+      "name": "Can View Devices",
+      "description": "Allows viewing devices"
+    },
+    {
+      "code": "can_edit_devices",
+      "name": "Can Edit Devices",
+      "description": "Allows editing devices"
+    },
+    {
+      "code": "can_view_employee_logs",
+      "name": "Can View Employee Logs",
+      "description": "Allows viewing employee logs"
+    }
+  ],
   "Leave Management": [
     {
       "code": "can_create_leave_applications",
@@ -470,7 +510,6 @@
       "description": "Allows deleting leave policies"
     }
   ],
-
   "Payroll & Compensation": [
     {
       "code": "can_view_payroll_data",
@@ -658,7 +697,6 @@
       "description": "Allows downloading employee payslips"
     }
   ],
-
   "Discipline Management": [
     {
       "code": "can_view_discipline_cases",
@@ -701,7 +739,6 @@
       "description": "Allows lodging disciplinary complaints"
     }
   ],
-
   "Attendance Management": [
     {
       "code": "can_view_attendance_records",
@@ -734,7 +771,6 @@
       "description": "Allows checking in or checking out for another employee"
     }
   ],
-
   "Administration": [
     {
       "code": "can_manage_company_assets",
@@ -782,7 +818,6 @@
       "description": "Allows managing property maintenance schedules"
     }
   ],
-
   "Policy Management": [
     {
       "code": "can_create_policies",
@@ -815,7 +850,6 @@
       "description": "Allows tracking employee policy acknowledgments"
     }
   ],
-
   "Leadership & Culture": [
     {
       "code": "can_manage_company_vision",
@@ -843,7 +877,6 @@
       "description": "Allows managing workplace cultural activities"
     }
   ],
-
   "Reports & Analytics": [
     {
       "code": "can_view_hr_dashboard",
@@ -876,7 +909,6 @@
       "description": "Allows viewing employee statistics by department"
     }
   ],
-
   "System Administration": [
     {
       "code": "can_view_admin_dashboard",
@@ -934,7 +966,6 @@
       "description": "Allows restoring system from backups"
     }
   ],
-
   "Branch Management": [
     {
       "code": "can_view_branches",
@@ -962,7 +993,6 @@
       "description": "Allows managing employees within specific branches"
     }
   ],
-
   "Department Management": [
     {
       "code": "can_view_departments",
@@ -990,7 +1020,6 @@
       "description": "Allows managing department heads and hierarchy"
     }
   ],
-
   "Institution Management": [
     {
       "code": "can_create_ownership_transfer",
@@ -1003,7 +1032,6 @@
       "description": "Can View Ownership Transfers"
     }
   ],
-
   "Asset Management": [
     {
       "code": "can_create_asset_categories",
@@ -1203,15 +1231,13 @@
       "description": "Allows viewing task timesheet entries"
     }
   ],
-
-  "AI Assistant":[
+  "AI Assistant": [
     {
       "code": "can_view_ai_assistant",
       "name": "CAN VIEW AI ASSISTANT",
       "description": "Allows users to see the AI Assistant"
     }
   ],
-
   "Onboarding & Offboarding": [
     {
       "code": "can_create_onboarding_records",
@@ -1233,7 +1259,6 @@
       "name": "Can Delete Onboarding Records",
       "description": "Allows deleting onboarding records"
     },
-    
     {
       "code": "can_create_offboarding_stages",
       "name": "Can Create Offboarding Stages",
@@ -1360,7 +1385,7 @@
       "description": "Allows deleting retirement requests"
     }
   ],
-   "Perfomance Management": [
+  "Perfomance Management": [
     {
       "code": "can_create_objectives",
       "name": "Can Create Objectives",
@@ -1400,7 +1425,7 @@
       "code": "can_delete_feedback",
       "name": "Can Delete feedback",
       "description": "Allows deleting feedback"
-    }, 
+    },
     {
       "code": "can_schedule_meeting",
       "name": "Can Schedule Meeting",
@@ -1411,7 +1436,7 @@
       "name": "Can View Scheduled Meeting",
       "description": "Allows viewing scheduled meeting"
     },
-      {
+    {
       "code": "can_edit_scheduled_meeting",
       "name": "Can Edit Scheduled Meeting",
       "description": "Allows editing scheduled meeting"
@@ -1431,7 +1456,7 @@
       "name": "Can Edit Assigned Objective",
       "description": "Allows editing assigned objective"
     },
-     {
+    {
       "code": "can_view_assigned_objective",
       "name": "Can View Assigned Objective",
       "description": "Allows viewing assigned objective"
@@ -1445,18 +1470,18 @@
       "code": "can_create_period",
       "name": "Can Create Period",
       "description": "Allows creating period"
-    }, 
+    },
     {
       "code": "can_view_period",
       "name": "Can View Period",
       "description": "Allows viewing period"
     },
-      {
+    {
       "code": "can_edit_period",
       "name": "Can Edit Period",
       "description": "Allows editing period"
     },
-      {
+    {
       "code": "can_delete_period",
       "name": "Can Delete Period",
       "description": "Allows deleting period"

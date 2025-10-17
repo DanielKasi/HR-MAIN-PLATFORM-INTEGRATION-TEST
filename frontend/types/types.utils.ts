@@ -484,7 +484,7 @@ export interface IEmployee {
 	email: string;
 	name: string | null;
 	phone_number: string;
-	gender: IGender;
+	gender: "male" | "female" | "other";
 	date_of_joining: string;
 	address: string;
 	country: string;
@@ -1778,7 +1778,7 @@ export interface IBankTypeFormData {
 export interface IBankAccount {
 	is_active: boolean;
 	id: number | string;
-	institution_bank: number | string;
+	institution_bank: IBankType;
 	account_name: string;
 	account_number: string;
 	created_by: number;
