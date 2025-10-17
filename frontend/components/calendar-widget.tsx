@@ -251,53 +251,53 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 	}
 
 	return (
-		<div className={`relative`}>
-			<Card className={`w-full shadow-sm border-none !rounded-xl ${className}`}>
-				<CardHeader className="pb-3">
-					<div className="flex items-center justify-between">
-						<Button variant="ghost" size="sm" onClick={() => navigateMonth("prev")}>
-							<ChevronLeft className="h-4 w-4" />
-						</Button>
-						<CardTitle className="text-lg font-semibold">
-							{MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-						</CardTitle>
-						<Button variant="ghost" size="sm" onClick={() => navigateMonth("next")}>
-							<ChevronRight className="h-4 w-4" />
-						</Button>
-					</div>
-				</CardHeader>
+		// <div className={``}>
+		<Card className={`w-full relative shadow-sm border-none !rounded-xl ${className}`}>
+			<CardHeader className="!py-2">
+				<div className="flex items-center justify-between">
+					<Button variant="ghost" className="!py-1" size="sm" onClick={() => navigateMonth("prev")}>
+						<ChevronLeft className="h-4 w-4" />
+					</Button>
+					<CardTitle className="text-lg font-semibold !py-1">
+						{MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
+					</CardTitle>
+					<Button className="!py-1" variant="ghost" size="sm" onClick={() => navigateMonth("next")}>
+						<ChevronRight className="h-4 w-4" />
+					</Button>
+				</div>
+			</CardHeader>
 
-				<CardContent>
-					{/* Day Headers */}
-					<div className="grid grid-cols-7 gap-1 mb-2">
-						{DAYS.map((day, idx) => (
+			<CardContent>
+				{/* Day Headers */}
+				<div className="grid grid-cols-7 gap-1 mb-2">
+					{DAYS.map((day, idx) => (
+						<div
+							key={day}
+							className={`p-2 text-center text-xs font-medium ${
+								idx === 0 ? "text-red-600" : "text-slate-500"
+							}`}
+						>
+							<>{day}</>
+						</div>
+					))}
+				</div>
+
+				{/* Calendar Grid */}
+				<div className="grid grid-cols-7 gap-1">
+					{days.map((day, index) => {
+						if (!day) {
+							return <div key={index} className="h-6" />;
+						}
+
+						const { events, holidays } = getEventsForDate(day);
+						const hasEvents = events.length > 0 || holidays.length > 0;
+						const sunday = isSunday(day);
+
+						return (
 							<div
-								key={day}
-								className={`p-2 text-center text-xs font-medium ${
-									idx === 0 ? "text-red-600" : "text-slate-500"
-								}`}
-							>
-								<>{day}</>
-							</div>
-						))}
-					</div>
-
-					{/* Calendar Grid */}
-					<div className="grid grid-cols-7 gap-1">
-						{days.map((day, index) => {
-							if (!day) {
-								return <div key={index} className="h-10" />;
-							}
-
-							const { events, holidays } = getEventsForDate(day);
-							const hasEvents = events.length > 0 || holidays.length > 0;
-							const sunday = isSunday(day);
-
-							return (
-								<div
-									key={day.toISOString()}
-									className={`
-                    h-10 p-1 rounded-md text-xs flex items-center justify-center relative cursor-pointer transition-all duration-200
+								key={day.toISOString()}
+								className={`
+                    h-6 p-1 rounded-md text-xs flex items-center justify-center relative cursor-pointer transition-all duration-200
                     ${
 											isToday(day)
 												? "bg-[#0CA0F5]/60 text-white font-medium"
@@ -308,117 +308,113 @@ export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 														: "text-slate-700 hover:bg-slate-50"
 										}
                   `}
-									onMouseEnter={(e) => handleMouseEnter(day, e)}
-									onMouseLeave={handleMouseLeave}
-								>
-									{day.getDate()}
+								onMouseEnter={(e) => handleMouseEnter(day, e)}
+								onMouseLeave={handleMouseLeave}
+							>
+								{day.getDate()}
 
-									{/* Event indicators */}
-									{hasEvents && (
-										<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-											{holidays.length > 0 && <div className="w-1 h-1 bg-[#0CA0F5] rounded-full" />}
-											{events.slice(0, 2).map((event, idx) => (
-												<div
-													key={idx}
-													className={`w-1 h-1 rounded-full ${
-														event.event_mode === "online"
+								{/* Event indicators */}
+								{hasEvents && (
+									<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+										{holidays.length > 0 && <div className="w-1 h-1 bg-[#0CA0F5] rounded-full" />}
+										{events.slice(0, 2).map((event, idx) => (
+											<div
+												key={idx}
+												className={`w-1 h-1 rounded-full ${
+													event.event_mode === "online"
+														? "bg-[#0CA0F5]"
+														: event.event_mode === "physical"
 															? "bg-[#0CA0F5]"
-															: event.event_mode === "physical"
-																? "bg-[#0CA0F5]"
-																: "bg-[#0CA0F5]"
-													}`}
-												/>
-											))}
-											{events.length > 2 && (
-												<div className="w-1 h-1 bg-[#0CA0F5]/60 rounded-full" />
-											)}
+															: "bg-[#0CA0F5]"
+												}`}
+											/>
+										))}
+										{events.length > 2 && <div className="w-1 h-1 bg-[#0CA0F5]/60 rounded-full" />}
+									</div>
+								)}
+
+								{/* Hover Tooltip */}
+								{hoveredDay?.getDate().toString().toLowerCase() ===
+									day?.getDate().toString().toLowerCase() &&
+									isTooltipVisible && (
+										<div
+											ref={tooltipRef}
+											className="absolute z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-3 min-w-36 transition-all duration-200 ease-out"
+											style={{
+												left: `${tooltipPosition.x}px`,
+												top: `${tooltipPosition.y}px`,
+												transform: ` ${day.getDay() === 6 ? "translateX(-70%)" : "translateX(-50%)"} translateY(-100%)`,
+											}}
+											onMouseEnter={handleTooltipMouseEnter}
+											onMouseLeave={handleTooltipMouseLeave}
+										>
+											{/* Tooltip Arrow */}
+											<div
+												className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"} transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-200`}
+											/>
+											<div
+												className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"}  transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white`}
+												style={{ marginTop: "-1px" }}
+											/>
+
+											<div className="text-xs font-medium text-slate-900 mb-2">
+												{hoveredDay.toLocaleDateString("en-US", {
+													weekday: "long",
+													month: "long",
+													day: "numeric",
+												})}
+											</div>
+
+											{(() => {
+												const { events, holidays } = getEventsForDate(hoveredDay);
+
+												if (events.length === 0 && holidays.length === 0) {
+													return <p className="text-xs text-slate-500">No events or holidays</p>;
+												}
+
+												return (
+													<div className="space-y-2">
+														{holidays.map((holiday) => (
+															<div key={holiday.id} className="flex items-center gap-2 text-xs">
+																<Star className="h-3 w-3 text-[#0CA0F5] flex-shrink-0" />
+																<span className="text-[#0CA0F5] font-medium">{holiday.title}</span>
+															</div>
+														))}
+
+														{events.slice(0, 3).map((event) => (
+															<div key={event.id} className="flex items-start gap-2 text-xs">
+																<div className="flex-shrink-0 mt-0.5">
+																	{getEventModeIcon(event.event_mode)}
+																</div>
+																<div className="flex-1 min-w-0">
+																	<div className="font-medium text-slate-900 truncate">
+																		{event.title}
+																	</div>
+																	{event.description && (
+																		<div className="text-slate-600 line-clamp-2 mt-1">
+																			{event.description}
+																		</div>
+																	)}
+																</div>
+															</div>
+														))}
+
+														{events.length > 3 && (
+															<div className="text-xs text-slate-500 font-medium">
+																+{events.length - 3} more events
+															</div>
+														)}
+													</div>
+												);
+											})()}
 										</div>
 									)}
-
-									{/* Hover Tooltip */}
-									{hoveredDay?.getDate().toString().toLowerCase() ===
-										day?.getDate().toString().toLowerCase() &&
-										isTooltipVisible && (
-											<div
-												ref={tooltipRef}
-												className="absolute z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-3 min-w-36 transition-all duration-200 ease-out"
-												style={{
-													left: `${tooltipPosition.x}px`,
-													top: `${tooltipPosition.y}px`,
-													transform: ` ${day.getDay() === 6 ? "translateX(-70%)" : "translateX(-50%)"} translateY(-100%)`,
-												}}
-												onMouseEnter={handleTooltipMouseEnter}
-												onMouseLeave={handleTooltipMouseLeave}
-											>
-												{/* Tooltip Arrow */}
-												<div
-													className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"} transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-200`}
-												/>
-												<div
-													className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"}  transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white`}
-													style={{ marginTop: "-1px" }}
-												/>
-
-												<div className="text-xs font-medium text-slate-900 mb-2">
-													{hoveredDay.toLocaleDateString("en-US", {
-														weekday: "long",
-														month: "long",
-														day: "numeric",
-													})}
-												</div>
-
-												{(() => {
-													const { events, holidays } = getEventsForDate(hoveredDay);
-
-													if (events.length === 0 && holidays.length === 0) {
-														return <p className="text-xs text-slate-500">No events or holidays</p>;
-													}
-
-													return (
-														<div className="space-y-2">
-															{holidays.map((holiday) => (
-																<div key={holiday.id} className="flex items-center gap-2 text-xs">
-																	<Star className="h-3 w-3 text-[#0CA0F5] flex-shrink-0" />
-																	<span className="text-[#0CA0F5] font-medium">
-																		{holiday.title}
-																	</span>
-																</div>
-															))}
-
-															{events.slice(0, 3).map((event) => (
-																<div key={event.id} className="flex items-start gap-2 text-xs">
-																	<div className="flex-shrink-0 mt-0.5">
-																		{getEventModeIcon(event.event_mode)}
-																	</div>
-																	<div className="flex-1 min-w-0">
-																		<div className="font-medium text-slate-900 truncate">
-																			{event.title}
-																		</div>
-																		{event.description && (
-																			<div className="text-slate-600 line-clamp-2 mt-1">
-																				{event.description}
-																			</div>
-																		)}
-																	</div>
-																</div>
-															))}
-
-															{events.length > 3 && (
-																<div className="text-xs text-slate-500 font-medium">
-																	+{events.length - 3} more events
-																</div>
-															)}
-														</div>
-													);
-												})()}
-											</div>
-										)}
-								</div>
-							);
-						})}
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+							</div>
+						);
+					})}
+				</div>
+			</CardContent>
+		</Card>
+		// </div>
 	);
 }

@@ -465,7 +465,7 @@ class EmployeeDetailAPIView(APIView):
 
         try:
             if by_user:
-                employee = Employee.objects.get(user_id=employee_id)
+                employee = Employee.objects.get(user__id=employee_id)
             else:
                 employee = Employee.objects.get(id=employee_id)
 

@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 			dispatch(fetchRelatedEmployeeStart({ userId: currentUser.id }));
 			// }
 		}
-	}, [currentUser, relatedEmployeeloading, relatedEmployee]);
+	}, [currentUser, relatedEmployee]);
 
 	useEffect(() => {
 		console.log("\n\n Related employee at layout mount : ", relatedEmployee);
@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		}
 	}, [relatedEmployee]);
 
-	if (!currentInstitution || !currentUser || relatedEmployeeloading) {
+	if (!currentInstitution || !currentUser) {
 		return <FixedLoader className="bg-white/70" />;
 	}
 

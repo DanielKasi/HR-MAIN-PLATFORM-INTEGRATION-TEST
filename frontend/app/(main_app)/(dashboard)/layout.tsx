@@ -372,6 +372,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 											<div className="text-xs text-gray-500 truncate">{userRole || "Staff"}</div>
 										</div>
 									</DropdownMenuItem>
+
+									{/* TODO : Provide these settings even when the user has no institution cause they already have an account */}
 									{isMounted && canViewSettings && (
 										<DropdownMenuItem
 											className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"

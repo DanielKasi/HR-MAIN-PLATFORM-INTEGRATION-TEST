@@ -128,16 +128,19 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		if (!fetchFirstPage || (!paginated && data?.results)) return;
 		if (data && data.next && !search) return;
 		setLoading(true);
-		fetchFirstPage({ search, ...query } as Q)
-			.then((res) => {
-				setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
-				setHasMore(!!res.next);
-			})
-			.catch((error) => {
-				console.error("Failed to fetch first page", error);
-				toast.error("Failed to load items");
-			})
-			.finally(() => setLoading(false));
+		const timeout = setTimeout(() => {
+			fetchFirstPage({ search, ...query } as Q)
+				.then((res) => {
+					setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
+					setHasMore(!!res.next);
+				})
+				.catch((error) => {
+					console.error("Failed to fetch first page", error);
+					toast.error("Failed to load items");
+				})
+				.finally(() => setLoading(false));
+		}, 1000);
+		return () => clearTimeout(timeout);
 	}, [paginated, fetchFirstPage, search, query, refreshTrigger, ...deps]);
 
 	// Infinite scroll with intersection observer
