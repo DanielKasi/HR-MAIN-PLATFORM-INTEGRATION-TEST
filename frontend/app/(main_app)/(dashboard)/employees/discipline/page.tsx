@@ -110,15 +110,15 @@ export default function DisciplinaryActionsPage() {
 	const getStatusIcon = (status: string) => {
 		switch (status) {
 			case "completed":
-				return <CheckCircle className="h-4 w-4" />;
+				return <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />;
 			case "in_progress":
-				return <Clock className="h-4 w-4" />;
+				return <Clock className="h-3 w-3 sm:h-4 sm:w-4" />;
 			case "pending":
-				return <AlertCircle className="h-4 w-4" />;
+				return <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />;
 			case "dismissed":
-				return <XCircle className="h-4 w-4" />;
+				return <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />;
 			default:
-				return <Clock className="h-4 w-4" />;
+				return <Clock className="h-3 w-3 sm:h-4 sm:w-4" />;
 		}
 	};
 
@@ -134,37 +134,40 @@ export default function DisciplinaryActionsPage() {
 		router.push(`/employees/discipline/${actionId}`);
 	};
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
+		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 bg-white rounded-lg py-4 sm:py-6 lg:py-8 min-h-screen">
 			<div className="">
-				<div className="flex items-center justify-between">
-					<h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">
-						Disciplinary Actions
-					</h1>
-					<Button onClick={handleAddNewAction} className="">
-						<Plus className="h-4 w-4 mr-2" />
-						<span className="hidden md:inline">Add New Action</span>
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+					<div className="flex-1 min-w-0">
+						<h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 truncate">
+							Disciplinary Actions
+						</h1>
+						<CardDescription className="text-xs sm:text-sm lg:text-base mt-1">
+							Complete overview of disciplinary actions across all departments
+						</CardDescription>
+					</div>
+					<Button onClick={handleAddNewAction} className="w-full sm:w-auto text-xs sm:text-sm">
+						<Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+						<span className="hidden sm:inline">Add New Action</span>
+						<span className="sm:hidden">Add Action</span>
 					</Button>
 				</div>
-				<CardDescription className="text-sm sm:text-base">
-					Complete overview of disciplinary actions across all departments
-				</CardDescription>
 			</div>
 
-			<div className="mt-6 mb-4">
-				<div className="flex flex-col md:flex-row gap-4 items-start">
-					<div className="relative w-full md:max-w-lg lg:max-w-xl ">
-						<Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+			<div className="mt-4 sm:mt-6 mb-3 sm:mb-4">
+				<div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start">
+					<div className="relative w-full lg:max-w-lg xl:max-w-xl">
+						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
 						<Input
 							placeholder="Search by employee or discipline type..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="pl-10 w-full"
+							className="pl-8 sm:pl-10 w-full text-xs sm:text-sm"
 						/>
 					</div>
 
-					<div className="flex w-full items-center justify-start gap-4">
+					<div className="flex w-full lg:w-auto items-center justify-start gap-2 sm:gap-3 lg:gap-4">
 						<Select value={statusFilter} onValueChange={setStatusFilter}>
-							<SelectTrigger className="md:w-full md:max-w-[16rem] w-48">
+							<SelectTrigger className="w-full lg:w-40 xl:w-48 text-xs sm:text-sm">
 								<SelectValue placeholder="Filter by status" />
 							</SelectTrigger>
 							<SelectContent>
@@ -177,7 +180,7 @@ export default function DisciplinaryActionsPage() {
 						</Select>
 
 						<Select value={severityFilter} onValueChange={setSeverityFilter}>
-							<SelectTrigger className="md:w-full md:max-w-[16rem] max-w-48">
+							<SelectTrigger className="w-full lg:w-40 xl:w-48 text-xs sm:text-sm">
 								<SelectValue placeholder="Filter by severity" />
 							</SelectTrigger>
 							<SelectContent>
@@ -265,15 +268,15 @@ export default function DisciplinaryActionsPage() {
 					}
 
 					return (
-						<CardContent className="">
-							<div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6">
-								<div className="inline-block min-w-full px-3 sm:px-4 lg:px-6">
-									<div className="overflow-x-auto mt-10 -ml-4">
-										<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+						<CardContent className="p-0 sm:p-6">
+							<div className="overflow-x-auto">
+								<div className="min-w-full">
+									<div className="overflow-x-auto mt-4 sm:mt-6 lg:mt-8">
+										<Table className="min-w-full [&_th]:border-0 [&_td]:border-0">
 											<TableHeader className="bg-gray-50/50">
 												<TableRow>
-													<TableHead>
-														<div className="flex items-center gap-2">
+													<TableHead className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm">
+														<div className="flex items-center gap-1 sm:gap-2">
 															<span>Employee</span>
 															<Button
 																onClick={() =>
@@ -288,13 +291,17 @@ export default function DisciplinaryActionsPage() {
 																	ordering === "employee__user__fullname" ? "default" : "outline"
 																}
 																type="button"
+																className="h-5 w-5 sm:h-6 sm:w-6 p-0 hidden xs:inline-flex"
 															>
-																<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+																<Icon
+																	icon="hugeicons:sorting-02"
+																	className="!h-2.5 !w-2.5 sm:!h-3 sm:!w-3"
+																/>
 															</Button>
 														</div>
 													</TableHead>
-													<TableHead>
-														<div className="flex items-center gap-2">
+													<TableHead className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm hidden sm:table-cell">
+														<div className="flex items-center gap-1 sm:gap-2">
 															<span>Severity</span>
 															<Button
 																onClick={() =>
@@ -309,13 +316,17 @@ export default function DisciplinaryActionsPage() {
 																	ordering === "discipline_type__severity" ? "default" : "outline"
 																}
 																type="button"
+																className="h-5 w-5 sm:h-6 sm:w-6 p-0 hidden xs:inline-flex"
 															>
-																<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+																<Icon
+																	icon="hugeicons:sorting-02"
+																	className="!h-2.5 !w-2.5 sm:!h-3 sm:!w-3"
+																/>
 															</Button>
 														</div>
 													</TableHead>
-													<TableHead>
-														<div className="flex items-center gap-2">
+													<TableHead className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm">
+														<div className="flex items-center gap-1 sm:gap-2">
 															<span>Incident Date</span>
 															<Button
 																onClick={() =>
@@ -324,13 +335,17 @@ export default function DisciplinaryActionsPage() {
 																size="sm"
 																variant={ordering === "incident_date" ? "default" : "outline"}
 																type="button"
+																className="h-5 w-5 sm:h-6 sm:w-6 p-0 hidden xs:inline-flex"
 															>
-																<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+																<Icon
+																	icon="hugeicons:sorting-02"
+																	className="!h-2.5 !w-2.5 sm:!h-3 sm:!w-3"
+																/>
 															</Button>
 														</div>
 													</TableHead>
-													<TableHead>
-														<div className="flex items-center gap-2">
+													<TableHead className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm hidden md:table-cell">
+														<div className="flex items-center gap-1 sm:gap-2">
 															<span>Assigned To</span>
 															<Button
 																onClick={() =>
@@ -345,88 +360,126 @@ export default function DisciplinaryActionsPage() {
 																	ordering === "assigned_to__user__fullname" ? "default" : "outline"
 																}
 																type="button"
+																className="h-5 w-5 sm:h-6 sm:w-6 p-0 hidden xs:inline-flex"
 															>
-																<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+																<Icon
+																	icon="hugeicons:sorting-02"
+																	className="!h-2.5 !w-2.5 sm:!h-3 sm:!w-3"
+																/>
 															</Button>
 														</div>
 													</TableHead>
-													<TableHead>Status</TableHead>
-													<TableHead>Follow-up Date</TableHead>
-													<TableHead>Actions</TableHead>
+													<TableHead className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm">
+														Status
+													</TableHead>
+													<TableHead className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm hidden lg:table-cell">
+														Follow-up Date
+													</TableHead>
+													<TableHead className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm w-[60px] sm:w-[80px]">
+														Actions
+													</TableHead>
 												</TableRow>
 											</TableHeader>
 											<TableBody>
 												{filteredActions.map((action) => (
 													<TableRow key={action.id} className="hover:bg-gray-50">
-														<TableCell>
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4">
 															<div>
-																<div className="font-medium">{action.employee?.name || ""}</div>
+																<div className="font-medium text-xs sm:text-sm lg:text-base">
+																	{action.employee?.name || ""}
+																</div>
 																{action.employee.department.name &&
 																	action.employee.department.name.trim() && (
-																		<div className="text-sm text-muted-foreground">
+																		<div className="text-xs text-muted-foreground mt-0.5">
 																			{action.employee.department.name}
 																		</div>
 																	)}
+																<div className="sm:hidden mt-1">
+																	<Badge
+																		variant="outline"
+																		className={
+																			getSeverityColor(action.discipline_type?.severity || "Low") +
+																			" text-xs"
+																		}
+																	>
+																		{action.discipline_type?.severity.toUpperCase()}
+																	</Badge>
+																</div>
 															</div>
 														</TableCell>
-														<TableCell>
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 hidden sm:table-cell">
 															<div className="space-y-1">
-																<div className="font-medium">{action.discipline_type?.name}</div>
+																<div className="font-medium text-xs sm:text-sm">
+																	{action.discipline_type?.name}
+																</div>
 																<Badge
 																	variant="outline"
-																	className={getSeverityColor(
-																		action.discipline_type?.severity || "Low",
-																	)}
+																	className={
+																		getSeverityColor(action.discipline_type?.severity || "Low") +
+																		" text-xs"
+																	}
 																>
 																	{action.discipline_type?.severity.toUpperCase()}
 																</Badge>
 															</div>
 														</TableCell>
-														<TableCell>
-															<div className="flex items-center gap-2">
-																<Calendar className="h-4 w-4 text-muted-foreground" />
-																{new Date(action.incident_date).toLocaleDateString()}
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4">
+															<div className="flex items-center gap-1 sm:gap-2">
+																<Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+																<span className="text-xs sm:text-sm">
+																	{new Date(action.incident_date).toLocaleDateString()}
+																</span>
 															</div>
 														</TableCell>
-														<TableCell>
-															<div className="flex items-center gap-2">
-																<User className="h-4 w-4 text-muted-foreground" />
-																{action.assigned_to?.user?.fullname || ""}
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 hidden md:table-cell">
+															<div className="flex items-center gap-1 sm:gap-2">
+																<User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+																<span className="text-xs sm:text-sm">
+																	{action.assigned_to?.user?.fullname || ""}
+																</span>
 															</div>
 														</TableCell>
-														<TableCell>
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4">
 															<Badge
 																variant="outline"
 																className={`${getStatusColor(
 																	action.status,
-																)} flex items-center gap-1 w-fit`}
+																)} flex items-center gap-1 w-fit text-xs`}
 															>
 																{getStatusIcon(action.status)}
-																{action.status.replace("_", " ").toUpperCase()}
+																<span className="hidden xs:inline">
+																	{action.status.replace("_", " ").toUpperCase()}
+																</span>
+																<span className="xs:hidden">
+																	{action.status.charAt(0).toUpperCase()}
+																</span>
 															</Badge>
 														</TableCell>
-														<TableCell>
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 hidden lg:table-cell">
 															{action.follow_up_required ? (
 																<Badge
 																	variant="outline"
-																	className="bg-orange-100 text-orange-800 border-orange-200"
+																	className="bg-orange-100 text-orange-800 border-orange-200 text-xs"
 																>
 																	{action.follow_up_date
 																		? new Date(action.follow_up_date).toLocaleDateString()
 																		: "Required"}
 																</Badge>
 															) : (
-																<span className="text-muted-foreground">None</span>
+																<span className="text-muted-foreground text-xs">None</span>
 															)}
 														</TableCell>
-														<TableCell className="text-right">
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-right">
 															<DropdownMenu>
 																<DropdownMenuTrigger asChild>
-																	<Button variant="ghost" className="h-8 w-8 p-0">
-																		<MoreVertical className="h-4 w-4" />
+																	<Button
+																		variant="ghost"
+																		className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 p-0"
+																	>
+																		<MoreVertical className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
 																	</Button>
 																</DropdownMenuTrigger>
-																<DropdownMenuContent align="end">
+																<DropdownMenuContent align="end" className="w-32 sm:w-36 lg:w-40">
 																	<ProtectedComponent
 																		permissionCode={PERMISSION_CODES.CAN_VIEW_DISCIPLINE_CASES}
 																	>
@@ -434,8 +487,10 @@ export default function DisciplinaryActionsPage() {
 																			onClick={() =>
 																				handleViewDisciplinaryAction(action.id.toString())
 																			}
+																			className="text-xs sm:text-sm"
 																		>
-																			<Eye className="h-4 w-4 mr-2" /> View Details
+																			<Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5 sm:mr-2" />{" "}
+																			View Details
 																		</DropdownMenuItem>
 																	</ProtectedComponent>
 																	<ProtectedComponent
@@ -443,8 +498,9 @@ export default function DisciplinaryActionsPage() {
 																	>
 																		<DropdownMenuItem
 																			onClick={() => handleEditAction(action.id.toString())}
+																			className="text-xs sm:text-sm"
 																		>
-																			<Edit className="mr-2 h-4 w-4" />
+																			<Edit className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-3.5 sm:w-3.5" />
 																			Edit
 																		</DropdownMenuItem>
 																	</ProtectedComponent>
@@ -456,9 +512,9 @@ export default function DisciplinaryActionsPage() {
 																				setActionToDelete(action);
 																				setIsDeleteDialogOpen(true);
 																			}}
-																			className="text-red-600"
+																			className="text-red-600 text-xs sm:text-sm"
 																		>
-																			<Trash2 className="mr-2 h-4 w-4" />
+																			<Trash2 className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-3.5 sm:w-3.5" />
 																			Delete
 																		</DropdownMenuItem>
 																	</ProtectedComponent>
@@ -480,10 +536,10 @@ export default function DisciplinaryActionsPage() {
 									if (!open) setActionToDelete(null);
 								}}
 							>
-								<DialogContent>
+								<DialogContent className="mx-2 sm:mx-0">
 									<DialogHeader>
-										<DialogTitle>Confirm Deletion</DialogTitle>
-										<DialogDescription>
+										<DialogTitle className="text-lg sm:text-xl">Confirm Deletion</DialogTitle>
+										<DialogDescription className="text-xs sm:text-sm">
 											Are you sure you want to delete the disciplinary action for{" "}
 											{(
 												actionToDelete &&
@@ -504,10 +560,15 @@ export default function DisciplinaryActionsPage() {
 												setIsDeleteDialogOpen(false);
 												setActionToDelete(null);
 											}}
+											className="text-xs sm:text-sm"
 										>
 											Cancel
 										</Button>
-										<Button variant="destructive" onClick={handleDeleteAction}>
+										<Button
+											variant="destructive"
+											onClick={handleDeleteAction}
+											className="text-xs sm:text-sm"
+										>
 											Delete
 										</Button>
 									</DialogFooter>
@@ -515,7 +576,7 @@ export default function DisciplinaryActionsPage() {
 							</Dialog>
 
 							{filteredActions.length === 0 && (
-								<div className="text-center py-8 text-muted-foreground">
+								<div className="text-center py-6 sm:py-8 text-muted-foreground text-xs sm:text-sm">
 									No disciplinary actions found matching your criteria.
 								</div>
 							)}

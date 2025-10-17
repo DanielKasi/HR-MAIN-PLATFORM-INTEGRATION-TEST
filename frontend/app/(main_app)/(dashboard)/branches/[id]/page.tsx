@@ -237,14 +237,15 @@ export default function BranchDetailPage() {
 						<ArrowLeft className="h-4 w-4" />
 					</Button>
 					<div>
-						<h1 className="text-2xl font-bold tracking-tight">{branch.branch_name}</h1>
-						<p className="text-muted-foreground">{branch.institution} - Branch details</p>
+						<div className="flex items-center justify-start gap-8">
+							<h1 className="text-2xl font-bold tracking-tight">{branch.branch_name}</h1>
+							<Badge variant={branch.is_active ? "default" : "secondary"}>
+								{branch.is_active ? "Active" : "Inactive"}
+							</Badge>
+						</div>
+						<p className="text-muted-foreground">Branch details</p>
 					</div>
 				</div>
-				<Button className="variant">Branch Shift</Button>
-				<Badge variant={branch.is_active ? "default" : "secondary"}>
-					{branch.is_active ? "Active" : "Inactive"}
-				</Badge>
 			</div>
 			<ApprovableInstancePageLayout instance={branch} onInstanceRefresh={fetchBranch}>
 				<Card className="shadow-none border-none">
@@ -276,7 +277,7 @@ export default function BranchDetailPage() {
 										</span>
 									</div>
 								</div>
-								<div className="space-y-3">
+								{/* <div className="space-y-3">
 									<div>
 										<span className="font-medium">Institution:</span>
 										<span className="ml-2">{branch.institution_name}</span>
@@ -285,7 +286,7 @@ export default function BranchDetailPage() {
 										<span className="font-medium">Paying Bank Account:</span>
 										<span className="ml-2">{branch.paying_bank_account}</span>
 									</div>
-								</div>
+								</div> */}
 							</div>
 							<div className="flex items-start gap-2">
 								<MapPin className="h-4 w-4 text-muted-foreground mt-1" />

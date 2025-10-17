@@ -92,6 +92,7 @@ export default function InterviewsPage() {
 		to: null,
 	});
 	const [jobPositionFilter, setJobPositionFilter] = useState("all");
+	const [showFilters, setShowFilters] = useState(false);
 
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -379,23 +380,22 @@ export default function InterviewsPage() {
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 				<div>
-					<h1 className="text-2xl font-bold">Interviews</h1>
-					<p className="text-muted-foreground text-sm md:text-base">
+					<h1 className="text-xl sm:text-2xl font-bold">Interviews</h1>
+					<p className="text-muted-foreground text-xs sm:text-sm md:text-base">
 						Manage interviews for {selectedBranch.branch_name} -{" "}
 						{selectedInstitution.institution_name}
 					</p>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
 					{selectedInterviews.length > 0 && (
 						<Button
 							onClick={handleBulkOnboard}
 							disabled={isOnboarding}
-							className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+							className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+							size="sm"
 						>
-							<Users className="h-4 w-4" />
-							{isOnboarding
-								? "Onboarding..."
-								: `Onboard ${selectedInterviews.length} Candidate${selectedInterviews.length > 1 ? "s" : ""}`}
+							<Users className="h-3 w-3 sm:h-4 sm:w-4" />
+							{isOnboarding ? "Onboarding..." : `Onboard ${selectedInterviews.length}`}
 						</Button>
 					)}
 					<Button
@@ -403,32 +403,31 @@ export default function InterviewsPage() {
 						size="sm"
 						onClick={handleRefresh}
 						disabled={isRefreshing}
-						className="flex items-center gap-2 relative"
+						className="flex items-center gap-2"
 					>
-						<RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-						<span className="text-xs hover:inline  py-1 px-3 rounded-2xl bg-gray-900/80 text-white shadow-sm z-70 absolute md:static -top-4 left-1/2 -translate-x-1/2 md:inline md:shadow-none md:text-inherit md:text-sm md:translate-x-0 md:rounded-none md:bg-transparent">
-							Refresh
-						</span>
+						<RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+						<span className="hidden sm:inline">Refresh</span>
 					</Button>
 					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_RECRUITMENT_PIPELINE}>
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={() => router.push("job-interviews/interview-pipeline")}
-							className="md:flex items-center md:gap-2 bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600"
+							className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 text-xs sm:text-sm"
 						>
-							<Briefcase className="h-4 w-4" />
-							<span className="hidden md:inline">Interview Pipeline</span>
+							<Briefcase className="h-3 w-3 sm:h-4 sm:w-4" />
+							<span className="hidden xs:inline">Pipeline</span>
 						</Button>
 					</ProtectedComponent>
 					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_SCHEDULE_INTERVIEWS}>
 						<Button
 							size="sm"
 							onClick={handleCreateInterview}
-							className="md:flex items-center md:gap-2"
+							className="flex items-center gap-2 text-xs sm:text-sm"
 						>
-							<Plus className="h-4 w-4" />
-							<span className="hidden md:inline">Schedule Interview</span>
+							<Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+							<span className="hidden sm:inline">Schedule</span>
+							<span className="sm:hidden">New</span>
 						</Button>
 					</ProtectedComponent>
 				</div>
@@ -436,31 +435,31 @@ export default function InterviewsPage() {
 
 			{/* Stats */}
 			{!isLoading && (
-				<div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-10">
-					<Card>
-						<CardContent className="p-4">
-							<div className="text-2xl font-bold">{interviews.length}</div>
-							<p className="text-xs text-muted-foreground">Total Interviews</p>
+				<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-6 sm:mt-10">
+					<Card className="sm:p-4 p-2">
+						<CardContent className="p-0 sm:p-4">
+							<div className="text-lg sm:text-2xl font-bold">{interviews.length}</div>
+							<p className="text-xs text-muted-foreground">Total</p>
 						</CardContent>
 					</Card>
-					<Card>
-						<CardContent className="p-4">
-							<div className="text-2xl font-bold">
+					<Card className="sm:p-4 p-2">
+						<CardContent className="p-0 sm:p-4">
+							<div className="text-lg sm:text-2xl font-bold">
 								{interviews.filter((i) => i.status === "completed").length}
 							</div>
 							<p className="text-xs text-muted-foreground">Completed</p>
 						</CardContent>
 					</Card>
-					<Card>
-						<CardContent className="p-4">
-							<div className="text-2xl font-bold">
+					<Card className="sm:p-4 p-2">
+						<CardContent className="p-0 sm:p-4">
+							<div className="text-lg sm:text-2xl font-bold">
 								{interviews.filter((i) => i.status === "scheduled").length}
 							</div>
 							<p className="text-xs text-muted-foreground">Scheduled</p>
 						</CardContent>
 					</Card>
-					<Card>
-						<CardContent className="p-4">
+					<Card className="sm:p-4 p-2">
+						<CardContent className="p-0 sm:p-4">
 							{(() => {
 								const ratedInterviews = interviews.filter((i) => i.rating);
 								const averageRating =
@@ -470,7 +469,9 @@ export default function InterviewsPage() {
 
 								return (
 									<>
-										<div className="text-2xl font-bold">{formatCurrency(roundedAverage)}</div>
+										<div className="text-lg sm:text-2xl font-bold">
+											{formatCurrency(roundedAverage)}
+										</div>
 										<p className="text-xs text-muted-foreground">Avg Rating</p>
 									</>
 								);
@@ -481,78 +482,132 @@ export default function InterviewsPage() {
 			)}
 
 			{/* Search and Filters */}
-			<div className="flex flex-col lg:flex-row gap-4 mt-10 mb-4">
-				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-					<Input
-						placeholder="Search interviews by applicant, job position, interviewer, or stage..."
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
-						className="pl-10"
-					/>
-				</div>
-				<div className="flex flex-col sm:flex-row gap-2">
-					<Select value={statusFilter} onValueChange={setStatusFilter}>
-						<SelectTrigger className="w-[180px]">
-							<SelectValue placeholder="Filter by status" />
-						</SelectTrigger>
-						<SelectContent>
-							{STATUS_OPTIONS.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Select value={jobPositionFilter} onValueChange={setJobPositionFilter}>
-						<SelectTrigger className="w-[180px]">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{jobPositions.map((position) => (
-								<SelectItem key={position.value} value={position.value}>
-									{position.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Select value={interviewerFilter} onValueChange={setInterviewerFilter}>
-						<SelectTrigger className="w-[180px]">
-							<SelectValue placeholder="Filter by interviewer" />
-						</SelectTrigger>
-						<SelectContent>
-							{interviewers.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<div className="flex gap-2">
+			<div className="flex flex-col gap-4 mt-6 sm:mt-10 mb-4">
+				<div className="flex flex-col sm:flex-row gap-4">
+					<div className="relative flex-1">
+						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 						<Input
-							type="date"
-							placeholder="From date"
-							value={dateRange.from || ""}
-							onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
-							className="w-[140px]"
-						/>
-						<Input
-							type="date"
-							placeholder="To date"
-							value={dateRange.to || ""}
-							onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
-							className="w-[140px]"
+							placeholder="Search interviews..."
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+							className="pl-10 text-sm sm:text-base"
 						/>
 					</div>
-					{(searchTerm ||
-						statusFilter !== "all" ||
-						interviewerFilter !== "all" ||
-						dateRange.from ||
-						dateRange.to) && (
-						<Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-							Clear Filters
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setShowFilters(!showFilters)}
+							className="sm:hidden flex items-center gap-2"
+						>
+							<Icon icon="hugeicons:filter" className="h-4 w-4" />
+							Filters
 						</Button>
-					)}
+						{(searchTerm ||
+							statusFilter !== "all" ||
+							interviewerFilter !== "all" ||
+							dateRange.from ||
+							dateRange.to) && (
+							<Button
+								variant="outline"
+								onClick={clearFilters}
+								className="flex items-center gap-2 text-xs"
+							>
+								Clear
+							</Button>
+						)}
+					</div>
+				</div>
+
+				{/* Advanced Filters - Responsive */}
+				<div className={`${showFilters ? "block" : "hidden"} sm:block`}>
+					<div className="flex flex-col sm:flex-row gap-3">
+						<div className="grid grid-cols-1 xs:grid-cols-2 sm:flex gap-3 flex-wrap">
+							<Select value={statusFilter} onValueChange={setStatusFilter}>
+								<SelectTrigger className="w-full xs:w-[140px] sm:w-[160px] text-xs sm:text-sm">
+									<SelectValue placeholder="Status" />
+								</SelectTrigger>
+								<SelectContent>
+									{STATUS_OPTIONS.map((option) => (
+										<SelectItem
+											key={option.value}
+											value={option.value}
+											className="text-xs sm:text-sm"
+										>
+											{option.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+
+							<Select value={jobPositionFilter} onValueChange={setJobPositionFilter}>
+								<SelectTrigger className="w-full xs:w-[140px] sm:w-[160px] text-xs sm:text-sm">
+									<SelectValue placeholder="Position" />
+								</SelectTrigger>
+								<SelectContent>
+									{jobPositions.map((position) => (
+										<SelectItem
+											key={position.value}
+											value={position.value}
+											className="text-xs sm:text-sm"
+										>
+											{position.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+
+							<Select value={interviewerFilter} onValueChange={setInterviewerFilter}>
+								<SelectTrigger className="w-full xs:w-[140px] sm:w-[160px] text-xs sm:text-sm">
+									<SelectValue placeholder="Interviewer" />
+								</SelectTrigger>
+								<SelectContent>
+									{interviewers.map((option) => (
+										<SelectItem
+											key={option.value}
+											value={option.value}
+											className="text-xs sm:text-sm"
+										>
+											{option.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="flex flex-col xs:flex-row gap-3">
+							<div className="flex gap-2">
+								<Input
+									type="date"
+									placeholder="From date"
+									value={dateRange.from || ""}
+									onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+									className="w-full xs:w-[140px] text-xs sm:text-sm"
+								/>
+								<Input
+									type="date"
+									placeholder="To date"
+									value={dateRange.to || ""}
+									onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
+									className="w-full xs:w-[140px] text-xs sm:text-sm"
+								/>
+							</div>
+
+							{(searchTerm ||
+								statusFilter !== "all" ||
+								interviewerFilter !== "all" ||
+								dateRange.from ||
+								dateRange.to) && (
+								<Button
+									variant="outline"
+									onClick={clearFilters}
+									className="hidden sm:flex items-center gap-2"
+								>
+									Clear Filters
+								</Button>
+							)}
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -569,18 +624,18 @@ export default function InterviewsPage() {
 					<div className="p-2 space-y-6 mt-8">
 						<Card className="h-[calc(100vh-2rem)] shadow-lg">
 							<CardHeader className="border-b">
-								<div className="flex justify-between gap-8 items-center">
+								<div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
 									<div className="flex items-center justify-start gap-4">
 										<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 										<div className="space-y-2">
-											<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
-											<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
+											<div className="h-6 bg-gray-200 rounded w-48 sm:w-64 animate-pulse" />
+											<div className="h-4 bg-gray-200 rounded w-32 sm:w-48 animate-pulse" />
 										</div>
 									</div>
-									<div className="flex gap-2">
-										<div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
-										<div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
-										<div className="h-10 w-28 bg-gray-200 rounded animate-pulse" />
+									<div className="flex gap-2 self-end sm:self-auto">
+										<div className="h-10 w-20 sm:w-32 bg-gray-200 rounded animate-pulse" />
+										<div className="h-10 w-24 sm:w-36 bg-gray-200 rounded animate-pulse" />
+										<div className="h-10 w-16 sm:w-28 bg-gray-200 rounded animate-pulse" />
 									</div>
 								</div>
 							</CardHeader>
@@ -589,7 +644,7 @@ export default function InterviewsPage() {
 					</div>
 				) : (
 					<>
-						<div className="overflow-x-auto mt-8">
+						<div className="overflow-x-auto mt-6 sm:mt-8">
 							<PaginatedTableWrapper<IInterview>
 								fetchFirstPage={async () => {
 									if (!selectedInstitution) throw new Error("No institution selected");
@@ -651,7 +706,7 @@ export default function InterviewsPage() {
 
 									if (!interviews || interviews.length === 0) {
 										return (
-											<div className="text-center py-8 text-gray-500">
+											<div className="text-center py-8 text-gray-500 text-sm sm:text-base">
 												{searchTerm ||
 												statusFilter !== "all" ||
 												interviewerFilter !== "all" ||
@@ -717,7 +772,7 @@ export default function InterviewsPage() {
 									// Group interviews by applicant
 									if (!filteredResults || filteredResults.length === 0) {
 										return (
-											<div className="text-center py-8 text-gray-500">
+											<div className="text-center py-8 text-gray-500 text-sm sm:text-base">
 												{searchTerm ||
 												statusFilter !== "all" ||
 												interviewerFilter !== "all" ||
@@ -765,23 +820,27 @@ export default function InterviewsPage() {
 										// Fallback: show raw data without grouping
 										return (
 											<div className="space-y-4">
-												<div className="text-center py-4 text-muted-foreground">
+												<div className="text-center py-4 text-muted-foreground text-sm">
 													Showing raw interview data (grouping failed)
 												</div>
 												<Table>
 													<TableHeader>
 														<TableRow>
-															<TableHead>Status</TableHead>
-															<TableHead>Date</TableHead>
-															<TableHead>Applicant</TableHead>
+															<TableHead className="text-xs sm:text-sm">Status</TableHead>
+															<TableHead className="text-xs sm:text-sm">Date</TableHead>
+															<TableHead className="text-xs sm:text-sm">Applicant</TableHead>
 														</TableRow>
 													</TableHeader>
 													<TableBody>
 														{filteredResults.map((interview) => (
 															<TableRow key={interview.id}>
-																<TableCell>{interview.status}</TableCell>
-																<TableCell>{interview.interview_date}</TableCell>
-																<TableCell>
+																<TableCell className="text-xs sm:text-sm">
+																	{interview.status}
+																</TableCell>
+																<TableCell className="text-xs sm:text-sm">
+																	{interview.interview_date}
+																</TableCell>
+																<TableCell className="text-xs sm:text-sm">
 																	{interview.job_position_application_details?.applicant_name ||
 																		"Unknown"}
 																</TableCell>
@@ -799,53 +858,61 @@ export default function InterviewsPage() {
 												<Table className="min-w-full [&_th]:border-0 [&_td]:border-0">
 													<TableHeader className="bg-gray-50/50">
 														<TableRow>
-															<TableHead className="w-[50px]" />
-															<TableHead>
+															<TableHead className="w-[40px] sm:w-[50px] text-xs sm:text-sm" />
+															<TableHead className="text-xs sm:text-sm">
 																<div className="flex items-center gap-2">
 																	<span>Applicant</span>
 																	<Button
 																		size="sm"
 																		variant={ordering === "applicant" ? "default" : "outline"}
-																		className="h-6 w-6 p-0"
+																		className="h-5 w-5 sm:h-6 sm:w-6 p-0"
 																		onClick={() =>
 																			setOrdering(ordering === "applicant" ? "" : "applicant")
 																		}
 																	>
-																		<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+																		<Icon
+																			icon="hugeicons:sorting-02"
+																			className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+																		/>
 																	</Button>
 																</div>
 															</TableHead>
-															<TableHead>Contact</TableHead>
-															<TableHead>
+															<TableHead className="hidden xs:table-cell text-xs sm:text-sm">
+																Contact
+															</TableHead>
+															<TableHead className="text-xs sm:text-sm">
 																<div className="flex items-center gap-2">
 																	<span>Date</span>
 																	<Button
 																		size="sm"
 																		variant={ordering === "interview_date" ? "default" : "outline"}
-																		className="h-6 w-6 p-0"
+																		className="h-5 w-5 sm:h-6 sm:w-6 p-0"
 																		onClick={() =>
 																			setOrdering(
 																				ordering === "interview_date" ? "" : "interview_date",
 																			)
 																		}
 																	>
-																		<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+																		<Icon
+																			icon="hugeicons:sorting-02"
+																			className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+																		/>
 																	</Button>
 																</div>
 															</TableHead>
-															<TableHead>Status</TableHead>
-															<TableHead>Actions</TableHead>
+															<TableHead className="text-xs sm:text-sm">Status</TableHead>
+															<TableHead className="text-xs sm:text-sm">Actions</TableHead>
 														</TableRow>
 													</TableHeader>
 													<TableBody>
 														{groupedInterviews.map(([applicantName, data]) => (
 															<React.Fragment key={applicantName}>
 																<TableRow className="hover:bg-muted/50">
-																	<TableCell>
+																	<TableCell className="text-xs sm:text-sm">
 																		<Button
 																			variant="ghost"
 																			size="sm"
-																			className="h-8 w-8 p-0"
+																			className="h-7 w-7 sm:h-8 sm:w-8 p-0"
 																			onClick={() => {
 																				setExpandedApplicants((prev) =>
 																					prev.includes(applicantName)
@@ -854,31 +921,35 @@ export default function InterviewsPage() {
 																				);
 																			}}
 																		>
-																			<ChevronDown className="h-4 w-4" />
+																			<ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
 																		</Button>
 																	</TableCell>
-																	<TableCell>
-																		<div className="flex items-center gap-3">
-																			<Avatar className="h-8 w-8">
+																	<TableCell className="text-xs sm:text-sm">
+																		<div className="flex items-center gap-2 sm:gap-3">
+																			<Avatar className="h-6 w-6 sm:h-8 sm:w-8">
 																				<AvatarFallback className="text-xs">
 																					{getInitials(applicantName)}
 																				</AvatarFallback>
 																			</Avatar>
-																			<div className="font-medium">{applicantName}</div>
+																			<div className="font-medium truncate max-w-[100px] sm:max-w-none">
+																				{applicantName}
+																			</div>
 																		</div>
 																	</TableCell>
-																	<TableCell>
-																		<div className="text-sm text-muted-foreground">
-																			<div>{data.contact.email}</div>
+																	<TableCell className="hidden xs:table-cell text-xs sm:text-sm">
+																		<div className="text-muted-foreground">
+																			<div className="truncate max-w-[120px]">
+																				{data.contact.email}
+																			</div>
 																			<div>{data.contact.phone}</div>
 																		</div>
 																	</TableCell>
-																	<TableCell>
-																		<Badge variant="secondary">
+																	<TableCell className="text-xs sm:text-sm">
+																		<Badge variant="secondary" className="text-xs">
 																			{data.interviews.length} interviews
 																		</Badge>
 																	</TableCell>
-																	<TableCell>
+																	<TableCell className="text-xs sm:text-sm">
 																		<div className="flex items-center gap-2">
 																			{getStatusIcon(
 																				data.interviews[data.interviews.length - 1].status,
@@ -887,12 +958,13 @@ export default function InterviewsPage() {
 																				variant={getStatusBadgeVariant(
 																					data.interviews[data.interviews.length - 1].status,
 																				)}
+																				className="text-xs"
 																			>
 																				{data.interviews[data.interviews.length - 1].status}
 																			</Badge>
 																		</div>
 																	</TableCell>
-																	<TableCell>
+																	<TableCell className="text-xs sm:text-sm">
 																		<Button
 																			variant="ghost"
 																			size="sm"
@@ -910,68 +982,74 @@ export default function InterviewsPage() {
 																{expandedApplicants.includes(applicantName) &&
 																	data.interviews.map((interview) => (
 																		<TableRow key={interview.id} className="bg-muted/30">
-																			<TableCell />
-																			<TableCell className="pl-11">
-																				<div className="font-medium">
+																			<TableCell className="text-xs sm:text-sm" />
+																			<TableCell className="pl-8 sm:pl-11 text-xs sm:text-sm">
+																				<div className="font-medium truncate">
 																					{
 																						interview.job_position_application_details
 																							?.job_position_advert_job_details?.name
 																					}
 																				</div>
-																				<Badge variant="outline" className="mt-1">
+																				<Badge variant="outline" className="mt-1 text-xs">
 																					{interview.interview_stage_details?.name}
 																				</Badge>
 																			</TableCell>
-																			<TableCell className="pl-11">
-																				<div className="text-sm text-muted-foreground">
+																			<TableCell className="pl-8 sm:pl-11 text-xs sm:text-sm">
+																				<div className="text-muted-foreground">
 																					{formatDate(interview.interview_date)}
 																				</div>
-																				<div className="text-xs text-muted-foreground">
+																				<div className="text-muted-foreground text-xs">
 																					{interview.location}
 																				</div>
 																			</TableCell>
-																			<TableCell className="pl-11">
+																			<TableCell className="pl-8 sm:pl-11 text-xs sm:text-sm">
 																				<div className="flex items-center gap-2">
 																					{interview.rating && getRatingStars(interview.rating)}
 																				</div>
 																			</TableCell>
-																			<TableCell className="pl-11">
+																			<TableCell className="pl-8 sm:pl-11 text-xs sm:text-sm">
 																				<div className="flex items-center gap-2">
 																					{getStatusIcon(interview.status)}
-																					<Badge variant={getStatusBadgeVariant(interview.status)}>
+																					<Badge
+																						variant={getStatusBadgeVariant(interview.status)}
+																						className="text-xs"
+																					>
 																						{interview.status}
 																					</Badge>
 																				</div>
 																			</TableCell>
-																			<TableCell className="pl-11">
+																			<TableCell className="pl-8 sm:pl-11 text-xs sm:text-sm">
 																				<DropdownMenu>
 																					<DropdownMenuTrigger asChild>
 																						<Button
 																							variant="ghost"
 																							size="sm"
-																							className="h-8 w-8 p-0"
+																							className="h-7 w-7 sm:h-8 sm:w-8 p-0"
 																						>
-																							<MoreVertical className="h-4 w-4" />
+																							<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
 																						</Button>
 																					</DropdownMenuTrigger>
-																					<DropdownMenuContent align="end">
+																					<DropdownMenuContent
+																						align="end"
+																						className="text-xs sm:text-sm"
+																					>
 																						<DropdownMenuItem
 																							onClick={() => handleViewInterview(interview.id)}
 																						>
-																							<Eye className="h-4 w-4 mr-2" />
+																							<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																							View
 																						</DropdownMenuItem>
 																						<DropdownMenuItem
 																							onClick={() => handleEditInterview(interview.id)}
 																						>
-																							<Edit className="h-4 w-4 mr-2" />
+																							<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																							Edit
 																						</DropdownMenuItem>
 																						<DropdownMenuItem
 																							onClick={() => handleDeleteInterview(interview.id)}
 																							className="text-destructive"
 																						>
-																							<Trash2 className="h-4 w-4 mr-2" />
+																							<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																							Delete
 																						</DropdownMenuItem>
 																					</DropdownMenuContent>

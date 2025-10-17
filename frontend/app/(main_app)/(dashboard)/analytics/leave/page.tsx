@@ -98,17 +98,17 @@ export default function AttendanceDashboard() {
 			initialData={initialData}
 			fetchData={getLeaveDashboard}
 			content={(data) => (
-				<div className="min-h-screen bg-gray-50 p-6">
-					<div className="space-y-8">
+				<div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+					<div className="space-y-6 sm:space-y-8">
 						{/* Header */}
-						<div className="flex flex-col md:flex-row items-center justify-between gap-8">
-							<div className="gap-4 flex">
-								<h1 className="flex-grow text-4xl font-bold text-slate-900 text-balance">
+						<div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-center md:justify-between">
+							<div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+								<h1 className="flex-grow text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 text-balance">
 									Leave Analytics
 								</h1>
-								<div className="text-right">
+								<div className="w-full sm:w-auto">
 									<Select>
-										<SelectTrigger className="text-slate-900">
+										<SelectTrigger className="text-slate-900 w-full sm:w-[140px]">
 											<SelectValue placeholder="This Year" />
 										</SelectTrigger>
 										<SelectContent>
@@ -117,15 +117,19 @@ export default function AttendanceDashboard() {
 									</Select>
 								</div>
 							</div>
-							<div className="flex items-center justify-end gap-8">
-								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+							<div className="flex items-center justify-start sm:justify-end w-full sm:w-auto">
+								<Button
+									className="rounded-xl w-full sm:w-auto"
+									onClick={() => setIsReportsDialogOpen(true)}
+									size="sm"
+								>
 									Generate Reports
 								</Button>
 							</div>
 						</div>
 
 						{/* Key Metrics */}
-						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<div className="grid gap-4 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
 							{getGroupCards(data).map((card, i) => (
 								<StatsCard key={i} index={i} {...card} />
 							))}
@@ -153,10 +157,11 @@ export default function AttendanceDashboard() {
 							dataKey={["count"]}
 							nameKey={"month"}
 							colors={["#3CB371", "#FF1B1C", "#0CA0F5"]}
+							className="w-full"
 						/>
 
 						{/* Charts Section */}
-						<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 							{/* leaves taken by type */}
 							<Piechart
 								totalStr={""}
@@ -168,6 +173,7 @@ export default function AttendanceDashboard() {
 								dataKey={"count"}
 								nameKey={"leave_type"}
 								colors={colors}
+								className="w-full"
 							/>
 
 							{/* department-wise leave usage */}
@@ -185,6 +191,7 @@ export default function AttendanceDashboard() {
 								nameKey={"department"}
 								color={colors[3]}
 								rounded
+								className="w-full"
 							/>
 						</div>
 

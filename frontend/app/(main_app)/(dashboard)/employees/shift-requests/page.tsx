@@ -207,40 +207,51 @@ const EmployeeShiftsPage = () => {
 	};
 
 	return (
-		<div className="space-y-6 p-6 bg-white">
-			<div className="flex items-center justify-between pt-5">
-				<div className="ml-5">
-					<h1 className="text-2xl font-semibold tracking-tight">Employee Shifts</h1>
-					<p className="text-muted-foreground">
+		<div className="space-y-6 p-4 sm:p-6 bg-white">
+			{/* Header Section */}
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-5">
+				<div className="sm:ml-5">
+					<h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Employee Shifts</h1>
+					<p className="text-muted-foreground text-sm sm:text-base">
 						Manage employee shift allocations and requests for your institution
 					</p>
 				</div>
-				<Button onClick={openAddDialog}>
+				<Button onClick={openAddDialog} className="w-full sm:w-auto">
 					<Plus className="mr-2 h-4 w-4" />
 					New Allocation
 				</Button>
 			</div>
 
 			<Card className="border-none">
-				<CardHeader>
-					<CardTitle>Shifts Management</CardTitle>
-					<div className="flex items-center justify-between space-x-4">
+				<CardHeader className="p-4 sm:p-6">
+					<CardTitle className="text-lg sm:text-xl">Shifts Management</CardTitle>
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 						<Input
 							placeholder="Search employees..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="max-w-sm"
+							className="w-full"
 						/>
-						<Tabs value={contextFilter} onValueChange={setContextFilter}>
-							<TabsList>
-								<TabsTrigger value="all">All</TabsTrigger>
-								<TabsTrigger value="allocation">Allocations</TabsTrigger>
-								<TabsTrigger value="request">Requests</TabsTrigger>
+						<Tabs
+							value={contextFilter}
+							onValueChange={setContextFilter}
+							className="w-full sm:w-auto"
+						>
+							<TabsList className="grid grid-cols-3 w-full sm:w-auto">
+								<TabsTrigger value="all" className="text-xs sm:text-sm">
+									All
+								</TabsTrigger>
+								<TabsTrigger value="allocation" className="text-xs sm:text-sm">
+									Allocations
+								</TabsTrigger>
+								<TabsTrigger value="request" className="text-xs sm:text-sm">
+									Requests
+								</TabsTrigger>
 							</TabsList>
 						</Tabs>
 					</div>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="p-0 sm:p-6">
 					<PaginatedTableWrapper<IEmployeeShift>
 						fetchFirstPage={async () => {
 							const params = [
@@ -272,137 +283,181 @@ const EmployeeShiftsPage = () => {
 									{loading ? (
 										<TableSkeleton />
 									) : (
-										<Table>
-											<TableHeader>
-												<TableRow>
-													<TableHead>
-														<div className="flex items-center gap-2">
-															<span>Employee</span>
-															<Button
-																onClick={() =>
-																	setOrdering(ordering === "employee" ? "" : "employee")
-																}
-																size="sm"
-																variant={ordering === "employee" ? "default" : "outline"}
-																type="button"
-															>
-																<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
-															</Button>
-														</div>
-													</TableHead>
-													<TableHead>Shift</TableHead>
-													<TableHead>Date</TableHead>
-													<TableHead>Start Time</TableHead>
-													<TableHead>
-														<div className="flex items-center gap-2">
-															<span>End Time</span>
-															<Button
-																onClick={() =>
-																	setOrdering(ordering === "end_time" ? "" : "end_time")
-																}
-																size="sm"
-																variant={ordering === "end_time" ? "default" : "outline"}
-																type="button"
-															>
-																<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
-															</Button>
-														</div>
-													</TableHead>
-													<TableHead>Type</TableHead>
-													<TableHead>Status</TableHead>
-													<TableHead>Created By</TableHead>
-													<TableHead className="text-right">Actions</TableHead>
-												</TableRow>
-											</TableHeader>
-											<TableBody>
-												{data?.results?.map((shift) => {
-													return (
-														<TableRow key={shift.id}>
-															<TableCell className="font-medium">
-																{shift.employee?.user?.fullname || "Unknown"}
-															</TableCell>
-															<TableCell>
-																<div>
-																	<div className="font-medium">
-																		{typeof shift.shift === "object"
-																			? shift.shift?.name
-																			: `Shift #`}
-																	</div>
-																	<div className="text-sm text-muted-foreground">
-																		{typeof shift.shift === "object"
-																			? shift.shift?.shift_day?.day_name
-																			: ""}
-																	</div>
-																</div>
-															</TableCell>
-															<TableCell>{shift.date}</TableCell>
-															<TableCell>{shift.shift.start_time || "Unkown"}</TableCell>
-															<TableCell>{shift.shift.end_time || "Unknown"}`</TableCell>
-															<TableCell>
-																<Badge
-																	variant={shift.context === "ALLOCATION" ? "default" : "secondary"}
+										<div className="overflow-x-auto">
+											<Table className="min-w-[800px]">
+												<TableHeader>
+													<TableRow>
+														<TableHead className="whitespace-nowrap">
+															<div className="flex items-center gap-2">
+																<span className="text-xs sm:text-sm">Employee</span>
+																<Button
+																	onClick={() =>
+																		setOrdering(ordering === "employee" ? "" : "employee")
+																	}
+																	size="sm"
+																	variant={ordering === "employee" ? "default" : "outline"}
+																	type="button"
+																	className="h-6 w-6 sm:h-8 sm:w-8 p-0"
 																>
-																	{shift.context === "ALLOCATION" ? "Allocation" : "Request"}
-																</Badge>
-															</TableCell>
-															<TableCell>
-																<Badge variant={getStatusBadgeVariant(shift.shift_status)}>
-																	{shift.shift_status}
-																</Badge>
-															</TableCell>
-															<TableCell>
-																{typeof shift.created_by === "object"
-																	? shift.created_by?.fullname
-																	: `User ID: ${shift.created_by}`}
-															</TableCell>
-															<TableCell className="text-right">
-																<DropdownMenu>
-																	<DropdownMenuTrigger asChild>
-																		<Button variant="ghost" className="h-8 w-8 p-0">
-																			<MoreHorizontal className="h-4 w-4" />
-																		</Button>
-																	</DropdownMenuTrigger>
-																	<DropdownMenuContent align="end">
-																		<DropdownMenuItem
-																			onClick={() =>
-																				router.push(`/employees/shift-requests/${shift.id}`)
-																			}
-																		>
-																			<Eye className="mr-2 h-4 w-4" />
-																			View
-																		</DropdownMenuItem>
-																		<DropdownMenuItem onClick={() => openEditDialog(shift)}>
-																			<Edit className="mr-2 h-4 w-4" />
-																			Edit
-																		</DropdownMenuItem>
-																		<DropdownMenuItem
-																			onClick={() => {
-																				setSelectedShift(shift);
-																				setIsDeleteDialogOpen(true);
-																			}}
-																			className="text-destructive"
-																		>
-																			<Trash2 className="mr-2 h-4 w-4" />
-																			Delete
-																		</DropdownMenuItem>
-																	</DropdownMenuContent>
-																</DropdownMenu>
+																	<Icon
+																		icon="hugeicons:sorting-02"
+																		className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+																	/>
+																</Button>
+															</div>
+														</TableHead>
+														<TableHead className="whitespace-nowrap text-xs sm:text-sm">
+															Shift
+														</TableHead>
+														<TableHead className="whitespace-nowrap text-xs sm:text-sm">
+															Date
+														</TableHead>
+														<TableHead className="whitespace-nowrap text-xs sm:text-sm">
+															Start Time
+														</TableHead>
+														<TableHead className="whitespace-nowrap">
+															<div className="flex items-center gap-2">
+																<span className="text-xs sm:text-sm">End Time</span>
+																<Button
+																	onClick={() =>
+																		setOrdering(ordering === "end_time" ? "" : "end_time")
+																	}
+																	size="sm"
+																	variant={ordering === "end_time" ? "default" : "outline"}
+																	type="button"
+																	className="h-6 w-6 sm:h-8 sm:w-8 p-0"
+																>
+																	<Icon
+																		icon="hugeicons:sorting-02"
+																		className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+																	/>
+																</Button>
+															</div>
+														</TableHead>
+														<TableHead className="whitespace-nowrap text-xs sm:text-sm">
+															Type
+														</TableHead>
+														<TableHead className="whitespace-nowrap text-xs sm:text-sm">
+															Status
+														</TableHead>
+														<TableHead className="whitespace-nowrap text-xs sm:text-sm">
+															Created By
+														</TableHead>
+														<TableHead className="text-right whitespace-nowrap text-xs sm:text-sm">
+															Actions
+														</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{data?.results?.map((shift) => {
+														return (
+															<TableRow key={shift.id}>
+																<TableCell className="font-medium whitespace-nowrap">
+																	<div className="text-xs sm:text-sm">
+																		{shift.employee?.user?.fullname || "Unknown"}
+																	</div>
+																</TableCell>
+																<TableCell>
+																	<div>
+																		<div className="font-medium text-xs sm:text-sm">
+																			{typeof shift.shift === "object"
+																				? shift.shift?.name
+																				: `Shift #`}
+																		</div>
+																		<div className="text-xs text-muted-foreground">
+																			{typeof shift.shift === "object"
+																				? shift.shift?.shift_day?.day_name
+																				: ""}
+																		</div>
+																	</div>
+																</TableCell>
+																<TableCell className="whitespace-nowrap text-xs sm:text-sm">
+																	{shift.date}
+																</TableCell>
+																<TableCell className="whitespace-nowrap text-xs sm:text-sm">
+																	{shift.shift.start_time || "Unknown"}
+																</TableCell>
+																<TableCell className="whitespace-nowrap text-xs sm:text-sm">
+																	{shift.shift.end_time || "Unknown"}`
+																</TableCell>
+																<TableCell>
+																	<Badge
+																		variant={
+																			shift.context === "ALLOCATION" ? "default" : "secondary"
+																		}
+																		className="text-xs whitespace-nowrap"
+																	>
+																		{shift.context === "ALLOCATION" ? "Allocation" : "Request"}
+																	</Badge>
+																</TableCell>
+																<TableCell>
+																	<Badge
+																		variant={getStatusBadgeVariant(shift.shift_status)}
+																		className="text-xs whitespace-nowrap"
+																	>
+																		{shift.shift_status}
+																	</Badge>
+																</TableCell>
+																<TableCell className="whitespace-nowrap">
+																	<div className="text-xs sm:text-sm">
+																		{typeof shift.created_by === "object"
+																			? shift.created_by?.fullname
+																			: `User ID: ${shift.created_by}`}
+																	</div>
+																</TableCell>
+																<TableCell className="text-right">
+																	<DropdownMenu>
+																		<DropdownMenuTrigger asChild>
+																			<Button variant="ghost" className="h-6 w-6 sm:h-8 sm:w-8 p-0">
+																				<MoreHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
+																			</Button>
+																		</DropdownMenuTrigger>
+																		<DropdownMenuContent align="end" className="w-40 sm:w-48">
+																			<DropdownMenuItem
+																				onClick={() =>
+																					router.push(`/employees/shift-requests/${shift.id}`)
+																				}
+																				className="text-xs sm:text-sm"
+																			>
+																				<Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+																				View
+																			</DropdownMenuItem>
+																			<DropdownMenuItem
+																				onClick={() => openEditDialog(shift)}
+																				className="text-xs sm:text-sm"
+																			>
+																				<Edit className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+																				Edit
+																			</DropdownMenuItem>
+																			<DropdownMenuItem
+																				onClick={() => {
+																					setSelectedShift(shift);
+																					setIsDeleteDialogOpen(true);
+																				}}
+																				className="text-destructive text-xs sm:text-sm"
+																			>
+																				<Trash2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+																				Delete
+																			</DropdownMenuItem>
+																		</DropdownMenuContent>
+																	</DropdownMenu>
+																</TableCell>
+															</TableRow>
+														);
+													})}
+													{(data as IPaginatedResponse<IEmployeeShift>)?.results?.length === 0 && (
+														<TableRow>
+															<TableCell
+																colSpan={9}
+																className="text-center py-8 text-muted-foreground text-sm sm:text-base"
+															>
+																No shifts found. Try adjusting your search or filter criteria.
 															</TableCell>
 														</TableRow>
-													);
-												})}
-												{(data as IPaginatedResponse<IEmployeeShift>)?.results?.length === 0 && (
-													<TableRow>
-														<TableCell
-															colSpan={8}
-															className="text-center py-8 text-muted-foreground"
-														>
-															No shifts found. Try adjusting your search or filter criteria.
-														</TableCell>
-													</TableRow>
-												)}
-											</TableBody>
-										</Table>
+													)}
+												</TableBody>
+											</Table>
+										</div>
 									)}
 								</>
 							)
@@ -411,14 +466,17 @@ const EmployeeShiftsPage = () => {
 				</CardContent>
 			</Card>
 
+			{/* Dialogs remain the same as they're already responsive */}
 			<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-				<DialogContent>
+				<DialogContent className="w-[95vw] max-w-md sm:max-w-lg">
 					<DialogHeader>
-						<DialogTitle>Create New Allocation</DialogTitle>
+						<DialogTitle className="text-lg sm:text-xl">Create New Allocation</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="employee">Employee</Label>
+							<Label htmlFor="employee" className="text-sm sm:text-base">
+								Employee
+							</Label>
 							<EmployeeSearchableSelect
 								value={formData.employee_id ? [formData.employee_id] : []}
 								onValueChange={(value) =>
@@ -435,7 +493,9 @@ const EmployeeShiftsPage = () => {
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="shift">Shift</Label>
+							<Label htmlFor="shift" className="text-sm sm:text-base">
+								Shift
+							</Label>
 							<Select
 								value={formData.shift_id}
 								onValueChange={(value) => setFormData({ ...formData, shift_id: value })}
@@ -445,7 +505,7 @@ const EmployeeShiftsPage = () => {
 								</SelectTrigger>
 								<SelectContent>
 									{shifts.map((shift) => (
-										<SelectItem key={shift.id} value={shift.id.toString()}>
+										<SelectItem key={shift.id} value={shift.id.toString()} className="text-sm">
 											{shift.name} ({shift.shift_day?.day_name} BTN {shift.start_time} -{" "}
 											{shift.end_time})
 										</SelectItem>
@@ -454,20 +514,31 @@ const EmployeeShiftsPage = () => {
 							</Select>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="date">Date</Label>
+							<Label htmlFor="date" className="text-sm sm:text-base">
+								Date
+							</Label>
 							<Input
 								id="date"
 								type="date"
 								value={formData.date}
 								onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+								className="text-sm sm:text-base"
 							/>
 						</div>
 					</div>
 					<div className="flex justify-end space-x-2">
-						<Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+						<Button
+							variant="outline"
+							onClick={() => setIsAddDialogOpen(false)}
+							className="text-sm sm:text-base"
+						>
 							Cancel
 						</Button>
-						<Button onClick={handleAddAllocation} disabled={isSubmitting}>
+						<Button
+							onClick={handleAddAllocation}
+							disabled={isSubmitting}
+							className="text-sm sm:text-base"
+						>
 							{isSubmitting ? "Creating..." : "Create Allocation"}
 						</Button>
 					</div>
@@ -475,13 +546,15 @@ const EmployeeShiftsPage = () => {
 			</Dialog>
 
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent>
+				<DialogContent className="w-[95vw] max-w-md sm:max-w-lg">
 					<DialogHeader>
-						<DialogTitle>Edit Allocation</DialogTitle>
+						<DialogTitle className="text-lg sm:text-xl">Edit Allocation</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="employee">Employee</Label>
+							<Label htmlFor="employee" className="text-sm sm:text-base">
+								Employee
+							</Label>
 							<Select
 								value={formData.employee_id}
 								onValueChange={(value) => setFormData({ ...formData, employee_id: value })}
@@ -491,7 +564,11 @@ const EmployeeShiftsPage = () => {
 								</SelectTrigger>
 								<SelectContent>
 									{employees.map((employee) => (
-										<SelectItem key={employee.id} value={employee.id.toString()}>
+										<SelectItem
+											key={employee.id}
+											value={employee.id.toString()}
+											className="text-sm"
+										>
 											{employee?.name}
 										</SelectItem>
 									))}
@@ -499,7 +576,9 @@ const EmployeeShiftsPage = () => {
 							</Select>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="shift">Shift</Label>
+							<Label htmlFor="shift" className="text-sm sm:text-base">
+								Shift
+							</Label>
 							<Select
 								value={formData.shift_id}
 								onValueChange={(value) => setFormData({ ...formData, shift_id: value })}
@@ -509,7 +588,7 @@ const EmployeeShiftsPage = () => {
 								</SelectTrigger>
 								<SelectContent>
 									{shifts.map((shift) => (
-										<SelectItem key={shift.id} value={shift.id.toString()}>
+										<SelectItem key={shift.id} value={shift.id.toString()} className="text-sm">
 											{shift.name} ({shift.start_time} - {shift.end_time})
 										</SelectItem>
 									))}
@@ -517,20 +596,31 @@ const EmployeeShiftsPage = () => {
 							</Select>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="date">Date</Label>
+							<Label htmlFor="date" className="text-sm sm:text-base">
+								Date
+							</Label>
 							<Input
 								id="date"
 								type="date"
 								value={formData.date}
 								onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+								className="text-sm sm:text-base"
 							/>
 						</div>
 					</div>
 					<div className="flex justify-end space-x-2">
-						<Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+						<Button
+							variant="outline"
+							onClick={() => setIsEditDialogOpen(false)}
+							className="text-sm sm:text-base"
+						>
 							Cancel
 						</Button>
-						<Button onClick={handleEditAllocation} disabled={isSubmitting}>
+						<Button
+							onClick={handleEditAllocation}
+							disabled={isSubmitting}
+							className="text-sm sm:text-base"
+						>
 							{isSubmitting ? "Updating..." : "Update Allocation"}
 						</Button>
 					</div>
@@ -538,20 +628,20 @@ const EmployeeShiftsPage = () => {
 			</Dialog>
 
 			<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-				<AlertDialogContent>
+				<AlertDialogContent className="w-[95vw] max-w-md">
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
-						<AlertDialogDescription>
+						<AlertDialogTitle className="text-lg sm:text-xl">Are you sure?</AlertDialogTitle>
+						<AlertDialogDescription className="text-sm sm:text-base">
 							This action cannot be undone. This will permanently delete the allocation for{" "}
 							{selectedShift?.employee?.user?.fullname}.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel className="text-sm sm:text-base">Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteAllocation}
 							disabled={isSubmitting}
-							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm sm:text-base"
 						>
 							{isSubmitting ? "Deleting..." : "Delete"}
 						</AlertDialogAction>

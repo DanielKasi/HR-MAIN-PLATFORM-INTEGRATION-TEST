@@ -1135,33 +1135,6 @@ export default function JobSpecificInterviewPipeline() {
 		}
 	};
 
-	// const moveToNextStage = async (candidateId: number) => {
-	//   try {
-	//     const candidate = filteredCandidates.find(c => c.id === candidateId);
-
-	//     if (!candidate || !candidate.interview_id) {
-	//       throw new Error(`No interview found for candidate ${candidateId}`);
-	//     }
-
-	//     const currentInterviewData = {
-	//       status: 'completed'
-	//     };
-
-	//     const result = await updateInterview({
-	//       interviewId: candidate.interview_id,
-	//       interviewData: currentInterviewData
-	//     });
-
-	//     if (!result) {
-	//       throw new Error('Failed to update current interview status');
-	//     }
-
-	//     return { success: true, data: result };
-	//   } catch (error) {
-	//     throw error;
-	//   }
-	// }
-
 	const moveToNextStage = async (candidateId: number) => {
 		try {
 			const candidate = filteredCandidates.find((c) => c.id === candidateId);
@@ -1404,43 +1377,43 @@ export default function JobSpecificInterviewPipeline() {
 	// Loading and error states
 	if (loading) {
 		return (
-			<div className="p-6 space-y-6">
-				<div className="flex items-center gap-4">
-					<Skeleton className="h-10 w-32" />
-					<div>
-						<Skeleton className="h-8 w-64 mb-2" />
-						<Skeleton className="h-4 w-96" />
+			<div className="p-4 sm:p-6 space-y-6">
+				<div className="flex flex-col xs:flex-row xs:items-center gap-4">
+					<Skeleton className="h-10 w-10 sm:w-32 rounded-full sm:rounded-md" />
+					<div className="space-y-2">
+						<Skeleton className="h-6 sm:h-8 w-48 sm:w-64" />
+						<Skeleton className="h-4 w-56 sm:w-96" />
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					{[1, 2, 3].map((i) => (
-						<Card key={i}>
-							<CardContent className="p-6">
+				<div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+					{[1, 2, 3, 4].map((i) => (
+						<Card key={i} className="p-4 sm:p-6">
+							<CardContent className="p-0">
 								<div className="flex items-center justify-between">
 									<div className="space-y-2">
-										<Skeleton className="h-4 w-32" />
-										<Skeleton className="h-8 w-16" />
+										<Skeleton className="h-4 w-20 sm:w-32" />
+										<Skeleton className="h-6 sm:h-8 w-12 sm:w-16" />
 									</div>
-									<Skeleton className="h-12 w-12 rounded-full" />
+									<Skeleton className="h-8 w-8 sm:h-12 sm:w-12 rounded-full" />
 								</div>
 							</CardContent>
 						</Card>
 					))}
 				</div>
 
-				<Card>
-					<CardContent className="p-6">
+				<Card className="p-4 sm:p-6">
+					<CardContent className="p-0 sm:p-6">
 						<div className="space-y-4">
 							{[1, 2, 3, 4].map((i) => (
-								<div key={i} className="flex items-center space-x-4">
-									<Skeleton className="h-10 w-10 rounded-full" />
-									<div className="space-y-2 flex-1">
-										<Skeleton className="h-4 w-48" />
-										<Skeleton className="h-4 w-32" />
+								<div key={i} className="flex items-center space-x-3 sm:space-x-4">
+									<Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full" />
+									<div className="space-y-2 flex-1 min-w-0">
+										<Skeleton className="h-4 w-32 sm:w-48" />
+										<Skeleton className="h-4 w-24 sm:w-32" />
 									</div>
-									<Skeleton className="h-6 w-16" />
-									<Skeleton className="h-8 w-24" />
+									<Skeleton className="h-6 w-12 sm:w-16" />
+									<Skeleton className="h-8 w-16 sm:w-24" />
 								</div>
 							))}
 						</div>
@@ -1452,17 +1425,18 @@ export default function JobSpecificInterviewPipeline() {
 
 	if (error) {
 		return (
-			<div className="p-6">
+			<div className="p-4 sm:p-6">
 				<Card className="p-6">
-					<div className="flex items-center justify-center h-64">
+					<div className="flex items-center justify-center h-48 sm:h-64">
 						<div className="text-center">
 							<div className="text-red-500 mb-4">
-								<MessageSquare className="h-12 w-12 mx-auto" />
+								<MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 mx-auto" />
 							</div>
-							<p className="text-gray-600 mb-4">{error}</p>
+							<p className="text-gray-600 mb-4 text-sm sm:text-base">{error}</p>
 							<Button
 								onClick={() => window.location.reload()}
-								className="bg-orange-500 hover:bg-orange-600"
+								className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base"
+								size="sm"
 							>
 								Try Again
 							</Button>
@@ -1506,76 +1480,70 @@ export default function JobSpecificInterviewPipeline() {
 
 		return (
 			<Dialog open={isOpen} onOpenChange={onClose}>
-				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
 					<DialogHeader>
-						<DialogTitle className="flex items-center gap-2">
+						<DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
 							<History className="h-5 w-5" />
 							Interview History - {candidate.applicant_name}
 						</DialogTitle>
-						<DialogDescription>
+						<DialogDescription className="text-sm sm:text-base">
 							Complete interview journey and performance across all stages
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className="space-y-6">
+					<div className="space-y-4 sm:space-y-6">
 						{/* Candidate Summary */}
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<Card>
-								<CardContent className="p-4">
-									<div className="text-center">
-										<div className="text-2xl font-bold text-blue-600">
-											{candidate.current_stage_level}
-										</div>
-										<div className="text-sm text-gray-600">Current Stage Level</div>
+						<div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+							<Card className="p-3 sm:p-4">
+								<CardContent className="p-0 text-center">
+									<div className="text-xl sm:text-2xl font-bold text-blue-600">
+										{candidate.current_stage_level}
 									</div>
+									<div className="text-xs sm:text-sm text-gray-600 mt-1">Current Stage Level</div>
 								</CardContent>
 							</Card>
-							<Card>
-								<CardContent className="p-4">
-									<div className="text-center">
-										<div className="text-2xl font-bold text-green-600">
-											{candidate.overall_rating}
-										</div>
-										<div className="text-sm text-gray-600">Overall Rating</div>
+							<Card className="p-3 sm:p-4">
+								<CardContent className="p-0 text-center">
+									<div className="text-xl sm:text-2xl font-bold text-green-600">
+										{candidate.overall_rating}
 									</div>
+									<div className="text-xs sm:text-sm text-gray-600 mt-1">Overall Rating</div>
 								</CardContent>
 							</Card>
-							<Card>
-								<CardContent className="p-4">
-									<div className="text-center">
-										<div className="text-2xl font-bold text-purple-600">
-											{candidate.completion_rate}%
-										</div>
-										<div className="text-sm text-gray-600">Completion Rate</div>
+							<Card className="p-3 sm:p-4">
+								<CardContent className="p-0 text-center">
+									<div className="text-xl sm:text-2xl font-bold text-purple-600">
+										{candidate.completion_rate}%
 									</div>
+									<div className="text-xs sm:text-sm text-gray-600 mt-1">Completion Rate</div>
 								</CardContent>
 							</Card>
 						</div>
 
 						{/* Contact Information */}
-						<Card>
-							<CardHeader>
-								<CardTitle className="text-lg">Contact Information</CardTitle>
+						<Card className="p-4 sm:p-6">
+							<CardHeader className="p-0 pb-3 sm:pb-4">
+								<CardTitle className="text-base sm:text-lg">Contact Information</CardTitle>
 							</CardHeader>
-							<CardContent>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div className="flex items-center gap-2">
-										<Mail className="h-4 w-4 text-gray-500" />
-										<span>{candidate.applicant_email}</span>
+							<CardContent className="p-0">
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+									<div className="flex items-center gap-2 text-sm">
+										<Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
+										<span className="truncate">{candidate.applicant_email}</span>
 									</div>
 									{candidate.applicant_phone && (
-										<div className="flex items-center gap-2">
-											<Phone className="h-4 w-4 text-gray-500" />
-											<span>{candidate.applicant_phone}</span>
+										<div className="flex items-center gap-2 text-sm">
+											<Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+											<span className="truncate">{candidate.applicant_phone}</span>
 										</div>
 									)}
-									<div className="flex items-center gap-2">
-										<Users className="h-4 w-4 text-gray-500" />
-										<span className="capitalize">{candidate.gender}</span>
+									<div className="flex items-center gap-2 text-sm">
+										<Users className="h-4 w-4 text-gray-500 flex-shrink-0" />
+										<span className="capitalize truncate">{candidate.gender}</span>
 									</div>
-									<div className="flex items-center gap-2">
-										<MapPin className="h-4 w-4 text-gray-500" />
-										<span>
+									<div className="flex items-center gap-2 text-sm">
+										<MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+										<span className="truncate">
 											{candidate.state}, {candidate.country}
 										</span>
 									</div>
@@ -1584,15 +1552,17 @@ export default function JobSpecificInterviewPipeline() {
 						</Card>
 
 						{/* Interview History Timeline */}
-						<Card>
-							<CardHeader>
-								<CardTitle className="text-lg">Interview Journey</CardTitle>
+						<Card className="p-4 sm:p-6">
+							<CardHeader className="p-0 pb-3 sm:pb-4">
+								<CardTitle className="text-base sm:text-lg">Interview Journey</CardTitle>
 							</CardHeader>
-							<CardContent>
+							<CardContent className="p-0">
 								{candidate.interview_history.length === 0 ? (
-									<div className="text-center py-8">
-										<Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-										<p className="text-gray-600">No interview history available</p>
+									<div className="text-center py-6 sm:py-8">
+										<Clock className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+										<p className="text-gray-600 text-sm sm:text-base">
+											No interview history available
+										</p>
 									</div>
 								) : (
 									<div className="space-y-4">
@@ -1600,34 +1570,38 @@ export default function JobSpecificInterviewPipeline() {
 											<div key={index} className="relative">
 												{/* Timeline line */}
 												{index < candidate.interview_history.length - 1 && (
-													<div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gray-200" />
+													<div className="absolute left-4 sm:left-6 top-8 sm:top-12 bottom-0 w-0.5 bg-gray-200" />
 												)}
 
-												<div className="flex gap-4">
+												<div className="flex gap-3 sm:gap-4">
 													{/* Timeline dot */}
-													<div className="flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center">
+													<div className="flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center">
 														{getStageStatusIcon(entry)}
 													</div>
 
 													{/* Content */}
 													<div className="flex-1 min-w-0">
 														<Card className="mb-2">
-															<CardContent className="p-4">
-																<div className="flex items-start justify-between mb-3">
-																	<div>
-																		<h4 className="font-semibold text-lg">{entry.stage_name}</h4>
-																		<p className="text-sm text-gray-600">
+															<CardContent className="p-3 sm:p-4">
+																<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-0 mb-3">
+																	<div className="min-w-0">
+																		<h4 className="font-semibold text-sm sm:text-lg truncate">
+																			{entry.stage_name}
+																		</h4>
+																		<p className="text-xs sm:text-sm text-gray-600">
 																			Level {entry.stage_level} • {entry.interviewer}
 																		</p>
 																	</div>
-																	<div className="flex items-center gap-2">
+																	<div className="flex items-center gap-2 flex-wrap">
 																		{entry.rating && (
-																			<Badge className={`${getRatingColor(entry.rating)} border-0`}>
+																			<Badge
+																				className={`${getRatingColor(entry.rating)} border-0 text-xs`}
+																			>
 																				<Star className="h-3 w-3 mr-1" />
 																				{entry.rating}/10
 																			</Badge>
 																		)}
-																		<Badge variant="outline" className="capitalize">
+																		<Badge variant="outline" className="capitalize text-xs">
 																			{entry.status}
 																		</Badge>
 																	</div>
@@ -1635,11 +1609,11 @@ export default function JobSpecificInterviewPipeline() {
 
 																{/* Interview Details */}
 																{(entry.interview_date || entry.location) && (
-																	<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 text-sm">
+																	<div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-3 text-xs sm:text-sm">
 																		{entry.interview_date && (
 																			<div className="flex items-center gap-2">
-																				<Calendar className="h-4 w-4 text-gray-500" />
-																				<span>
+																				<Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+																				<span className="truncate">
 																					{new Date(entry.interview_date).toLocaleDateString()}
 																					{entry.interview_time && ` at ${entry.interview_time}`}
 																				</span>
@@ -1647,8 +1621,8 @@ export default function JobSpecificInterviewPipeline() {
 																		)}
 																		{entry.location && (
 																			<div className="flex items-center gap-2">
-																				<MapPin className="h-4 w-4 text-gray-500" />
-																				<span>{entry.location}</span>
+																				<MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+																				<span className="truncate">{entry.location}</span>
 																			</div>
 																		)}
 																	</div>
@@ -1658,20 +1632,27 @@ export default function JobSpecificInterviewPipeline() {
 																{entry.feedback && (
 																	<div className="bg-gray-50 rounded-lg p-3">
 																		<div className="flex items-center gap-2 mb-2">
-																			<MessageSquare className="h-4 w-4 text-gray-500" />
-																			<span className="font-medium text-sm">Feedback</span>
+																			<MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+																			<span className="font-medium text-xs sm:text-sm">
+																				Feedback
+																			</span>
 																		</div>
 
 																		{typeof entry.feedback === "string" ? (
-																			<p className="text-sm text-gray-700">{entry.feedback}</p>
+																			<p className="text-xs sm:text-sm text-gray-700 break-words">
+																				{entry.feedback}
+																			</p>
 																		) : (
-																			<div className="space-y-2 text-sm text-gray-700">
+																			<div className="space-y-2 text-xs sm:text-sm text-gray-700">
 																				{Object.entries(entry.feedback).map(([key, val]) => (
-																					<div key={key} className="flex justify-between">
-																						<span className="font-medium capitalize">
+																					<div
+																						key={key}
+																						className="flex flex-col xs:flex-row xs:justify-between gap-1"
+																					>
+																						<span className="font-medium capitalize break-words">
 																							{key.replace(/_/g, " ")}
 																						</span>
-																						<span className="ml-2 text-right">
+																						<span className="break-words xs:text-right">
 																							{Array.isArray(val) ? val.join(", ") : String(val)}
 																						</span>
 																					</div>
@@ -1683,8 +1664,8 @@ export default function JobSpecificInterviewPipeline() {
 
 																{!entry.feedback && !entry.rating && (
 																	<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-																		<p className="text-sm text-yellow-700">
-																			<Clock className="h-4 w-4 inline mr-1" />
+																		<p className="text-xs sm:text-sm text-yellow-700">
+																			<Clock className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1" />
 																			No feedback provided yet
 																		</p>
 																	</div>
@@ -1701,25 +1682,25 @@ export default function JobSpecificInterviewPipeline() {
 						</Card>
 
 						{/* Performance Summary */}
-						<Card>
-							<CardHeader>
-								<CardTitle className="text-lg">Performance Summary</CardTitle>
+						<Card className="p-4 sm:p-6">
+							<CardHeader className="p-0 pb-3 sm:pb-4">
+								<CardTitle className="text-base sm:text-lg">Performance Summary</CardTitle>
 							</CardHeader>
-							<CardContent>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<CardContent className="p-0">
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 									{/* Ratings Chart */}
 									<div>
-										<h4 className="font-medium mb-3">Stage Ratings</h4>
+										<h4 className="font-medium mb-3 text-sm sm:text-base">Stage Ratings</h4>
 										<div className="space-y-2">
 											{candidate.interview_history
 												.filter((entry) => entry.rating)
 												.map((entry, index) => (
 													<div key={index} className="flex items-center gap-3">
-														<span className="text-sm min-w-0 flex-1 truncate">
+														<span className="text-xs sm:text-sm min-w-0 flex-1 truncate">
 															{entry.stage_name}
 														</span>
-														<div className="flex items-center gap-2">
-															<div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+														<div className="flex items-center gap-2 flex-shrink-0">
+															<div className="w-12 sm:w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
 																<div
 																	className={`h-full rounded-full ${
 																		entry.rating! >= 8
@@ -1733,7 +1714,9 @@ export default function JobSpecificInterviewPipeline() {
 																	style={{ width: `${(entry.rating! / 10) * 100}%` }}
 																/>
 															</div>
-															<span className="text-sm font-medium w-8">{entry.rating}/10</span>
+															<span className="text-xs sm:text-sm font-medium w-6 sm:w-8 text-right">
+																{entry.rating}/10
+															</span>
 														</div>
 													</div>
 												))}
@@ -1742,24 +1725,24 @@ export default function JobSpecificInterviewPipeline() {
 
 									{/* Progress Statistics */}
 									<div>
-										<h4 className="font-medium mb-3">Progress Statistics</h4>
-										<div className="space-y-3">
-											<div className="flex justify-between">
-												<span className="text-sm">Stages Completed</span>
+										<h4 className="font-medium mb-3 text-sm sm:text-base">Progress Statistics</h4>
+										<div className="space-y-2 sm:space-y-3">
+											<div className="flex justify-between text-xs sm:text-sm">
+												<span>Stages Completed</span>
 												<span className="font-medium">{candidate.interview_history.length}</span>
 											</div>
-											<div className="flex justify-between">
-												<span className="text-sm">Stages with Feedback</span>
+											<div className="flex justify-between text-xs sm:text-sm">
+												<span>Stages with Feedback</span>
 												<span className="font-medium">
 													{candidate.interview_history.filter((h) => h.feedback).length}
 												</span>
 											</div>
-											<div className="flex justify-between">
-												<span className="text-sm">Average Rating</span>
+											<div className="flex justify-between text-xs sm:text-sm">
+												<span>Average Rating</span>
 												<span className="font-medium">{candidate.overall_rating || "Unknown"}</span>
 											</div>
-											<div className="flex justify-between">
-												<span className="text-sm">Completion Rate</span>
+											<div className="flex justify-between text-xs sm:text-sm">
+												<span>Completion Rate</span>
 												<span className="font-medium">{candidate.completion_rate}%</span>
 											</div>
 										</div>
@@ -1769,8 +1752,10 @@ export default function JobSpecificInterviewPipeline() {
 						</Card>
 					</div>
 
-					<div className="flex justify-end">
-						<Button onClick={onClose}>Close</Button>
+					<div className="flex justify-end pt-4">
+						<Button onClick={onClose} size="sm" className="text-xs sm:text-sm">
+							Close
+						</Button>
 					</div>
 				</DialogContent>
 			</Dialog>
@@ -1791,21 +1776,23 @@ export default function JobSpecificInterviewPipeline() {
 	).length;
 
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+		<div className="flex flex-col w-full h-full p-3 xs:p-4 sm:p-6 bg-white rounded-lg py-4 sm:py-8">
 			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-4">
+			<div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 xs:gap-4">
+				<div className="flex items-center gap-3 xs:gap-4">
 					<Button
 						size="sm"
-						className="rounded-full aspect-square"
+						className="rounded-full aspect-square h-8 w-8 xs:h-10 xs:w-10"
 						variant="outline"
 						onClick={handleBack}
 					>
-						<ArrowLeft className="h-4 w-4" />
+						<ArrowLeft className="h-3 w-3 xs:h-4 xs:w-4" />
 					</Button>
-					<div>
-						<h1 className="text-3xl font-bold text-gray-900">Job-Specific Interview Pipeline</h1>
-						<p className="text-gray-600">
+					<div className="min-w-0">
+						<h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+							Job-Specific Interview Pipeline
+						</h1>
+						<p className="text-gray-600 text-sm xs:text-base truncate">
 							Manage interview stages and candidates for specific job position/titles
 						</p>
 					</div>
@@ -1813,13 +1800,13 @@ export default function JobSpecificInterviewPipeline() {
 			</div>
 
 			{/* Job Position/ Title  Selector */}
-			<Card className="mt-6 shadow-sm border-none">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Building2 className="h-5 w-5" />
+			<Card className="mt-4 xs:mt-6 shadow-sm border-none">
+				<CardHeader className="p-4 xs:p-6">
+					<CardTitle className="flex items-center gap-2 text-lg xs:text-xl">
+						<Building2 className="h-4 w-4 xs:h-5 xs:w-5" />
 						Select Job Position / Title
 					</CardTitle>
-					<p className="text-muted-foreground py-4 my-4 text-sm">
+					<p className="text-muted-foreground py-3 xs:py-4 my-3 xs:my-4 text-xs xs:text-sm">
 						Organize and track candidates through multiple interview stages for each job position.
 						Create custom interview stages, assign interviewers, manage candidate progression,
 						provide feedback, and monitor the entire recruitment pipeline from initial screening to
@@ -1827,15 +1814,17 @@ export default function JobSpecificInterviewPipeline() {
 						decisions.
 					</p>
 				</CardHeader>
-				<CardContent>
-					<div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-						<div className="flex-1">
-							<Label htmlFor="job-position">Job Position / Title </Label>
+				<CardContent className="p-4 xs:p-6 pt-0">
+					<div className="flex flex-col sm:flex-row gap-3 xs:gap-4 items-start sm:items-end">
+						<div className="flex-1 w-full min-w-0">
+							<Label htmlFor="job-position" className="text-sm xs:text-base">
+								Job Position / Title{" "}
+							</Label>
 							<Select
 								value={selectedJobPosition?.id.toString() || ""}
 								onValueChange={handleJobPositionChange}
 							>
-								<SelectTrigger>
+								<SelectTrigger className="w-full">
 									<SelectValue placeholder="Select a job position/title to manage" />
 								</SelectTrigger>
 								<SelectContent>
@@ -1843,9 +1832,9 @@ export default function JobSpecificInterviewPipeline() {
 										<SelectItem key={position.id} value={position.id.toString()}>
 											<div className="flex items-center gap-2">
 												<Briefcase className="h-4 w-4" />
-												<div>
-													<div className="font-medium">{position.name}</div>
-													<div className="text-xs text-muted-foreground">
+												<div className="min-w-0">
+													<div className="font-medium truncate">{position.name}</div>
+													<div className="text-xs text-muted-foreground truncate">
 														{position.department} • {position.totalInterviews} interviews
 													</div>
 												</div>
@@ -1864,8 +1853,8 @@ export default function JobSpecificInterviewPipeline() {
 								existingStagesCount={processedStages.length}
 								onSuccess={fetchData}
 								triggerButton={
-									<Button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
-										<Plus className="h-4 w-4" />
+									<Button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 w-full sm:w-auto mt-3 sm:mt-0 text-xs xs:text-sm">
+										<Plus className="h-3 w-3 xs:h-4 xs:w-4" />
 										Add Interview Stage
 									</Button>
 								}
@@ -1877,16 +1866,18 @@ export default function JobSpecificInterviewPipeline() {
 
 			{!selectedJobPosition ? (
 				/* No job selected state */
-				<Card className="p-6 mt-6 shadow-sm border-none">
-					<div className="flex items-center justify-center h-64">
+				<Card className="p-4 xs:p-6 mt-4 xs:mt-6 shadow-sm border-none">
+					<div className="flex items-center justify-center h-48 xs:h-64">
 						<div className="text-center">
-							<Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-							<h3 className="text-lg font-semibold mb-2">Select a Job Position / Title </h3>
-							<p className="text-muted-foreground mb-4">
+							<Building2 className="h-8 w-8 xs:h-12 xs:w-12 text-gray-400 mx-auto mb-3 xs:mb-4" />
+							<h3 className="text-base xs:text-lg font-semibold mb-2">
+								Select a Job Position / Title{" "}
+							</h3>
+							<p className="text-muted-foreground mb-4 text-sm xs:text-base">
 								Choose a job position/title above to manage its interview pipeline
 							</p>
 							{availableJobPositions.length === 0 && (
-								<p className="text-sm text-gray-500">
+								<p className="text-xs xs:text-sm text-gray-500">
 									No job position/titles /titles with interviews found. Schedule some interviews
 									first.
 								</p>
@@ -1897,58 +1888,74 @@ export default function JobSpecificInterviewPipeline() {
 			) : (
 				<>
 					{/* Summary Stats for Selected Job */}
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-						<Card>
-							<CardContent className="p-6">
+					<div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-4 gap-3 xs:gap-4 mt-4 xs:mt-6">
+						<Card className="p-3 xs:p-4 sm:p-6">
+							<CardContent className="p-0">
 								<div className="flex items-center justify-between">
-									<div>
-										<p className="text-sm font-medium text-gray-600">Total Interviews</p>
-										<p className="text-3xl font-bold text-gray-900">{totalInterviews}</p>
+									<div className="min-w-0">
+										<p className="text-xs xs:text-sm font-medium text-gray-600 truncate">
+											Total Interviews
+										</p>
+										<p className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900">
+											{totalInterviews}
+										</p>
 									</div>
-									<div className="p-3 bg-blue-100 rounded-full">
-										<Users className="h-6 w-6 text-blue-600" />
+									<div className="p-2 xs:p-3 bg-blue-100 rounded-full flex-shrink-0 ml-2">
+										<Users className="h-4 w-4 xs:h-6 xs:w-6 text-blue-600" />
 									</div>
 								</div>
 							</CardContent>
 						</Card>
 
-						<Card>
-							<CardContent className="p-6">
+						<Card className="p-3 xs:p-4 sm:p-6">
+							<CardContent className="p-0">
 								<div className="flex items-center justify-between">
-									<div>
-										<p className="text-sm font-medium text-gray-600">Scheduled</p>
-										<p className="text-3xl font-bold text-gray-900">{scheduledInterviews}</p>
+									<div className="min-w-0">
+										<p className="text-xs xs:text-sm font-medium text-gray-600 truncate">
+											Scheduled
+										</p>
+										<p className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900">
+											{scheduledInterviews}
+										</p>
 									</div>
-									<div className="p-3 bg-orange-100 rounded-full">
-										<Clock className="h-6 w-6 text-myOrange" />
+									<div className="p-2 xs:p-3 bg-orange-100 rounded-full flex-shrink-0 ml-2">
+										<Clock className="h-4 w-4 xs:h-6 xs:w-6 text-myOrange" />
 									</div>
 								</div>
 							</CardContent>
 						</Card>
 
-						<Card>
-							<CardContent className="p-6">
+						<Card className="p-3 xs:p-4 sm:p-6">
+							<CardContent className="p-0">
 								<div className="flex items-center justify-between">
-									<div>
-										<p className="text-sm font-medium text-gray-600">Completed</p>
-										<p className="text-3xl font-bold text-gray-900">{completedInterviews}</p>
+									<div className="min-w-0">
+										<p className="text-xs xs:text-sm font-medium text-gray-600 truncate">
+											Completed
+										</p>
+										<p className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900">
+											{completedInterviews}
+										</p>
 									</div>
-									<div className="p-3 bg-green-100 rounded-full">
-										<CheckCircle className="h-6 w-6 text-green-600" />
+									<div className="p-2 xs:p-3 bg-green-100 rounded-full flex-shrink-0 ml-2">
+										<CheckCircle className="h-4 w-4 xs:h-6 xs:w-6 text-green-600" />
 									</div>
 								</div>
 							</CardContent>
 						</Card>
 
-						<Card>
-							<CardContent className="p-6">
+						<Card className="p-3 xs:p-4 sm:p-6">
+							<CardContent className="p-0">
 								<div className="flex items-center justify-between">
-									<div>
-										<p className="text-sm font-medium text-gray-600">Pending Feedback</p>
-										<p className="text-3xl font-bold text-gray-900">{pendingFeedback}</p>
+									<div className="min-w-0">
+										<p className="text-xs xs:text-sm font-medium text-gray-600 truncate">
+											Pending Feedback
+										</p>
+										<p className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900">
+											{pendingFeedback}
+										</p>
 									</div>
-									<div className="p-3 bg-red-100 rounded-full">
-										<MessageSquare className="h-6 w-6 text-red-600" />
+									<div className="p-2 xs:p-3 bg-red-100 rounded-full flex-shrink-0 ml-2">
+										<MessageSquare className="h-4 w-4 xs:h-6 xs:w-6 text-red-600" />
 									</div>
 								</div>
 							</CardContent>
@@ -1957,20 +1964,21 @@ export default function JobSpecificInterviewPipeline() {
 
 					{processedStages.length === 0 ? (
 						/* No stages state */
-						<Card className="p-6">
-							<div className="flex items-center justify-center h-64">
+						<Card className="p-4 xs:p-6 mt-4 xs:mt-6">
+							<div className="flex items-center justify-center h-48 xs:h-64">
 								<div className="text-center">
-									<MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-									<h3 className="text-lg font-semibold mb-2">No Interview Stages</h3>
-									<p className="text-muted-foreground mb-4">
+									<MessageSquare className="h-8 w-8 xs:h-12 xs:w-12 text-gray-400 mx-auto mb-3 xs:mb-4" />
+									<h3 className="text-base xs:text-lg font-semibold mb-2">No Interview Stages</h3>
+									<p className="text-muted-foreground mb-4 text-sm xs:text-base">
 										Create interview stages for {selectedJobPosition.name} to start managing the
 										pipeline
 									</p>
 									<Button
 										onClick={() => setIsCreateStageDialogOpen(true)}
-										className="bg-orange-500 hover:bg-orange-600"
+										className="bg-orange-500 hover:bg-orange-600 text-xs xs:text-sm"
+										size="sm"
 									>
-										<Plus className="h-4 w-4 mr-2" />
+										<Plus className="h-3 w-3 xs:h-4 xs:w-4 mr-2" />
 										Add First Interview Stage
 									</Button>
 								</div>
@@ -1986,21 +1994,29 @@ export default function JobSpecificInterviewPipeline() {
 								setSearchTerm("");
 							}}
 						>
-							<div className="flex items-center justify-between mb-4 mt-8">
-								<TabsList className="grid w-fit grid-cols-2">
-									<TabsTrigger value="current" className="flex items-center gap-2">
-										<Briefcase className="h-4 w-4" />
-										Current Stage View
+							<div className="flex items-center justify-between mb-4 mt-6 xs:mt-8">
+								<TabsList className="grid w-full xs:w-fit grid-cols-2">
+									<TabsTrigger
+										value="current"
+										className="flex items-center gap-2 text-xs xs:text-sm"
+									>
+										<Briefcase className="h-3 w-3 xs:h-4 xs:w-4" />
+										<span className="hidden xs:inline">Current Stage View</span>
+										<span className="xs:hidden">Current</span>
 									</TabsTrigger>
-									<TabsTrigger value="history" className="flex items-center gap-2">
-										<History className="h-4 w-4" />
-										History View
+									<TabsTrigger
+										value="history"
+										className="flex items-center gap-2 text-xs xs:text-sm"
+									>
+										<History className="h-3 w-3 xs:h-4 xs:w-4" />
+										<span className="hidden xs:inline">History View</span>
+										<span className="xs:hidden">History</span>
 									</TabsTrigger>
 								</TabsList>
 							</div>
 
 							<TabsContent value="current">
-								<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
+								<div className="grid grid-cols-1 lg:grid-cols-3 gap-4 xs:gap-6 min-h-[400px]">
 									{/* Left Panel - Stages List */}
 									<div className="lg:col-span-1">
 										<InterviewStagesPanel
@@ -2033,43 +2049,45 @@ export default function JobSpecificInterviewPipeline() {
 									<div className="lg:col-span-2">
 										{activeStage ? (
 											<Card className="h-full">
-												<CardHeader>
-													<div className="flex items-center justify-between">
-														<div>
-															<CardTitle className="flex items-center gap-2">
+												<CardHeader className="p-4 xs:p-6">
+													<div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-0">
+														<div className="min-w-0">
+															<CardTitle className="flex items-center gap-2 text-lg xs:text-xl">
 																{activeStage.icon}
-																{activeStage.name} - Candidates
+																<span className="truncate">{activeStage.name} - Candidates</span>
 															</CardTitle>
-															<p className="text-sm text-muted-foreground">
+															<p className="text-sm text-muted-foreground truncate">
 																Level {activeStage.level} • Interviewer: {activeStage.interviewer} •{" "}
 																{filteredCandidates.length} candidates
 															</p>
 														</div>
 														{nextStageForActive && (
-															<div className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-																Next: {nextStageForActive.name}
+															<div className="text-xs xs:text-sm text-green-600 bg-green-50 px-2 xs:px-3 py-1 rounded-full mt-2 xs:mt-0 self-start xs:self-auto">
+																Next:{" "}
+																<span className="hidden xs:inline">{nextStageForActive.name}</span>
+																<span className="xs:hidden">Next Stage</span>
 															</div>
 														)}
 													</div>
 												</CardHeader>
-												<CardContent className="space-y-4">
+												<CardContent className="p-4 xs:p-6 pt-0 space-y-4">
 													{/* Search and Actions */}
-													<div className="flex flex-col sm:flex-row gap-4">
+													<div className="flex flex-col sm:flex-row gap-3 xs:gap-4">
 														<div className="relative flex-1">
 															<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 															<Input
 																placeholder="Search candidates..."
 																value={searchTerm}
 																onChange={(e) => setSearchTerm(e.target.value)}
-																className="pl-10"
+																className="pl-10 text-sm xs:text-base"
 															/>
 														</div>
 													</div>
 
 													{/* Bulk Actions */}
 													{selectedCandidates.length > 0 && (
-														<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-															<div className="flex items-center justify-between">
+														<div className="bg-blue-50 border border-blue-200 rounded-lg p-3 xs:p-4">
+															<div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-0">
 																<div className="flex items-center gap-2">
 																	<Users className="h-4 w-4 text-blue-600" />
 																	<span className="text-sm font-medium text-blue-800">
@@ -2088,16 +2106,17 @@ export default function JobSpecificInterviewPipeline() {
 																			)
 																		);
 																	}) && (
-																		<span className="text-xs text-myOrange bg-orange-100 px-2 py-1 rounded-full">
+																		<span className="text-xs text-myOrange bg-orange-100 px-2 py-1 rounded-full hidden xs:inline">
 																			Selected candidates need feedback & rating first
 																		</span>
 																	)}
 																</div>
-																<div className="flex items-center gap-2">
+																<div className="flex items-center gap-2 flex-wrap">
 																	<Button
 																		size="sm"
 																		variant="outline"
 																		onClick={() => setSelectedCandidates([])}
+																		className="text-xs h-8"
 																	>
 																		Clear
 																	</Button>
@@ -2115,11 +2134,14 @@ export default function JobSpecificInterviewPipeline() {
 																				setSelectedCandidates(eligibleIds);
 																				handleBulkOnboard();
 																			}}
-																			className="text-purple-600 border-purple-200 hover:bg-purple-50"
+																			className="text-purple-600 border-purple-200 hover:bg-purple-50 text-xs h-8"
 																			title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
 																		>
-																			<Users className="h-4 w-4 mr-2" />
-																			Onboard ({candidatesEligibleForOnboarding.length})
+																			<Users className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+																			<span className="hidden xs:inline">Onboard</span>
+																			<span className="xs:hidden">
+																				Onboard ({candidatesEligibleForOnboarding.length})
+																			</span>
 																		</Button>
 																	)}
 
@@ -2134,423 +2156,487 @@ export default function JobSpecificInterviewPipeline() {
 																				setSelectedCandidates(eligibleIds);
 																				handleBulkScheduleAndMove();
 																			}}
-																			className="bg-green-600 hover:bg-green-700"
+																			className="bg-green-600 hover:bg-green-700 text-xs h-8"
 																			title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
 																		>
-																			<Calendar className="h-4 w-4 mr-2" />
-																			Move to {nextStageForActive.name} (
-																			{candidatesEligibleForMoving.length})
+																			<Calendar className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+																			<span className="hidden xs:inline">
+																				Move to {nextStageForActive.name}
+																			</span>
+																			<span className="xs:hidden">
+																				Move ({candidatesEligibleForMoving.length})
+																			</span>
 																		</Button>
 																	)}
 
 																	{/* Show message when no candidates are eligible for actions */}
 																	{candidatesEligibleForOnboarding.length === 0 &&
 																		candidatesEligibleForMoving.length === 0 && (
-																			<div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+																			<div className="text-xs text-red-600 bg-red-50 px-2 xs:px-3 py-1 rounded-full border border-red-200">
 																				Please provide feedback & rating first
 																			</div>
 																		)}
 																</div>
 															</div>
+															{/* Mobile warning message */}
+															{selectedCandidates.some((id) => {
+																const candidate = filteredCandidates.find((c) => c.id === id);
+
+																return (
+																	candidate &&
+																	!(candidate.feedback && candidate.rating && candidate.rating > 0)
+																);
+															}) && (
+																<div className="xs:hidden text-xs text-myOrange bg-orange-100 px-2 py-1 rounded-full mt-2">
+																	Selected candidates need feedback & rating first
+																</div>
+															)}
 														</div>
 													)}
 													{/* Candidates Table */}
 													<div className="border rounded-lg max-h-[400px] overflow-auto">
 														{filteredCandidates.length === 0 ? (
 															<div className="text-center py-8">
-																<Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-																<h3 className="text-lg font-semibold mb-2">No candidates found</h3>
-																<p className="text-muted-foreground">
+																<Users className="h-8 w-8 xs:h-12 xs:w-12 text-muted-foreground mx-auto mb-3 xs:mb-4" />
+																<h3 className="text-base xs:text-lg font-semibold mb-2">
+																	No candidates found
+																</h3>
+																<p className="text-muted-foreground text-sm xs:text-base">
 																	{searchTerm
 																		? "No candidates match your search."
 																		: "No candidates have been assigned to this stage yet."}
 																</p>
 															</div>
 														) : (
-															<Table>
-																<TableHeader>
-																	<TableRow>
-																		<TableHead className="w-12">
-																			<Checkbox
-																				checked={(() => {
-																					const candidatesNeedingFeedback =
-																						filteredCandidates.filter((candidate) =>
-																							canCandidateBeSelected(candidate),
-																						);
-
-																					return (
-																						candidatesNeedingFeedback.length > 0 &&
-																						candidatesNeedingFeedback.every((c) =>
-																							selectedCandidates.includes(c.id),
-																						)
-																					);
-																				})()}
-																				onCheckedChange={handleSelectAll}
-																				title="Select candidates who need feedback"
-																			/>
-																		</TableHead>
-
-																		<TableHead>Candidate</TableHead>
-																		<TableHead>Contact</TableHead>
-																		<TableHead>Feedback</TableHead>
-																		<TableHead>Rating</TableHead>
-																		<TableHead>Status</TableHead>
-																		<TableHead>Actions</TableHead>
-																	</TableRow>
-																</TableHeader>
-
-																<TableBody>
-																	{filteredCandidates.map((candidate, idx) => (
-																		<TableRow
-																			key={idx}
-																			className={
-																				candidate.status === "rejected" ||
-																				candidate.status === "cancelled"
-																					? "opacity-60 bg-red-50"
-																					: ""
-																			}
-																		>
-																			<TableCell>
+															<div className="overflow-x-auto">
+																<Table>
+																	<TableHeader>
+																		<TableRow>
+																			<TableHead className="w-10 xs:w-12 px-2 xs:px-4">
 																				<Checkbox
-																					checked={selectedCandidates.includes(candidate.id)}
-																					onCheckedChange={(checked) =>
-																						handleSelectCandidate(candidate.id, checked as boolean)
-																					}
-																					disabled={!canCandidateBeSelected(candidate)}
-																					title={
-																						isCandidateRejected(candidate)
-																							? "Candidate is rejected/cancelled"
-																							: canCandidateBeSelected(candidate)
-																								? "Select for feedback"
-																								: candidate.feedback && candidate.rating
-																									? "Already has feedback and rating - use individual actions"
-																									: "Cannot be selected"
-																					}
-																					className={
-																						!canCandidateBeSelected(candidate) ? "opacity-50" : ""
-																					}
-																				/>
-																			</TableCell>
-
-																			<TableCell>
-																				<div className="space-y-1">
-																					<div className="font-medium">
-																						{candidate.applicant_name}
-																					</div>
-																					<div className="text-xs text-muted-foreground capitalize">
-																						{candidate.gender}
-																					</div>
-																				</div>
-																			</TableCell>
-
-																			<TableCell>
-																				<div className="space-y-1">
-																					<div className="flex items-center text-sm">
-																						<Mail className="mr-1 h-3 w-3" />
-																						{candidate.applicant_email}
-																					</div>
-																					{candidate.applicant_phone && (
-																						<div className="flex items-center text-sm text-muted-foreground">
-																							<Phone className="mr-1 h-3 w-3" />
-																							{candidate.applicant_phone}
-																						</div>
-																					)}
-																				</div>
-																			</TableCell>
-
-																			<TableCell>
-																				<div className="max-w-xs">
-																					{candidate.feedback ? (
-																						(() => {
-																							const title =
-																								typeof candidate.feedback === "string"
-																									? candidate.feedback
-																									: Object.entries(candidate.feedback)
-																											.map(
-																												([k, v]) =>
-																													`${k.replace(/_/g, " ")}: ${Array.isArray(v) ? v.join(", ") : String(v)}`,
-																											)
-																											.join(" • ");
-
-																							const display =
-																								typeof candidate.feedback === "string"
-																									? candidate.feedback
-																									: Object.entries(candidate.feedback)
-																											.map(
-																												([k, v]) =>
-																													`${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`,
-																											)
-																											.join("; ");
-
-																							return (
-																								<p
-																									className="text-sm text-gray-600 truncate"
-																									title={title}
-																								>
-																									{display}
-																								</p>
+																					checked={(() => {
+																						const candidatesNeedingFeedback =
+																							filteredCandidates.filter((candidate) =>
+																								canCandidateBeSelected(candidate),
 																							);
-																						})()
-																					) : (
-																						<p className="text-sm text-gray-400 italic">
-																							No feedback yet
-																						</p>
-																					)}
-																				</div>
-																			</TableCell>
 
-																			<TableCell>
-																				<div className="text-center">
-																					{candidate.rating ? (
-																						<div className="flex items-center gap-1">
-																							<Star className="h-4 w-4 text-yellow-500" />
-																							<span className="font-semibold">
-																								{candidate.rating}/10
+																						return (
+																							candidatesNeedingFeedback.length > 0 &&
+																							candidatesNeedingFeedback.every((c) =>
+																								selectedCandidates.includes(c.id),
+																							)
+																						);
+																					})()}
+																					onCheckedChange={handleSelectAll}
+																					title="Select candidates who need feedback"
+																					className="h-4 w-4"
+																				/>
+																			</TableHead>
+
+																			<TableHead className="px-2 xs:px-4 min-w-[120px]">
+																				Candidate
+																			</TableHead>
+																			<TableHead className="px-2 xs:px-4 min-w-[140px] hidden sm:table-cell">
+																				Contact
+																			</TableHead>
+																			<TableHead className="px-2 xs:px-4 min-w-[100px] hidden md:table-cell">
+																				Feedback
+																			</TableHead>
+																			<TableHead className="px-2 xs:px-4 w-16 xs:w-20">
+																				Rating
+																			</TableHead>
+																			<TableHead className="px-2 xs:px-4 w-20 xs:w-24">
+																				Status
+																			</TableHead>
+																			<TableHead className="px-2 xs:px-4 w-12 xs:w-16">
+																				Actions
+																			</TableHead>
+																		</TableRow>
+																	</TableHeader>
+
+																	<TableBody>
+																		{filteredCandidates.map((candidate, idx) => (
+																			<TableRow
+																				key={idx}
+																				className={
+																					candidate.status === "rejected" ||
+																					candidate.status === "cancelled"
+																						? "opacity-60 bg-red-50"
+																						: ""
+																				}
+																			>
+																				<TableCell className="px-2 xs:px-4">
+																					<Checkbox
+																						checked={selectedCandidates.includes(candidate.id)}
+																						onCheckedChange={(checked) =>
+																							handleSelectCandidate(
+																								candidate.id,
+																								checked as boolean,
+																							)
+																						}
+																						disabled={!canCandidateBeSelected(candidate)}
+																						title={
+																							isCandidateRejected(candidate)
+																								? "Candidate is rejected/cancelled"
+																								: canCandidateBeSelected(candidate)
+																									? "Select for feedback"
+																									: candidate.feedback && candidate.rating
+																										? "Already has feedback and rating - use individual actions"
+																										: "Cannot be selected"
+																						}
+																						className={
+																							!canCandidateBeSelected(candidate) ? "opacity-50" : ""
+																						}
+																					/>
+																				</TableCell>
+
+																				<TableCell className="px-2 xs:px-4">
+																					<div className="space-y-1 min-w-0">
+																						<div className="font-medium text-sm truncate">
+																							{candidate.applicant_name}
+																						</div>
+																						<div className="text-xs text-muted-foreground capitalize truncate">
+																							{candidate.gender}
+																						</div>
+																						{/* Mobile contact info */}
+																						<div className="sm:hidden space-y-1 mt-1">
+																							<div className="flex items-center text-xs text-muted-foreground">
+																								<Mail className="mr-1 h-3 w-3" />
+																								<span className="truncate">
+																									{candidate.applicant_email}
+																								</span>
+																							</div>
+																							{candidate.applicant_phone && (
+																								<div className="flex items-center text-xs text-muted-foreground">
+																									<Phone className="mr-1 h-3 w-3" />
+																									<span className="truncate">
+																										{candidate.applicant_phone}
+																									</span>
+																								</div>
+																							)}
+																						</div>
+																					</div>
+																				</TableCell>
+
+																				<TableCell className="px-2 xs:px-4 hidden sm:table-cell">
+																					<div className="space-y-1 min-w-0">
+																						<div className="flex items-center text-sm">
+																							<Mail className="mr-1 h-3 w-3 flex-shrink-0" />
+																							<span className="truncate">
+																								{candidate.applicant_email}
 																							</span>
 																						</div>
-																					) : (
-																						<span className="text-sm text-gray-400">-</span>
-																					)}
-																				</div>
-																			</TableCell>
+																						{candidate.applicant_phone && (
+																							<div className="flex items-center text-sm text-muted-foreground">
+																								<Phone className="mr-1 h-3 w-3 flex-shrink-0" />
+																								<span className="truncate">
+																									{candidate.applicant_phone}
+																								</span>
+																							</div>
+																						)}
+																					</div>
+																				</TableCell>
 
-																			<TableCell>
-																				<div className="flex items-center">
-																					{(() => {
-																						const status =
-																							candidate.status?.toLowerCase() || "unknown";
+																				<TableCell className="px-2 xs:px-4 hidden md:table-cell">
+																					<div className="max-w-xs">
+																						{candidate.feedback ? (
+																							(() => {
+																								const title =
+																									typeof candidate.feedback === "string"
+																										? candidate.feedback
+																										: Object.entries(candidate.feedback)
+																												.map(
+																													([k, v]) =>
+																														`${k.replace(/_/g, " ")}: ${Array.isArray(v) ? v.join(", ") : String(v)}`,
+																												)
+																												.join(" • ");
 
-																						switch (status) {
-																							case "scheduled":
-																								return (
-																									<Badge
-																										variant="secondary"
-																										className="bg-blue-100 text-blue-700"
-																									>
-																										<Clock className="h-3 w-3 mr-1" />
-																										Scheduled
-																									</Badge>
-																								);
-																							case "completed":
-																								return (
-																									<Badge
-																										variant="secondary"
-																										className="bg-green-100 text-green-700"
-																									>
-																										<CheckCircle className="h-3 w-3 mr-1" />
-																										Onboarded
-																									</Badge>
-																								);
-																							case "cancelled":
-																							case "rejected":
-																								return (
-																									<Badge
-																										variant="secondary"
-																										className="bg-red-100 text-red-700"
-																									>
-																										<XCircle className="h-3 w-3 mr-1" />
-																										{status === "cancelled"
-																											? "Cancelled"
-																											: "Rejected"}
-																									</Badge>
-																								);
-																							case "rescheduled":
-																								return (
-																									<Badge
-																										variant="secondary"
-																										className="bg-yellow-100 text-yellow-700"
-																									>
-																										<Calendar className="h-3 w-3 mr-1" />
-																										Rescheduled
-																									</Badge>
-																								);
-																							case "no_show":
-																								return (
-																									<Badge
-																										variant="secondary"
-																										className="bg-gray-100 text-gray-700"
-																									>
-																										<XCircle className="h-3 w-3 mr-1" />
-																										No Show
-																									</Badge>
-																								);
-																							default:
-																								return (
-																									<Badge
-																										variant="secondary"
-																										className="bg-gray-100 text-gray-500"
-																									>
-																										<Clock className="h-3 w-3 mr-1" />
-																										{status.charAt(0).toUpperCase() +
-																											status.slice(1)}
-																									</Badge>
-																								);
-																						}
-																					})()}
-																				</div>
-																			</TableCell>
+																								const display =
+																									typeof candidate.feedback === "string"
+																										? candidate.feedback
+																										: Object.entries(candidate.feedback)
+																												.map(
+																													([k, v]) =>
+																														`${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`,
+																												)
+																												.join("; ");
 
-																			<TableCell>
-																				<DropdownMenu>
-																					<DropdownMenuTrigger asChild>
-																						<Button
-																							variant="ghost"
-																							size="sm"
-																							className="h-8 w-8 p-0"
-																						>
-																							<MoreVertical className="h-4 w-4" />
-																						</Button>
-																					</DropdownMenuTrigger>
-																					<DropdownMenuContent align="end">
-																						{/* Show different options based on candidate status */}
-																						{isCandidateRejected(candidate) ? (
-																							// For rejected candidates, only show limited options
-																							<>
-																								<DropdownMenuItem disabled className="text-red-600">
-																									<XCircle className="h-4 w-4 mr-2" />
-																									Candidate Rejected
-																								</DropdownMenuItem>
-																								<DropdownMenuItem
-																									onClick={() => openFeedbackDialog(candidate)}
-																								>
-																									<Eye className="h-4 w-4 mr-2" />
-																									View Details
-																								</DropdownMenuItem>
-																							</>
+																								return (
+																									<p
+																										className="text-sm text-gray-600 truncate"
+																										title={title}
+																									>
+																										{display}
+																									</p>
+																								);
+																							})()
 																						) : (
-																							// For active candidates, show full menu
-																							<>
-																								<DropdownMenuItem
-																									onClick={() => openFeedbackDialog(candidate)}
-																								>
-																									<Edit className="h-4 w-4 mr-2" />
-																									Provide Feedback
-																								</DropdownMenuItem>
+																							<p className="text-sm text-gray-400 italic">
+																								No feedback yet
+																							</p>
+																						)}
+																					</div>
+																				</TableCell>
 
-																								<DropdownMenuSeparator />
+																				<TableCell className="px-2 xs:px-4">
+																					<div className="text-center">
+																						{candidate.rating ? (
+																							<div className="flex items-center gap-1 justify-center">
+																								<Star className="h-3 w-3 xs:h-4 xs:w-4 text-yellow-500" />
+																								<span className="font-semibold text-sm">
+																									{candidate.rating}/10
+																								</span>
+																							</div>
+																						) : (
+																							<span className="text-sm text-gray-400">-</span>
+																						)}
+																					</div>
+																				</TableCell>
 
-																								{/* Only show onboard option if candidate has feedback and rating and isn't already onboarded */}
-																								{canCandidateBeOnboarded(candidate) &&
-																									!isCandidateAlreadyOnboarded(candidate) && (
-																										<DropdownMenuItem
-																											onClick={async () => {
-																												try {
-																													const result =
-																														await handleIndividualOnboard(
-																															candidate,
-																														);
+																				<TableCell className="px-2 xs:px-4">
+																					<div className="flex items-center">
+																						{(() => {
+																							const status =
+																								candidate.status?.toLowerCase() || "unknown";
 
-																													if (result.success) {
-																														if (result.alreadyOnboarded) {
-																															toast.warning(
-																																`${candidate.applicant_name} is already onboarded`,
-																															);
-																														} else {
-																															toast.success(
-																																`${candidate.applicant_name} onboarded successfully`,
-																															);
-																														}
-																													} else {
-																														toast.error(
-																															`Failed to onboard ${candidate.applicant_name}: ${result.message}`,
-																														);
-																													}
-																												} catch (error) {
-																													toast.error(
-																														`Unexpected error occurred while onboarding ${candidate.applicant_name}`,
-																													);
-																												}
-																											}}
-																											className="text-purple-600"
+																							switch (status) {
+																								case "scheduled":
+																									return (
+																										<Badge
+																											variant="secondary"
+																											className="bg-blue-100 text-blue-700 text-xs"
 																										>
-																											<Users className="h-4 w-4 mr-2" />
-																											Onboard Candidate
-																										</DropdownMenuItem>
-																									)}
+																											<Clock className="h-3 w-3 mr-1" />
+																											Scheduled
+																										</Badge>
+																									);
+																								case "completed":
+																									return (
+																										<Badge
+																											variant="secondary"
+																											className="bg-green-100 text-green-700 text-xs"
+																										>
+																											<CheckCircle className="h-3 w-3 mr-1" />
+																											Onboarded
+																										</Badge>
+																									);
+																								case "cancelled":
+																								case "rejected":
+																									return (
+																										<Badge
+																											variant="secondary"
+																											className="bg-red-100 text-red-700 text-xs"
+																										>
+																											<XCircle className="h-3 w-3 mr-1" />
+																											{status === "cancelled"
+																												? "Cancelled"
+																												: "Rejected"}
+																										</Badge>
+																									);
+																								case "rescheduled":
+																									return (
+																										<Badge
+																											variant="secondary"
+																											className="bg-yellow-100 text-yellow-700 text-xs"
+																										>
+																											<Calendar className="h-3 w-3 mr-1" />
+																											Rescheduled
+																										</Badge>
+																									);
+																								case "no_show":
+																									return (
+																										<Badge
+																											variant="secondary"
+																											className="bg-gray-100 text-gray-700 text-xs"
+																										>
+																											<XCircle className="h-3 w-3 mr-1" />
+																											No Show
+																										</Badge>
+																									);
+																								default:
+																									return (
+																										<Badge
+																											variant="secondary"
+																											className="bg-gray-100 text-gray-500 text-xs"
+																										>
+																											<Clock className="h-3 w-3 mr-1" />
+																											{status.charAt(0).toUpperCase() +
+																												status.slice(1)}
+																										</Badge>
+																									);
+																							}
+																						})()}
+																					</div>
+																				</TableCell>
 
-																								{/* Show message if candidate is already onboarded */}
-																								{isCandidateAlreadyOnboarded(candidate) && (
+																				<TableCell className="px-2 xs:px-4">
+																					<DropdownMenu>
+																						<DropdownMenuTrigger asChild>
+																							<Button
+																								variant="ghost"
+																								size="sm"
+																								className="h-7 w-7 xs:h-8 xs:w-8 p-0"
+																							>
+																								<MoreVertical className="h-3 w-3 xs:h-4 xs:w-4" />
+																							</Button>
+																						</DropdownMenuTrigger>
+																						<DropdownMenuContent align="end" className="w-48">
+																							{/* Show different options based on candidate status */}
+																							{isCandidateRejected(candidate) ? (
+																								// For rejected candidates, only show limited options
+																								<>
 																									<DropdownMenuItem
 																										disabled
-																										className="text-gray-400"
+																										className="text-red-600 text-xs"
 																									>
-																										<UserCheck className="h-4 w-4 mr-2" />
-																										Already Onboarded
+																										<XCircle className="h-4 w-4 mr-2" />
+																										Candidate Rejected
 																									</DropdownMenuItem>
-																								)}
+																									<DropdownMenuItem
+																										onClick={() => openFeedbackDialog(candidate)}
+																										className="text-xs"
+																									>
+																										<Eye className="h-4 w-4 mr-2" />
+																										View Details
+																									</DropdownMenuItem>
+																								</>
+																							) : (
+																								// For active candidates, show full menu
+																								<>
+																									<DropdownMenuItem
+																										onClick={() => openFeedbackDialog(candidate)}
+																										className="text-xs"
+																									>
+																										<Edit className="h-4 w-4 mr-2" />
+																										Provide Feedback
+																									</DropdownMenuItem>
 
-																								{/* Show message if candidate needs feedback first */}
-																								{!canCandidateBeOnboarded(candidate) &&
-																									!isCandidateAlreadyOnboarded(candidate) && (
-																										<DropdownMenuItem
-																											disabled
-																											className="text-gray-400"
-																										>
-																											<Clock className="h-4 w-4 mr-2" />
-																											Needs Feedback & Rating First
-																										</DropdownMenuItem>
-																									)}
+																									<DropdownMenuSeparator />
 
-																								{/* Only show move options if candidate has feedback and rating */}
-																								{nextStageForActive &&
-																									canCandidateBeMoved(candidate) && (
-																										<>
+																									{/* Only show onboard option if candidate has feedback and rating and isn't already onboarded */}
+																									{canCandidateBeOnboarded(candidate) &&
+																										!isCandidateAlreadyOnboarded(candidate) && (
 																											<DropdownMenuItem
 																												onClick={async () => {
-																													setCandidatesToSchedule([candidate]);
-																													setIsSchedulingDialogOpen(true);
-																												}}
-																												className="text-green-600"
-																											>
-																												<Calendar className="h-4 w-4 mr-2" />
-																												Schedule & Move to {nextStageForActive.name}
-																											</DropdownMenuItem>
-																										</>
-																									)}
+																													try {
+																														const result =
+																															await handleIndividualOnboard(
+																																candidate,
+																															);
 
-																								{/* Show message if candidate can't be moved yet */}
-																								{nextStageForActive &&
-																									!canCandidateBeMoved(candidate) && (
+																														if (result.success) {
+																															if (result.alreadyOnboarded) {
+																																toast.warning(
+																																	`${candidate.applicant_name} is already onboarded`,
+																																);
+																															} else {
+																																toast.success(
+																																	`${candidate.applicant_name} onboarded successfully`,
+																																);
+																															}
+																														} else {
+																															toast.error(
+																																`Failed to onboard ${candidate.applicant_name}: ${result.message}`,
+																															);
+																														}
+																													} catch (error) {
+																														toast.error(
+																															`Unexpected error occurred while onboarding ${candidate.applicant_name}`,
+																														);
+																													}
+																												}}
+																												className="text-purple-600 text-xs"
+																											>
+																												<Users className="h-4 w-4 mr-2" />
+																												Onboard Candidate
+																											</DropdownMenuItem>
+																										)}
+
+																									{/* Show message if candidate is already onboarded */}
+																									{isCandidateAlreadyOnboarded(candidate) && (
 																										<DropdownMenuItem
 																											disabled
-																											className="text-gray-400"
+																											className="text-gray-400 text-xs"
 																										>
-																											<Clock className="h-4 w-4 mr-2" />
-																											Provide Feedback & Rating to Move
+																											<UserCheck className="h-4 w-4 mr-2" />
+																											Already Onboarded
 																										</DropdownMenuItem>
 																									)}
 
-																								<DropdownMenuSeparator />
+																									{/* Show message if candidate needs feedback first */}
+																									{!canCandidateBeOnboarded(candidate) &&
+																										!isCandidateAlreadyOnboarded(candidate) && (
+																											<DropdownMenuItem
+																												disabled
+																												className="text-gray-400 text-xs"
+																											>
+																												<Clock className="h-4 w-4 mr-2" />
+																												Needs Feedback & Rating First
+																											</DropdownMenuItem>
+																										)}
 
-																								{/* Only show reject option if candidate is not already rejected */}
-																								<DropdownMenuItem
-																									onClick={async () => {
-																										try {
-																											await rejectCandidate(candidate.id);
-																											toast.success(
-																												`${candidate.applicant_name} rejected`,
-																											);
-																											await fetchData();
-																										} catch (error) {
-																											toast.error(
-																												`Failed to reject ${candidate.applicant_name}`,
-																											);
-																										}
-																									}}
-																									className="text-red-600"
-																								>
-																									<XCircle className="h-4 w-4 mr-2" />
-																									Reject Candidate
-																								</DropdownMenuItem>
-																							</>
-																						)}
-																					</DropdownMenuContent>
-																				</DropdownMenu>
-																			</TableCell>
-																		</TableRow>
-																	))}
-																</TableBody>
-															</Table>
+																									{/* Only show move options if candidate has feedback and rating */}
+																									{nextStageForActive &&
+																										canCandidateBeMoved(candidate) && (
+																											<>
+																												<DropdownMenuItem
+																													onClick={async () => {
+																														setCandidatesToSchedule([candidate]);
+																														setIsSchedulingDialogOpen(true);
+																													}}
+																													className="text-green-600 text-xs"
+																												>
+																													<Calendar className="h-4 w-4 mr-2" />
+																													Schedule & Move to{" "}
+																													{nextStageForActive.name}
+																												</DropdownMenuItem>
+																											</>
+																										)}
+
+																									{/* Show message if candidate can't be moved yet */}
+																									{nextStageForActive &&
+																										!canCandidateBeMoved(candidate) && (
+																											<DropdownMenuItem
+																												disabled
+																												className="text-gray-400 text-xs"
+																											>
+																												<Clock className="h-4 w-4 mr-2" />
+																												Provide Feedback & Rating to Move
+																											</DropdownMenuItem>
+																										)}
+
+																									<DropdownMenuSeparator />
+
+																									{/* Only show reject option if candidate is not already rejected */}
+																									<DropdownMenuItem
+																										onClick={async () => {
+																											try {
+																												await rejectCandidate(candidate.id);
+																												toast.success(
+																													`${candidate.applicant_name} rejected`,
+																												);
+																												await fetchData();
+																											} catch (error) {
+																												toast.error(
+																													`Failed to reject ${candidate.applicant_name}`,
+																												);
+																											}
+																										}}
+																										className="text-red-600 text-xs"
+																									>
+																										<XCircle className="h-4 w-4 mr-2" />
+																										Reject Candidate
+																									</DropdownMenuItem>
+																								</>
+																							)}
+																						</DropdownMenuContent>
+																					</DropdownMenu>
+																				</TableCell>
+																			</TableRow>
+																		))}
+																	</TableBody>
+																</Table>
+															</div>
 														)}
 													</div>
 												</CardContent>
@@ -2558,13 +2644,13 @@ export default function JobSpecificInterviewPipeline() {
 										) : (
 											/* No stage selected state */
 											<Card className="h-full">
-												<CardContent className="flex items-center justify-center h-full">
+												<CardContent className="flex items-center justify-center h-48 xs:h-64">
 													<div className="text-center">
-														<Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-														<h3 className="text-lg font-semibold mb-2">
+														<Eye className="h-8 w-8 xs:h-12 xs:w-12 text-gray-400 mx-auto mb-3 xs:mb-4" />
+														<h3 className="text-base xs:text-lg font-semibold mb-2">
 															Select an Interview Stage
 														</h3>
-														<p className="text-muted-foreground">
+														<p className="text-muted-foreground text-sm xs:text-base">
 															Choose a stage from the left panel to view and manage candidates
 														</p>
 													</div>
@@ -2577,48 +2663,49 @@ export default function JobSpecificInterviewPipeline() {
 
 							<TabsContent value="history">
 								<Card>
-									<CardHeader>
-										<div className="flex items-center justify-between">
-											<div>
-												<CardTitle className="flex items-center gap-2">
-													<History className="h-5 w-5" />
+									<CardHeader className="p-4 xs:p-6">
+										<div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-0">
+											<div className="min-w-0">
+												<CardTitle className="flex items-center gap-2 text-lg xs:text-xl">
+													<History className="h-4 w-4 xs:h-5 xs:w-5" />
 													Complete Interview History
 												</CardTitle>
-												<p className="text-sm text-muted-foreground">
+												<p className="text-sm text-muted-foreground truncate">
 													View all candidates and their complete interview journey across all stages
 												</p>
 											</div>
 										</div>
 									</CardHeader>
-									<CardContent className="space-y-4">
+									<CardContent className="p-4 xs:p-6 pt-0 space-y-4">
 										{/* Search */}
-										<div className="flex flex-col sm:flex-row gap-4">
+										<div className="flex flex-col sm:flex-row gap-3 xs:gap-4">
 											<div className="relative flex-1">
 												<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 												<Input
 													placeholder="Search all candidates..."
 													value={searchTerm}
 													onChange={(e) => setSearchTerm(e.target.value)}
-													className="pl-10"
+													className="pl-10 text-sm xs:text-base"
 												/>
 											</div>
 										</div>
 
 										{/* Bulk Actions for History View */}
 										{selectedCandidates.length > 0 && (
-											<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-												<div className="flex items-center justify-between">
+											<div className="bg-blue-50 border border-blue-200 rounded-lg p-3 xs:p-4">
+												<div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-0">
 													<div className="flex items-center gap-2">
 														<Users className="h-4 w-4 text-blue-600" />
 														<span className="text-sm font-medium text-blue-800">
 															{selectedCandidates.length} candidate(s) selected
 														</span>
 													</div>
-													<div className="flex items-center gap-2">
+													<div className="flex items-center gap-2 flex-wrap mt-2 xs:mt-0">
 														<Button
 															size="sm"
 															variant="outline"
 															onClick={() => setSelectedCandidates([])}
+															className="text-xs h-8"
 														>
 															Clear
 														</Button>
@@ -2626,10 +2713,11 @@ export default function JobSpecificInterviewPipeline() {
 															size="sm"
 															variant="outline"
 															onClick={handleBulkOnboard}
-															className="text-purple-600 border-purple-200 hover:bg-purple-50"
+															className="text-purple-600 border-purple-200 hover:bg-purple-50 text-xs h-8"
 														>
-															<Users className="h-4 w-4 mr-2" />
-															Onboard Selected
+															<Users className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+															<span className="hidden xs:inline">Onboard Selected</span>
+															<span className="xs:hidden">Onboard</span>
 														</Button>
 													</div>
 												</div>
@@ -2637,203 +2725,248 @@ export default function JobSpecificInterviewPipeline() {
 										)}
 
 										{/* History Table */}
-										<div className="border rounded-lg max-h-[600px] overflow-auto">
+										<div className="border rounded-lg max-h-[500px] overflow-auto">
 											{filteredHistoryCandidates.length === 0 ? (
 												<div className="text-center py-8">
-													<History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-													<h3 className="text-lg font-semibold mb-2">No candidates found</h3>
-													<p className="text-muted-foreground">
+													<History className="h-8 w-8 xs:h-12 xs:w-12 text-muted-foreground mx-auto mb-3 xs:mb-4" />
+													<h3 className="text-base xs:text-lg font-semibold mb-2">
+														No candidates found
+													</h3>
+													<p className="text-muted-foreground text-sm xs:text-base">
 														{searchTerm
 															? "No candidates match your search."
 															: "No candidates have applied for this position yet."}
 													</p>
 												</div>
 											) : (
-												<Table>
-													<TableHeader>
-														<TableRow>
-															<TableHead className="w-12">
-																<Checkbox
-																	checked={
-																		filteredHistoryCandidates.length > 0 &&
-																		selectedCandidates.length === filteredHistoryCandidates.length
-																	}
-																	onCheckedChange={handleSelectAll}
-																/>
-															</TableHead>
-															<TableHead>Candidate</TableHead>
-															<TableHead>Contact</TableHead>
-															<TableHead>Current Stage</TableHead>
-															<TableHead>Overall Rating</TableHead>
-															<TableHead>Progress</TableHead>
-															<TableHead>Actions</TableHead>
-														</TableRow>
-													</TableHeader>
-													<TableBody>
-														{filteredHistoryCandidates.map((candidate) => (
-															<TableRow
-																key={candidate.id}
-																className={
-																	candidate.status === "rejected" ||
-																	candidate.status === "cancelled"
-																		? "opacity-60 bg-red-50"
-																		: ""
-																}
-															>
-																<TableCell>
+												<div className="overflow-x-auto">
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead className="w-10 xs:w-12 px-2 xs:px-4">
 																	<Checkbox
-																		checked={selectedCandidates.includes(candidate.id)}
-																		onCheckedChange={(checked) =>
-																			handleSelectCandidate(candidate.id, checked as boolean)
+																		checked={
+																			filteredHistoryCandidates.length > 0 &&
+																			selectedCandidates.length === filteredHistoryCandidates.length
 																		}
-																		disabled={!canCandidateBeSelected(candidate)}
-																		title={
-																			isCandidateRejected(candidate)
-																				? "Candidate is rejected/cancelled"
-																				: canCandidateBeSelected(candidate)
-																					? "Select for feedback"
-																					: candidate.feedback && candidate.rating
-																						? "Already has feedback and rating - use individual actions"
-																						: "Cannot be selected"
-																		}
-																		className={
-																			!canCandidateBeSelected(candidate) ? "opacity-50" : ""
-																		}
+																		onCheckedChange={handleSelectAll}
+																		className="h-4 w-4"
 																	/>
-																</TableCell>
-																<TableCell>
-																	<div className="space-y-1">
-																		<div className="font-medium">{candidate.applicant_name}</div>
-																		<div className="text-xs text-muted-foreground capitalize">
-																			{candidate.gender}
-																		</div>
-																	</div>
-																</TableCell>
-																<TableCell>
-																	<div className="space-y-1">
-																		<div className="flex items-center text-sm">
-																			<Mail className="mr-1 h-3 w-3" />
-																			{candidate.applicant_email}
-																		</div>
-																		{candidate.applicant_phone && (
-																			<div className="flex items-center text-sm text-muted-foreground">
-																				<Phone className="mr-1 h-3 w-3" />
-																				{candidate.applicant_phone}
+																</TableHead>
+																<TableHead className="px-2 xs:px-4 min-w-[120px]">
+																	Candidate
+																</TableHead>
+																<TableHead className="px-2 xs:px-4 min-w-[140px] hidden sm:table-cell">
+																	Contact
+																</TableHead>
+																<TableHead className="px-2 xs:px-4 min-w-[100px]">
+																	Current Stage
+																</TableHead>
+																<TableHead className="px-2 xs:px-4 w-16 xs:w-20">
+																	Overall Rating
+																</TableHead>
+																<TableHead className="px-2 xs:px-4 min-w-[100px]">
+																	Progress
+																</TableHead>
+																<TableHead className="px-2 xs:px-4 w-20 xs:w-24">Actions</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{filteredHistoryCandidates.map((candidate) => (
+																<TableRow
+																	key={candidate.id}
+																	className={
+																		candidate.status === "rejected" ||
+																		candidate.status === "cancelled"
+																			? "opacity-60 bg-red-50"
+																			: ""
+																	}
+																>
+																	<TableCell className="px-2 xs:px-4">
+																		<Checkbox
+																			checked={selectedCandidates.includes(candidate.id)}
+																			onCheckedChange={(checked) =>
+																				handleSelectCandidate(candidate.id, checked as boolean)
+																			}
+																			disabled={!canCandidateBeSelected(candidate)}
+																			title={
+																				isCandidateRejected(candidate)
+																					? "Candidate is rejected/cancelled"
+																					: canCandidateBeSelected(candidate)
+																						? "Select for feedback"
+																						: candidate.feedback && candidate.rating
+																							? "Already has feedback and rating - use individual actions"
+																							: "Cannot be selected"
+																			}
+																			className={
+																				!canCandidateBeSelected(candidate) ? "opacity-50" : ""
+																			}
+																		/>
+																	</TableCell>
+																	<TableCell className="px-2 xs:px-4">
+																		<div className="space-y-1 min-w-0">
+																			<div className="font-medium text-sm truncate">
+																				{candidate.applicant_name}
 																			</div>
-																		)}
-																	</div>
-																</TableCell>
-																<TableCell>
-																	<div className="text-center">
-																		{candidate.current_stage_level > 0 ? (
-																			<Badge
-																				variant="secondary"
-																				className="bg-blue-100 text-blue-700"
-																			>
-																				{candidate.current_stage_name}
-																			</Badge>
-																		) : (
-																			<Badge
-																				variant="secondary"
-																				className="bg-gray-100 text-gray-500"
-																			>
-																				Not Started
-																			</Badge>
-																		)}
-																	</div>
-																</TableCell>
-																<TableCell>
-																	<div className="text-center">
-																		{candidate.overall_rating > 0 ? (
-																			<div className="flex items-center gap-1 justify-center">
-																				<Star className="h-4 w-4 text-yellow-500" />
-																				<span className="font-semibold">
-																					{candidate.overall_rating}/10
-																				</span>
+																			<div className="text-xs text-muted-foreground capitalize truncate">
+																				{candidate.gender}
 																			</div>
-																		) : (
-																			<span className="text-sm text-gray-400">-</span>
-																		)}
-																	</div>
-																</TableCell>
-																<TableCell>
-																	<div className="flex items-center gap-2">
-																		<div className="flex-1">
-																			<div className="flex items-center gap-2">
-																				<div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-																					<div
-																						className="h-full bg-blue-500 rounded-full transition-all"
-																						style={{ width: `${candidate.completion_rate}%` }}
-																					/>
+																			{/* Mobile contact info */}
+																			<div className="sm:hidden space-y-1 mt-1">
+																				<div className="flex items-center text-xs text-muted-foreground">
+																					<Mail className="mr-1 h-3 w-3" />
+																					<span className="truncate">
+																						{candidate.applicant_email}
+																					</span>
 																				</div>
-																				<span className="text-sm font-medium">
-																					{candidate.completion_rate}%
-																				</span>
-																			</div>
-																			<div className="text-xs text-gray-500 mt-1">
-																				{candidate.interview_history.length} stages completed
+																				{candidate.applicant_phone && (
+																					<div className="flex items-center text-xs text-muted-foreground">
+																						<Phone className="mr-1 h-3 w-3" />
+																						<span className="truncate">
+																							{candidate.applicant_phone}
+																						</span>
+																					</div>
+																				)}
 																			</div>
 																		</div>
-																	</div>
-																</TableCell>
-																<TableCell>
-																	<div className="flex items-center gap-2">
-																		<Button
-																			variant="outline"
-																			size="sm"
-																			onClick={() => openHistoryDialog(candidate)}
-																			className="text-blue-600 border-blue-200 hover:bg-blue-50"
-																		>
-																			<History className="h-4 w-4 mr-1" />
-																			View History
-																		</Button>
-																		<DropdownMenu>
-																			<DropdownMenuTrigger asChild>
-																				<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-																					<MoreVertical className="h-4 w-4" />
-																				</Button>
-																			</DropdownMenuTrigger>
-																			<DropdownMenuContent align="end">
-																				<DropdownMenuItem
-																					onClick={async () => {
-																						try {
-																							const result =
-																								await handleIndividualOnboard(candidate);
+																	</TableCell>
+																	<TableCell className="px-2 xs:px-4 hidden sm:table-cell">
+																		<div className="space-y-1 min-w-0">
+																			<div className="flex items-center text-sm">
+																				<Mail className="mr-1 h-3 w-3 flex-shrink-0" />
+																				<span className="truncate">
+																					{candidate.applicant_email}
+																				</span>
+																			</div>
+																			{candidate.applicant_phone && (
+																				<div className="flex items-center text-sm text-muted-foreground">
+																					<Phone className="mr-1 h-3 w-3 flex-shrink-0" />
+																					<span className="truncate">
+																						{candidate.applicant_phone}
+																					</span>
+																				</div>
+																			)}
+																		</div>
+																	</TableCell>
+																	<TableCell className="px-2 xs:px-4">
+																		<div className="text-center">
+																			{candidate.current_stage_level > 0 ? (
+																				<Badge
+																					variant="secondary"
+																					className="bg-blue-100 text-blue-700 text-xs"
+																				>
+																					<span className="truncate">
+																						{candidate.current_stage_name}
+																					</span>
+																				</Badge>
+																			) : (
+																				<Badge
+																					variant="secondary"
+																					className="bg-gray-100 text-gray-500 text-xs"
+																				>
+																					Not Started
+																				</Badge>
+																			)}
+																		</div>
+																	</TableCell>
+																	<TableCell className="px-2 xs:px-4">
+																		<div className="text-center">
+																			{candidate.overall_rating > 0 ? (
+																				<div className="flex items-center gap-1 justify-center">
+																					<Star className="h-3 w-3 xs:h-4 xs:w-4 text-yellow-500" />
+																					<span className="font-semibold text-sm">
+																						{candidate.overall_rating}/10
+																					</span>
+																				</div>
+																			) : (
+																				<span className="text-sm text-gray-400">-</span>
+																			)}
+																		</div>
+																	</TableCell>
+																	<TableCell className="px-2 xs:px-4">
+																		<div className="flex items-center gap-2">
+																			<div className="flex-1 min-w-0">
+																				<div className="flex items-center gap-2">
+																					<div className="w-12 xs:w-16 h-2 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
+																						<div
+																							className="h-full bg-blue-500 rounded-full transition-all"
+																							style={{ width: `${candidate.completion_rate}%` }}
+																						/>
+																					</div>
+																					<span className="text-sm font-medium w-10 xs:w-12 text-right">
+																						{candidate.completion_rate}%
+																					</span>
+																				</div>
+																				<div className="text-xs text-gray-500 mt-1 truncate">
+																					{candidate.interview_history.length} stages completed
+																				</div>
+																			</div>
+																		</div>
+																	</TableCell>
+																	<TableCell className="px-2 xs:px-4">
+																		<div className="flex items-center gap-1 xs:gap-2">
+																			<Button
+																				variant="outline"
+																				size="sm"
+																				onClick={() => openHistoryDialog(candidate)}
+																				className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs h-7 xs:h-8 px-2 xs:px-3"
+																			>
+																				<History className="h-3 w-3 xs:h-4 xs:w-4 mr-1" />
+																				<span className="hidden xs:inline">View History</span>
+																				<span className="xs:hidden">View</span>
+																			</Button>
+																			<DropdownMenu>
+																				<DropdownMenuTrigger asChild>
+																					<Button
+																						variant="ghost"
+																						size="sm"
+																						className="h-7 w-7 xs:h-8 xs:w-8 p-0"
+																					>
+																						<MoreVertical className="h-3 w-3 xs:h-4 xs:w-4" />
+																					</Button>
+																				</DropdownMenuTrigger>
+																				<DropdownMenuContent align="end" className="w-40">
+																					<DropdownMenuItem
+																						onClick={async () => {
+																							try {
+																								const result =
+																									await handleIndividualOnboard(candidate);
 
-																							if (result.success) {
-																								if (result.alreadyOnboarded) {
-																									toast.warning(
-																										`${candidate.applicant_name} is already onboarded`,
-																									);
+																								if (result.success) {
+																									if (result.alreadyOnboarded) {
+																										toast.warning(
+																											`${candidate.applicant_name} is already onboarded`,
+																										);
+																									} else {
+																										toast.success(
+																											`${candidate.applicant_name} onboarded successfully`,
+																										);
+																									}
 																								} else {
-																									toast.success(
-																										`${candidate.applicant_name} onboarded successfully`,
+																									toast.error(
+																										`Failed to onboard ${candidate.applicant_name}: ${result.message}`,
 																									);
 																								}
-																							} else {
+																							} catch (error) {
 																								toast.error(
-																									`Failed to onboard ${candidate.applicant_name}: ${result.message}`,
+																									`Unexpected error occurred while onboarding ${candidate.applicant_name}`,
 																								);
 																							}
-																						} catch (error) {
-																							toast.error(
-																								`Unexpected error occurred while onboarding ${candidate.applicant_name}`,
-																							);
-																						}
-																					}}
-																					className="text-purple-600"
-																				>
-																					<Users className="h-4 w-4 mr-2" />
-																					Onboard Candidate
-																				</DropdownMenuItem>
-																			</DropdownMenuContent>
-																		</DropdownMenu>
-																	</div>
-																</TableCell>
-															</TableRow>
-														))}
-													</TableBody>
-												</Table>
+																						}}
+																						className="text-purple-600 text-xs"
+																					>
+																						<Users className="h-4 w-4 mr-2" />
+																						Onboard Candidate
+																					</DropdownMenuItem>
+																				</DropdownMenuContent>
+																			</DropdownMenu>
+																		</div>
+																	</TableCell>
+																</TableRow>
+															))}
+														</TableBody>
+													</Table>
+												</div>
 											)}
 										</div>
 									</CardContent>
@@ -2844,17 +2977,17 @@ export default function JobSpecificInterviewPipeline() {
 
 					{/* Progress Indicator */}
 					{processedStages.length > 0 && viewMode === "current" && (
-						<div className="mt-6">
+						<div className="mt-4 xs:mt-6">
 							<Card>
-								<CardContent className="p-6">
-									<h3 className="text-lg font-semibold text-gray-900 mb-4">
+								<CardContent className="p-4 xs:p-6">
+									<h3 className="text-base xs:text-lg font-semibold text-gray-900 mb-3 xs:mb-4">
 										Pipeline Progress for {selectedJobPosition.name}
 									</h3>
-									<div className="flex items-center space-x-2 overflow-x-auto pb-4 px-2">
+									<div className="flex items-center space-x-1 xs:space-x-2 overflow-x-auto pb-3 xs:pb-4 px-1 xs:px-2">
 										{processedStages.map((stage, index) => (
 											<div key={stage.id} className="flex items-center flex-shrink-0">
 												<div
-													className={`flex items-center justify-center w-12 h-12 rounded-full border-2 cursor-pointer transition-all ${
+													className={`flex items-center justify-center w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 rounded-full border-2 cursor-pointer transition-all ${
 														stage.count > 0
 															? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100"
 															: "border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100"
@@ -2862,20 +2995,20 @@ export default function JobSpecificInterviewPipeline() {
 													onClick={() => setActiveStageId(stage.id)}
 													title={`Click to view ${stage.name}`}
 												>
-													<span className="text-sm font-bold">{stage.count}</span>
+													<span className="text-xs xs:text-sm font-bold">{stage.count}</span>
 												</div>
 												{index < processedStages.length - 1 && (
 													<div
-														className={`h-0.5 w-8 mx-2 ${stage.count > 0 ? "bg-green-500" : "bg-gray-300"}`}
+														className={`h-0.5 w-4 xs:w-6 sm:w-8 mx-1 xs:mx-2 ${stage.count > 0 ? "bg-green-500" : "bg-gray-300"}`}
 													/>
 												)}
 											</div>
 										))}
 									</div>
-									<div className="flex items-center space-x-2 mt-2 overflow-x-auto">
+									<div className="flex items-center space-x-1 xs:space-x-2 mt-1 xs:mt-2 overflow-x-auto">
 										{processedStages.map((stage, index) => (
 											<div key={stage.id} className="flex items-center flex-shrink-0">
-												<div className="w-12 text-center">
+												<div className="w-8 xs:w-10 sm:w-12 text-center">
 													<span
 														className={`text-xs font-medium truncate block cursor-pointer ${
 															activeStageId === stage.id ? "text-blue-600" : "text-gray-600"
@@ -2886,7 +3019,9 @@ export default function JobSpecificInterviewPipeline() {
 														{stage.name}
 													</span>
 												</div>
-												{index < processedStages.length - 1 && <div className="w-8 mx-2" />}
+												{index < processedStages.length - 1 && (
+													<div className="w-4 xs:w-6 sm:w-8 mx-1 xs:mx-2" />
+												)}
 											</div>
 										))}
 									</div>

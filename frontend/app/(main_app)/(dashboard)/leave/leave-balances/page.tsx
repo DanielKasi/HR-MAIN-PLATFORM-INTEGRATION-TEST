@@ -184,11 +184,11 @@ export default function LeaveBalanceComponent() {
 	const getEmployeeCode = useCallback(
 		(employee: any) => {
 			if (typeof employee === "object" && employee?.employee_id !== undefined) {
-				return employee.employee_id || "Unknown"; // return here
+				return employee.employee_id || "Unknown";
 			}
 			const emp = employees.find((emp) => emp.id === employee);
 
-			return emp?.employee_id || "Unknown"; // and here
+			return emp?.employee_id || "Unknown";
 		},
 		[employees],
 	);
@@ -372,7 +372,7 @@ export default function LeaveBalanceComponent() {
 
 	if (!selectedInstitution?.id) {
 		return (
-			<div className="min-h-screen bg-white flex items-center justify-center">
+			<div className="min-h-screen bg-white flex items-center justify-center p-4">
 				<div className="flex flex-col items-center space-y-4 text-center">
 					<div className="relative">
 						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
@@ -391,253 +391,275 @@ export default function LeaveBalanceComponent() {
 		<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
 			<div className="flex flex-col w-full min-h-screen bg-white">
 				{/* Header */}
-				<div className="flex flex-col gap-6 p-6">
-					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+				<div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6">
+					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
 						<div>
-							<h1 className="text-3xl font-bold text-gray-900">Leave Balances</h1>
+							<h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Leave Balances</h1>
 						</div>
 					</div>
 
 					{/* Search and Filters */}
-					<div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-between">
-						<div className="relative">
+					<div className="flex flex-col gap-3 sm:gap-4">
+						<div className="relative w-full">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
 								placeholder="Search leave balances..."
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
-								className="pl-10"
+								className="pl-10 w-full"
 							/>
 						</div>
-						<div className="flex gap-2">
-							<Select value={filterType} onValueChange={(value: string) => setFilterType(value)}>
-								<SelectTrigger className="w-full sm:w-[180px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-									<SelectValue placeholder="All Leave Types" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all" className="text-sm sm:text-base">
-										All Leave Types
-									</SelectItem>
-									{uniqueLeaveTypes.map((type) => (
-										<SelectItem key={type} value={type} className="text-sm sm:text-base">
-											{type}
+						<div className="flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch sm:items-center justify-between">
+							<div className="flex flex-col sm:flex-row gap-2 flex-1 sm:flex-1">
+								<Select value={filterType} onValueChange={(value: string) => setFilterType(value)}>
+									<SelectTrigger className="w-full sm:w-[180px] border-gray-200">
+										<SelectValue placeholder="All Leave Types" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all" className="text-sm sm:text-base">
+											All Leave Types
 										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Select value={filterYear} onValueChange={(value: string) => setFilterYear(value)}>
-								<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-									<SelectValue placeholder="All Years" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all" className="text-sm sm:text-base">
-										All Years
-									</SelectItem>
-									{availableYears.map((year) => (
-										<SelectItem key={year} value={year.toString()} className="text-sm sm:text-base">
-											{year}
+										{uniqueLeaveTypes.map((type) => (
+											<SelectItem key={type} value={type} className="text-sm sm:text-base">
+												{type}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<Select value={filterYear} onValueChange={(value: string) => setFilterYear(value)}>
+									<SelectTrigger className="w-full sm:w-[130px] border-gray-200">
+										<SelectValue placeholder="All Years" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all" className="text-sm sm:text-base">
+											All Years
 										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="flex items-center gap-2">
-							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_LEAVE_BALANCES}>
-								<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-									<DialogTrigger asChild>
-										<Button className="flex items-center gap-2 rounded-[12px]">
-											<Plus className="h-4 w-4" />
-											Add Leave Balance
-										</Button>
-									</DialogTrigger>
-									<DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
-										<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-											<DialogTitle className="text-2xl font-bold text-gray-900">
-												Add Leave Balance
-											</DialogTitle>
-											<DialogDescription className="text-gray-600 text-base">
-												Create a new leave balance record for an employee.
-											</DialogDescription>
-										</DialogHeader>
-										<form
-											onSubmit={handleSubmit}
-											className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6 items-end"
-										>
-											<div className="space-y-3">
-												<Label htmlFor="employee" className="text-sm font-semibold text-gray-800">
-													Employee *
-												</Label>
-												<EmployeeSearchableSelect
-													value={formData.employee ? [formData.employee] : []}
-													onValueChange={(value) =>
-														setFormData({
-															...formData,
-															employee: value[0]?.toString() || "",
-														})
-													}
-													disabled={isSubmitting}
-													placeholder="Search and select employee"
-													showEmployeeId={false}
-													showDepartment={false}
-													multiple={false}
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label htmlFor="leave_type" className="text-sm font-semibold text-gray-800">
-													Leave Type *
-												</Label>
-												<Select
-													value={formData.leave_type}
-													onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
-													disabled={isSubmitting}
-												>
-													<SelectTrigger className="h-12 rounded-xl">
-														<SelectValue placeholder="Select leave type" />
-													</SelectTrigger>
-													<SelectContent>
-														{leaveTypes.map((type) => (
-															<SelectItem key={type.id} value={type.id.toString()}>
-																{type.name} ({type.max_days_per_year} days/year)
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-											</div>
-											<div className="space-y-3">
-												<Label htmlFor="year" className="text-sm font-semibold text-gray-800">
-													Year *
-												</Label>
-												<Select
-													value={formData.year}
-													onValueChange={(value) => setFormData({ ...formData, year: value })}
-													disabled={isSubmitting}
-												>
-													<SelectTrigger className="h-12 rounded-xl">
-														<SelectValue />
-													</SelectTrigger>
-													<SelectContent>
-														{availableYears.map((year) => (
-															<SelectItem key={year} value={year.toString()}>
-																{year}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-											</div>
-											<div className="space-y-3">
-												<Label
-													htmlFor="allocated_days"
-													className="text-sm font-semibold text-gray-800"
-												>
-													Allocated Days
-												</Label>
-												<Input
-													id="allocated_days"
-													type="number"
-													step="0.01"
-													value={formData.allocated_days}
-													onChange={(e) =>
-														setFormData({ ...formData, allocated_days: e.target.value })
-													}
-													placeholder="e.g., 21"
-													disabled={isSubmitting}
-													className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label htmlFor="used_days" className="text-sm font-semibold text-gray-800">
-													Used Days
-												</Label>
-												<Input
-													id="used_days"
-													type="number"
-													step="0.01"
-													value={formData.used_days}
-													onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
-													placeholder="e.g., 5"
-													disabled={isSubmitting}
-													className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label
-													htmlFor="pending_days"
-													className="text-sm font-semibold text-gray-800"
-												>
-													Pending Days
-												</Label>
-												<Input
-													id="pending_days"
-													type="number"
-													step="0.01"
-													value={formData.pending_days}
-													onChange={(e) =>
-														setFormData({ ...formData, pending_days: e.target.value })
-													}
-													placeholder="e.g., 2"
-													disabled={isSubmitting}
-													className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-												/>
-											</div>
-											<div className="space-y-3">
-												<Label
-													htmlFor="carried_forward_days"
-													className="text-sm font-semibold text-gray-800"
-												>
-													Carried Forward Days
-												</Label>
-												<Input
-													id="carried_forward_days"
-													type="number"
-													step="0.01"
-													value={formData.carried_forward_days}
-													onChange={(e) =>
-														setFormData({ ...formData, carried_forward_days: e.target.value })
-													}
-													placeholder="e.g., 3"
-													disabled={isSubmitting}
-													className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-												/>
-											</div>
-											<div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
-												<div className="flex justify-between items-center">
-													<span className="text-sm font-semibold text-gray-800">
-														Available Days:
-													</span>
-													<span className="text-lg font-bold text-myOrange">
-														{calculateAvailable(formData)}
-													</span>
-												</div>
-											</div>
-										</form>
-										<DialogFooter>
-											<Button
-												variant="outline"
-												onClick={() => setIsAddDialogOpen(false)}
-												disabled={isSubmitting}
+										{availableYears.map((year) => (
+											<SelectItem
+												key={year}
+												value={year.toString()}
+												className="text-sm sm:text-base"
 											>
-												Cancel
+												{year}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="flex items-center gap-2 w-full sm:w-auto">
+								<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_LEAVE_BALANCES}>
+									<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+										<DialogTrigger asChild>
+											<Button className="flex items-center gap-2 rounded-[12px] w-full sm:w-auto">
+												<Plus className="h-4 w-4" />
+												<span className="hidden sm:inline">Add Leave Balance</span>
+												<span className="sm:hidden">Add</span>
 											</Button>
-											<Button onClick={handleSubmit} disabled={isSubmitting}>
-												{isSubmitting ? (
-													<>
-														<Loader2 className="mr-2 h-5 w-5 animate-spin" />
-														Creating...
-													</>
-												) : (
-													"Create Leave Balance"
-												)}
-											</Button>
-										</DialogFooter>
-									</DialogContent>
-								</Dialog>
-							</ProtectedComponent>
+										</DialogTrigger>
+										<DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
+											<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+												<DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+													Add Leave Balance
+												</DialogTitle>
+												<DialogDescription className="text-gray-600 text-sm sm:text-base">
+													Create a new leave balance record for an employee.
+												</DialogDescription>
+											</DialogHeader>
+											<form
+												onSubmit={handleSubmit}
+												className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 py-6 items-end"
+											>
+												<div className="space-y-3">
+													<Label htmlFor="employee" className="text-sm font-semibold text-gray-800">
+														Employee *
+													</Label>
+													<EmployeeSearchableSelect
+														value={formData.employee ? [formData.employee] : []}
+														onValueChange={(value) =>
+															setFormData({
+																...formData,
+																employee: value[0]?.toString() || "",
+															})
+														}
+														disabled={isSubmitting}
+														placeholder="Search and select employee"
+														showEmployeeId={false}
+														showDepartment={false}
+														multiple={false}
+													/>
+												</div>
+												<div className="space-y-3">
+													<Label
+														htmlFor="leave_type"
+														className="text-sm font-semibold text-gray-800"
+													>
+														Leave Type *
+													</Label>
+													<Select
+														value={formData.leave_type}
+														onValueChange={(value) =>
+															setFormData({ ...formData, leave_type: value })
+														}
+														disabled={isSubmitting}
+													>
+														<SelectTrigger className="h-12 rounded-xl">
+															<SelectValue placeholder="Select leave type" />
+														</SelectTrigger>
+														<SelectContent>
+															{leaveTypes.map((type) => (
+																<SelectItem key={type.id} value={type.id.toString()}>
+																	{type.name} ({type.max_days_per_year} days/year)
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+												</div>
+												<div className="space-y-3">
+													<Label htmlFor="year" className="text-sm font-semibold text-gray-800">
+														Year *
+													</Label>
+													<Select
+														value={formData.year}
+														onValueChange={(value) => setFormData({ ...formData, year: value })}
+														disabled={isSubmitting}
+													>
+														<SelectTrigger className="h-12 rounded-xl">
+															<SelectValue />
+														</SelectTrigger>
+														<SelectContent>
+															{availableYears.map((year) => (
+																<SelectItem key={year} value={year.toString()}>
+																	{year}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+												</div>
+												<div className="space-y-3">
+													<Label
+														htmlFor="allocated_days"
+														className="text-sm font-semibold text-gray-800"
+													>
+														Allocated Days
+													</Label>
+													<Input
+														id="allocated_days"
+														type="number"
+														step="0.01"
+														value={formData.allocated_days}
+														onChange={(e) =>
+															setFormData({ ...formData, allocated_days: e.target.value })
+														}
+														placeholder="e.g., 21"
+														disabled={isSubmitting}
+														className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+													/>
+												</div>
+												<div className="space-y-3">
+													<Label
+														htmlFor="used_days"
+														className="text-sm font-semibold text-gray-800"
+													>
+														Used Days
+													</Label>
+													<Input
+														id="used_days"
+														type="number"
+														step="0.01"
+														value={formData.used_days}
+														onChange={(e) =>
+															setFormData({ ...formData, used_days: e.target.value })
+														}
+														placeholder="e.g., 5"
+														disabled={isSubmitting}
+														className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+													/>
+												</div>
+												<div className="space-y-3">
+													<Label
+														htmlFor="pending_days"
+														className="text-sm font-semibold text-gray-800"
+													>
+														Pending Days
+													</Label>
+													<Input
+														id="pending_days"
+														type="number"
+														step="0.01"
+														value={formData.pending_days}
+														onChange={(e) =>
+															setFormData({ ...formData, pending_days: e.target.value })
+														}
+														placeholder="e.g., 2"
+														disabled={isSubmitting}
+														className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+													/>
+												</div>
+												<div className="space-y-3">
+													<Label
+														htmlFor="carried_forward_days"
+														className="text-sm font-semibold text-gray-800"
+													>
+														Carried Forward Days
+													</Label>
+													<Input
+														id="carried_forward_days"
+														type="number"
+														step="0.01"
+														value={formData.carried_forward_days}
+														onChange={(e) =>
+															setFormData({ ...formData, carried_forward_days: e.target.value })
+														}
+														placeholder="e.g., 3"
+														disabled={isSubmitting}
+														className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+													/>
+												</div>
+												<div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
+													<div className="flex justify-between items-center">
+														<span className="text-sm font-semibold text-gray-800">
+															Available Days:
+														</span>
+														<span className="text-lg font-bold text-myOrange">
+															{calculateAvailable(formData)}
+														</span>
+													</div>
+												</div>
+											</form>
+											<DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
+												<Button
+													variant="outline"
+													onClick={() => setIsAddDialogOpen(false)}
+													disabled={isSubmitting}
+													className="w-full sm:w-auto"
+												>
+													Cancel
+												</Button>
+												<Button
+													onClick={handleSubmit}
+													disabled={isSubmitting}
+													className="w-full sm:w-auto"
+												>
+													{isSubmitting ? (
+														<>
+															<Loader2 className="mr-2 h-5 w-5 animate-spin" />
+															Creating...
+														</>
+													) : (
+														"Create Leave Balance"
+													)}
+												</Button>
+											</DialogFooter>
+										</DialogContent>
+									</Dialog>
+								</ProtectedComponent>
+							</div>
 						</div>
 					</div>
 				</div>
 
 				{/* Table Content */}
-				<div className="flex-1 px-6 pb-6 min-h-0">
+				<div className="flex-1 px-4 sm:px-6 pb-4 sm:pb-6 min-h-0 overflow-x-auto">
 					<PaginatedTableWrapper<ILeaveBalance>
 						fetchFirstPage={() => fetchFirstPage(searchTerm)}
 						fetchFromUrl={fetchFromUrl}
@@ -651,22 +673,24 @@ export default function LeaveBalanceComponent() {
 							if (loading) return <TableSkeleton rows={10} columns={6} />;
 							if (!data?.results?.length) {
 								return (
-									<div className="text-center py-12">
+									<div className="text-center py-12 px-4">
 										<Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 										<h3 className="text-lg font-semibold mb-2">No leave balances found</h3>
-										<p className="text-muted-foreground mb-4">
+										<p className="text-muted-foreground mb-4 text-sm">
 											{searchTerm
 												? "No leave balances match your search."
 												: "Get started by adding your first leave balance."}
 										</p>
 										<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_LEAVE_BALANCES}>
-											<Button
-												onClick={() => setIsAddDialogOpen(true)}
-												className="flex items-center gap-2"
-											>
-												<Plus className="h-4 w-4" />
-												Add First Leave Balance
-											</Button>
+											<div className="flex justify-center md:justify-start">
+												<Button
+													onClick={() => setIsAddDialogOpen(true)}
+													className="flex items-center gap-2"
+												>
+													<Plus className="h-4 w-4" />
+													Add First Leave Balance
+												</Button>
+											</div>
 										</ProtectedComponent>
 									</div>
 								);
@@ -730,30 +754,31 @@ export default function LeaveBalanceComponent() {
 							});
 
 							return (
-								<div className="space-y-4">
-									<Table>
+								<div className="space-y-4 overflow-x-auto">
+									<Table className="w-full">
 										<TableHeader>
 											<TableRow>
-												<TableHead>
-													<div className="flex items-center gap-2">
+												<TableHead className="text-xs sm:text-sm">
+													<div className="flex items-center gap-1 sm:gap-2 flex-wrap">
 														<span>Employee</span>
 														<Button
 															size="sm"
 															variant={ordering === "employee" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-6 w-6 p-0 flex-shrink-0"
 															onClick={() => setOrdering(ordering === "employee" ? "" : "employee")}
 														>
 															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead className="text-center">
-													<div className="flex items-center justify-center gap-2">
-														<span>Leave Types</span>
+												<TableHead className="text-center text-xs sm:text-sm">
+													<div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+														<span className="hidden sm:inline">Leave Types</span>
+														<span className="sm:hidden">Types</span>
 														<Button
 															size="sm"
 															variant={ordering === "leave_types" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-6 w-6 p-0 flex-shrink-0"
 															onClick={() =>
 																setOrdering(ordering === "leave_types" ? "" : "leave_types")
 															}
@@ -762,31 +787,36 @@ export default function LeaveBalanceComponent() {
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead className="text-center">Total Available</TableHead>
-												<TableHead className="text-center">
-													<div className="flex items-center justify-center gap-2">
+												<TableHead className="text-center text-xs sm:text-sm">
+													<span className="hidden sm:inline">Total Available</span>
+													<span className="sm:hidden">Available</span>
+												</TableHead>
+												<TableHead className="text-center text-xs sm:text-sm">
+													<div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
 														<span>Status</span>
 														<Button
 															size="sm"
 															variant={ordering === "status" ? "default" : "outline"}
-															className="h-6 w-6 p-0"
+															className="h-6 w-6 p-0 flex-shrink-0"
 															onClick={() => setOrdering(ordering === "status" ? "" : "status")}
 														>
 															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead className="text-center">Last Updated</TableHead>
-												<TableHead className="text-right">Actions</TableHead>
+												<TableHead className="text-center text-xs sm:text-sm hidden md:table-cell">
+													Last Updated
+												</TableHead>
+												<TableHead className="text-right text-xs sm:text-sm">Actions</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
 											{groupedArray.map((group) => (
-												<TableRow key={group.employeeId}>
-													<TableCell>
-														<div className="flex items-center gap-3">
+												<TableRow key={group.employeeId} className="hover:bg-gray-50">
+													<TableCell className="text-xs sm:text-sm">
+														<div className="flex items-center gap-2 sm:gap-3 min-w-0">
 															<div
-																className={`h-8 w-8 rounded-full ${
+																className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0 ${
 																	group.status === "good"
 																		? "bg-green-50"
 																		: group.status === "low"
@@ -795,7 +825,7 @@ export default function LeaveBalanceComponent() {
 																} flex items-center justify-center`}
 															>
 																<User
-																	className={`h-4 w-4 ${
+																	className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${
 																		group.status === "good"
 																			? "text-green-600"
 																			: group.status === "low"
@@ -804,22 +834,23 @@ export default function LeaveBalanceComponent() {
 																	}`}
 																/>
 															</div>
-															<div>
-																<div className="font-medium">{group.employeeName}</div>
-																<div className="text-sm text-muted-foreground">
+															<div className="min-w-0">
+																<div className="font-medium truncate text-xs sm:text-sm">
+																	{group.employeeName}
+																</div>
+																<div className="text-xs sm:text-xs text-muted-foreground truncate">
 																	{group.employeeCode}
 																</div>
 															</div>
 														</div>
 													</TableCell>
-													<TableCell className="text-center">
-														<Badge className="bg-blue-100 text-blue-800 border-blue-200">
-															{group.leaveBalances.length}{" "}
-															{group.leaveBalances.length === 1 ? "Type" : "Types"}
+													<TableCell className="text-center text-xs sm:text-sm">
+														<Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs sm:text-sm">
+															{group.leaveBalances.length}
 														</Badge>
 													</TableCell>
 													<TableCell
-														className={`text-center font-bold text-lg ${
+														className={`text-center font-bold text-sm sm:text-base ${
 															group.status === "overused"
 																? "text-red-600"
 																: group.status === "low"
@@ -829,12 +860,12 @@ export default function LeaveBalanceComponent() {
 													>
 														{group.totalAvailable}
 													</TableCell>
-													<TableCell className="text-center">
-														<Badge className={getStatusColor(group.status)}>
+													<TableCell className="text-center text-xs sm:text-sm">
+														<Badge className={`${getStatusColor(group.status)} text-xs sm:text-sm`}>
 															{group.status.charAt(0).toUpperCase() + group.status.slice(1)}
 														</Badge>
 													</TableCell>
-													<TableCell className="text-center">
+													<TableCell className="text-center text-xs sm:text-sm hidden md:table-cell">
 														{formatDate(
 															group.leaveBalances.reduce((latest, balance) =>
 																new Date(balance.updated_at) > new Date(latest.updated_at)
@@ -843,27 +874,41 @@ export default function LeaveBalanceComponent() {
 															).updated_at,
 														)}
 													</TableCell>
-													<TableCell className="text-right">
+													<TableCell className="text-right text-xs sm:text-sm">
 														<DropdownMenu>
 															<DropdownMenuTrigger asChild>
 																<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
 																	<MoreVertical className="h-4 w-4" />
 																</Button>
 															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
-																<DropdownMenuItem onClick={() => handleView(group.employeeId)}>
+															<DropdownMenuContent align="end" className="w-40">
+																<DropdownMenuItem
+																	onClick={() => handleView(group.employeeId)}
+																	className="text-xs sm:text-sm"
+																>
 																	<Eye className="h-4 w-4 mr-2" />
 																	View
 																</DropdownMenuItem>
 																<ProtectedComponent
-																	permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}
+																	permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_BALANCES}
+																>
+																	<DropdownMenuItem
+																		onClick={() => handleEdit(group)}
+																		className="text-xs sm:text-sm"
+																	>
+																		<Icon icon="hugeicons:edit-02" className="h-4 w-4 mr-2" />
+																		Edit
+																	</DropdownMenuItem>
+																</ProtectedComponent>
+																<ProtectedComponent
+																	permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_BALANCES}
 																>
 																	<DropdownMenuItem
 																		onClick={() => {
 																			setDeletingEmployee(group);
 																			setIsDeleteDialogOpen(true);
 																		}}
-																		className="text-destructive"
+																		className="text-destructive text-xs sm:text-sm"
 																	>
 																		<Trash2 className="h-4 w-4 mr-2" />
 																		Delete
@@ -902,16 +947,19 @@ export default function LeaveBalanceComponent() {
 							}
 						}}
 					>
-						<DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
+						<DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl max-h-[90vh] overflow-y-auto">
 							<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-								<DialogTitle className="text-2xl font-bold text-gray-900">
+								<DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900">
 									Edit Leave Balance
 								</DialogTitle>
-								<DialogDescription className="text-gray-600 text-base">
+								<DialogDescription className="text-gray-600 text-sm sm:text-base">
 									Update the leave balance record for the selected employee.
 								</DialogDescription>
 							</DialogHeader>
-							<form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+							<form
+								onSubmit={handleSubmit}
+								className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 py-6"
+							>
 								<div className="space-y-3">
 									<Label htmlFor="edit-employee" className="text-sm font-semibold text-gray-800">
 										Employee *
@@ -1055,15 +1103,16 @@ export default function LeaveBalanceComponent() {
 									</div>
 								</div>
 							</form>
-							<DialogFooter>
+							<DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
 								<Button
 									variant="outline"
 									onClick={() => setIsEditDialogOpen(false)}
 									disabled={isSubmitting}
+									className="w-full sm:w-auto"
 								>
 									Cancel
 								</Button>
-								<Button onClick={handleSubmit} disabled={isSubmitting}>
+								<Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
 									{isSubmitting ? (
 										<>
 											<Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -1094,26 +1143,32 @@ export default function LeaveBalanceComponent() {
 								<div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
 									<Trash2 className="w-8 h-8 text-red-600" />
 								</div>
-								<DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+								<DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center">
 									Delete Leave Balances
 								</DialogTitle>
-								<DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
+								<DialogDescription className="text-gray-600 text-center text-sm sm:text-base leading-relaxed">
 									Are you sure you want to delete all leave balance records for{" "}
-									<span className="font-semibold text-gray-900">
+									<span className="font-semibold text-gray-900 break-words">
 										"{deletingEmployee?.employeeName}"
 									</span>
 									? This action cannot be undone.
 								</DialogDescription>
 							</DialogHeader>
-							<DialogFooter>
+							<DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
 								<Button
 									variant="outline"
 									onClick={() => setIsDeleteDialogOpen(false)}
 									disabled={isSubmitting}
+									className="w-full sm:w-auto"
 								>
 									Cancel
 								</Button>
-								<Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
+								<Button
+									variant="destructive"
+									onClick={handleDelete}
+									disabled={isSubmitting}
+									className="w-full sm:w-auto"
+								>
 									{isSubmitting ? (
 										<>
 											<Loader2 className="mr-2 h-5 w-5 animate-spin" />

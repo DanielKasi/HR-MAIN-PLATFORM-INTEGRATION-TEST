@@ -73,48 +73,47 @@ export default function InterviewStagesPage() {
 		{
 			key: "name",
 			header: (
-				<div className="flex items-center justify-start gap-4">
-					<span>Name</span>
+				<div className="flex items-center justify-start gap-2 sm:gap-4">
+					<span className="text-xs sm:text-sm">Name</span>
 					<Button
 						onClick={() => setOrdering((prev) => (prev === "name" ? "-name" : "name"))}
 						size="sm"
 						variant={ordering.includes("name") ? "default" : "outline"}
 						type="button"
+						className="h-6 w-6 sm:h-8 sm:w-8 p-0"
 					>
-						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+						<Icon icon="hugeicons:sorting-02" className="!h-3 !w-3 sm:!h-4 sm:!w-4" />
 					</Button>
 				</div>
 			),
-			cell: (stage) => stage.name,
+			cell: (stage) => <div className="text-xs sm:text-sm font-medium">{stage.name}</div>,
 		},
-		// {
-		//   key: "job_position",
-		//   header: "Job Position",
-		//   cell: (stage) => stage.job_position_details.name || "Unknown",
-		// },
+
 		{
 			key: "level",
 			header: "Level",
-			cell: (stage) => stage.level,
+			cell: (stage) => <div className="text-xs sm:text-sm">{stage.level}</div>,
 		},
 		{
 			key: "interviewers",
 			header: "Interviewers",
 			cell: (stage) => (
-				<div className="flex items-center justify-start gap-2">
+				<div className="flex items-center justify-start gap-1 sm:gap-2">
 					{stage.interviewers_details && stage.interviewers_details.length > 0 ? (
 						<>
-							<p className="text-sm font-semibold">{`${stage.interviewers_details[0].name || stage.interviewers_details[0].user?.fullname || "Unknown"}`}</p>
+							<p className="text-xs sm:text-sm font-semibold truncate max-w-[80px] sm:max-w-none">
+								{`${stage.interviewers_details[0].name || stage.interviewers_details[0].user?.fullname || "Unknown"}`}
+							</p>
 							{stage.interviewers_details.length > 1 && (
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Badge variant={"secondary"} className="cursor-pointer">
+										<Badge variant={"secondary"} className="cursor-pointer text-xs">
 											+{stage.interviewers_details.length - 1}
 										</Badge>
 									</DropdownMenuTrigger>
-									<DropdownMenuContent align="start" className="max-h-[200px] overflow-y-auto">
+									<DropdownMenuContent align="start" className="max-h-[200px] overflow-y-auto w-48">
 										{stage.interviewers_details.map((interviewer, idx) => (
-											<DropdownMenuItem key={idx} className="text-sm">
+											<DropdownMenuItem key={idx} className="text-xs sm:text-sm">
 												{`${interviewer.name || interviewer.user?.fullname || "Unknown"}`}
 											</DropdownMenuItem>
 										))}
@@ -123,7 +122,7 @@ export default function InterviewStagesPage() {
 							)}
 						</>
 					) : (
-						<p className="text-sm text-muted-foreground">No interviewers</p>
+						<p className="text-xs sm:text-sm text-muted-foreground">No interviewers</p>
 					)}
 				</div>
 			),
@@ -132,20 +131,22 @@ export default function InterviewStagesPage() {
 			key: "feedback_fields",
 			header: "Feedback Fields",
 			cell: (stage) => (
-				<div className="flex items-center justify-start gap-2">
+				<div className="flex items-center justify-start gap-1 sm:gap-2">
 					{stage.feedback_fields && stage.feedback_fields.length > 0 ? (
 						<>
-							<p className="text-sm font-semibold">{stage.feedback_fields[0].label}</p>
+							<p className="text-xs sm:text-sm font-semibold truncate max-w-[80px] sm:max-w-none">
+								{stage.feedback_fields[0].label}
+							</p>
 							{stage.feedback_fields.length > 1 && (
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Badge variant={"secondary"} className="cursor-pointer">
+										<Badge variant={"secondary"} className="cursor-pointer text-xs">
 											+{stage.feedback_fields.length - 1}
 										</Badge>
 									</DropdownMenuTrigger>
-									<DropdownMenuContent align="start" className="max-h-[200px] overflow-y-auto">
+									<DropdownMenuContent align="start" className="max-h-[200px] overflow-y-auto w-48">
 										{stage.feedback_fields.map((field, idx) => (
-											<DropdownMenuItem key={idx} className="text-sm">
+											<DropdownMenuItem key={idx} className="text-xs sm:text-sm">
 												{field.label} ({field.type})
 											</DropdownMenuItem>
 										))}
@@ -154,7 +155,7 @@ export default function InterviewStagesPage() {
 							)}
 						</>
 					) : (
-						<p className="text-sm text-muted-foreground">No feedback fields</p>
+						<p className="text-xs sm:text-sm text-muted-foreground">No feedback fields</p>
 					)}
 				</div>
 			),
@@ -165,25 +166,25 @@ export default function InterviewStagesPage() {
 			cell: (stage) => (
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<MoreVertical className="h-4 w-4" />
+						<Button variant="ghost" className="h-6 w-6 sm:h-8 sm:w-8 p-0">
+							<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => openDetails(stage)}>
-							<Eye className="h-4 w-4 mr-2" /> View Details
+					<DropdownMenuContent align="start" className="w-40 sm:w-48">
+						<DropdownMenuItem onClick={() => openDetails(stage)} className="text-xs sm:text-sm">
+							<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> View Details
 						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => openEditDialog(stage)}>
-							<Edit className="h-4 w-4 mr-2" /> Edit
+						<DropdownMenuItem onClick={() => openEditDialog(stage)} className="text-xs sm:text-sm">
+							<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Edit
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() => {
 								setStageToDelete(stage);
 								setDeleteConfirmOpen(true);
 							}}
-							className="text-red-600"
+							className="text-red-600 text-xs sm:text-sm"
 						>
-							<Trash2 className="h-4 w-4 mr-2" /> Delete
+							<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Delete
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -192,10 +193,11 @@ export default function InterviewStagesPage() {
 	];
 
 	return (
-		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
-			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold">Interview Stages</h1>
-				<div className="flex items-center justify-end gap-4">
+		<div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white rounded-lg min-h-screen">
+			{/* Header Section */}
+			<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+				<h1 className="text-xl sm:text-2xl font-bold">Interview Stages</h1>
+				<div className="flex items-center justify-end">
 					<CreateInterviewStageDialog
 						isOpen={openCreateEditDialog}
 						onOpenChange={(open) => {
@@ -210,20 +212,22 @@ export default function InterviewStagesPage() {
 						}}
 						showTrigger={true}
 						triggerButton={
-							<Button className="flex items-center gap-2">
+							<Button className="flex items-center gap-2 w-full sm:w-auto">
 								<Plus className="h-4 w-4" />
-								Create Interview Stage
+								<span className="hidden sm:inline">Create Interview Stage</span>
+								<span className="sm:hidden">Create Stage</span>
 							</Button>
 						}
 					/>
 				</div>
 			</div>
 
+			{/* Search Section */}
 			<div className="flex items-center gap-4">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
-						className="pl-9 w-full max-w-md lg:max-w-xl"
+						className="pl-9 w-full"
 						placeholder="Search interview stages..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
@@ -231,6 +235,7 @@ export default function InterviewStagesPage() {
 				</div>
 			</div>
 
+			{/* Table Section */}
 			<PaginatedTable<IInterviewStage>
 				fetchFirstPage={async () => {
 					if (!currentInstitution) throw new Error("No institution selected");
@@ -250,12 +255,15 @@ export default function InterviewStagesPage() {
 				skeletonRows={10}
 				refreshRef={tableRefreshRef}
 				emptyState={
-					<div className="text-center py-12">
-						<p className="text-muted-foreground mb-4">No interview stages found</p>
+					<div className="text-center py-8 sm:py-12">
+						<p className="text-muted-foreground mb-4 text-sm sm:text-base">
+							No interview stages found
+						</p>
 					</div>
 				}
 			/>
 
+			{/* Details Dialog */}
 			{selectedStage && (
 				<Dialog
 					open={openDetailsDialog}
@@ -264,26 +272,25 @@ export default function InterviewStagesPage() {
 						if (!open) setSelectedStage(null);
 					}}
 				>
-					<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+					<DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
 						<DialogHeader>
-							<DialogTitle>Interview Stage Details: {selectedStage.name}</DialogTitle>
+							<DialogTitle className="text-lg sm:text-xl">
+								Interview Stage Details: {selectedStage.name}
+							</DialogTitle>
 						</DialogHeader>
-						<div className="space-y-4">
+						<div className="space-y-4 text-sm sm:text-base">
 							<div>
 								<label className="text-sm font-medium">Stage Name</label>
-								<p>{selectedStage.name}</p>
+								<p className="mt-1">{selectedStage.name}</p>
 							</div>
-							{/* <div>
-                <label className="text-sm font-medium">Job Position</label>
-                <p>{selectedStage.job_position_details.name || "Unknown"}</p>
-              </div> */}
+
 							<div>
 								<label className="text-sm font-medium">Level</label>
-								<p>{selectedStage.level}</p>
+								<p className="mt-1">{selectedStage.level}</p>
 							</div>
 							<div>
 								<label className="text-sm font-medium">Interviewers</label>
-								<div className="flex flex-wrap gap-2">
+								<div className="flex flex-wrap gap-2 mt-1">
 									{selectedStage.interviewers_details &&
 									selectedStage.interviewers_details.length > 0 ? (
 										selectedStage.interviewers_details.map((interviewer, idx) => (
@@ -297,7 +304,7 @@ export default function InterviewStagesPage() {
 								</div>
 							</div>
 							<div className="space-y-2">
-								<div className="flex items-center justify-between">
+								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
 									<label className="text-sm font-medium">Feedback Fields</label>
 									<span className="text-sm text-muted-foreground">
 										{selectedStage.feedback_fields?.length || 0} field(s)
@@ -318,6 +325,7 @@ export default function InterviewStagesPage() {
 									type="button"
 									variant="outline"
 									onClick={() => setIsFeedbackFieldsModalOpen(true)}
+									className="w-full sm:w-auto"
 								>
 									<Plus className="h-4 w-4 mr-2" />
 									Configure Feedback Fields ({selectedStage.feedback_fields?.length || 0})
@@ -362,9 +370,9 @@ export default function InterviewStagesPage() {
 															});
 															// Optionally update the backend here if needed
 														}}
-														className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 ml-2 flex-shrink-0"
+														className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 ml-2 flex-shrink-0"
 													>
-														<Trash2 className="h-4 w-4" />
+														<Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
 													</Button>
 												</div>
 											))}

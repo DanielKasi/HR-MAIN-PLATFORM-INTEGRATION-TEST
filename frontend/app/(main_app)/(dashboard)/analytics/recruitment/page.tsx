@@ -54,7 +54,7 @@ export default function RecruitmentDashboard() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" />
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
 			</div>
 		);
 	}
@@ -101,28 +101,31 @@ export default function RecruitmentDashboard() {
 		},
 	];
 	return (
-		<main className="space-y-6 p-6 min-h-screen bg-background">
+		<main className="space-y-4 sm:space-y-6 p-3 sm:p-6 min-h-screen bg-background">
 			{/* Header */}
-			<div className="flex flex-col md:flex-row items-center justify-between gap-8 w-full">
-				<h1 className="flex-grow text-3xl font-bold tracking-tight text-slate-900">
+			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-8 w-full">
+				<h1 className="flex-grow text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
 					Recruitment Analytics
 				</h1>
-				<div className="flex items-center justify-end gap-8">
-					<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+				<div className="w-full sm:w-auto flex items-center justify-start sm:justify-end">
+					<Button
+						className="rounded-xl w-full sm:w-auto"
+						onClick={() => setIsReportsDialogOpen(true)}
+					>
 						Generate Reports
 					</Button>
 				</div>
 			</div>
 
 			{/* Key Metrics */}
-			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+			<div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
 				{cards.map((card, i) => (
 					<StatsCard key={i} index={i} {...card} />
 				))}
 			</div>
 
 			{/* Charts Row */}
-			<div className="grid gap-6 lg:grid-cols-2">
+			<div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
 				{/* Applications by Status */}
 				<BarSChart
 					title={"Applications Over Time"}

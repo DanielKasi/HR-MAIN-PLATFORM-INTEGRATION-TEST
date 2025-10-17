@@ -91,6 +91,11 @@ export enum PERMISSION_CODES {
 	CAN_EDIT_EMPLOYEE_BONUS_POINTS = "can_edit_employee_bonus_point",
 	CAN_DELETE_EMPLOYEE_BONUS_POINTS = "can_delete_employee_bonus_point",
 	CAN_ATTACH_EMPLOYEES_TO_DEVICE = "can_attach_employees_to_device",
+	CAN_VIEW_EVENTS_AND_HOLIDAYS = "can_view_event_and_holidays",
+	CAN_EDIT_EVENTS_AND_HOLIDAYS = "can_edit_event_and_holidays",
+	CAN_CREATE_EVENTS_AND_HOLIDAYS = "can_create_event_and_holidays",
+	CAN_DELETE_EVENTS_AND_HOLIDAYS = "can_delete_event_and_holidays",
+	CAN_VIEW_HELP_DESK = "can_view_helpdesk",
 
 	// Document requests
 

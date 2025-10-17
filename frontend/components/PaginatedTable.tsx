@@ -152,65 +152,78 @@ export function PaginatedTable<T, Q = unknown>({
 
 	return (
 		<div className={cn("space-y-4 h-full !min-h-[30svh]", className)}>
-			<Table className={cn(tableClassName, "mb-auto")}>
-				<TableHeader>
-					<TableRow className="border-b bg-muted/30">
-						{columns.map((col) => (
-							<TableHead key={col.key} className={col.className}>
-								{col.header}
-							</TableHead>
-						))}
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{loading ? (
-						Array.from({ length: skeletonRows }).map((_, rowIndex) => (
-							<TableRow key={rowIndex} className="border-b">
-								{columns.map((col) => (
-									<TableCell key={col.key}>
-										<Skeleton className="h-6 w-3/4" />
-									</TableCell>
-								))}
-							</TableRow>
-						))
-					) : (data?.results?.length ?? 0) === 0 ? (
-						<TableRow>
-							<TableCell colSpan={columns.length} className="text-center py-12">
-								{emptyState ?? <p className="text-muted-foreground mb-4">No data found</p>}
-							</TableCell>
+			<div className="overflow-x-auto">
+				<Table className={cn(tableClassName, "mb-auto min-w-full")}>
+					<TableHeader>
+						<TableRow className="border-b bg-muted/30">
+							{columns.map((col) => (
+								<TableHead key={col.key} className={cn("whitespace-nowrap", col.className)}>
+									{col.header}
+								</TableHead>
+							))}
 						</TableRow>
-					) : (
-						data?.results?.map((item, index) => (
-							<TableRow key={index} className="hover:bg-muted/50 transition-colors border-b">
-								{columns.map((col) => (
-									<TableCell key={col.key} className={col.cellClassName}>
-										{col.cell(item)}
-									</TableCell>
-								))}
+					</TableHeader>
+					<TableBody>
+						{loading ? (
+							Array.from({ length: skeletonRows }).map((_, rowIndex) => (
+								<TableRow key={rowIndex} className="border-b">
+									{columns.map((col) => (
+										<TableCell key={col.key}>
+											<Skeleton className="h-4 sm:h-6 w-3/4" />
+										</TableCell>
+									))}
+								</TableRow>
+							))
+						) : (data?.results?.length ?? 0) === 0 ? (
+							<TableRow>
+								<TableCell colSpan={columns.length} className="text-center py-8 sm:py-12">
+									{emptyState ?? (
+										<p className="text-muted-foreground mb-4 text-sm sm:text-base">No data found</p>
+									)}
+								</TableCell>
 							</TableRow>
-						))
-					)}
-				</TableBody>
-			</Table>
+						) : (
+							data?.results?.map((item, index) => (
+								<TableRow key={index} className="hover:bg-muted/50 transition-colors border-b">
+									{columns.map((col) => (
+										<TableCell key={col.key} className={cn("whitespace-nowrap", col.cellClassName)}>
+											{col.cell(item)}
+										</TableCell>
+									))}
+								</TableRow>
+							))
+						)}
+					</TableBody>
+				</Table>
+			</div>
 
 			{showFooter && data && paginated && (
-				<div className={cn("flex items-center justify-between pt-2 mt-auto", footerClassName)}>
-					<p className="text-sm text-gray-500">
-						Showing {data.results?.length ?? 0} results of {data.count ?? 0} total
+				<div
+					className={cn(
+						"flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-2 mt-auto",
+						footerClassName,
+					)}
+				>
+					<p className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
+						Showing {data.results?.length ?? 0} of {data.count ?? 0} total
 					</p>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-1 sm:gap-2">
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={goPrev}
 							disabled={!data.previous || loading}
-							className="rounded-xl"
+							className="rounded-xl text-xs h-8 sm:h-9 px-2 sm:px-3"
 						>
-							<ChevronLeft className="h-4 w-4" />
-							Previous
+							<ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+							<span className="hidden sm:inline">Previous</span>
+							<span className="sm:hidden">Prev</span>
 						</Button>
 						{currentPage && (
-							<Button size={"sm"} className="rounded-xl text-sm font-medium">
+							<Button
+								size="sm"
+								className="rounded-xl text-xs sm:text-sm font-medium h-8 sm:h-9 px-3 sm:px-4"
+							>
 								{currentPage}
 							</Button>
 						)}
@@ -219,10 +232,11 @@ export function PaginatedTable<T, Q = unknown>({
 							size="sm"
 							onClick={goNext}
 							disabled={!data.next || loading}
-							className="rounded-xl"
+							className="rounded-xl text-xs h-8 sm:h-9 px-2 sm:px-3"
 						>
-							Next
-							<ChevronRight className="h-4 w-4" />
+							<span className="hidden sm:inline">Next</span>
+							<span className="sm:hidden">Next</span>
+							<ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
 						</Button>
 					</div>
 				</div>

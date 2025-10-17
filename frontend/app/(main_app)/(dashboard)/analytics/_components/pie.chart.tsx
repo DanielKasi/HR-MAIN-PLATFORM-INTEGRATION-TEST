@@ -85,10 +85,12 @@ export default function Piechart({
 
 	return (
 		<Card className={`flex flex-col shadow-none border ${className}`}>
-			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-lg font-semibold text-slate-900">{title}</CardTitle>
+			<CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-0 gap-2 sm:gap-4">
+				<CardTitle className="text-base sm:text-lg font-semibold text-slate-900 text-center sm:text-left">
+					{title}
+				</CardTitle>
 				{select && groups?.length > 0 && !isArrayData && (
-					<div className="flex items-center gap-4">
+					<div className="flex items-center justify-center sm:justify-end w-full sm:w-auto">
 						<Select
 							defaultValue={category}
 							onValueChange={(d) => {
@@ -96,12 +98,12 @@ export default function Piechart({
 								setItems((data as Record<string, Entry[]>)[d]);
 							}}
 						>
-							<SelectTrigger className="text-slate-900">
+							<SelectTrigger className="text-slate-900 w-full sm:w-[140px] text-sm">
 								<SelectValue placeholder={category} />
 							</SelectTrigger>
 							<SelectContent>
 								{groups.map((k) => (
-									<SelectItem key={k} value={k}>
+									<SelectItem key={k} value={k} className="text-sm">
 										{sentenceCase(k)}
 									</SelectItem>
 								))}
@@ -110,15 +112,17 @@ export default function Piechart({
 					</div>
 				)}
 			</CardHeader>
-			<CardContent className="flex-1 flex items-center justify-center">
+			<CardContent className="flex-1 flex items-center justify-center p-2 sm:p-6">
 				<ChartContainer
 					config={chartConfig}
-					className="mx-auto aspect-square w-full h-full max-h-[250px]"
+					className="mx-auto aspect-square w-full h-full max-h-[180px] sm:max-h-[200px] md:max-h-[250px]"
 				>
 					<PieChart
 						margin={{
-							top: 20,
-							bottom: 10,
+							top: 10,
+							bottom: 5,
+							left: 5,
+							right: 5,
 						}}
 					>
 						<ChartTooltip active cursor={false} content={<ChartTooltipContent hideLabel />} />
@@ -126,12 +130,12 @@ export default function Piechart({
 							data={items}
 							dataKey={dataKey}
 							nameKey={nameKey}
-							outerRadius={!donut ? 100 : 120}
-							innerRadius={!donut ? 0 : 60}
-							strokeWidth={5}
+							outerRadius={!donut ? "80%" : "90%"}
+							innerRadius={!donut ? "0%" : "50%"}
+							strokeWidth={4}
 							paddingAngle={!donut ? 0 : 1}
 							legendType="circle"
-							cornerRadius={!donut ? 0 : 5}
+							cornerRadius={!donut ? 0 : 4}
 						>
 							{items.map((_, index) => (
 								<Cell key={`cell-${index}`} fill={colors[index]} />
@@ -150,14 +154,14 @@ export default function Piechart({
 													<tspan
 														x={viewBox.cx}
 														y={viewBox.cy}
-														className="fill-foreground text-3xl font-bold"
+														className="fill-foreground text-xl sm:text-2xl md:text-3xl font-bold"
 													>
 														{total.toLocaleString()}
 													</tspan>
 													<tspan
 														x={viewBox.cx}
-														y={(viewBox.cy || 0) + 24}
-														className="fill-muted-foreground"
+														y={(viewBox.cy || 0) + 20}
+														className="fill-muted-foreground text-xs sm:text-sm"
 													>
 														{totalStr}
 													</tspan>
@@ -169,7 +173,7 @@ export default function Piechart({
 							) : null}
 							{labelList ? (
 								<LabelList
-									className="fill-background text-sm"
+									className="fill-background text-xs sm:text-sm"
 									stroke="none"
 									formatter={(v: number) => ((100 * v) / total).toFixed(1) + "%"}
 								/>
