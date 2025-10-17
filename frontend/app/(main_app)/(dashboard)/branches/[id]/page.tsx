@@ -277,16 +277,16 @@ export default function BranchDetailPage() {
 										</span>
 									</div>
 								</div>
-								<div className="space-y-3">
+								{/* <div className="space-y-3">
 									<div>
 										<span className="font-medium">Institution:</span>
 										<span className="ml-2">{branch.institution_name}</span>
 									</div>
-									{/* <div>
+									<div>
 										<span className="font-medium">Paying Bank Account:</span>
 										<span className="ml-2">{branch.paying_bank_account}</span>
-									</div> */}
-								</div>
+									</div>
+								</div> */}
 							</div>
 							<div className="flex items-start gap-2">
 								<MapPin className="h-4 w-4 text-muted-foreground mt-1" />
