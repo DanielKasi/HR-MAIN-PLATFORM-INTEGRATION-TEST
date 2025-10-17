@@ -64,6 +64,7 @@ type FetchRelatedEmployeeSuccess = ActionWithPayLoad<
 	IEmployee
 >;
 type FetchRelatedEmployeeFailure = Action<AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_FAILURE>;
+type ClearRelatedEmployee = Action<AUTH_ACTION_TYPES.CLEAR_RELATED_EMPLOYEE>;
 
 export type AuthAction =
 	| LoginStart
@@ -93,7 +94,8 @@ export type AuthAction =
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE>
 	| FetchRelatedEmployeeStart
 	| FetchRelatedEmployeeFailure
-	| FetchRelatedEmployeeSuccess;
+	| FetchRelatedEmployeeSuccess
+	| ClearRelatedEmployee;
 
 export const loginStart = (username: string, password: string): LoginStart =>
 	createAction(AUTH_ACTION_TYPES.LOGIN_START, { username, password });
@@ -146,8 +148,6 @@ export const setTemporaryPermissions = (
 export const clearTemporaryPermissions = (): ClearTemporaryPermissions =>
 	createAction(AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS);
 
-// Inactivity monitoring mechanism
-
 export const userActivityDetected = () => createAction(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED);
 export const showLogoutWarning = () => createAction(AUTH_ACTION_TYPES.SHOW_LOGOUT_WARNING);
 export const hideLogoutWarning = () => createAction(AUTH_ACTION_TYPES.HIDE_LOGOUT_WARNING);
@@ -166,7 +166,7 @@ export const fetchRelatedEmployeeStart = ({
 }: {
 	userId: number;
 }): FetchRelatedEmployeeStart => {
-	console.log("\n\n Starting related employee fetch in state action ...");
+	// console.log("\n\n Starting related employee fetch in state action ...");
 	return createAction(AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_START, { userId });
 };
 export const fetchRelatedEmployeeSuccess = ({
@@ -174,11 +174,13 @@ export const fetchRelatedEmployeeSuccess = ({
 }: {
 	employee: IEmployee;
 }): FetchRelatedEmployeeSuccess => {
-	console.log("\n\n Success on related employee fetch in state action ...");
+	// console.log("\n\n Success on related employee fetch in state action ...");
 	return createAction(AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_SUCCESS, employee);
 };
 
 export const fetchRelatedEmployeeFailure = (): FetchRelatedEmployeeFailure => {
-	console.log("\n\nFailure on related employee fetch in state action ...");
 	return createAction(AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_FAILURE);
 };
+
+export const clearRelatedEmployee = (): ClearRelatedEmployee =>
+	createAction(AUTH_ACTION_TYPES.CLEAR_RELATED_EMPLOYEE);

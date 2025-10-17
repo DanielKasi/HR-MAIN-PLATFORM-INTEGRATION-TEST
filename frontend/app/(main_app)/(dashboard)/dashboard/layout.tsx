@@ -15,7 +15,7 @@ import {
 import FixedLoader from "@/components/fixed-loader";
 import { hasPermission } from "@/lib/helpers";
 import { useDispatch } from "react-redux";
-import { fetchRelatedEmployeeStart } from "@/store/auth/actions";
+import { clearRelatedEmployee, fetchRelatedEmployeeStart } from "@/store/auth/actions";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const currentUser = useSelector(selectUser);
@@ -35,10 +35,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	}, [currentUser, relatedEmployee]);
 
 	useEffect(() => {
-		console.log("\n\n Related employee at layout mount : ", relatedEmployee);
 		if (relatedEmployee && !hasPermission(PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD)) {
 			router.push(`employees/profile/${relatedEmployee.id}`);
 		}
+
+		// return ()=>{
+		// 	dispatch(clearRelatedEmployee())
+		// }
 	}, [relatedEmployee]);
 
 	if (!currentInstitution || !currentUser) {

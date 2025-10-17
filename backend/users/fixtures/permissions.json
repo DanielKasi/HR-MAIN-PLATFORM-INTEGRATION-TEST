@@ -46,6 +46,75 @@
       "description": "Allows assigning roles to users"
     }
   ],
+  "Help Desk Management": [
+    {
+      "code": "can_view_helpdesk",
+      "name": "Can View Help desk",
+      "description": "Allows viewing the Help Desk"
+    },
+    {
+      "code": "can_view_faqs",
+      "name": "Can View Frequently Asked Questions",
+      "description": "Allows viewing Frequently Asked Questions"
+    },
+        {
+      "code": "can_create_faqs",
+      "name": "Can Add A Frequently Asked Question",
+      "description": "Allows adding a frequently asked question"
+    },
+            {
+      "code": "can_edit_faqs",
+      "name": "Can Edit A Frequently Asked Question",
+      "description": "Allows editing a frequently asked question"
+    },
+                {
+      "code": "can_delete_faqs",
+      "name": "Can Deete A Frequently Asked Question",
+      "description": "Allows deleting a frequently asked question"
+    },
+        {
+      "code": "can_view_tickets",
+      "name": "Can View Tickets",
+      "description": "Allows viewing Tickets"
+    },
+        {
+      "code": "can_create_tickets",
+      "name": "Can Create A Ticket",
+      "description": "Allows creating a ticket"
+    },
+            {
+      "code": "can_edit_tickets",
+      "name": "Can Edit A Ticket",
+      "description": "Allows editing a ticket"
+    },
+                {
+      "code": "can_delete_tickets",
+      "name": "Can Delete A Frequently Asked Question",
+      "description": "Allows deleting a frequently asked question"
+    }
+  ],
+  "Events and Holidays Management": [
+    {
+      "code": "can_view_event_and_holidays",
+      "name": "Can View Events and Holidays",
+      "description": "Allows viewing events and holidays"
+    },
+    {
+      "code": "can_edit_event_and_holidays",
+      "name": "Can Edit Events and Holidays",
+      "description": "Allows editing events and holidays"
+    },
+    {
+      "code": "can_create_event_and_holidays",
+      "name": "Can Create Events and Holidays",
+      "description": "Allows creating events and holidays"
+    },
+    {
+      "code": "can_delete_event_and_holidays",
+      "name": "Can Delete Events and Holidays",
+      "description": "Allows deleting events and holidays"
+    }
+  ],
   "Employee Management": [
     {
       "code": "can_resend_password_link",
@@ -82,27 +151,27 @@
       "name": "Can Generate Documents",
       "description": "Allows generating documents in the system"
     },
-        {
+    {
       "code": "can_send_spotcheck",
       "name": "Can Send Spotcheck To Employees",
       "description": "Allows sending spotcheck to employees"
     },
-            {
+    {
       "code": "can_create_employee_bonus_point",
       "name": "Can Create Employee Bonus Points",
       "description": "Allows creating employee bonus points "
     },
-                {
+    {
       "code": "can_edit_employee_bonus_point",
       "name": "Can Edit Employee Bonus Points",
       "description": "Allows editing employee bonus points "
     },
-                {
+    {
       "code": "can_delete_employee_bonus_point",
       "name": "Can Delete Employee Bonus Points",
       "description": "Allows deleting employee bonus points "
     },
-                    {
+    {
       "code": "can_attach_employees_to_device",
       "name": "Can Attach Employees to a device",
       "description": "Allows attaching employees to a device "
