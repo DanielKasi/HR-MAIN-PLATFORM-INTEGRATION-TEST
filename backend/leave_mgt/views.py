@@ -21,12 +21,7 @@ from .utils import LeaveCalculator, LeaveBalanceManager
 from employee.models import Employee
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
-from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
-from rest_framework import serializers
 from utilities.sortable_api import SortableAPIMixin
-from utilities.leave_mgt_analytics import get_leave_trends_analytics
-from django.contrib.auth.decorators import permission_required
-from django.utils.decorators import method_decorator
 
 
 @extend_schema(tags=["Leave Types"])

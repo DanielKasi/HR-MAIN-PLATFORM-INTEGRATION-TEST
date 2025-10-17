@@ -17,7 +17,7 @@ from utilities.helpers import (
     create_and_institution_token,
     send_activation_confirmation_email,
 )
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from users.models import Profile, System
 from rest_framework.permissions import IsAuthenticated
 from .models import (
@@ -2953,7 +2953,7 @@ class OwnershipTransferAPIView(APIView, SortableAPIMixin):
         summary="Transfer institution ownership",
         tags=["Institution Management"],
     )
-    @method_decorator(permission_required('can_create_ownership_transfer', raise_exception=True))
+    # @method_decorator(permission_required('can_create_ownership_transfer', raise_exception=True))
     @transaction.atomic()
     def post(self, request):
         serializer = OwnershipTransferSerializer(
@@ -2984,7 +2984,7 @@ class OwnershipTransferAPIView(APIView, SortableAPIMixin):
         summary="Get ownership transfers",
         tags=["Institution Management"],
     )
-    @method_decorator(permission_required('can_view_ownership_transfers', raise_exception=True))
+    # @method_decorator(permission_required('can_view_ownership_transfers', raise_exception=True))
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get("search", None)
