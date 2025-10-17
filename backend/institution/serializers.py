@@ -326,9 +326,18 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
         institution_working_days = super().create(validated_data)
 
         for day_data in institution_days_data:
+            day_id = day_data.get("day_id")
+            if not day_id:
+                raise serializers.ValidationError({"error": "day_id is required for each institution day."})
+            
+            try:
+                day_instance = SystemDay.objects.get(id=day_id)
+            except SystemDay.DoesNotExist:
+                raise serializers.ValidationError({"error": f"SystemDay with id {day_id} does not exist."})
+
             InstitutionDay.objects.create(
                 institution_working_days=institution_working_days,
-                day=day_data["day"],
+                day=day_instance,
                 opening_time=day_data.get("opening_time", "09:00:00"),
                 closing_time=day_data.get("closing_time", "17:00:00"),
             )
@@ -346,12 +355,23 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
 
         institution_days_data = validated_data.pop("institution_days", [])
 
+        # Delete existing institution days
         instance.institution_days.all().delete()
 
+        # Create new institution days
         for day_data in institution_days_data:
+            day_id = day_data.get("day_id")
+            if not day_id:
+                raise serializers.ValidationError({"error": "day_id is required for each institution day."})
+            
+            try:
+                day_instance = SystemDay.objects.get(id=day_id)
+            except SystemDay.DoesNotExist:
+                raise serializers.ValidationError({"error": f"SystemDay with id {day_id} does not exist."})
+
             InstitutionDay.objects.create(
                 institution_working_days=instance,
-                day=day_data["day"],
+                day=day_instance,
                 opening_time=day_data.get("opening_time", "09:00:00"),
                 closing_time=day_data.get("closing_time", "17:00:00"),
             )
