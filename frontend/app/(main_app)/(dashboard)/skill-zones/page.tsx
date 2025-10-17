@@ -32,12 +32,10 @@ export default function SkillZonesPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [ordering, setOrdering] = useState("");
 
-	// Dialog states
 	const [openCreateEditDialog, setOpenCreateEditDialog] = useState(false);
 	const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
 	const [selectedSkillZone, setSelectedSkillZone] = useState<ISkillZone | null>(null);
 
-	// Delete confirmation
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [skillZoneToDelete, setSkillZoneToDelete] = useState<ISkillZone | null>(null);
 	const [deleting, setDeleting] = useState(false);
@@ -73,8 +71,8 @@ export default function SkillZonesPage() {
 		{
 			key: "candidate",
 			header: (
-				<div className="flex items-center justify-start gap-4">
-					<span>Candidate</span>
+				<div className="flex items-center justify-start gap-2 sm:gap-4">
+					<span className="text-xs sm:text-sm">Candidate</span>
 					<Button
 						onClick={() =>
 							setOrdering((prev) =>
@@ -86,31 +84,38 @@ export default function SkillZonesPage() {
 						size="sm"
 						variant={ordering.includes("candidate__applicant_name") ? "default" : "outline"}
 						type="button"
+						className="h-6 w-6 sm:h-8 sm:w-8 p-0"
 					>
-						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+						<Icon icon="hugeicons:sorting-02" className="!h-3 !w-3 sm:!h-4 sm:!w-4" />
 					</Button>
 				</div>
 			),
-			cell: (skillZone) => skillZone.applicant_name,
+			cell: (skillZone) => (
+				<div className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">
+					{skillZone.applicant_name}
+				</div>
+			),
 		},
 		{
 			key: "categories",
 			header: "Categories",
 			cell: (skillZone) => (
-				<div className="flex items-center justify-start gap-2">
+				<div className="flex items-center justify-start gap-1 sm:gap-2">
 					{skillZone.category_names.length > 0 ? (
 						<>
-							<p className="text-sm font-semibold">{skillZone.category_names[0]}</p>
+							<p className="text-xs sm:text-sm font-semibold truncate max-w-[80px] sm:max-w-none">
+								{skillZone.category_names[0]}
+							</p>
 							{skillZone.category_names.length > 1 && (
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Badge variant={"secondary"} className="cursor-pointer">
+										<Badge variant={"secondary"} className="cursor-pointer text-xs">
 											+{skillZone.category_names.length - 1}
 										</Badge>
 									</DropdownMenuTrigger>
-									<DropdownMenuContent align="start" className="max-h-[200px] overflow-y-auto">
+									<DropdownMenuContent align="start" className="max-h-[200px] overflow-y-auto w-48">
 										{skillZone.category_names.map((cat_name, idx) => (
-											<DropdownMenuItem key={idx} className="text-sm">
+											<DropdownMenuItem key={idx} className="text-xs sm:text-sm">
 												{cat_name}
 											</DropdownMenuItem>
 										))}
@@ -119,7 +124,7 @@ export default function SkillZonesPage() {
 							)}
 						</>
 					) : (
-						<p className="text-sm text-muted-foreground">Unknown</p>
+						<p className="text-xs sm:text-sm text-muted-foreground">Unknown</p>
 					)}
 				</div>
 			),
@@ -127,23 +132,32 @@ export default function SkillZonesPage() {
 		{
 			key: "notes",
 			header: "Notes",
-			cell: (skillZone) =>
-				skillZone.notes?.substring(0, 50) +
-					(skillZone.notes && skillZone.notes.length > 50 ? "..." : "") || "Unknown",
+			cell: (skillZone) => (
+				<div className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[200px]">
+					{skillZone.notes?.substring(0, 50) +
+						(skillZone.notes && skillZone.notes.length > 50 ? "..." : "") || "Unknown"}
+				</div>
+			),
 		},
 		{
 			key: "potential_value",
 			header: "Potential Value",
-			cell: (skillZone) =>
-				skillZone.potential_value?.substring(0, 50) +
-					(skillZone.potential_value && skillZone.potential_value.length > 50 ? "..." : "") ||
-				"Unknown",
+			cell: (skillZone) => (
+				<div className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[200px]">
+					{skillZone.potential_value?.substring(0, 50) +
+						(skillZone.potential_value && skillZone.potential_value.length > 50 ? "..." : "") ||
+						"Unknown"}
+				</div>
+			),
 		},
 		{
 			key: "approval_status",
 			header: "Approval Status",
 			cell: (skillZone) => (
-				<Badge variant={skillZone.approval_status === "active" ? "default" : "secondary"}>
+				<Badge
+					variant={skillZone.approval_status === "active" ? "default" : "secondary"}
+					className="text-xs whitespace-nowrap"
+				>
 					{skillZone.approval_status || "Unknown"}
 				</Badge>
 			),
@@ -154,25 +168,28 @@ export default function SkillZonesPage() {
 			cell: (skillZone) => (
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<MoreVertical className="h-4 w-4" />
+						<Button variant="ghost" className="h-6 w-6 sm:h-8 sm:w-8 p-0">
+							<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => openDetails(skillZone)}>
-							<Eye className="h-4 w-4 mr-2" /> View Details
+					<DropdownMenuContent align="start" className="w-40 sm:w-48">
+						<DropdownMenuItem onClick={() => openDetails(skillZone)} className="text-xs sm:text-sm">
+							<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> View Details
 						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => openEditDialog(skillZone)}>
-							<Edit className="h-4 w-4 mr-2" /> Edit
+						<DropdownMenuItem
+							onClick={() => openEditDialog(skillZone)}
+							className="text-xs sm:text-sm"
+						>
+							<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Edit
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() => {
 								setSkillZoneToDelete(skillZone);
 								setDeleteConfirmOpen(true);
 							}}
-							className="text-red-600"
+							className="text-red-600 text-xs sm:text-sm"
 						>
-							<Trash2 className="h-4 w-4 mr-2" /> Delete
+							<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Delete
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -181,12 +198,13 @@ export default function SkillZonesPage() {
 	];
 
 	return (
-		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
-			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold">Skill Zones</h1>
-				<div className="flex items-center justify-end gap-4">
-					<Link href={"/skill-zones/categories"}>
-						<Button variant={"outline"} className="rounded-xl">
+		<div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white rounded-lg min-h-screen">
+			{/* Header Section */}
+			<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+				<h1 className="text-xl sm:text-2xl font-bold">Skill Zones</h1>
+				<div className="flex items-center justify-end gap-2 sm:gap-4">
+					<Link href={"/skill-zones/categories"} className="w-full sm:w-auto">
+						<Button variant={"outline"} className="rounded-xl w-full sm:w-auto text-xs sm:text-sm">
 							Categories
 						</Button>
 					</Link>
@@ -202,11 +220,12 @@ export default function SkillZonesPage() {
 				</div>
 			</div>
 
+			{/* Search Section */}
 			<div className="flex items-center gap-4">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
-						className="pl-9 w-full max-w-md lg:max-w-xl"
+						className="pl-9 w-full"
 						placeholder="Search skill zones..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
@@ -214,6 +233,7 @@ export default function SkillZonesPage() {
 				</div>
 			</div>
 
+			{/* Table Section */}
 			<PaginatedTable<ISkillZone>
 				fetchFirstPage={async () => {
 					if (!currentInstitution) throw new Error("No institution selected");
@@ -232,12 +252,13 @@ export default function SkillZonesPage() {
 				skeletonRows={10}
 				refreshRef={tableRefreshRef}
 				emptyState={
-					<div className="text-center py-12">
-						<p className="text-muted-foreground mb-4">No skill zones found</p>
+					<div className="text-center py-8 sm:py-12">
+						<p className="text-muted-foreground mb-4 text-sm sm:text-base">No skill zones found</p>
 					</div>
 				}
 			/>
 
+			{/* Details Dialog */}
 			{selectedSkillZone && (
 				<ApprovableDialog
 					isOpen={openDetailsDialog}
@@ -249,22 +270,28 @@ export default function SkillZonesPage() {
 					description="View the details for this skill zone category."
 					onRefresh={() => tableRefreshRef.current?.()}
 				>
-					<div className="space-y-4 overflow-y-auto max-h-[60svh]">
+					<div className="space-y-4 overflow-y-auto max-h-[50svh] sm:max-h-[60svh]">
 						<div>
 							<label className="text-sm font-medium">Candidate</label>
-							<p>{selectedSkillZone.applicant_name}</p>
+							<p className="mt-1 text-sm sm:text-base">{selectedSkillZone.applicant_name}</p>
 						</div>
 						<div>
 							<label className="text-sm font-medium">Categories</label>
-							<p>{selectedSkillZone.category_names.map((cat) => cat).join(", ") || "Unknown"}</p>
+							<p className="mt-1 text-sm sm:text-base">
+								{selectedSkillZone.category_names.map((cat) => cat).join(", ") || "Unknown"}
+							</p>
 						</div>
 						<div>
 							<label className="text-sm font-medium">Notes</label>
-							<p>{selectedSkillZone.notes || "Unknown"}</p>
+							<p className="mt-1 text-sm sm:text-base whitespace-pre-wrap break-words">
+								{selectedSkillZone.notes || "Unknown"}
+							</p>
 						</div>
 						<div>
 							<label className="text-sm font-medium">Potential Value</label>
-							<p>{selectedSkillZone.potential_value || "Unknown"}</p>
+							<p className="mt-1 text-sm sm:text-base whitespace-pre-wrap break-words">
+								{selectedSkillZone.potential_value || "Unknown"}
+							</p>
 						</div>
 					</div>
 				</ApprovableDialog>

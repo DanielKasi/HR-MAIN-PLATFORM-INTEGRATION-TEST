@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -51,9 +51,12 @@ export default function BarSChart({
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
-			if (index == 0) acc[dataKey1] = { color: colors[index] };
-			if (index == 1 && dataKey2) acc[dataKey2] = { label, color: colors[index] };
-			acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color: colors[index] };
+			if (index == 0) acc[dataKey1] = { color: "hsl(var(--primary))" };
+			if (index == 1 && dataKey2) acc[dataKey2] = { label, color: "hsl(var(--primary))" };
+			acc[curr[nameKey]] = {
+				label: sentenceCase(curr[nameKey] as string),
+				color: "hsl(var(--primary))",
+			};
 			return acc;
 		}, {} as any);
 	}, [dataKey2]);
@@ -100,23 +103,19 @@ export default function BarSChart({
 							axisLine={false}
 							tickFormatter={(value) => sentenceCase(value)}
 						/>
-						<YAxis
-							axisLine={false}
-							tickLine={false}
-							// domain={[0, 1.25 * Math.max(...items.map((x) => x[nameKey] as number))]}
-						/>
+						<YAxis axisLine={false} tickLine={false} />
 						<ChartTooltip
 							active
 							cursor={false}
 							content={<ChartTooltipContent hideLabel hideIndicator />}
 						/>
-						<Bar legendType="circle" dataKey={dataKey1} stackId="a" fill={colors[0]} />
+						<Bar legendType="circle" dataKey={dataKey1} stackId="a" fill="hsl(var(--primary))" />
 						{dataKey2 && (
 							<Bar
 								legendType="circle"
 								dataKey={dataKey2}
 								stackId="a"
-								fill={colors[1]}
+								fill="hsl(var(--primary))"
 								radius={rounded ? [10, 10, 0, 0] : 0}
 							/>
 						)}

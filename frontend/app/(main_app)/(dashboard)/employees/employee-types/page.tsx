@@ -133,20 +133,22 @@ function EmployeeTypeModal({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="sm:max-w-[600px] mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
+			<DialogContent className="sm:max-w-[600px] mx-2 sm:mx-0 max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>{editingType ? "Edit Employee Type" : "Create Employee Type"}</DialogTitle>
-					<DialogDescription>
+					<DialogTitle className="text-lg sm:text-xl">
+						{editingType ? "Edit Employee Type" : "Create Employee Type"}
+					</DialogTitle>
+					<DialogDescription className="text-xs sm:text-sm">
 						{editingType
 							? "Update the employee type information below."
 							: "Add a new employee type to your organization."}
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="space-y-6">
-					<div className="grid grid-cols-1 gap-4 sm:gap-6">
+				<form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+					<div className="grid grid-cols-1 gap-3 sm:gap-6">
 						<div className="space-y-2">
-							<Label htmlFor="name">
+							<Label htmlFor="name" className="text-xs sm:text-sm">
 								Name <span className="text-red-500">*</span>
 							</Label>
 							<Input
@@ -155,34 +157,41 @@ function EmployeeTypeModal({
 								onChange={(e) => handleInputChange("name", e.target.value)}
 								placeholder="e.g., Full-time, Part-time, Contractor"
 								maxLength={100}
-								className={errors.name ? "border-red-500" : ""}
+								className={errors.name ? "border-red-500 text-xs sm:text-sm" : "text-xs sm:text-sm"}
 							/>
+							{errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
 						</div>
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="description">Description</Label>
+						<Label htmlFor="description" className="text-xs sm:text-sm">
+							Description
+						</Label>
 						<Textarea
 							id="description"
 							value={formData.description || ""}
 							onChange={(e) => handleInputChange("description", e.target.value)}
 							placeholder="Describe this employee type..."
-							className="min-h-[100px] resize-none"
+							className="min-h-[80px] sm:min-h-[100px] resize-none text-xs sm:text-sm"
 						/>
 					</div>
 
-					<div className="flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 pt-4">
+					<div className="flex flex-col sm:flex-row items-center justify-end gap-2 sm:gap-4 pt-3 sm:pt-4">
 						<Button
 							type="button"
 							variant="outline"
 							onClick={onClose}
 							disabled={isSubmitting}
-							className="w-full sm:w-auto text-sm bg-transparent"
+							className="w-full sm:w-auto text-xs sm:text-sm bg-transparent"
 						>
 							Cancel
 						</Button>
-						<Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto text-sm">
-							{isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+						<Button
+							type="submit"
+							disabled={isSubmitting}
+							className="w-full sm:w-auto text-xs sm:text-sm"
+						>
+							{isSubmitting && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />}
 							{isSubmitting
 								? "Saving..."
 								: editingType
@@ -211,24 +220,28 @@ function EmployeeTypeDetailsModal({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="sm:max-w-[500px] mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
+			<DialogContent className="sm:max-w-[500px] mx-2 sm:mx-0 max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">Employee Type Details</DialogTitle>
-					<DialogDescription>View the details of this employee type</DialogDescription>
+					<DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+						Employee Type Details
+					</DialogTitle>
+					<DialogDescription className="text-xs sm:text-sm">
+						View the details of this employee type
+					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-6">
-					<div className="grid grid-cols-1 gap-6">
+				<div className="space-y-4 sm:space-y-6">
+					<div className="grid grid-cols-1 gap-4 sm:gap-6">
 						<div className="space-y-2">
-							<Label className="text-sm font-medium text-gray-700">Name</Label>
-							<div className="p-3 bg-gray-50 rounded-md border">
+							<Label className="text-xs sm:text-sm font-medium text-gray-700">Name</Label>
+							<div className="p-2 sm:p-3 bg-gray-50 rounded-md border text-xs sm:text-sm">
 								<span className="font-medium">{employeeType.name}</span>
 							</div>
 						</div>
 
 						<div className="space-y-2">
-							<Label className="text-sm font-medium text-gray-700">Description</Label>
-							<div className="p-3 bg-gray-50 rounded-md border min-h-[80px]">
+							<Label className="text-xs sm:text-sm font-medium text-gray-700">Description</Label>
+							<div className="p-2 sm:p-3 bg-gray-50 rounded-md border min-h-[60px] sm:min-h-[80px] text-xs sm:text-sm">
 								{employeeType.description ? (
 									<span className="text-gray-700">{employeeType.description}</span>
 								) : (
@@ -239,8 +252,10 @@ function EmployeeTypeDetailsModal({
 					</div>
 				</div>
 
-				<div className="flex justify-end pt-4">
-					<Button onClick={onClose}>Close</Button>
+				<div className="flex justify-end pt-3 sm:pt-4">
+					<Button onClick={onClose} className="text-xs sm:text-sm">
+						Close
+					</Button>
 				</div>
 			</DialogContent>
 		</Dialog>
@@ -281,33 +296,45 @@ export default function EmployeeTypeManagement() {
 
 	if (!selectedInstitution) {
 		return (
-			<div className="flex items-center justify-center h-64">
+			<div className="flex items-center justify-center h-64 p-4">
 				<div className="text-center">
-					<AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-					<p className="text-gray-600">Please select an institution to manage employee types.</p>
+					<AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+					<p className="text-gray-600 text-xs sm:text-sm lg:text-base">
+						Please select an institution to manage employee types.
+					</p>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
+		<div className="flex flex-col w-full h-full p-3 sm:p-4 lg:p-6 bg-white rounded-lg min-h-screen">
 			<div className="w-full bg-white">
-				<CardHeader className="space-y-4 p-0 mb-6">
-					<CardTitle className="flex flex-row items-start md:items-center justify-between gap-4">
-						<h1 className="text-xl md:text-2xl font-bold">Employee Types</h1>
-						<Button onClick={handleCreate} className="">
-							<Plus className="h-4 w-4 md:mr-2" />
-							<span className="hidden md:inline">Add Employee Type</span>
+				<CardHeader className="space-y-4 p-0 mb-4 sm:mb-6">
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+						<div className="flex-1 min-w-0">
+							<CardTitle className="w-full">
+								<h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
+									Employee Types
+								</h1>
+							</CardTitle>
+							<p className="text-xs sm:text-sm text-muted-foreground mt-1">
+								Manage different employee types in your organization
+							</p>
+						</div>
+						<Button onClick={handleCreate} className="w-full sm:w-auto text-xs sm:text-sm">
+							<Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-0 sm:mr-2" />
+							<span className="hidden sm:inline">Add Employee Type</span>
+							<span className="sm:hidden">Add New</span>
 						</Button>
-					</CardTitle>
-					<div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					</div>
+					<div className="relative w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl">
+						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
 						<Input
 							placeholder="Search employee types..."
 							value={searchTerm}
 							onChange={(e) => handleSearchChange(e.target.value)}
-							className="pl-10 text-sm"
+							className="pl-8 sm:pl-10 text-xs sm:text-sm w-full"
 						/>
 					</div>
 				</CardHeader>
@@ -376,27 +403,31 @@ export default function EmployeeTypeManagement() {
 
 						return (
 							<div className="overflow-x-auto">
-								<div className="">
-									<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0 mt-6">
+								<div className="min-w-full">
+									<Table className="w-full [&_th]:border-0 [&_td]:border-0 mt-4 sm:mt-6">
 										<TableHeader className="bg-gray-50/50">
 											<TableRow>
-												<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
-													<div className="flex items-center gap-2">
+												<TableHead className="font-semibold text-gray-900 py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm">
+													<div className="flex items-center gap-1 sm:gap-2">
 														<span>Name</span>
 														<Button
 															onClick={() => setOrdering(ordering === "name" ? "" : "name")}
 															size="sm"
 															variant={ordering === "name" ? "default" : "outline"}
 															type="button"
+															className="h-5 w-5 sm:h-6 sm:w-6 p-0 hidden xs:inline-flex"
 														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+															<Icon
+																icon="hugeicons:sorting-02"
+																className="!h-2.5 !w-2.5 sm:!h-3 sm:!w-3"
+															/>
 														</Button>
 													</div>
 												</TableHead>
-												<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
+												<TableHead className="font-semibold text-gray-900 py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs sm:text-sm hidden sm:table-cell">
 													Description
 												</TableHead>
-												<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm">
+												<TableHead className="font-semibold text-gray-900 py-2 sm:py-3 px-2 sm:px-3 lg:px-4 w-[60px] sm:w-[80px] lg:w-[100px] text-center text-xs sm:text-sm">
 													Actions
 												</TableHead>
 											</TableRow>
@@ -405,14 +436,14 @@ export default function EmployeeTypeManagement() {
 											{list.length === 0 ? (
 												<TableRow>
 													<TableCell
-														colSpan={4}
-														className="text-center py-8 sm:py-12 text-gray-500 bg-white"
+														colSpan={3}
+														className="text-center py-6 sm:py-8 lg:py-12 text-gray-500 bg-white"
 													>
 														<div className="flex flex-col items-center gap-2">
-															<div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-																<Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
+															<div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+																<Search className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-gray-400" />
 															</div>
-															<span className="text-sm sm:text-base">
+															<span className="text-xs sm:text-sm lg:text-base text-center px-2 sm:px-4">
 																{searchTerm
 																	? "No employee types found matching your search."
 																	: "No employee types found."}
@@ -424,7 +455,7 @@ export default function EmployeeTypeManagement() {
 																	size="sm"
 																	className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent text-xs sm:text-sm"
 																>
-																	<Plus className="h-4 w-4 mr-2" />
+																	<Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
 																	Add your first employee type
 																</Button>
 															)}
@@ -437,13 +468,11 @@ export default function EmployeeTypeManagement() {
 														key={type.id}
 														className="bg-white hover:bg-gray-50 transition-colors duration-150"
 													>
-														<TableCell className="py-3 sm:py-4 px-4 sm:px-6">
-															<div className="font-medium text-gray-900 text-sm sm:text-base">
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4">
+															<div className="font-medium text-gray-900 text-xs sm:text-sm lg:text-base">
 																{type.name}
 															</div>
-														</TableCell>
-														<TableCell className="py-3 sm:py-4 px-4 sm:px-6 max-w-xs sm:max-w-md">
-															<div className="text-gray-700 leading-relaxed text-xs sm:text-sm">
+															<div className="text-gray-600 text-xs mt-1 sm:hidden">
 																{type.description ? (
 																	<span className="line-clamp-2">{type.description}</span>
 																) : (
@@ -453,47 +482,59 @@ export default function EmployeeTypeManagement() {
 																)}
 															</div>
 														</TableCell>
-														<TableCell className="py-3 sm:py-4 px-4 sm:px-6 text-center">
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 max-w-xs sm:max-w-md hidden sm:table-cell">
+															<div className="text-gray-700 leading-relaxed text-xs sm:text-sm lg:text-base">
+																{type.description ? (
+																	<span className="line-clamp-2">{type.description}</span>
+																) : (
+																	<span className="text-gray-400 italic">
+																		No description provided
+																	</span>
+																)}
+															</div>
+														</TableCell>
+														<TableCell className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-center">
 															<DropdownMenu>
 																<DropdownMenuTrigger asChild>
 																	<Button
 																		variant="ghost"
 																		size="sm"
-																		className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 rounded-full"
+																		className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 p-0 hover:bg-gray-100 rounded-full mx-auto"
 																		disabled={employeeTypeToDelete?.id === type.id}
 																	>
 																		{employeeTypeToDelete?.id === type.id ? (
-																			<Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-600" />
+																			<Loader2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-4 lg:w-4 animate-spin text-gray-600" />
 																		) : (
-																			<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+																			<MoreVertical className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-4 lg:w-4 text-gray-600" />
 																		)}
+																		<span className="sr-only">Actions</span>
 																	</Button>
 																</DropdownMenuTrigger>
 																<DropdownMenuContent
 																	align="end"
-																	className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
+																	className="w-32 sm:w-36 md:w-40 lg:w-48 bg-white border border-gray-200 shadow-lg"
 																>
 																	<DropdownMenuItem
 																		onClick={() =>
 																			router.push(`/employees/employee-types/${type.id}`)
 																		}
-																		className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
+																		className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																	>
-																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+																		<Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-4 lg:w-4 mr-1.5 sm:mr-2 lg:mr-3 text-gray-500" />
 																		View details
 																	</DropdownMenuItem>
 																	<DropdownMenuItem
 																		onClick={() => handleEdit(type)}
-																		className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
+																		className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																	>
-																		<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+																		<Edit className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-4 lg:w-4 mr-1.5 sm:mr-2 lg:mr-3 text-gray-500" />
 																		Edit
 																	</DropdownMenuItem>
 																	<DropdownMenuItem
 																		onClick={() => setEmployeeTypeToDelete(type)}
-																		className="flex items-center px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm"
+																		className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm"
 																	>
-																		<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-red-500" />
+																		<Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-4 lg:w-4 mr-1.5 sm:mr-2 lg:mr-3 text-red-500" />
 																		Delete
 																	</DropdownMenuItem>
 																</DropdownMenuContent>

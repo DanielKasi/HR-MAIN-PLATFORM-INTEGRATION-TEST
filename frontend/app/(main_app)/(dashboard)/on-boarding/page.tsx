@@ -122,6 +122,181 @@ interface BulkUpdateDialogState {
 
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive";
 
+// Mobile card view component
+const OnboardingCard = ({
+	onboarding,
+	isSelected,
+	onSelect,
+	onView,
+	onUpdate,
+	onDelete,
+	getApplicationData,
+	getStatusIcon,
+	getStatusBadgeVariant,
+	formatStatus,
+	formatDate,
+	getNextStages,
+	getInitials,
+	deletingId,
+}: any) => {
+	const {
+		applicantName,
+		applicantEmail,
+		jobDesc,
+		applicantPhone,
+		applicantAddress,
+		applicantPositions,
+	} = getApplicationData(onboarding);
+
+	const nextStages = getNextStages(onboarding.status);
+
+	return (
+		<Card className={`p-4 ${isSelected ? "bg-blue-50 border-blue-200" : ""}`}>
+			<div className="flex justify-between items-start mb-3">
+				<div className="flex items-center gap-3 flex-1 min-w-0">
+					<Checkbox
+						checked={isSelected}
+						onCheckedChange={onSelect}
+						aria-label={`Select ${applicantName}`}
+						className="flex-shrink-0"
+					/>
+					<Avatar className="h-10 w-10 flex-shrink-0">
+						<AvatarFallback className="text-sm">{getInitials(applicantName)}</AvatarFallback>
+					</Avatar>
+					<div className="min-w-0 flex-1">
+						<h3 className="font-semibold text-sm truncate">{applicantName}</h3>
+						<p className="text-xs text-muted-foreground truncate">{applicantEmail}</p>
+					</div>
+				</div>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+							<MoreVertical className="h-4 w-4" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ONBOARDING_RECORDS}>
+							<DropdownMenuItem onClick={() => onView(onboarding.id)}>
+								<Eye className="h-4 w-4 mr-2" />
+								View Details
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}>
+							<DropdownMenuItem onClick={() => onUpdate(onboarding, onboarding.status)}>
+								<MessageSquare className="h-4 w-4 mr-2" />
+								Update Feedback
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_ONBOARDING_RECORDS}>
+							<AlertDialog>
+								<AlertDialogTrigger asChild>
+									<DropdownMenuItem
+										onSelect={(e) => e.preventDefault()}
+										className="text-destructive"
+									>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Delete
+									</DropdownMenuItem>
+								</AlertDialogTrigger>
+								<AlertDialogContent className="w-[95vw] max-w-md">
+									<AlertDialogHeader>
+										<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+										<AlertDialogDescription>
+											This action cannot be undone. This will permanently delete the onboarding
+											record for {applicantName}.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter className="flex-col sm:flex-row gap-2">
+										<AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+										<AlertDialogAction
+											onClick={() => onDelete(onboarding.id)}
+											disabled={deletingId === onboarding.id}
+											className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-auto"
+										>
+											{deletingId === onboarding.id ? "Deleting..." : "Delete"}
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
+						</ProtectedComponent>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+
+			<div className="space-y-2">
+				<div className="flex items-center gap-2">
+					<Briefcase className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+					<span className="text-xs font-medium truncate flex-1">{jobDesc}</span>
+				</div>
+
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						{getStatusIcon(onboarding.status)}
+						<Badge variant={getStatusBadgeVariant(onboarding.status)} className="text-xs">
+							{formatStatus(onboarding.status)}
+						</Badge>
+					</div>
+					<div className="flex items-center gap-2">
+						{onboarding.attended ? (
+							<CheckCircle className="h-3 w-3 text-orange-500" />
+						) : (
+							<XCircle className="h-3 w-3 text-red-500" />
+						)}
+						<span className="text-xs">{onboarding.attended ? "Attended" : "Not Attended"}</span>
+					</div>
+				</div>
+
+				{onboarding.remarks && (
+					<div className="text-xs text-muted-foreground line-clamp-2">{onboarding.remarks}</div>
+				)}
+
+				<div className="flex items-center justify-between text-xs text-muted-foreground">
+					<div className="flex items-center gap-1">
+						<Calendar className="h-3 w-3" />
+						<span>{formatDate(onboarding.created_at)}</span>
+					</div>
+					<div className="flex items-center gap-1">
+						<Phone className="h-3 w-3" />
+						<span className="truncate max-w-[80px]">{applicantPhone}</span>
+					</div>
+				</div>
+			</div>
+
+			{nextStages.length > 0 && (
+				<div className="mt-3">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="outline" size="sm" className="w-full text-xs h-8 bg-transparent">
+								<ArrowRight className="h-3 w-3 mr-1" />
+								Progress
+								<ChevronDown className="h-3 w-3 ml-1" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-48">
+							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}>
+								{nextStages.map((stageValue: any) => {
+									const stage = ONBOARDING_STAGES.find((s) => s.value === stageValue);
+									if (!stage) return null;
+									const IconComponent = stage.icon;
+									return (
+										<DropdownMenuItem
+											key={stageValue}
+											onClick={() => onUpdate(onboarding, stageValue)}
+										>
+											<IconComponent className={`h-4 w-4 mr-2 ${stage.color}`} />
+											Mark as {stage.label}
+										</DropdownMenuItem>
+									);
+								})}
+							</ProtectedComponent>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
+			)}
+		</Card>
+	);
+};
+
 export default function OnboardPage() {
 	const [onboardings, setOnboardings] = useState<IOnBoarding[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -131,6 +306,7 @@ export default function OnboardPage() {
 	const [error, setError] = useState("");
 	const [deletingId, setDeletingId] = useState<number | null>(null);
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+	const [isMobile, setIsMobile] = useState(false);
 
 	const [updateDialog, setUpdateDialog] = useState<UpdateDialogState>({
 		open: false,
@@ -153,6 +329,20 @@ export default function OnboardPage() {
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const selectedBranch = useSelector(selectSelectedBranch);
+
+	// Check for mobile screen size
+	useEffect(() => {
+		const checkScreenSize = () => {
+			setIsMobile(window.innerWidth < 768);
+		};
+
+		checkScreenSize();
+		window.addEventListener("resize", checkScreenSize);
+
+		return () => {
+			window.removeEventListener("resize", checkScreenSize);
+		};
+	}, []);
 
 	const handleSmartSelectAll = () => {
 		const selectableOnboardings = filteredOnboardings.filter((o) => o.status !== "accepted_offer");
@@ -645,9 +835,9 @@ export default function OnboardPage() {
 	}
 
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 bg-white rounded-lg py-4 sm:py-8">
 			{/* Header */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 				<div className="w-full sm:w-auto">
 					<h1 className="text-xl sm:text-2xl font-bold">Onboarding Workflow</h1>
 					<p className="text-sm sm:text-base text-muted-foreground mt-1">
@@ -659,7 +849,7 @@ export default function OnboardPage() {
 
 			{/* Bulk Actions Bar */}
 			{selectedIds.size > 0 && (
-				<Card className="border-blue-200 bg-blue-50">
+				<Card className="border-blue-200 bg-blue-50 mb-6">
 					<CardContent className="p-3 sm:p-4">
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<div className="flex items-center gap-4">
@@ -757,19 +947,19 @@ export default function OnboardPage() {
 			)}
 
 			{/* Search and Filters */}
-			<div className="flex flex-col sm:flex-row gap-20 items-start sm:items-center mt-8">
-				<div className="relative flex-1 sm:flex-[0.9]">
-					<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+			<div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
+				<div className="relative flex-1 w-full">
+					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 					<Input
 						placeholder="Search onboarding records by name, email, or position..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
-						className="pl-10 text-sm sm:text-base"
+						className="pl-10 text-sm sm:text-base w-full"
 					/>
 				</div>
-				<div className="w-full sm:w-auto">
+				<div className="w-full sm:w-[200px]">
 					<Select value={statusFilter} onValueChange={setStatusFilter}>
-						<SelectTrigger className="w-full sm:w-[200px] gap-6">
+						<SelectTrigger className="w-full gap-6">
 							<Filter className="h-4 w-4 mr-2" />
 							<SelectValue placeholder="Filter by status" />
 						</SelectTrigger>
@@ -787,7 +977,7 @@ export default function OnboardPage() {
 
 			{/* Stats */}
 			{!isLoading && (
-				<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mt-10">
+				<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mb-6">
 					<Card className="p-3 sm:p-4">
 						<CardContent className="p-0">
 							<div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
@@ -829,13 +1019,13 @@ export default function OnboardPage() {
 
 			{/* Error Message */}
 			{error && (
-				<Alert variant="destructive">
+				<Alert variant="destructive" className="mb-6">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>{error}</AlertDescription>
 				</Alert>
 			)}
 
-			{/* Onboarding Table */}
+			{/* Onboarding Table/Cards */}
 			<div>
 				{isLoading ? (
 					<div className="p-6">
@@ -868,252 +1058,280 @@ export default function OnboardPage() {
 					</div>
 				) : (
 					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ONBOARDING_RECORDS}>
-						<div className="overflow-x-auto mt-10">
-							<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-								<TableHeader className="bg-gray-50/50">
-									<TableRow>
-										<TableHead className="w-[60px] sm:w-[80px]">
-											<SmartSelectAllDropdown />
-										</TableHead>
-										<TableHead className="min-w-[200px]">Candidate</TableHead>
-										<TableHead className="min-w-[180px]">Position</TableHead>
-										<TableHead className="min-w-[140px]">Current Stage</TableHead>
-										<TableHead className="min-w-[100px]">Attended</TableHead>
-										<TableHead className="min-w-[150px]">Remarks</TableHead>
-										<TableHead className="min-w-[120px]">Created Date</TableHead>
-										<TableHead className="min-w-[150px]">Contact</TableHead>
-										<TableHead className="min-w-[120px]">Actions</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{filteredOnboardings.map((onboarding) => {
-										const {
-											applicantName,
-											applicantEmail,
-											jobDesc,
-											applicantPhone,
-											applicantAddress,
-											applicantPositions,
-										} = getApplicationData(onboarding);
+						{/* Mobile Card View */}
+						{isMobile ? (
+							<div className="space-y-4">
+								{filteredOnboardings.map((onboarding) => (
+									<OnboardingCard
+										key={onboarding.id}
+										onboarding={onboarding}
+										isSelected={selectedIds.has(onboarding.id)}
+										onSelect={() => handleSelectOne(onboarding.id)}
+										onView={handleViewOnboarding}
+										onUpdate={handleUpdateOnboarding}
+										onDelete={handleDeleteOnboarding}
+										getApplicationData={getApplicationData}
+										getStatusIcon={getStatusIcon}
+										getStatusBadgeVariant={getStatusBadgeVariant}
+										formatStatus={formatStatus}
+										formatDate={formatDate}
+										getNextStages={getNextStages}
+										getInitials={getInitials}
+										deletingId={deletingId}
+									/>
+								))}
+							</div>
+						) : (
+							/* Desktop Table View */
+							<div className="overflow-x-auto">
+								<Table className="min-w-[1000px] lg:min-w-full [&_th]:border-0 [&_td]:border-0">
+									<TableHeader className="bg-gray-50/50">
+										<TableRow>
+											<TableHead className="w-[60px] sm:w-[80px]">
+												<SmartSelectAllDropdown />
+											</TableHead>
+											<TableHead className="min-w-[200px]">Candidate</TableHead>
+											<TableHead className="min-w-[180px]">Position</TableHead>
+											<TableHead className="min-w-[140px]">Current Stage</TableHead>
+											<TableHead className="min-w-[100px]">Attended</TableHead>
+											<TableHead className="min-w-[150px]">Remarks</TableHead>
+											<TableHead className="min-w-[120px]">Created Date</TableHead>
+											<TableHead className="min-w-[150px]">Contact</TableHead>
+											<TableHead className="min-w-[120px]">Actions</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{filteredOnboardings.map((onboarding) => {
+											const {
+												applicantName,
+												applicantEmail,
+												jobDesc,
+												applicantPhone,
+												applicantAddress,
+												applicantPositions,
+											} = getApplicationData(onboarding);
 
-										const nextStages = getNextStages(onboarding.status);
-										const isSelected = selectedIds.has(onboarding.id);
+											const nextStages = getNextStages(onboarding.status);
+											const isSelected = selectedIds.has(onboarding.id);
 
-										return (
-											<TableRow
-												key={onboarding.id}
-												className={`cursor-pointer hover:bg-muted/50 ${isSelected ? "bg-blue-50" : ""}`}
-												onClick={() => handleViewOnboarding(onboarding.id)}
-											>
-												<TableCell onClick={(e) => e.stopPropagation()}>
-													<Checkbox
-														checked={isSelected}
-														onCheckedChange={() => handleSelectOne(onboarding.id)}
-														aria-label={`Select ${applicantName}`}
-													/>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-3">
-														<Avatar className="h-8 w-8">
-															<AvatarFallback className="text-xs">
-																{getInitials(applicantName)}
-															</AvatarFallback>
-														</Avatar>
-														<div className="min-w-0">
-															<div className="font-medium text-sm truncate">{applicantName}</div>
-															<div className="text-xs sm:text-sm text-muted-foreground truncate">
-																{applicantEmail}
+											return (
+												<TableRow
+													key={onboarding.id}
+													className={`cursor-pointer hover:bg-muted/50 ${isSelected ? "bg-blue-50" : ""}`}
+													onClick={() => handleViewOnboarding(onboarding.id)}
+												>
+													<TableCell onClick={(e) => e.stopPropagation()}>
+														<Checkbox
+															checked={isSelected}
+															onCheckedChange={() => handleSelectOne(onboarding.id)}
+															aria-label={`Select ${applicantName}`}
+														/>
+													</TableCell>
+													<TableCell>
+														<div className="flex items-center gap-3">
+															<Avatar className="h-8 w-8">
+																<AvatarFallback className="text-xs">
+																	{getInitials(applicantName)}
+																</AvatarFallback>
+															</Avatar>
+															<div className="min-w-0">
+																<div className="font-medium text-sm truncate">{applicantName}</div>
+																<div className="text-xs sm:text-sm text-muted-foreground truncate">
+																	{applicantEmail}
+																</div>
 															</div>
 														</div>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-2">
-														<Briefcase className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-														<div className="min-w-0">
-															<div className="font-medium text-sm truncate">{jobDesc}</div>
-															<div className="text-xs text-muted-foreground truncate">
-																Positions: {applicantPositions}
+													</TableCell>
+													<TableCell>
+														<div className="flex items-center gap-2">
+															<Briefcase className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+															<div className="min-w-0">
+																<div className="font-medium text-sm truncate">{jobDesc}</div>
+																<div className="text-xs text-muted-foreground truncate">
+																	Positions: {applicantPositions}
+																</div>
 															</div>
 														</div>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-2">
-														{getStatusIcon(onboarding.status)}
-														<Badge
-															variant={getStatusBadgeVariant(onboarding.status)}
-															className="text-xs"
-														>
-															{formatStatus(onboarding.status)}
-														</Badge>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-2">
-														{onboarding.attended ? (
-															<CheckCircle className="h-4 w-4 text-orange-500" />
-														) : (
-															<XCircle className="h-4 w-4 text-red-500" />
-														)}
-														<span className="text-sm">{onboarding.attended ? "Yes" : "No"}</span>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="text-sm max-w-[120px] sm:max-w-[150px] truncate">
-														{onboarding.remarks || "No remarks"}
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-1 text-sm">
-														<Calendar className="h-3 w-3 text-muted-foreground" />
-														<span className="text-xs sm:text-sm">
-															{formatDate(onboarding.created_at)}
-														</span>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="text-xs text-muted-foreground">
-														<div className="flex items-center gap-1 mb-1">
-															<Phone className="h-3 w-3" />
-															<span className="truncate max-w-[100px]">{applicantPhone}</span>
+													</TableCell>
+													<TableCell>
+														<div className="flex items-center gap-2">
+															{getStatusIcon(onboarding.status)}
+															<Badge
+																variant={getStatusBadgeVariant(onboarding.status)}
+																className="text-xs"
+															>
+																{formatStatus(onboarding.status)}
+															</Badge>
 														</div>
+													</TableCell>
+													<TableCell>
+														<div className="flex items-center gap-2">
+															{onboarding.attended ? (
+																<CheckCircle className="h-4 w-4 text-orange-500" />
+															) : (
+																<XCircle className="h-4 w-4 text-red-500" />
+															)}
+															<span className="text-sm">{onboarding.attended ? "Yes" : "No"}</span>
+														</div>
+													</TableCell>
+													<TableCell>
+														<div className="text-sm max-w-[120px] sm:max-w-[150px] truncate">
+															{onboarding.remarks || "No remarks"}
+														</div>
+													</TableCell>
+													<TableCell>
+														<div className="flex items-center gap-1 text-sm">
+															<Calendar className="h-3 w-3 text-muted-foreground" />
+															<span className="text-xs sm:text-sm">
+																{formatDate(onboarding.created_at)}
+															</span>
+														</div>
+													</TableCell>
+													<TableCell>
+														<div className="text-xs text-muted-foreground">
+															<div className="flex items-center gap-1 mb-1">
+																<Phone className="h-3 w-3" />
+																<span className="truncate max-w-[100px]">{applicantPhone}</span>
+															</div>
+															<div className="flex items-center gap-1">
+																<MapPin className="h-3 w-3" />
+																<span className="truncate max-w-[100px]">{applicantAddress}</span>
+															</div>
+														</div>
+													</TableCell>
+													<TableCell>
 														<div className="flex items-center gap-1">
-															<MapPin className="h-3 w-3" />
-															<span className="truncate max-w-[100px]">{applicantAddress}</span>
-														</div>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-1">
-														{/* Progress Actions */}
-														{nextStages.length > 0 && (
+															{/* Progress Actions */}
+															{nextStages.length > 0 && (
+																<DropdownMenu>
+																	<DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+																		<Button
+																			variant="outline"
+																			size="sm"
+																			className="h-8 px-2 text-xs bg-transparent"
+																		>
+																			<ArrowRight className="h-3 w-3 mr-1" />
+																			<span className="hidden sm:inline">Progress</span>
+																			<span className="sm:hidden">Go</span>
+																			<ChevronDown className="h-3 w-3 ml-1" />
+																		</Button>
+																	</DropdownMenuTrigger>
+																	<DropdownMenuContent align="end">
+																		<ProtectedComponent
+																			permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}
+																		>
+																			{nextStages.map((stageValue) => {
+																				const stage = ONBOARDING_STAGES.find(
+																					(s) => s.value === stageValue,
+																				);
+
+																				if (!stage) return null;
+																				const IconComponent = stage.icon;
+
+																				return (
+																					<DropdownMenuItem
+																						key={stageValue}
+																						onClick={(e) => {
+																							e.stopPropagation();
+																							handleUpdateOnboarding(onboarding, stageValue);
+																						}}
+																					>
+																						<IconComponent
+																							className={`h-4 w-4 mr-2 ${stage.color}`}
+																						/>
+																						Mark as {stage.label}
+																					</DropdownMenuItem>
+																				);
+																			})}
+																		</ProtectedComponent>
+																	</DropdownMenuContent>
+																</DropdownMenu>
+															)}
+
+															{/* More Actions */}
 															<DropdownMenu>
 																<DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-																	<Button
-																		variant="outline"
-																		size="sm"
-																		className="h-8 px-2 text-xs bg-transparent"
-																	>
-																		<ArrowRight className="h-3 w-3 mr-1" />
-																		<span className="hidden sm:inline">Progress</span>
-																		<span className="sm:hidden">Go</span>
-																		<ChevronDown className="h-3 w-3 ml-1" />
+																	<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+																		<MoreVertical className="h-4 w-4" />
 																	</Button>
 																</DropdownMenuTrigger>
 																<DropdownMenuContent align="end">
 																	<ProtectedComponent
+																		permissionCode={PERMISSION_CODES.CAN_VIEW_ONBOARDING_RECORDS}
+																	>
+																		<DropdownMenuItem
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				handleViewOnboarding(onboarding.id);
+																			}}
+																		>
+																			<Eye className="h-4 w-4 mr-2" />
+																			View Details
+																		</DropdownMenuItem>
+																	</ProtectedComponent>
+																	<ProtectedComponent
 																		permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}
 																	>
-																		{nextStages.map((stageValue) => {
-																			const stage = ONBOARDING_STAGES.find(
-																				(s) => s.value === stageValue,
-																			);
-
-																			if (!stage) return null;
-																			const IconComponent = stage.icon;
-
-																			return (
+																		<DropdownMenuItem
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				handleUpdateOnboarding(onboarding, onboarding.status);
+																			}}
+																		>
+																			<MessageSquare className="h-4 w-4 mr-2" />
+																			Update Feedback
+																		</DropdownMenuItem>
+																	</ProtectedComponent>
+																	<ProtectedComponent
+																		permissionCode={PERMISSION_CODES.CAN_DELETE_ONBOARDING_RECORDS}
+																	>
+																		<AlertDialog>
+																			<AlertDialogTrigger asChild>
 																				<DropdownMenuItem
-																					key={stageValue}
-																					onClick={(e) => {
-																						e.stopPropagation();
-																						handleUpdateOnboarding(onboarding, stageValue);
-																					}}
+																					onClick={(e) => e.stopPropagation()}
+																					className="text-destructive"
+																					onSelect={(e) => e.preventDefault()}
 																				>
-																					<IconComponent
-																						className={`h-4 w-4 mr-2 ${stage.color}`}
-																					/>
-																					Mark as {stage.label}
+																					<Trash2 className="h-4 w-4 mr-2" />
+																					Delete
 																				</DropdownMenuItem>
-																			);
-																		})}
+																			</AlertDialogTrigger>
+																			<AlertDialogContent className="w-[95vw] max-w-md">
+																				<AlertDialogHeader>
+																					<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+																					<AlertDialogDescription>
+																						This action cannot be undone. This will permanently
+																						delete the onboarding record for {applicantName}.
+																					</AlertDialogDescription>
+																				</AlertDialogHeader>
+																				<AlertDialogFooter className="flex-col sm:flex-row gap-2">
+																					<AlertDialogCancel className="w-full sm:w-auto">
+																						Cancel
+																					</AlertDialogCancel>
+																					<AlertDialogAction
+																						onClick={() => handleDeleteOnboarding(onboarding.id)}
+																						disabled={deletingId === onboarding.id}
+																						className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-auto"
+																					>
+																						{deletingId === onboarding.id
+																							? "Deleting..."
+																							: "Delete"}
+																					</AlertDialogAction>
+																				</AlertDialogFooter>
+																			</AlertDialogContent>
+																		</AlertDialog>
 																	</ProtectedComponent>
 																</DropdownMenuContent>
 															</DropdownMenu>
-														)}
-
-														{/* More Actions */}
-														<DropdownMenu>
-															<DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-																<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-																	<MoreVertical className="h-4 w-4" />
-																</Button>
-															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
-																<ProtectedComponent
-																	permissionCode={PERMISSION_CODES.CAN_VIEW_ONBOARDING_RECORDS}
-																>
-																	<DropdownMenuItem
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			handleViewOnboarding(onboarding.id);
-																		}}
-																	>
-																		<Eye className="h-4 w-4 mr-2" />
-																		View Details
-																	</DropdownMenuItem>
-																</ProtectedComponent>
-																<ProtectedComponent
-																	permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}
-																>
-																	<DropdownMenuItem
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			handleUpdateOnboarding(onboarding, onboarding.status);
-																		}}
-																	>
-																		<MessageSquare className="h-4 w-4 mr-2" />
-																		Update Feedback
-																	</DropdownMenuItem>
-																</ProtectedComponent>
-																<ProtectedComponent
-																	permissionCode={PERMISSION_CODES.CAN_DELETE_ONBOARDING_RECORDS}
-																>
-																	<AlertDialog>
-																		<AlertDialogTrigger asChild>
-																			<DropdownMenuItem
-																				onClick={(e) => e.stopPropagation()}
-																				className="text-destructive"
-																				onSelect={(e) => e.preventDefault()}
-																			>
-																				<Trash2 className="h-4 w-4 mr-2" />
-																				Delete
-																			</DropdownMenuItem>
-																		</AlertDialogTrigger>
-																		<AlertDialogContent className="w-[95vw] max-w-md">
-																			<AlertDialogHeader>
-																				<AlertDialogTitle>Are you sure?</AlertDialogTitle>
-																				<AlertDialogDescription>
-																					This action cannot be undone. This will permanently delete
-																					the onboarding record for {applicantName}.
-																				</AlertDialogDescription>
-																			</AlertDialogHeader>
-																			<AlertDialogFooter className="flex-col sm:flex-row gap-2">
-																				<AlertDialogCancel className="w-full sm:w-auto">
-																					Cancel
-																				</AlertDialogCancel>
-																				<AlertDialogAction
-																					onClick={() => handleDeleteOnboarding(onboarding.id)}
-																					disabled={deletingId === onboarding.id}
-																					className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-auto"
-																				>
-																					{deletingId === onboarding.id ? "Deleting..." : "Delete"}
-																				</AlertDialogAction>
-																			</AlertDialogFooter>
-																		</AlertDialogContent>
-																	</AlertDialog>
-																</ProtectedComponent>
-															</DropdownMenuContent>
-														</DropdownMenu>
-													</div>
-												</TableCell>
-											</TableRow>
-										);
-									})}
-								</TableBody>
-							</Table>
-						</div>
+														</div>
+													</TableCell>
+												</TableRow>
+											);
+										})}
+									</TableBody>
+								</Table>
+							</div>
+						)}
 					</ProtectedComponent>
 				)}
 			</div>

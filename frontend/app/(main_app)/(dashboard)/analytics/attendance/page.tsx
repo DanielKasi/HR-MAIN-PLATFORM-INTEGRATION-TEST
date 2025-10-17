@@ -130,22 +130,25 @@ export default function AttendanceDashboard() {
 			initialData={initialData}
 			fetchData={getAttendanceDashboard}
 			content={(data) => (
-				<div className="min-h-screen  p-6">
-					<div className="space-y-8">
+				<div className="min-h-screen p-4 sm:p-6 lg:p-6">
+					<div className="space-y-6 sm:space-y-8">
 						{/* Header */}
-						<div className="space-y-4 flex items-center justify-between">
-							<h1 className="text-4xl font-bold text-slate-900 text-balance">
+						<div className="space-y-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+							<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 text-balance">
 								Attendance Analytics
 							</h1>
-							<div className="flex items-center justify-end gap-8">
-								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+							<div className="flex items-center justify-start sm:justify-end">
+								<Button
+									className="rounded-xl w-full sm:w-auto"
+									onClick={() => setIsReportsDialogOpen(true)}
+								>
 									Generate Reports
 								</Button>
 							</div>
 						</div>
 
 						{/* Key Metrics */}
-						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
 							{getGroupCards1(data).map((card, i) => (
 								<StatsCard key={i} index={i} {...card} />
 							))}
@@ -153,19 +156,19 @@ export default function AttendanceDashboard() {
 
 						{/* Header */}
 						<div className="space-y-4">
-							<h1 className="text-4xl font-bold text-slate-900 text-balance">
+							<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 text-balance">
 								Today's Attendance Summary
 							</h1>
 						</div>
 
 						{/* Time Metrics */}
-						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
 							{getGroupCards2(data).map((card, i) => (
 								<StatsCard key={i} index={i} {...card} />
 							))}
 						</div>
 
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 							{/* latecomers today */}
 							<LatecomersTable data={data.late_comers_today || []} />
 
@@ -191,7 +194,7 @@ export default function AttendanceDashboard() {
 						/>
 
 						{/* Charts Section */}
-						<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-6">
 							{/* spotcheck by Status */}
 							<Piechart
 								totalStr={""}

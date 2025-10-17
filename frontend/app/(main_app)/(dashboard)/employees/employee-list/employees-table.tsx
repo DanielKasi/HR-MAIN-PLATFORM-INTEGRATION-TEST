@@ -145,9 +145,9 @@ export function EmployeesTable({
 
 	const getStatusBadge = (isActive: boolean) => {
 		return isActive ? (
-			<Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Active</Badge>
+			<Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 text-xs">Active</Badge>
 		) : (
-			<Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
+			<Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100 text-xs">Inactive</Badge>
 		);
 	};
 
@@ -155,17 +155,21 @@ export function EmployeesTable({
 		{
 			key: "name",
 			header: (
-				<div className="flex items-center justify-start gap-4">
-					<span>Name</span>
+				<div className="flex items-center justify-start gap-2">
+					<span className="text-xs sm:text-sm">Name</span>
 				</div>
 			),
-			cell: (employee) => employee.name || employee?.user?.fullname || "Unknown",
+			cell: (employee) => (
+				<div className="text-xs sm:text-sm">
+					{employee.name || employee?.user?.fullname || "Unknown"}
+				</div>
+			),
 		},
 		{
 			key: "email",
 			header: (
-				<div className="flex items-center justify-start gap-4">
-					<span>Email</span>
+				<div className="flex items-center justify-start gap-2">
+					<span className="text-xs sm:text-sm">Email</span>
 					<Button
 						onClick={() => {
 							setOrdering((prev) => (prev === "email" ? "" : "email"));
@@ -173,18 +177,23 @@ export function EmployeesTable({
 						size="sm"
 						variant={ordering === "email" ? "default" : "outline"}
 						type="button"
+						className="h-6 w-6 p-0"
 					>
-						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+						<Icon icon="hugeicons:sorting-02" className="!h-3 !w-3 sm:!h-4 sm:!w-4" />
 					</Button>
 				</div>
 			),
-			cell: (employee) => employee.email || employee.user?.email || "",
+			cell: (employee) => (
+				<div className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
+					{employee.email || employee.user?.email || ""}
+				</div>
+			),
 		},
 		{
 			key: "department",
 			header: (
-				<div className="flex items-center justify-start gap-4">
-					<span>Department</span>
+				<div className="flex items-center justify-start gap-2">
+					<span className="text-xs sm:text-sm">Department</span>
 					<Button
 						onClick={() => {
 							setOrdering((prev) => (prev === "department" ? "" : "department"));
@@ -192,18 +201,23 @@ export function EmployeesTable({
 						size="sm"
 						variant={ordering === "department" ? "default" : "outline"}
 						type="button"
+						className="h-6 w-6 p-0"
 					>
-						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+						<Icon icon="hugeicons:sorting-02" className="!h-3 !w-3 sm:!h-4 sm:!w-4" />
 					</Button>
 				</div>
 			),
-			cell: (employee) => employee.department.name,
+			cell: (employee) => (
+				<div className="text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">
+					{employee.department.name}
+				</div>
+			),
 		},
 		{
 			key: "position",
 			header: (
-				<div className="flex items-center justify-start gap-4">
-					<span>Position</span>
+				<div className="flex items-center justify-start gap-2">
+					<span className="text-xs sm:text-sm">Position</span>
 					<Button
 						onClick={() => {
 							setOrdering((prev) => (prev === "position" ? "" : "position"));
@@ -211,35 +225,40 @@ export function EmployeesTable({
 						size="sm"
 						variant={ordering === "position" ? "default" : "outline"}
 						type="button"
+						className="h-6 w-6 p-0"
 					>
-						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+						<Icon icon="hugeicons:sorting-02" className="!h-3 !w-3 sm:!h-4 sm:!w-4" />
 					</Button>
 				</div>
 			),
-			cell: (employee) => employee.position.name,
+			cell: (employee) => (
+				<div className="text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">
+					{employee.position.name}
+				</div>
+			),
 		},
 		{
 			key: "status",
-			header: "Status",
+			header: <div className="text-xs sm:text-sm">Status</div>,
 			cell: (employee) => getStatusBadge(employee.is_active),
 		},
 		{
 			key: "actions",
-			header: "Actions",
+			header: <div className="text-xs sm:text-sm">Actions</div>,
 			cell: (employee) => (
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<MoreVertical className="h-4 w-4" />
+						<Button variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8 p-0">
+							<MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start">
+					<DropdownMenuContent align="start" className="text-xs sm:text-sm">
 						<DropdownMenuItem className="p-0">
 							<Link
 								className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
 								href={`/employees/profile/${employee.id}`}
 							>
-								<Eye className="h-4 w-4 mr-2" /> View Details
+								<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> View Details
 							</Link>
 						</DropdownMenuItem>
 						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}>
@@ -248,7 +267,7 @@ export function EmployeesTable({
 									className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
 									href={`/employees/update-employee/${employee.id}`}
 								>
-									<Edit className="h-4 w-4 mr-2" /> Edit
+									<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Edit
 								</Link>
 							</DropdownMenuItem>
 						</ProtectedComponent>
@@ -258,7 +277,7 @@ export function EmployeesTable({
 								className="text-red-600 p-0"
 							>
 								<span className="text-red-600 hover:text-red-700 text-xs w-full h-full px-2 py-1.5 flex items-center">
-									<Trash2 className="h-4 w-4 mr-2" /> Delete
+									<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" /> Delete
 								</span>
 							</DropdownMenuItem>
 						</ProtectedComponent>
@@ -380,14 +399,14 @@ export function EmployeesTable({
 					showErrorToast({ error: err, defaultMessage: "Failed to fetch employees" })
 				}
 				className="space-y-4"
-				tableClassName="min-w-[800px]"
+				tableClassName="min-w-0"
 				footerClassName="pt-4"
 				columns={columns}
 				skeletonRows={10}
 				refreshRef={tableRefreshRef}
 				emptyState={
-					<div className="text-center py-12">
-						<p className="text-muted-foreground mb-4">No employees found</p>
+					<div className="text-center py-8 sm:py-12">
+						<p className="text-muted-foreground mb-4 text-sm sm:text-base">No employees found</p>
 					</div>
 				}
 			/>
@@ -398,10 +417,10 @@ export function EmployeesTable({
 						if (!open) setEmployeeToDelete(null);
 					}}
 				>
-					<AlertDialogContent>
+					<AlertDialogContent className="max-w-[95vw] sm:max-w-md">
 						<AlertDialogHeader>
-							<AlertDialogTitle>Delete Employee</AlertDialogTitle>
-							<AlertDialogDescription>
+							<AlertDialogTitle className="text-lg sm:text-xl">Delete Employee</AlertDialogTitle>
+							<AlertDialogDescription className="text-sm sm:text-base">
 								Are you sure you want to delete{" "}
 								{employeeToDelete.user?.fullname ? (
 									<b>{employeeToDelete.user?.fullname}</b>
@@ -412,12 +431,12 @@ export function EmployeesTable({
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel onClick={() => setEmployeeToDelete(null)}>
+							<AlertDialogCancel onClick={() => setEmployeeToDelete(null)} className="text-sm">
 								Cancel
 							</AlertDialogCancel>
 							<AlertDialogAction
 								onClick={handleDelete}
-								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm"
 							>
 								Delete
 							</AlertDialogAction>

@@ -58,11 +58,11 @@ export default function Linechart({
 	}, []);
 
 	return (
-		<Card className={`flex flex-col shadow-none border ${className}`}>
-			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
-				{headerSlot || null}
-				<div className="flex items-center gap-4">
+		<Card className={`flex flex-col shadow-none border w-full ${className}`}>
+			<CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-0 gap-3 sm:gap-4">
+				<CardTitle className="text-lg sm:text-xl lg:text-2xl flex-grow">{title}</CardTitle>
+				<div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+					{headerSlot || null}
 					{select && category && (
 						<Select
 							defaultValue={category}
@@ -71,7 +71,7 @@ export default function Linechart({
 								setItems(data[d]);
 							}}
 						>
-							<SelectTrigger className="text-slate-900">
+							<SelectTrigger className="text-slate-900 w-full sm:w-[140px]">
 								<SelectValue placeholder={category} />
 							</SelectTrigger>
 							<SelectContent>
@@ -85,19 +85,19 @@ export default function Linechart({
 					)}
 				</div>
 			</CardHeader>
-			<CardContent className="flex-1 flex items-center">
+			<CardContent className="flex-1 flex items-center pt-3 sm:pt-4 lg:pt-6">
 				<ChartContainer
 					config={chartConfig}
-					className="mx-auto aspect-square w-full h-full max-h-[400px]"
+					className="mx-auto w-full h-full min-h-[250px] sm:min-h-[300px] lg:min-h-[400px] max-h-[500px]"
 				>
 					<LineChart
 						accessibilityLayer
 						data={items}
 						margin={{
-							left: 12,
-							right: 12,
-							top: 10,
-							bottom: 10,
+							left: 8,
+							right: 8,
+							top: 8,
+							bottom: 8,
 						}}
 					>
 						<CartesianGrid vertical={false} />
@@ -105,10 +105,16 @@ export default function Linechart({
 							dataKey={nameKey}
 							tickLine={false}
 							axisLine={false}
-							tickMargin={8}
+							tickMargin={6}
 							tickFormatter={(value) => value}
+							tick={{ fontSize: 10, className: "text-xs sm:text-sm" }}
 						/>
-						<YAxis axisLine={false} tickLine={false} tickMargin={8} />
+						<YAxis
+							axisLine={false}
+							tickLine={false}
+							tickMargin={6}
+							tick={{ fontSize: 10, className: "text-xs sm:text-sm" }}
+						/>
 						<ChartTooltip active cursor={false} content={<ChartTooltipContent hideLabel />} />
 						{dataKey.map((key, i) => (
 							<Line
@@ -116,12 +122,12 @@ export default function Linechart({
 								dataKey={key}
 								type="monotone"
 								stroke={colors[i]}
-								strokeWidth={2}
+								strokeWidth={1.5}
 								dot={{
-									r: 6,
+									r: 4,
 								}}
 								activeDot={{
-									r: 8,
+									r: 6,
 								}}
 							/>
 						))}

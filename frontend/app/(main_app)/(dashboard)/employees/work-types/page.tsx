@@ -80,32 +80,36 @@ export default function WorkTypesPage() {
 	}
 
 	return (
-		<div className="flex flex-col w-full h-full bg-white p-2 md:p-6 rounded-lg py-8 min-h-screen">
+		<div className="flex flex-col w-full h-full bg-white p-4 sm:p-6 rounded-lg py-6 sm:py-8 min-h-screen">
 			{/* Work Types List */}
-			<div className="w-full ">
+			<div className="w-full">
 				<div className="mb-6">
-					<div className="mb-6 px-3">
-						<div className="flex items-center justify-between">
-							<h1 className="text-xl lg:text-2xl font-semibold">Work Types</h1>
+					<div className="mb-6 px-1 sm:px-3">
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
+							<div className="flex-1 min-w-0">
+								<h1 className="text-lg sm:text-xl lg:text-2xl font-semibold truncate">
+									Work Types
+								</h1>
+								<p className="text-xs sm:text-sm text-muted-foreground mt-1">
+									Manage different work types of employees in your organization
+								</p>
+							</div>
 
-							<Button onClick={handleCreate}>
-								<Plus className="h-4 w-4 md:mr-2" />
-								<span className="hidden md:inline">Add Work Type</span>
+							<Button onClick={handleCreate} className="w-full sm:w-auto">
+								<Plus className="h-4 w-4 mr-0 sm:mr-2" />
+								<span className="sm:inline">Add Work Type</span>
 							</Button>
 						</div>
-						<p className="text-sm text-muted-foreground">
-							Manage different work types of employees in your organization
-						</p>
 					</div>
 
-					<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-12">
-						<div className="relative w-full max-w-sm md:max-w-md lg:max-w-xl">
+					<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-8 sm:mt-12">
+						<div className="relative w-full sm:max-w-sm md:max-w-md lg:max-w-xl">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 							<Input
 								placeholder="Search work types..."
 								value={searchTerm}
 								onChange={(e) => handleSearchChange(e.target.value)}
-								className="pl-10"
+								className="pl-10 w-full"
 							/>
 						</div>
 					</div>
@@ -123,7 +127,7 @@ export default function WorkTypesPage() {
 						}}
 						fetchFromUrl={async ({ url }) => await getPaginatedWorkTypesFromUrl({ url })}
 						deps={[selectedInstitution?.id, searchTerm, ordering]}
-						className="mt-6"
+						className="mt-4 sm:mt-6"
 					>
 						{({ data, loading, refresh }) => {
 							const list = data?.results || [];
@@ -152,14 +156,14 @@ export default function WorkTypesPage() {
 
 							return (
 								<div className="overflow-x-auto">
-									<div className="min-w-[600px]">
+									<div className="min-w-full">
 										{loading ? (
 											<TableSkeleton rows={5} columns={3} />
 										) : (
-											<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0 mt-12">
+											<Table className="min-w-full [&_th]:border-0 [&_td]:border-0 mt-6 sm:mt-12">
 												<TableHeader className="bg-gray-50/50">
 													<TableRow>
-														<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
+														<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-4 lg:px-6 text-xs sm:text-sm">
 															<div className="flex items-center gap-2">
 																<span>Name</span>
 																<Button
@@ -167,15 +171,19 @@ export default function WorkTypesPage() {
 																	size="sm"
 																	variant={ordering === "name" ? "default" : "outline"}
 																	type="button"
+																	className="h-6 w-6 sm:h-8 sm:w-8 p-0"
 																>
-																	<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+																	<Icon
+																		icon="hugeicons:sorting-02"
+																		className="!h-3 !w-3 sm:!h-4 sm:!w-4"
+																	/>
 																</Button>
 															</div>
 														</TableHead>
-														<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
+														<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-4 lg:px-6 text-xs sm:text-sm hidden sm:table-cell">
 															Description
 														</TableHead>
-														<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm lg:text-base">
+														<TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-4 lg:px-6 w-[60px] sm:w-[80px] lg:w-[100px] text-center text-xs sm:text-sm">
 															Actions
 														</TableHead>
 													</TableRow>
@@ -201,7 +209,7 @@ export default function WorkTypesPage() {
 																			onClick={handleCreate}
 																			variant="outline"
 																			size="sm"
-																			className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent text-xs sm:text-sm lg:text-base"
+																			className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent text-xs sm:text-sm"
 																		>
 																			<Plus className="h-4 w-4 mr-2" />
 																			Add your first work type
@@ -216,12 +224,21 @@ export default function WorkTypesPage() {
 																key={type.id}
 																className="bg-white hover:bg-gray-50 transition-colors duration-150"
 															>
-																<TableCell className="py-3 sm:py-4 px-4 sm:px-6">
+																<TableCell className="py-3 sm:py-4 px-3 sm:px-4 lg:px-6">
 																	<div className="font-medium text-gray-900 text-xs sm:text-sm lg:text-base">
 																		{type.name}
 																	</div>
+																	<div className="text-gray-600 mt-1 sm:hidden text-xs">
+																		{type.description ? (
+																			<span className="line-clamp-2">{type.description}</span>
+																		) : (
+																			<span className="text-gray-400 italic">
+																				No description provided
+																			</span>
+																		)}
+																	</div>
 																</TableCell>
-																<TableCell className="py-3 sm:py-4 px-4 sm:px-6 max-w-xs sm:max-w-md">
+																<TableCell className="py-3 sm:py-4 px-3 sm:px-4 lg:px-6 max-w-xs sm:max-w-md hidden sm:table-cell">
 																	<div className="text-gray-700 leading-relaxed text-xs sm:text-sm lg:text-base">
 																		{type.description ? (
 																			<span className="line-clamp-2">{type.description}</span>
@@ -232,7 +249,7 @@ export default function WorkTypesPage() {
 																		)}
 																	</div>
 																</TableCell>
-																<TableCell className="py-3 sm:py-4 px-4 sm:px-6 text-center">
+																<TableCell className="py-3 sm:py-4 px-3 sm:px-4 lg:px-6 text-center">
 																	<DropdownMenu>
 																		<DropdownMenuTrigger asChild>
 																			<Button
@@ -250,7 +267,7 @@ export default function WorkTypesPage() {
 																		</DropdownMenuTrigger>
 																		<DropdownMenuContent
 																			align="end"
-																			className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
+																			className="w-36 sm:w-40 md:w-48 bg-white border border-gray-200 shadow-lg"
 																		>
 																			<DropdownMenuItem
 																				onClick={() =>
@@ -263,14 +280,14 @@ export default function WorkTypesPage() {
 																			</DropdownMenuItem>
 																			<DropdownMenuItem
 																				onClick={() => handleEdit(type)}
-																				className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+																				className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																			>
 																				<Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
 																				Edit work type
 																			</DropdownMenuItem>
 																			<DropdownMenuItem
 																				onClick={() => setWorkTypeToDelete(type)}
-																				className="flex items-center px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+																				className="flex items-center px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm"
 																			>
 																				<Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-red-500" />
 																				Delete work type
