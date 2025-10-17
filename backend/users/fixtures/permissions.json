@@ -488,6 +488,26 @@
       "description": "Allows generating employee payslips"
     },
     {
+      "code": "can_waive_penalty",
+      "name": "Can Waive Penalty",
+      "description": "Allows waiving penalties"
+    },
+    {
+      "code": "can_view_penalty_waive_requests",
+      "name": "Can View Penalty Waive Requests",
+      "description": "Allows viewing penalty waive requests"
+    },
+    {
+      "code": "can_approve_penalty_waive_requests",
+      "name": "Can Approve Penalty Waive Requests",
+      "description": "Allows approving penalty waive requests"
+    },
+    {
+      "code": "can_view_employee_penalties",
+      "name": "Can View Employee Penalties",
+      "description": "Allows viewing employee penalties"
+    },
+    {
       "code": "can_manage_allowances",
       "name": "Can Manage Allowances",
       "description": "Allows managing employee allowances"

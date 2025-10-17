@@ -540,8 +540,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
             
             return instance
 
-
-
 class JobInterviewSerializer(BaseApprovableSerializer):
     job_position_application_details = JobAdvertApplicationSerializer(
         source="job_position_application", read_only=True
