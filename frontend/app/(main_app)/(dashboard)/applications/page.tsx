@@ -1947,7 +1947,7 @@ export default function ApplicationsPage() {
 						Job Applications
 					</h1>
 					<p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xs sm:max-w-none">
-						Manage and track all job applications for {selectedBranch.branch_name} -
+						Manage and track all job applications for {selectedBranch.branch_name}
 					</p>
 				</div>
 				<Button

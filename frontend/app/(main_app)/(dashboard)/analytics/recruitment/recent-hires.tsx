@@ -9,7 +9,6 @@ interface IRecentHireProps {
 }
 
 export default function RecentHiresTable({ className = "", data }: IRecentHireProps) {
-	// Full columns for larger screens
 	const fullColumns: ColumnDef<IRecentHire>[] = [
 		{
 			key: "name",
@@ -66,7 +65,6 @@ export default function RecentHiresTable({ className = "", data }: IRecentHirePr
 		},
 	];
 
-	// Detect if mobile - you can pass this as a prop if you have context
 	const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 	const columns = isMobile ? mobileColumns : fullColumns;
 
