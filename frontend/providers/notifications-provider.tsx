@@ -9,7 +9,6 @@ import { selectNotifications } from "@/store/notifications/selectors";
 import { MAIN_DOMAIN_URL, NOTIFICATIONS_STREAM_BASE_PATH } from "@/constants";
 import { showErrorToast } from "@/lib/utils";
 import { INotification } from "@/store/notifications/types";
-import { getNotificationPath } from "@/utils/notifications-path-matcher";
 import { requireAnnouncementAcknowledgmentStart } from "@/store/miscellaneous/actions";
 import apiRequest from "@/lib/apiRequest";
 import { IPaginatedResponse } from "@/types/other";
@@ -44,27 +43,27 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	const apiUrl = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH}`;
 
 	// Register SW and listen for messages
-	useEffect(() => {
-		if (!("serviceWorker" in navigator)) return;
+	// useEffect(() => {
+	// 	if (!("serviceWorker" in navigator)) return;
 
-		const registerSW = async () => {
-			try {
-				const registration = await navigator.serviceWorker.register("/sw.js");
-				serviceWorkerRef.current = registration;
-			} catch (error) {
-				console.warn("Service Worker registration failed:", error);
-			}
-		};
+	// 	const registerSW = async () => {
+	// 		try {
+	// 			const registration = await navigator.serviceWorker.register("/sw.js");
+	// 			serviceWorkerRef.current = registration;
+	// 		} catch (error) {
+	// 			console.warn("Service Worker registration failed:", error);
+	// 		}
+	// 	};
 
-		const urlParams = new URLSearchParams(window.location.search);
-		const notificationId = urlParams.get("notificationId");
-		if (notificationId) {
-			markNotificationAsRead({ notificationId: parseInt(notificationId, 10) });
-			window.history.replaceState({}, document.title, window.location.pathname);
-		}
+	// 	const urlParams = new URLSearchParams(window.location.search);
+	// 	const notificationId = urlParams.get("notificationId");
+	// 	if (notificationId) {
+	// 		markNotificationAsRead({ notificationId: parseInt(notificationId, 10) });
+	// 		window.history.replaceState({}, document.title, window.location.pathname);
+	// 	}
 
-		registerSW();
-	}, []);
+	// 	registerSW();
+	// }, []);
 
 	// Poll notifications every 10s (only if authenticated)
 	useEffect(() => {
@@ -169,10 +168,11 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				}
 			}
 		} catch (error) {
-			showErrorToast({
-				error,
-				defaultMessage: "Failed to fetch notifications",
-			});
+			console.warn("Failed to fetch notifications");
+			// showErrorToast({
+			// 	error,
+			// 	defaultMessage: "Failed to fetch notifications",
+			// });
 		} finally {
 			isFetchingRef.current = false;
 		}

@@ -116,7 +116,7 @@ import { getInterviewStages, createInterview } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { getFileUrl } from "@/lib/helpers";
+import { formatDate, getFileUrl } from "@/lib/helpers";
 import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
 import FixedLoader from "@/components/fixed-loader";
 import { Progress } from "@/components/ui/progress";
@@ -1899,16 +1899,6 @@ export default function ApplicationsPage() {
 		}
 	};
 
-	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	};
-
 	if (!selectedInstitution || !selectedBranch) {
 		return <div>Loading...</div>;
 	}
@@ -3535,7 +3525,7 @@ export default function ApplicationsPage() {
 				<CreateInterviewStageDialog
 					isOpen={showCreateStageDialog}
 					onOpenChange={setShowCreateStageDialog}
-					jobPositionId={selectedApplicationForInterview.job_position_advert}
+					// jobPositionId={selectedApplicationForInterview.job_position_advert}
 					jobPositionName={selectedApplicationForInterview.job_position_advert_job_details.name}
 					existingStagesCount={interviewStages.length}
 					onSuccess={async (newStage) => {

@@ -342,7 +342,7 @@ export default function DashboardSideBar() {
 				{ title: "FAQs", href: "/help-desk/faqs" },
 				{ title: "Tickets", href: "/help-desk/tickets" },
 			],
-			// requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
+			requiredPermission: PERMISSION_CODES.CAN_VIEW_HELP_DESK,
 		},
 		// {
 		// 	title: "Project",
@@ -375,6 +375,7 @@ export default function DashboardSideBar() {
 			href: "#1",
 			icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
 			submenu: [{ title: "Calendar", href: "/events-holidays" }],
+			requiredPermission: PERMISSION_CODES.CAN_VIEW_EVENTS_AND_HOLIDAYS,
 		},
 	];
 

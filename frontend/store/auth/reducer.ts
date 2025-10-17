@@ -176,6 +176,7 @@ export const authReducer = (
 		case AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_START:
 			return { ...state, relatedEmployee: { ...state.relatedEmployee, loading: true } };
 		case AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_FAILURE:
+		case AUTH_ACTION_TYPES.CLEAR_RELATED_EMPLOYEE:
 			return {
 				...state,
 				relatedEmployee: { ...state.relatedEmployee, loading: false, value: null },

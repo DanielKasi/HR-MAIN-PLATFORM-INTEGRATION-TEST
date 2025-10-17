@@ -45,19 +45,16 @@ export default function Modules() {
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<button
-					className="text-gray-900 bg-white hover:bg-gray-100 p-3 rounded-full border-none outline-none "
+					className="text-gray-900 bg-white hover:bg-gray-100 p-3 rounded-full border-none outline-none relative"
 					onMouseEnter={handleMouseEnter}
 					onMouseLeave={handleMouseLeave}
 				>
 					<Icon icon="hugeicons:block-game" width="24" height="24" />
 					<span
-						className={`text-gray-100 px-2 py-1 rounded-sm z-10 bg-gray-600 text-xs font-medium absolute -top-6 left-1/2 transform -translate-x-1/2 pointer-events-none whitespace-nowrap ${
-							isHovered ? "opacity-100" : "opacity-0"
-						}`}
+						className={`text-gray-100 px-2 py-1 rounded-sm z-10 bg-gray-600 text-xs font-medium absolute top-full left-1/2 transform -translate-x-1/2 mt-1 pointer-events-none whitespace-nowrap transition-all duration-200 ease-in-out ${isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
 					>
 						Modules
 					</span>
-
 					<span className="sr-only">Modules</span>
 				</button>
 			</DropdownMenuTrigger>
