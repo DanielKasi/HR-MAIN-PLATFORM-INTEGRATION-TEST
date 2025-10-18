@@ -12,6 +12,8 @@ import { EditEventModal } from "@/components/events-holidays/edit-event-modal";
 import { EditHolidayModal } from "@/components/events-holidays/edit-holiday-modal";
 import { ICalendar, IEvent, IPublicHoliday } from "@/types/types.utils";
 import FixedLoader from "@/components/fixed-loader";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 // Define types inline to avoid import issues
 interface ICalendarEvent {
@@ -351,7 +353,7 @@ export default function EventsCalendarPage() {
 				<div className="space-y-3 lg:space-y-4 w-full">
 					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 lg:gap-4 w-full">
 						<div className="flex items-center gap-2 sm:gap-3 min-w-0">
-							<Link href="/events-holidays" passHref>
+							<Link href="/events-holidays">
 								<Button variant="outline" size="sm" className="rounded-full aspect-square">
 									<ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
 								</Button>
@@ -363,18 +365,20 @@ export default function EventsCalendarPage() {
 
 						{/* Add Event Button */}
 						<div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center min-w-0">
-							<Link href="/events-holidays/events/add" passHref>
-								<Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto text-sm">
-									<Plus className="mr-2 h-4 w-4" />
-									Event
-								</Button>
-							</Link>
-							<Link href="/events-holidays/holidays/add" passHref>
-								<Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto text-sm">
-									<Plus className="mr-2 h-4 w-4" />
-									Holiday
-								</Button>
-							</Link>
+							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EVENTS_AND_HOLIDAYS}>
+								<Link href="/events-holidays/events/add">
+									<Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto text-sm">
+										<Plus className="mr-2 h-4 w-4" />
+										Event
+									</Button>
+								</Link>
+								<Link href="/events-holidays/holidays/add">
+									<Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto text-sm">
+										<Plus className="mr-2 h-4 w-4" />
+										Holiday
+									</Button>
+								</Link>
+							</ProtectedComponent>
 						</div>
 					</div>
 
@@ -906,15 +910,19 @@ export default function EventsCalendarPage() {
 													</div>
 
 													{/* Edit Event Button */}
-													<div className="mt-3 pt-2 border-t border-border">
-														<Button
-															onClick={() => openEditModal(event)}
-															className="w-full text-xs py-1 bg-primary text-white"
-														>
-															<Icon icon="hugeicons:edit-04" className="w-3 h-3 mr-1" />
-															Edit Event
-														</Button>
-													</div>
+													<ProtectedComponent
+														permissionCode={PERMISSION_CODES.CAN_EDIT_EVENTS_AND_HOLIDAYS}
+													>
+														<div className="mt-3 pt-2 border-t border-border">
+															<Button
+																onClick={() => openEditModal(event)}
+																className="w-full text-xs py-1 bg-primary text-white"
+															>
+																<Icon icon="hugeicons:edit-04" className="w-3 h-3 mr-1" />
+																Edit Event
+															</Button>
+														</div>
+													</ProtectedComponent>
 												</div>
 											));
 										})()}
@@ -1010,15 +1018,19 @@ export default function EventsCalendarPage() {
 													</div>
 
 													{/* Edit Holiday Button */}
-													<div className="mt-2 pt-2 border-t border-green-200">
-														<Button
-															className="w-full text-xs py-1 bg-primary text-white"
-															onClick={() => openEditHolidayModal(holiday)}
-														>
-															<Icon icon="hugeicons:edit-04" className="w-3 h-3 mr-1" />
-															Edit Holiday
-														</Button>
-													</div>
+													<ProtectedComponent
+														permissionCode={PERMISSION_CODES.CAN_EDIT_EVENTS_AND_HOLIDAYS}
+													>
+														<div className="mt-2 pt-2 border-t border-green-200">
+															<Button
+																className="w-full text-xs py-1 bg-primary text-white"
+																onClick={() => openEditHolidayModal(holiday)}
+															>
+																<Icon icon="hugeicons:edit-04" className="w-3 h-3 mr-1" />
+																Edit Holiday
+															</Button>
+														</div>
+													</ProtectedComponent>
 												</div>
 											));
 										})()}

@@ -6,6 +6,7 @@ import type {
 	IInterviewStage,
 	IInterview,
 	IInterviewFormData,
+	JobPositionAdvert,
 } from "@/types/types.utils";
 
 import { useState, useEffect, useMemo } from "react";
@@ -514,7 +515,7 @@ export default function CreateInterviewPage() {
 								<Label htmlFor="job_position" className="text-sm font-medium">
 									Job Position/ Title *
 								</Label>
-								<PaginatedSearchableSelect<any, { search?: string; page?: number }>
+								<PaginatedSearchableSelect<JobPositionAdvert, { search?: string; page?: number }>
 									paginated
 									fetchFirstPage={fetchFirstPage}
 									fetchFromUrl={fetchFromUrl}
@@ -736,7 +737,7 @@ export default function CreateInterviewPage() {
 											setStageErrors({});
 										}
 									}}
-									jobPositionId={Number(selectedJobPosition)}
+									jobPositionAdvertId={Number(selectedJobPosition)}
 									jobPositionName={
 										groupedApplications[Number(selectedJobPosition)]?.jobName || "Unknown Position"
 									}

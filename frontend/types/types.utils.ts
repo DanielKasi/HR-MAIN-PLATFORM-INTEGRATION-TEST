@@ -810,10 +810,13 @@ export interface ISpouse {
 
 // Main employee form interface for backend API
 export interface IEmployeeFormData {
-	user: Partial<IUser>;
+	user: Pick<IUser, "fullname" | "email">;
 	id?: number;
-	email: string;
-	company_email?: string;
+	name: string;
+	company_email?: {
+		email: string;
+		provider: string | null;
+	};
 	gender: "male" | "female" | "other";
 	phone_number: string;
 	phone_number_country_code?: string;
@@ -858,7 +861,10 @@ export interface ICreateEmployeeForm {
 	// Basic Information
 	fullname: string;
 	email: string;
-	company_email?: string;
+	company_email?: {
+		email: string;
+		provider: string | null;
+	};
 	phone_number: string;
 	phone_number_country_code?: string;
 	gender: "male" | "female" | "other";
@@ -891,6 +897,7 @@ export interface ICreateEmployeeForm {
 	work_experiences: IWorkExperience[];
 	bank_accounts: IEmployeeBankAccountFormData[];
 	spouse?: ISpouse;
+	payroll_branch?: number | null;
 }
 
 // Form step types
@@ -899,7 +906,6 @@ export type EmployeeFormStep = "personal" | "work" | "financial";
 export type RequiredEmployeeFields = Pick<
 	IEmployeeFormData,
 	| "user"
-	| "email"
 	| "phone_number"
 	| "position"
 	| "work_type"
@@ -1050,16 +1056,10 @@ export interface BranchSummary {
 	attached_date?: string;
 }
 
-export interface PayrollBranch {
-	id: number;
-	name: string;
-	location: string;
-}
-
 export interface EmployeeBranchSummary {
 	branches: BranchSummary[];
 	default_branch: BranchSummary | null;
-	payroll_branch: PayrollBranch | null;
+	payroll_branch: BranchSummary | null;
 }
 
 export interface UserBranch {
@@ -2301,10 +2301,11 @@ export interface IBranchLocationComparisonConfigFormData {
 export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT" | "ALLOCATION";
 export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
 export type IDayType = "PHYSICAL" | "REMOTE";
+
 export interface IBranchDay {
 	id: number;
-	day_name: string;
 	day_id: number;
+	day_name: string;
 	day_type: IDayType;
 	opening_time?: string | null;
 	closing_time?: string | null;

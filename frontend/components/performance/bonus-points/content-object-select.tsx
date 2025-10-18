@@ -143,25 +143,35 @@ export const ContentObjectSelect = ({
 	);
 
 	const handleSelect = useCallback(
-		(itemId: string | number, _item: PaginatedSelectItem<IProject | ApprovalTask | IObjective>) => {
-			if (!selectedItems.includes(itemId)) {
-				const newValue = multiple ? [...selectedItems, itemId] : [itemId];
-				setSelectedItems(newValue);
-				onValueChange(newValue);
+		(
+			itemIds: (string | number)[],
+			_items: PaginatedSelectItem<IProject | ApprovalTask | IObjective>[],
+		) => {
+			if (
+				itemIds.filter((item) =>
+					selectedItems.find((s_item) => s_item.toString() !== item.toString()),
+				)
+			) {
+				if (multiple) {
+					onValueChange([...selectedItems, ...itemIds]);
+				} else {
+					onValueChange(itemIds);
+				}
 			}
 		},
-		[selectedItems, multiple, onValueChange],
+		[multiple, selectedItems, onValueChange],
 	);
 
 	const handleRemove = useCallback(
-		(itemId: string | number, _item: PaginatedSelectItem<IProject | ApprovalTask | IObjective>) => {
-			if (multiple) {
-				const newValue = selectedItems.filter((id) => String(id) !== String(itemId));
-				setSelectedItems(newValue);
-				onValueChange(newValue);
-			}
+		(
+			itemIds: (string | number)[],
+			_item: PaginatedSelectItem<IProject | ApprovalTask | IObjective>[],
+		) => {
+			const newItems = selectedItems.filter((id) => !itemIds.map(String).includes(id.toString()));
+			setSelectedItems(newItems);
+			onValueChange(newItems);
 		},
-		[selectedItems, multiple, onValueChange],
+		[selectedItems, onValueChange],
 	);
 
 	return (

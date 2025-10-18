@@ -10,11 +10,13 @@ import { ICalendar, IEvent } from "@/types/types.utils";
 interface EventsAndHolidaysWidgetProps {
 	onRefresh?: () => void;
 	className?: string;
+	contentClassName?: string;
 }
 
 export function EventsAndHolidaysWidget({
 	onRefresh,
 	className = "",
+	contentClassName = "",
 }: EventsAndHolidaysWidgetProps) {
 	const [calendarData, setCalendarData] = useState<ICalendar | null>(null);
 	const [events, setEvents] = useState<IEvent[]>([]);
@@ -82,7 +84,7 @@ export function EventsAndHolidaysWidget({
 
 	return (
 		<Card className={`h-fit shadow-sm border-none ${className}`}>
-			<CardHeader className="pb-2 sticky top-0 z-10 bg-white">
+			<CardHeader className={`pb-2 sticky top-0 z-10 bg-white`}>
 				<div className="flex border-b">
 					<button
 						onClick={() => setActiveTab("holidays")}
@@ -106,7 +108,7 @@ export function EventsAndHolidaysWidget({
 					</button>
 				</div>
 			</CardHeader>
-			<CardContent className="space-y-4">
+			<CardContent className={`space-y-4 ${contentClassName}`}>
 				{loading ? (
 					<div className="text-center text-gray-500 py-4">Loading...</div>
 				) : (

@@ -26,8 +26,8 @@ export interface PaginatedSearchableSelectProps<T, Q = unknown> {
 	items?: PaginatedSelectItem<T>[];
 	defaultLabel?: string;
 	selectedItems?: (string | number)[];
-	onSelect: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
-	onRemove: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
+	onSelect: (itemIds: (string | number)[], _item: PaginatedSelectItem<T>[]) => void;
+	onRemove: (itemId: (string | number)[], item: PaginatedSelectItem<T>[]) => void;
 	showSelectedItems?: boolean;
 	multiple?: boolean;
 	disabled?: boolean;
@@ -198,7 +198,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 	// Select all functionality
 	const handleSelectAll = () => {
 		if (!data?.results) return;
-		console.log("\n\n Selecting all with data results : ", data.results);
 		const allItems = data.results;
 		const allSelected = allItems.every(
 			(item) =>
@@ -207,23 +206,13 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 
 		if (allSelected) {
 			// Deselect all visible items
-			allItems.forEach((item) => {
-				const itemId = getItemId(item);
-				if (
-					onRemove &&
-					(selectedItems.includes(itemId) || selectedItems.includes(String(itemId)))
-				) {
-					onRemove(itemId, item);
-				}
-			});
+			onRemove(allItems.map(getItemId), allItems);
 		} else {
 			// Select all visible items
-			allItems.forEach((item) => {
-				const itemId = getItemId(item);
-				if (!selectedItems.includes(itemId) && !selectedItems.includes(String(itemId))) {
-					onSelect(itemId, item);
-				}
-			});
+			const newItems = allItems.filter(
+				(item) => !selectedItems.map(String).includes(getItemId(item).toString()),
+			);
+			onSelect(newItems.map(getItemId), newItems);
 		}
 	};
 
@@ -231,9 +220,9 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		const item = data?.results.find((i) => getItemId(i) === itemId);
 		if (!item) return;
 		if (multiple && selectedItems.includes(itemId) && onRemove) {
-			onRemove(itemId, item);
+			onRemove([itemId], [item]);
 		} else {
-			onSelect(itemId, item);
+			onSelect([itemId], [item]);
 			if (!multiple) setOpen(false);
 		}
 	};
@@ -243,7 +232,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		selectedItems.forEach((itemId) => {
 			const item = data?.results.find((i) => getItemId(i) === itemId);
 			if (item && onRemove) {
-				onRemove(itemId, item);
+				onRemove([itemId], [item]);
 			}
 		});
 	};
@@ -337,12 +326,14 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 							</button>
 						</div>
 					)}
-					<ChevronDown
-						className={cn(
-							"h-4 w-4 text-muted-foreground transition-transform",
-							open && "rotate-180",
-						)}
-					/>
+					<div className="min-w-8 h-full min-h-6 flex items-center justify-center px-1">
+						<ChevronDown
+							className={cn(
+								"h-4 w-4 text-muted-foreground transition-transform",
+								open && "rotate-180",
+							)}
+						/>
+					</div>
 				</div>
 			</div>
 

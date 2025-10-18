@@ -204,7 +204,7 @@ export default function InterviewStagesPage() {
 							setOpenCreateEditDialog(open);
 							if (!open) setSelectedStage(null);
 						}}
-						jobPositionId={selectedStage?.job_position_advert || 0}
+						jobPositionAdvertId={selectedStage?.job_position_advert || 0}
 						editingStage={selectedStage}
 						onSuccess={() => {
 							if (tableRefreshRef.current) tableRefreshRef.current();

@@ -68,6 +68,7 @@ import {
 	getEmployeeTypes,
 	showErrorToast,
 	EMPLOYEE_API,
+	attachEmployeeToBranches,
 } from "@/lib/utils";
 import { useBranches } from "@/hooks/use-branches";
 import { MultiSelectBranches } from "@/components/multi-select-branches";
@@ -83,10 +84,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatCurrency } from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
 import { BankTypeSearchableSelect } from "@/components/selects/bank-types-select";
+import BranchSearchableSelect from "@/components/selects/branch-searchable-select";
 
 interface Child extends IChild {}
 interface NextOfKin extends INextOfKin {}
-interface Education extends IEducation {}
 interface WorkExperience extends IWorkExperience {}
 
 const maritalStatusOptions: Array<{ value: IMaritalStatus; label: string }> = [
@@ -593,6 +594,11 @@ export default function AddEmployeeForm() {
 
 			setFormData(updatedFormData);
 			handleSaveLocalEmployeeCreateForm(updatedFormData);
+		} else if (field === "company_email") {
+			setFormData((prev) => ({
+				...prev,
+				company_email: { email: value as string, provider: null },
+			}));
 		} else {
 			let updatedFormData = {
 				...formData,
@@ -821,7 +827,7 @@ export default function AddEmployeeForm() {
 		setIsSubmitting(true);
 		setSubmitError(null);
 
-		console.log("\n\n Creating with data : ", formData);
+		// console.log("\n\n Creating with data : ", formData);
 
 		try {
 			const dataToSubmit: IEmployeeFormData = {
@@ -829,7 +835,8 @@ export default function AddEmployeeForm() {
 					fullname: formData.fullname,
 					email: formData.email,
 				},
-				email: formData.email,
+				name: formData.fullname,
+				company_email: { email: formData.company_email?.email || "", provider: null },
 				phone_number: formData.phone_number,
 				phone_number_country_code: phoneCountryCode,
 				gender: formData.gender || "male",
@@ -894,25 +901,46 @@ export default function AddEmployeeForm() {
 				dataToSubmit["company_email"] = formData.company_email;
 			}
 
-			await createEmployee({
+			const createdEmployee = await createEmployee({
 				institutionId: selectedInstitution.id,
 				employeeData: dataToSubmit,
 			});
-			router.push("/employees/employee-list");
-			showSuccessToast("Employee created successfully");
+			if (createdEmployee) {
+				showSuccessToast("Employee created successfully, attaching to selected branches");
+				await attachEmployeeToNewBranches({
+					employee_id: createdEmployee.id,
+					branches: formData.selected_branches,
+				});
+			}
 			handleClearLocalEmployeeCreateForm();
+			router.push("/employees/employee-list");
 		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error
-					? error.message
-					: "An unknown error occurred while creating the employee.";
-
-			showErrorToast({ error, defaultMessage: "Failed to create employee" });
-			setSubmitError(
-				typeof error === "object" ? "An error occurred while creating the employee" : errorMessage,
-			);
+			const errorMessage = showErrorToast({ error, defaultMessage: "Failed to create employee" });
+			setSubmitError(errorMessage);
 		} finally {
 			setIsSubmitting(false);
+		}
+	};
+
+	const attachEmployeeToNewBranches = async ({
+		employee_id,
+		branches,
+	}: {
+		employee_id: number;
+		branches: number[];
+	}) => {
+		if (!branches || !branches.length) {
+			return;
+		}
+		try {
+			toast.info("Attaching employee to branches");
+			await attachEmployeeToBranches({
+				employee_id,
+				branches: branches.map((br) => ({ branch_id: br, is_default: false })),
+			});
+			toast.success("Employee attached to branches successfully");
+		} catch (error) {
+			showErrorToast({ error, defaultMessage: "Failed to attach employee to selected branches" });
 		}
 	};
 
@@ -1070,7 +1098,7 @@ export default function AddEmployeeForm() {
 												<Input
 													id="company_email"
 													type="email"
-													value={formData.company_email || ""}
+													value={formData.company_email?.email || ""}
 													onChange={(e) => handleInputChange("company_email", e.target.value)}
 													placeholder="email@mycompany.com"
 													className="h-12 rounded-2xl"
@@ -1087,13 +1115,14 @@ export default function AddEmployeeForm() {
 													defaultCountryCode={
 														currentEmployeeCreationForm?.phone_number_country_code
 													}
-													setError={setPhoneError}
+													// setError={setPhoneError}
 												/>
 											</div>
 											<div className="space-y-2">
 												<Label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-700">
 													Date of Birth
 												</Label>
+
 												<Input
 													id="dateOfBirth"
 													required
@@ -1492,7 +1521,7 @@ export default function AddEmployeeForm() {
 			case 2:
 				return (
 					<div className="space-y-8">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 							<div className="space-y-2">
 								<Label className="text-sm font-medium text-gray-700">Department *</Label>
 								<Input
@@ -1622,20 +1651,6 @@ export default function AddEmployeeForm() {
 									required
 								/>
 							</div>
-
-							{/* <div className="space-y-2">
-                <Label htmlFor="qualifications" className="text-sm font-medium text-gray-700">
-                  Qualifications
-                </Label>
-                <Input
-                  id="qualifications"
-                  value={formData.qualifications}
-                  onChange={(e) => handleInputChange("qualifications", e.target.value)}
-                  placeholder="Enter qualifications"
-                  className="h-12 rounded-2xl"
-                />
-              </div> */}
-
 							<div className="space-y-2">
 								<Label htmlFor="skills" className="text-sm font-medium text-gray-700">
 									Skills
@@ -1651,19 +1666,39 @@ export default function AddEmployeeForm() {
 						</div>
 
 						{/* Employee Branches */}
-						<div className="space-y-4">
-							<MultiSelectBranches
-								className="!rounded-2xl !h-12"
-								branches={branches}
-								selectedBranches={formData.selected_branches}
-								onSelectionChange={(selectedIds) =>
-									handleInputChange("selected_branches", selectedIds)
-								}
-								loading={branchesLoading}
-								error={branchesError}
-								placeholder="Select branches for this employee"
-								label="Employee Branches"
-							/>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="space-y-4">
+								<Label htmlFor="attached_branches" className="text-sm font-medium text-gray-700">
+									Attached branches
+								</Label>
+								<BranchSearchableSelect
+									className="!rounded-2xl !h-12"
+									value={formData.selected_branches}
+									onValueChange={(values) => {
+										handleInputChange("selected_branches", values.map(Number));
+									}}
+									placeholder="Select branches to attach this employee to"
+									defaultLabel="Employee Branches"
+									multiple={true}
+								/>
+							</div>
+							<div className="space-y-4">
+								<Label htmlFor="attached_branches" className="text-sm font-medium text-gray-700">
+									Payroll Branch
+								</Label>
+								<BranchSearchableSelect
+									className="!rounded-2xl !h-12"
+									value={formData.payroll_branch ? [formData.payroll_branch] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											handleInputChange("payroll_branch", Number(values[0]));
+										}
+									}}
+									placeholder="Select payroll branch for this employee"
+									defaultLabel="Payroll Branch"
+									multiple={false}
+								/>
+							</div>
 						</div>
 
 						{/* Work Experience Section */}
@@ -1732,7 +1767,7 @@ export default function AddEmployeeForm() {
 			case 3:
 				return (
 					<div className="space-y-8">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 							<div className="space-y-2">
 								<Label htmlFor="bank" className="text-sm font-medium text-gray-700">
 									Bank
@@ -1862,8 +1897,6 @@ export default function AddEmployeeForm() {
 								<h1 className="text-xl md:text-2xl font-semibold text-gray-900">Add Employee</h1>
 							</div>
 						</div>
-
-						{/* Steps Component */}
 						<Steps
 							steps={steps}
 							currentStep={currentStep}
@@ -1880,42 +1913,15 @@ export default function AddEmployeeForm() {
 									{submitError}
 								</div>
 							)}
-							{phoneError && (
-								<div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
-									{phoneError}
-								</div>
-							)}
 
 							<form onSubmit={handleFormSubmit} className="space-y-8">
 								{renderStep()}
 
 								{/* Navigation Buttons */}
 								<div className="flex justify-between pt-8">
-									{/* <div className="flex gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleClearLocalEmployeeCreateForm}
-                      disabled={isSubmitting}
-                    >
-                      Clear Form
-                    </Button>
-                  </div> */}
-
 									<div
-										className={`flex flex-col md:flex-row items-start md:items-center justify-between gap-8`}
+										className={`flex flex-col md:flex-row items-start md:items-center justify-between gap-8 !w-full`}
 									>
-										{/* {currentStep > 1 && (
-                      <Button
-                        type="button"
-                        onClick={prevStep}
-                        variant="outline"
-                        disabled={isSubmitting}
-                        className="w-full md:w-56 lg:!w-72 rounded-full !h-12"
-                      >
-                        Previous
-                      </Button>
-                    )} */}
 										{currentStep < steps.length ? (
 											<>
 												<Button
@@ -1925,7 +1931,7 @@ export default function AddEmployeeForm() {
 														e.stopPropagation();
 														nextStep();
 													}}
-													className="w-full md:w-56 lg:!w-72 rounded-full !h-12"
+													className="w-full md:w-1/2 rounded-full !h-12"
 													disabled={!isCurrentStepValid() || isValidating}
 												>
 													{isValidating ? (
@@ -1941,7 +1947,7 @@ export default function AddEmployeeForm() {
 										) : (
 											<Button
 												type="submit"
-												className=" text-white w-full md:w-56 lg:!w-72 rounded-full !h-12"
+												className=" text-white w-full md:w-1/2 rounded-full !h-12"
 												disabled={isSubmitting || !isCurrentStepValid()}
 											>
 												{isSubmitting ? (
@@ -2106,18 +2112,6 @@ export default function AddEmployeeForm() {
 										</SelectContent>
 									</Select>
 								</div>
-								{/* <div className="space-y-2">
-                  <Label htmlFor="nokPhone">Phone Number</Label>
-                  <Input
-                    id="nokPhone"
-                    value={nextOfKinFormData.phone_number}
-                    onChange={(e) =>
-                      setNextOfKinFormData((prev) => ({...prev, phone_number: e.target.value}))
-                    }
-                    placeholder="123456789"
-                    className="rounded-2xl h-12"
-                  />
-                </div> */}
 								<div className="space-y-2">
 									<PhoneNumberInput
 										label="Phone Number"
@@ -2142,15 +2136,6 @@ export default function AddEmployeeForm() {
 								</div>
 							</div>
 							<DialogFooter>
-								{/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-
-                  }}
-                >
-                  Cancel
-                </Button> */}
 								<Button
 									type="button"
 									onClick={handleAddNextOfKin}
@@ -2345,15 +2330,6 @@ export default function AddEmployeeForm() {
 								</div>
 							</div>
 							<DialogFooter>
-								{/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-
-                  }}
-                >
-                  Cancel
-                </Button> */}
 								<Button
 									type="button"
 									onClick={handleAddWorkExperience}

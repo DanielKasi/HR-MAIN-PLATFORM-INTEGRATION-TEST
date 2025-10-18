@@ -3558,7 +3558,7 @@ export default function ApplicationsPage() {
 				<CreateInterviewStageDialog
 					isOpen={showCreateStageDialog}
 					onOpenChange={setShowCreateStageDialog}
-					// jobPositionId={selectedApplicationForInterview.job_position_advert}
+					jobPositionAdvertId={selectedApplicationForInterview.job_position_advert}
 					jobPositionName={selectedApplicationForInterview.job_position_advert_job_details.name}
 					existingStagesCount={interviewStages.length}
 					onSuccess={async (newStage) => {

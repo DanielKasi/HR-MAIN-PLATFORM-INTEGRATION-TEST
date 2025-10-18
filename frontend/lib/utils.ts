@@ -1619,13 +1619,14 @@ export const createEmployee = async ({
 	institutionId: number;
 	employeeData: IEmployeeFormData;
 }) => {
+	console.log("\n\n Creating employee with data : ", employeeData);
 	try {
 		const formData = new FormData();
 
 		formData.append("institutionId", institutionId.toString());
 
 		if (employeeData.user) {
-			formData.append("user.fullname", employeeData.user.fullname || "");
+			// formData.append("user.fullname", employeeData.user.fullname || "");
 			formData.append("user.email", employeeData.user.email || "");
 		}
 
@@ -1635,8 +1636,8 @@ export const createEmployee = async ({
 			if (key === "employee_profile_picture" && value instanceof File) {
 				formData.append(key, value);
 			} else if (key === "selected_branches" && Array.isArray(value)) {
-				value.forEach((branchId) => {
-					formData.append("selected_branches", branchId.toString());
+				value.forEach((branchId, idx) => {
+					formData.append(`selected_branches[${idx}]`, branchId.toString());
 				});
 			} else if (key === "children" && Array.isArray(value)) {
 				value.forEach((child: IChild, index) => {
@@ -1701,12 +1702,13 @@ export const updateEmployee = async ({
 	employeeData,
 }: {
 	employeeId: number;
-	employeeData: any;
+	employeeData: IEmployeeFormData;
 }) => {
+	console.log("\n\n Updating employee with data : ", employeeData);
 	const formData = new FormData();
 
 	if (employeeData.user) {
-		formData.append("user.fullname", employeeData.user.fullname);
+		// formData.append("user.fullname", employeeData.user.fullname);
 		formData.append("user.email", employeeData.user.email);
 	}
 
@@ -1716,8 +1718,8 @@ export const updateEmployee = async ({
 		if (key === "employee_profile_picture" && value instanceof File) {
 			formData.append(key, value);
 		} else if (key === "selected_branches" && Array.isArray(value)) {
-			value.forEach((branchId) => {
-				formData.append("selected_branches", branchId.toString());
+			value.forEach((branchId, idx) => {
+				formData.append(`selected_branches[${idx}]`, branchId.toString());
 			});
 		} else if (key === "children" && Array.isArray(value)) {
 			value.forEach((child: IChild, index) => {
@@ -2170,28 +2172,16 @@ export const deleteEmployeeType = async ({
 
 export const attachEmployeeToBranches = async (
 	payload: AttachBranchesPayload,
-): Promise<EmployeeBranchSummary | null> => {
-	try {
-		const response = await apiRequest.post("branches/attach/", payload);
-
-		return response.data.data as EmployeeBranchSummary;
-	} catch (error) {
-		// console.error("Error attaching employee to branches:", error);
-		throw error;
-	}
+): Promise<{ data: EmployeeBranchSummary } | null> => {
+	const response = await apiRequest.post("branches/attach/", payload);
+	return response.data as { data: EmployeeBranchSummary };
 };
 
 export const getEmployeeBranches = async (
 	employeeId: number,
-): Promise<EmployeeBranchSummary | null> => {
-	try {
-		const response = await apiRequest.get(`${employeeId}/branches/`);
-
-		return response.data.data as EmployeeBranchSummary;
-	} catch (error) {
-		// console.error("Error fetching branches for employee:", error);
-		throw error;
-	}
+): Promise<{ data: EmployeeBranchSummary } | null> => {
+	const response = await apiRequest.get(`${employeeId}/branches/`);
+	return response.data as { data: EmployeeBranchSummary };
 };
 
 export const setDefaultBranch = async (
@@ -7250,7 +7240,7 @@ export const showErrorToast = ({
 	error?: any;
 	defaultMessage?: string;
 }) => {
-	const errorMessage =
+	const errorMessage: string =
 		typeof error?.detail === "string"
 			? error.detail
 			: typeof error?.error === "string"
@@ -7260,6 +7250,7 @@ export const showErrorToast = ({
 					: defaultMessage;
 
 	toast.error(errorMessage);
+	return errorMessage;
 };
 
 export const showSuccessToast = (message: string) => {

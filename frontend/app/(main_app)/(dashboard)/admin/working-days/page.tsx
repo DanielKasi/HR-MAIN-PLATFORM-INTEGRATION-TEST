@@ -12,7 +12,7 @@ export default function AllWorkingDaysPage() {
 	const router = useRouter();
 
 	return (
-		<div className="p-4 rounded-xl bg-gray-50">
+		<div className="p-4 rounded-xl min-h-screen">
 			<div className="flex items-start gap-2">
 				<Button
 					size="sm"

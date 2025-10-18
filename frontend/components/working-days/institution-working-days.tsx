@@ -1,26 +1,20 @@
 "use client";
-
 import type {
 	ISystemWorkingDay,
 	IInstitutionWorkingDays,
-	IWorkingDaysFormData,
-	IInstitutionWorkingDaysFormData,
-	IDay,
 	IInstitutionDayFormData,
 } from "@/types/types.utils";
-
 import { useState, useEffect } from "react";
 import { RotateCcw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WorkingDaysSkeleton } from "@/components/working-days-skeleton";
 import { WorkingDaysManager } from "@/components/working-days-manager";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { institutionAPI, systemAPI } from "@/lib/utils";
+import { institutionAPI, showErrorToast, systemAPI } from "@/lib/utils";
 
 export default function InstitutionWorkingDays() {
 	const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([]);
@@ -31,7 +25,6 @@ export default function InstitutionWorkingDays() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
-
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	useEffect(() => {
@@ -43,7 +36,7 @@ export default function InstitutionWorkingDays() {
 	useEffect(() => {
 		if (institutionWorkingDays) {
 			const current = institutionWorkingDays.institution_days
-				.map((d) => `${d.day_id}-${d.opening_time || ""}-${d.closing_time || ""}`)
+				.map((d) => `${d.id}-${d.opening_time || ""}-${d.closing_time || ""}`)
 				.sort();
 			const selected = selectedDays
 				.map((d) => `${d.day_id}-${d.opening_time || ""}-${d.closing_time || ""}`)
@@ -57,30 +50,26 @@ export default function InstitutionWorkingDays() {
 	const fetchData = async () => {
 		try {
 			setIsLoading(true);
-			setError(null);
 			const [systemDays, institutionDays] = await Promise.all([
 				systemAPI.getWorkingDays(),
 				institutionAPI.getWorkingDays(),
 			]);
-
 			setSystemWorkingDays(systemDays);
 			const currentWorkingDays = institutionDays.length > 0 ? institutionDays[0] : null;
-
 			setInstitutionWorkingDays(currentWorkingDays);
 			if (currentWorkingDays) {
 				setSelectedDays(
 					currentWorkingDays.institution_days.map((day) => ({
-						day_id: day.day_id,
-						opening_time: day.opening_time,
-						closing_time: day.closing_time,
+						day_id: day.id,
+						opening_time: day.opening_time || null,
+						closing_time: day.closing_time || null,
 					})),
 				);
 			} else {
 				setSelectedDays([]);
 			}
 		} catch (error: any) {
-			setError(error?.message || error?.detail || "Failed to load working days");
-			toast.error("Failed to load working days");
+			showErrorToast({ error, defaultMessage: "Failed to load working days" });
 		} finally {
 			setIsLoading(false);
 		}
@@ -97,9 +86,8 @@ export default function InstitutionWorkingDays() {
 		}
 		try {
 			setIsSaving(true);
-			const formData: IInstitutionWorkingDaysFormData = { institution_days: days };
+			const formData = { institution_days: days };
 			let updatedWorkingDays: IInstitutionWorkingDays;
-
 			if (institutionWorkingDays) {
 				updatedWorkingDays = await institutionAPI.updateWorkingDays({
 					workingDaysId: institutionWorkingDays.id,
@@ -111,15 +99,14 @@ export default function InstitutionWorkingDays() {
 			setInstitutionWorkingDays(updatedWorkingDays);
 			setSelectedDays(
 				updatedWorkingDays.institution_days.map((day) => ({
-					day_id: day.day_id,
+					day_id: day.id,
 					opening_time: day.opening_time || null,
 					closing_time: day.closing_time || null,
 				})),
 			);
 			setHasChanges(false);
 		} catch (error: any) {
-			const errorMessage = error?.message || error?.detail || "Failed to save working days";
-			toast.error(errorMessage);
+			showErrorToast({ error, defaultMessage: "Failed to save working days" });
 			throw error;
 		} finally {
 			setIsSaving(false);
@@ -157,7 +144,7 @@ export default function InstitutionWorkingDays() {
 				<CardHeader className="border-b">
 					<div className="flex justify-between items-center">
 						<div>
-							<CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+							<CardTitle className="text-2xl font-bold text-gray-900">
 								Institution Working Days
 							</CardTitle>
 							<CardDescription className="text-gray-600 mt-2">
@@ -165,14 +152,12 @@ export default function InstitutionWorkingDays() {
 								used for attendance tracking, payroll calculations, and scheduling.
 							</CardDescription>
 						</div>
-						<div className="flex items-center gap-2">
-							{hasChanges && (
-								<div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-sm">
-									<AlertCircle className="h-4 w-4" />
-									Unsaved changes
-								</div>
-							)}
-						</div>
+						{hasChanges && (
+							<div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-sm">
+								<AlertCircle className="h-4 w-4" />
+								Unsaved changes
+							</div>
+						)}
 					</div>
 				</CardHeader>
 			</Card>

@@ -410,6 +410,7 @@ export default function ApplicationsPage() {
 		recommended_by: undefined,
 		application_date: new Date().toISOString().split("T")[0],
 		created_by: userData?.id || 0,
+		required_document_files: {},
 	});
 
 	const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
@@ -723,6 +724,7 @@ export default function ApplicationsPage() {
 					application_date: new Date().toISOString().split("T")[0],
 					created_by: userData.id,
 					recommended_by: undefined,
+					required_document_files: {},
 				});
 				clearAllFilters();
 				toast.success("Application created successfully!");
@@ -2659,7 +2661,7 @@ export default function ApplicationsPage() {
 				<CreateInterviewStageDialog
 					isOpen={showCreateStageDialog}
 					onOpenChange={setShowCreateStageDialog}
-					jobPositionId={selectedApplicationForInterview.job_position_advert}
+					jobPositionAdvertId={selectedApplicationForInterview.job_position_advert}
 					jobPositionName={selectedApplicationForInterview.job_position_advert_job_details.name}
 					existingStagesCount={interviewStages.length}
 					onSuccess={async (newStage) => {
