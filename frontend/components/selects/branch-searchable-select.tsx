@@ -60,12 +60,16 @@ export const BranchSearchableSelect = memo(
 		}, []);
 
 		const handleSelect = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<Branch>) => {
-				if (!selectedItems.includes(itemId)) {
+			(itemIds: (string | number)[], _items: PaginatedSelectItem<Branch>[]) => {
+				if (
+					itemIds.filter((item) =>
+						selectedItems.find((s_item) => s_item.toString() !== item.toString()),
+					)
+				) {
 					if (multiple) {
-						onValueChange([...selectedItems, itemId]);
+						onValueChange([...selectedItems, ...itemIds]);
 					} else {
-						onValueChange([itemId]);
+						onValueChange(itemIds);
 					}
 				}
 			},
@@ -73,8 +77,8 @@ export const BranchSearchableSelect = memo(
 		);
 
 		const handleRemove = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<Branch>) => {
-				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+			(itemIds: (string | number)[], _item: PaginatedSelectItem<Branch>[]) => {
+				const newItems = selectedItems.filter((id) => !itemIds.map(String).includes(id.toString()));
 				setSelectedItems(newItems);
 				onValueChange(newItems);
 			},

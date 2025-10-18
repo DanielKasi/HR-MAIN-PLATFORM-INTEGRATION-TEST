@@ -2122,7 +2122,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 				<CreateInterviewStageDialog
 					isOpen={isCreateStageDialogOpen}
 					onOpenChange={setIsCreateStageDialogOpen}
-					jobPositionId={parseInt(resolvedParams.id)}
+					jobPositionAdvertId={parseInt(resolvedParams.id)}
 					jobPositionName={jobPositionAdvert?.job_position_details?.name}
 					existingStagesCount={processedStages.length}
 					onSuccess={fetchData}

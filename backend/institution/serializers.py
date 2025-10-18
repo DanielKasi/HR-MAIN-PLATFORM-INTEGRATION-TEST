@@ -267,6 +267,10 @@ class InstitutionBankAccountSerializer(BaseApprovableSerializer):
 
 class InstitutionDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
+    #  My approach 
+    # day_id = serializers.PrimaryKeyRelatedField(
+    #     queryset=SystemDay.objects.all(), source="day", required=True
+    # )
     day_id = serializers.PrimaryKeyRelatedField(
         queryset=SystemDay.objects.all(), source="day", write_only=True, required=True
     )
@@ -388,6 +392,11 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
 
 class BranchDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
+
+    #  My approach
+    # day_id = serializers.PrimaryKeyRelatedField(
+    #     queryset=SystemDay.objects.all(), source="day", required=False
+    # )
     day_id = serializers.PrimaryKeyRelatedField(
         queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
     )

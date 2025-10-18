@@ -342,7 +342,7 @@ export default function DashboardSideBar() {
 				{ title: "FAQs", href: "/help-desk/faqs" },
 				{ title: "Tickets", href: "/help-desk/tickets" },
 			],
-			requiredPermission: PERMISSION_CODES.CAN_VIEW_HELP_DESK,
+			requiredPermission: PERMISSION_CODES.CAN_VIEW_HELPDESK,
 		},
 		// {
 		// 	title: "Project",

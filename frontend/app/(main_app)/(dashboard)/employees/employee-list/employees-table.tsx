@@ -431,12 +431,15 @@ export function EmployeesTable({
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel onClick={() => setEmployeeToDelete(null)} className="text-sm">
+							<AlertDialogCancel
+								onClick={() => setEmployeeToDelete(null)}
+								className="text-sm w-full rounded-full"
+							>
 								Cancel
 							</AlertDialogCancel>
 							<AlertDialogAction
 								onClick={handleDelete}
-								className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm"
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm w-full rounded-full"
 							>
 								Delete
 							</AlertDialogAction>

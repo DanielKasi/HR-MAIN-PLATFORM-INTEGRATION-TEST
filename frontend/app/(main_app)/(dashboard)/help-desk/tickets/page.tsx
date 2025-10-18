@@ -22,6 +22,8 @@ import FixedLoader from "@/components/fixed-loader";
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function TicketsPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -134,25 +136,31 @@ export default function TicketsPage() {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
-						<DropdownMenuItem asChild>
-							<Link href={`/help-desk/tickets/${ticket.id}`}>
-								<Eye className="h-4 w-4 mr-2" /> View Details
-							</Link>
-						</DropdownMenuItem>
-						<DropdownMenuItem asChild>
-							<Link href={`/help-desk/tickets/${ticket.id}/edit`}>
-								<Edit className="h-4 w-4 mr-2" /> Edit
-							</Link>
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={() => {
-								setTicketToDelete(ticket);
-								setDeleteConfirmOpen(true);
-							}}
-							className="text-red-600"
-						>
-							<Trash2 className="h-4 w-4 mr-2" /> Delete
-						</DropdownMenuItem>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_TICKETS}>
+							<DropdownMenuItem>
+								<Link href={`/help-desk/tickets/${ticket.id}`}>
+									<Eye className="h-4 w-4 mr-2" /> View Details
+								</Link>
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_TICKETS}>
+							<DropdownMenuItem>
+								<Link href={`/help-desk/tickets/${ticket.id}/edit`}>
+									<Edit className="h-4 w-4 mr-2" /> Edit
+								</Link>
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_TICKETS}>
+							<DropdownMenuItem
+								onClick={() => {
+									setTicketToDelete(ticket);
+									setDeleteConfirmOpen(true);
+								}}
+								className="text-red-600"
+							>
+								<Trash2 className="h-4 w-4 mr-2" /> Delete
+							</DropdownMenuItem>
+						</ProtectedComponent>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			),
@@ -171,11 +179,13 @@ export default function TicketsPage() {
 							Categories
 						</Button>
 					</Link>
-					<Link href={"/help-desk/tickets/create"}>
-						<Button className="rounded-xl">
-							<Plus className="h-4 w-4 mr-2" /> Create Ticket
-						</Button>
-					</Link>
+					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_TICKETS}>
+						<Link href={"/help-desk/tickets/create"}>
+							<Button className="rounded-xl">
+								<Plus className="h-4 w-4 mr-2" /> Create Ticket
+							</Button>
+						</Link>
+					</ProtectedComponent>
 				</div>
 			</div>
 

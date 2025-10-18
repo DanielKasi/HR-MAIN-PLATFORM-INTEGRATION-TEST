@@ -21,11 +21,12 @@ import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import FixedLoader from "@/components/fixed-loader";
 import { Icon } from "@iconify/react";
 import FAQCreateEditDialog from "./_components/faq-create-edit-dialog";
-import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function FAQsPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -119,21 +120,27 @@ export default function FAQsPage() {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => openDetails(faq)}>
-							<Eye className="h-4 w-4 mr-2" /> View Details
-						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => openEditDialog(faq)}>
-							<Edit className="h-4 w-4 mr-2" /> Edit
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={() => {
-								setFAQToDelete(faq);
-								setDeleteConfirmOpen(true);
-							}}
-							className="text-red-600"
-						>
-							<Trash2 className="h-4 w-4 mr-2" /> Delete
-						</DropdownMenuItem>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_FAQS}>
+							<DropdownMenuItem onClick={() => openDetails(faq)}>
+								<Eye className="h-4 w-4 mr-2" /> View Details
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_FAQS}>
+							<DropdownMenuItem onClick={() => openEditDialog(faq)}>
+								<Edit className="h-4 w-4 mr-2" /> Edit
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_FAQS}>
+							<DropdownMenuItem
+								onClick={() => {
+									setFAQToDelete(faq);
+									setDeleteConfirmOpen(true);
+								}}
+								className="text-red-600"
+							>
+								<Trash2 className="h-4 w-4 mr-2" /> Delete
+							</DropdownMenuItem>
+						</ProtectedComponent>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			),
@@ -182,26 +189,28 @@ export default function FAQsPage() {
 							Categories
 						</Button>
 					</Link>
-					<Button
-						className="rounded-xl"
-						onClick={() => {
-							setSelectedFAQ(null);
-							setOpenCreateEditDialog(true);
-						}}
-					>
-						<Plus className="h-4 w-4 mr-2" /> Create FAQ
-					</Button>
-					<FAQCreateEditDialog
-						open={openCreateEditDialog}
-						onOpenChange={(open) => {
-							setOpenCreateEditDialog(open);
-							if (!open) setSelectedFAQ(null);
-						}}
-						selectedFAQ={selectedFAQ}
-						onSuccess={() => {
-							if (tableRefreshRef.current) tableRefreshRef.current();
-						}}
-					/>
+					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_FAQS}>
+						<Button
+							className="rounded-xl"
+							onClick={() => {
+								setSelectedFAQ(null);
+								setOpenCreateEditDialog(true);
+							}}
+						>
+							<Plus className="h-4 w-4 mr-2" /> Create FAQ
+						</Button>
+						<FAQCreateEditDialog
+							open={openCreateEditDialog}
+							onOpenChange={(open) => {
+								setOpenCreateEditDialog(open);
+								if (!open) setSelectedFAQ(null);
+							}}
+							selectedFAQ={selectedFAQ}
+							onSuccess={() => {
+								if (tableRefreshRef.current) tableRefreshRef.current();
+							}}
+						/>
+					</ProtectedComponent>
 				</div>
 			</div>
 

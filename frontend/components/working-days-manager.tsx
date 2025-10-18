@@ -1,5 +1,4 @@
 "use client";
-
 import type {
 	IBranchDayFormData,
 	IBranchWorkingDays,
@@ -8,16 +7,21 @@ import type {
 	IInstitutionWorkingDays,
 	ISystemWorkingDay,
 } from "@/types/types.utils";
-
 import React, { useState, useEffect } from "react";
 import { Calendar, X, Plus, Edit } from "lucide-react";
 import { toast } from "sonner";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, showErrorToast } from "@/lib/utils";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 interface WorkingDaysManagerProps {
 	scope:
@@ -46,8 +50,8 @@ export function WorkingDaysManager({
 	const [addDayType, setAddDayType] = useState<IDayType | null>(null);
 	const [currentDayStartTime, setCurrentDayStartTime] = useState<string | null>(null);
 	const [currentDayEndTime, setCurrentDayEndTime] = useState<string | null>(null);
+	const [currentDayType, setCurrentDayType] = useState<IDayType>("PHYSICAL");
 	const [sortedDays, setSortedDays] = useState<ISystemWorkingDay[]>([]);
-	const [isAutoSaving, setIsAutoSaving] = useState(false);
 
 	// Initialize selected days when scope changes
 	useEffect(() => {
@@ -81,19 +85,15 @@ export function WorkingDaysManager({
 
 	// Check for changes including times
 	useEffect(() => {
-		if (
-			scope.type === "institution" &&
-			scope.institutionWorkingDays?.institution_days &&
-			!isAutoSaving
-		) {
+		if (scope.type === "institution" && scope.institutionWorkingDays?.institution_days) {
 			const current = scope.institutionWorkingDays.institution_days
-				.map((d) => `${d.day_id}-${d.opening_time || ""}-${d.closing_time || ""}`)
+				.map((d) => `${d.id}-${d.opening_time || ""}-${d.closing_time || ""}`)
 				.sort();
 			const selected = selectedInstitutionDays
 				.map((d) => `${d.day_id}-${d.opening_time || ""}-${d.closing_time || ""}`)
 				.sort();
 			setHasChanges(JSON.stringify(current) !== JSON.stringify(selected));
-		} else if (scope.type === "branch" && scope.branchWorkingDays?.branch_days && !isAutoSaving) {
+		} else if (scope.type === "branch" && scope.branchWorkingDays?.branch_days) {
 			const current = scope.branchWorkingDays.branch_days
 				.map((d) => `${d.day_id}-${d.day_type}-${d.opening_time || ""}-${d.closing_time || ""}`)
 				.sort();
@@ -102,7 +102,7 @@ export function WorkingDaysManager({
 				.sort();
 			setHasChanges(JSON.stringify(current) !== JSON.stringify(selected));
 		}
-	}, [selectedInstitutionDays, selectedBranchDays, scope, isAutoSaving]);
+	}, [selectedInstitutionDays, selectedBranchDays, scope]);
 
 	const handleAddInstitutionDay = async (
 		dayId: number,
@@ -115,18 +115,19 @@ export function WorkingDaysManager({
 				opening_time,
 				closing_time,
 			};
-			const updatedDays = [...selectedInstitutionDays, newDay];
-			setSelectedInstitutionDays(updatedDays);
-			setPendingAddDayId(null);
-			setCurrentDayStartTime(null);
-			setCurrentDayEndTime(null);
-			setIsAutoSaving(true);
+			const proposedDays = [...selectedInstitutionDays, newDay];
+
 			try {
-				if (onInstitutionDaysUpdate) await onInstitutionDaysUpdate(updatedDays);
+				if (onInstitutionDaysUpdate) {
+					await onInstitutionDaysUpdate(proposedDays);
+					setSelectedInstitutionDays(proposedDays);
+				}
+				setPendingAddDayId(null);
+				setCurrentDayStartTime(null);
+				setCurrentDayEndTime(null);
 			} catch (error) {
+				showErrorToast({ error, defaultMessage: "Failed to add  day" });
 				toast.error("Failed to add day");
-			} finally {
-				setIsAutoSaving(false);
 			}
 		}
 	};
@@ -134,13 +135,12 @@ export function WorkingDaysManager({
 	const handleRemoveInstitutionDay = async (dayId: number) => {
 		const updatedDays = selectedInstitutionDays.filter((d) => d.day_id !== dayId);
 		setSelectedInstitutionDays(updatedDays);
-		setIsAutoSaving(true);
+
 		try {
 			if (onInstitutionDaysUpdate) await onInstitutionDaysUpdate(updatedDays);
 		} catch (error) {
 			toast.error("Failed to remove day");
 		} finally {
-			setIsAutoSaving(false);
 		}
 	};
 
@@ -157,13 +157,12 @@ export function WorkingDaysManager({
 			setEditingDayId(null);
 			setCurrentDayStartTime(null);
 			setCurrentDayEndTime(null);
-			setIsAutoSaving(true);
+
 			try {
 				if (onInstitutionDaysUpdate) await onInstitutionDaysUpdate(updatedDays);
 			} catch (error) {
 				toast.error("Failed to update times");
 			} finally {
-				setIsAutoSaving(false);
 			}
 		}
 	};
@@ -187,13 +186,13 @@ export function WorkingDaysManager({
 			setAddDayType(null);
 			setCurrentDayStartTime(null);
 			setCurrentDayEndTime(null);
-			setIsAutoSaving(true);
+			setCurrentDayType("PHYSICAL");
+
 			try {
 				if (onBranchDaysUpdate) await onBranchDaysUpdate(updatedDays);
 			} catch (error) {
 				toast.error("Failed to add day");
 			} finally {
-				setIsAutoSaving(false);
 			}
 		}
 	};
@@ -201,36 +200,36 @@ export function WorkingDaysManager({
 	const handleRemoveBranchDay = async (dayId: number) => {
 		const updatedDays = selectedBranchDays.filter((d) => d.day_id !== dayId);
 		setSelectedBranchDays(updatedDays);
-		setIsAutoSaving(true);
+
 		try {
 			if (onBranchDaysUpdate) await onBranchDaysUpdate(updatedDays);
 		} catch (error) {
 			toast.error("Failed to remove day");
 		} finally {
-			setIsAutoSaving(false);
 		}
 	};
 
-	const handleUpdateBranchDayTimes = async (
+	const handleUpdateBranchDay = async (
 		dayId: number,
+		day_type: IDayType,
 		opening_time: string | null,
 		closing_time: string | null,
 	) => {
 		if (validateTimes(opening_time, closing_time)) {
 			const updatedDays = selectedBranchDays.map((d) =>
-				d.day_id === dayId ? { ...d, opening_time, closing_time } : d,
+				d.day_id === dayId ? { ...d, day_type, opening_time, closing_time } : d,
 			);
 			setSelectedBranchDays(updatedDays);
 			setEditingDayId(null);
 			setCurrentDayStartTime(null);
 			setCurrentDayEndTime(null);
-			setIsAutoSaving(true);
+			setCurrentDayType("PHYSICAL");
+
 			try {
 				if (onBranchDaysUpdate) await onBranchDaysUpdate(updatedDays);
 			} catch (error) {
-				toast.error("Failed to update times");
+				toast.error("Failed to update day");
 			} finally {
-				setIsAutoSaving(false);
 			}
 		}
 	};
@@ -265,23 +264,31 @@ export function WorkingDaysManager({
 		}
 	};
 
-	const startEditing = (dayId: number, currentStart: string | null, currentEnd: string | null) => {
+	const startEditing = (
+		dayId: number,
+		currentStart: string | null,
+		currentEnd: string | null,
+		currentType?: IDayType,
+	) => {
 		setEditingDayId(dayId);
 		setCurrentDayStartTime(currentStart);
 		setCurrentDayEndTime(currentEnd);
+		if (currentType) setCurrentDayType(currentType);
 	};
 
 	const cancelEditing = () => {
 		setEditingDayId(null);
+		setPendingAddDayId(null);
 		setCurrentDayStartTime(null);
 		setCurrentDayEndTime(null);
+		setCurrentDayType("PHYSICAL");
 	};
 
 	const saveTimes = (day: ISystemWorkingDay) => {
 		if (scope.type === "institution") {
 			handleUpdateInstitutionDayTimes(day.id, currentDayStartTime, currentDayEndTime);
 		} else {
-			handleUpdateBranchDayTimes(day.id, currentDayStartTime, currentDayEndTime);
+			handleUpdateBranchDay(day.id, currentDayType, currentDayStartTime, currentDayEndTime);
 		}
 	};
 
@@ -318,11 +325,17 @@ export function WorkingDaysManager({
 								<div className="mb-2 flex justify-center">
 									<div
 										className={cn(
-											"w-8 h-8 rounded-full flex items-center justify-center font-bold",
-											isSelected ? "bg-blue-100 text-blue-700" : "bg-gray-200 text-gray-500",
+											"w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm",
+											isSelected
+												? scope.type === "branch"
+													? dayType === "PHYSICAL"
+														? "bg-blue-100 text-blue-700"
+														: "bg-green-100 text-green-700"
+													: "bg-blue-100 text-blue-700"
+												: "bg-gray-200 text-gray-500",
 										)}
 									>
-										{isSaving || isAutoSaving ? (
+										{isSaving ? (
 											<div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
 										) : isSelected ? (
 											scope.type === "branch" ? (
@@ -335,7 +348,7 @@ export function WorkingDaysManager({
 												day.day_code
 											)
 										) : (
-											<Plus className="w-6 h-6 text-green-600" />
+											<Plus className="w-5 h-5 text-green-600" />
 										)}
 									</div>
 								</div>
@@ -350,7 +363,7 @@ export function WorkingDaysManager({
 								<Badge
 									variant="outline"
 									className={cn(
-										"text-xs",
+										"text-xs px-2 py-1",
 										isSelected
 											? scope.type === "branch"
 												? dayType === "PHYSICAL"
@@ -360,22 +373,41 @@ export function WorkingDaysManager({
 											: "border-gray-200 text-gray-400",
 									)}
 								>
-									{isSelected ? (scope.type === "branch" ? dayType : day.day_code) : day.day_code}
+									{isSelected
+										? scope.type === "branch"
+											? dayType === "PHYSICAL"
+												? "Physical"
+												: "Remote"
+											: day.day_code
+										: day.day_code}
 								</Badge>
 								{isSelected && (
-									<div className="mt-2 text-sm text-gray-600">
-										<p>Opening: {openingTime || "Not set"}</p>
-										<p>Closing: {closingTime || "Not set"}</p>
+									<div className="mt-3 text-xs text-gray-600 space-y-1">
+										<p>
+											<span className="font-medium">Opens:</span>{" "}
+											{openingTime || <span className="text-gray-400">Not set</span>}
+										</p>
+										<p>
+											<span className="font-medium">Closes:</span>{" "}
+											{closingTime || <span className="text-gray-400">Not set</span>}
+										</p>
+										{scope.type === "branch" && (
+											<p>
+												<span className="font-medium">Type:</span>{" "}
+												{dayType === "PHYSICAL" ? "Physical" : "Remote"}
+											</p>
+										)}
 										<Button
 											variant="ghost"
 											size="sm"
+											className="h-7 px-2 mt-1"
 											onClick={(e) => {
 												e.stopPropagation();
-												startEditing(day.id, openingTime, closingTime);
+												startEditing(day.id, openingTime, closingTime, dayType as IDayType);
 											}}
-											disabled={isSaving || isAutoSaving}
+											disabled={isSaving}
 										>
-											<Edit className="h-4 w-4 mr-1" /> Edit Times
+											<Edit className="h-3.5 w-3.5 mr-1" /> Edit
 										</Button>
 									</div>
 								)}
@@ -389,68 +421,59 @@ export function WorkingDaysManager({
 											? await handleRemoveInstitutionDay(day.id)
 											: await handleRemoveBranchDay(day.id);
 									}}
-									className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors duration-200 z-10"
+									className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors duration-200 z-10"
 									title={`Remove ${day.day_name}`}
-									disabled={isSaving || isAutoSaving}
+									disabled={isSaving}
 								>
 									<X className="w-4 h-4 text-red-600" />
 								</button>
 							)}
 							{(pendingAddDayId === day.id && !isSelected) || editingDayId === day.id ? (
-								<div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-20 bg-white border rounded shadow p-2">
+								<div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-20 bg-white border rounded-lg shadow-lg p-4 w-64 min-w-max">
 									{scope.type === "branch" && pendingAddDayId === day.id && (
-										<div className="flex items-center justify-start gap-2 mb-2">
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() =>
-													handleAddBranchDay(
-														day.id,
-														"PHYSICAL",
-														currentDayStartTime,
-														currentDayEndTime,
-													)
-												}
+										<div className="mb-3">
+											<Label className="text-xs block mb-1">Day Type</Label>
+											<Select
+												value={currentDayType}
+												onValueChange={(val) => setCurrentDayType(val as IDayType)}
 											>
-												Physical
-											</Button>
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() =>
-													handleAddBranchDay(
-														day.id,
-														"REMOTE",
-														currentDayStartTime,
-														currentDayEndTime,
-													)
-												}
-											>
-												Remote
-											</Button>
+												<SelectTrigger className="w-full h-8 text-sm">
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="PHYSICAL">Physical</SelectItem>
+													<SelectItem value="REMOTE">Remote</SelectItem>
+												</SelectContent>
+											</Select>
 										</div>
 									)}
-									<div className="grid grid-cols-2 gap-4 min-w-24">
+									<div className="grid grid-cols-2 gap-3 mb-3">
 										<div>
-											<Label htmlFor={`start_time_${day.id}`}>Start Time</Label>
+											<Label htmlFor={`start_time_${day.id}`} className="text-xs block mb-1">
+												Start Time
+											</Label>
 											<Input
 												type="time"
 												id={`start_time_${day.id}`}
 												value={currentDayStartTime || ""}
 												onChange={(e) => setCurrentDayStartTime(e.target.value)}
+												className="h-8 text-sm"
 											/>
 										</div>
 										<div>
-											<Label htmlFor={`end_time_${day.id}`}>End Time</Label>
+											<Label htmlFor={`end_time_${day.id}`} className="text-xs block mb-1">
+												End Time
+											</Label>
 											<Input
 												type="time"
 												id={`end_time_${day.id}`}
 												value={currentDayEndTime || ""}
 												onChange={(e) => setCurrentDayEndTime(e.target.value)}
+												className="h-8 text-sm"
 											/>
 										</div>
 									</div>
-									<div className="flex justify-end gap-2 mt-2">
+									<div className="flex justify-end gap-2">
 										<Button size="sm" variant="ghost" onClick={cancelEditing}>
 											Cancel
 										</Button>
@@ -460,6 +483,13 @@ export function WorkingDaysManager({
 												if (pendingAddDayId) {
 													if (scope.type === "institution") {
 														handleAddInstitutionDay(day.id, currentDayStartTime, currentDayEndTime);
+													} else {
+														handleAddBranchDay(
+															day.id,
+															currentDayType,
+															currentDayStartTime,
+															currentDayEndTime,
+														);
 													}
 												} else {
 													saveTimes(day);
@@ -475,7 +505,6 @@ export function WorkingDaysManager({
 					);
 				})}
 			</div>
-
 			<div className="bg-gray-50 rounded-lg p-4">
 				<div className="flex items-center justify-between text-sm">
 					<div className="flex items-center gap-2">

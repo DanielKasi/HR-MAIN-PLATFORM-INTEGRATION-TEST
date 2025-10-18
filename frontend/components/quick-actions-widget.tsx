@@ -185,7 +185,7 @@ const QuickActionsWidget = () => {
 							}`}
 							style={{ width: "52px", height: "52px" }}
 						>
-							<div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+							{/* <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> */}
 							<div className="relative z-10 flex items-center justify-center">
 								<Icon icon="hugeicons:plus-sign" width="24" height="24" />
 							</div>

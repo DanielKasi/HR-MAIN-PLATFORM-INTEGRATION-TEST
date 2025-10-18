@@ -8,7 +8,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
 	return (
 		<>
-			{title}
 			<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD}>
 				{children}
 			</ProtectedPage>

@@ -1848,7 +1848,7 @@ export default function JobSpecificInterviewPipeline() {
 							<CreateInterviewStageDialog
 								isOpen={isCreateStageDialogOpen}
 								onOpenChange={setIsCreateStageDialogOpen}
-								jobPositionId={selectedJobPosition.id}
+								jobPositionAdvertId={selectedJobPosition.id}
 								jobPositionName={selectedJobPosition.name}
 								existingStagesCount={processedStages.length}
 								onSuccess={fetchData}
