@@ -20,7 +20,11 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { branchesAPI, showErrorToast, systemAPI } from "@/lib/utils";
 import { Branch } from "@/types/branch.types";
 
-export default function BranchWorkingDaysTab() {
+interface BranchWorkingDaysProps {
+	selectedBranchId?: number | null;
+}
+
+export default function BranchWorkingDaysTab({ selectedBranchId }: BranchWorkingDaysProps) {
 	const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([]);
 	const [branchWorkingDays, setBranchWorkingDays] = useState<IBranchWorkingDays | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +39,15 @@ export default function BranchWorkingDaysTab() {
 			fetchData();
 		}
 	}, [selectedBranch]);
+
+	useEffect(() => {
+		if (selectedBranchId) {
+			const branch = branches.find((br) => br.id);
+			if (branch) {
+				setSelectedBranch(branch);
+			}
+		}
+	}, [selectedBranchId]);
 
 	const fetchSystemWorkingDays = async () => {
 		try {
@@ -144,34 +157,36 @@ export default function BranchWorkingDaysTab() {
 								physical or remote.
 							</CardDescription>
 						</div>
-						<div className="flex items-center gap-2">
-							<Label htmlFor="branch-select" className="text-sm font-medium text-gray-700">
-								Branch:
-							</Label>
-							<Select
-								value={selectedBranch?.id.toString() || ""}
-								onValueChange={(val) => {
-									const branch = branches.find((b) => b.id === Number(val));
-									setSelectedBranch(branch || null);
-								}}
-							>
-								<SelectTrigger className="w-[180px]">
-									<SelectValue placeholder="Select a branch" />
-								</SelectTrigger>
-								<SelectContent>
-									{branches.map((branch) => (
-										<SelectItem key={branch.id} value={branch.id.toString()}>
-											{branch.branch_name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+						{!selectedBranchId && (
+							<div className="flex items-center gap-2">
+								<Label htmlFor="branch-select" className="text-sm font-medium text-gray-700">
+									Branch:
+								</Label>
+								<Select
+									value={selectedBranch?.id.toString() || ""}
+									onValueChange={(val) => {
+										const branch = branches.find((b) => b.id === Number(val));
+										setSelectedBranch(branch || null);
+									}}
+								>
+									<SelectTrigger className="w-[180px]">
+										<SelectValue placeholder="Select a branch" />
+									</SelectTrigger>
+									<SelectContent>
+										{branches.map((branch) => (
+											<SelectItem key={branch.id} value={branch.id.toString()}>
+												{branch.branch_name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						)}
 					</div>
 				</CardHeader>
 			</Card>
 
-			{selectedBranch && branchWorkingDays && (
+			{selectedBranch && (
 				<ApprovableInstancePageLayout instance={branchWorkingDays} onInstanceRefresh={fetchData}>
 					<WorkingDaysManager
 						scope={{
@@ -184,19 +199,6 @@ export default function BranchWorkingDaysTab() {
 						isSaving={isSaving}
 					/>
 				</ApprovableInstancePageLayout>
-			)}
-
-			{selectedBranch && !branchWorkingDays && (
-				<WorkingDaysManager
-					scope={{
-						type: "branch",
-						branchId: selectedBranch.id,
-						branchWorkingDays: branchWorkingDays,
-					}}
-					systemWorkingDays={systemWorkingDays}
-					onBranchDaysUpdate={handleBranchWorkingDaysUpdate}
-					isSaving={isSaving}
-				/>
 			)}
 		</div>
 	);

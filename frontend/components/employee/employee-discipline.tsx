@@ -85,42 +85,6 @@ export default function EmployeeDiscipline({ employeeId, institutionId }: Employ
 
 	return (
 		<div className="space-y-6">
-			{/* Summary Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-				<Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-					<CardContent className="p-3 md:p-4">
-						<div className="text-xs md:text-sm text-[#848496] mb-1">Total Cases</div>
-						<div className="text-lg md:text-2xl font-bold text-gray-800">
-							{disciplinaryActions.length}
-						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-					<CardContent className="p-3 md:p-4">
-						<div className="text-xs md:text-sm text-[#848496] mb-1">Pending</div>
-						<div className="text-lg md:text-2xl font-bold text-[#e21732]">
-							{disciplinaryActions.filter((action) => action.status === "pending").length}
-						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-					<CardContent className="p-3 md:p-4">
-						<div className="text-xs md:text-sm text-[#848496] mb-1">In Progress</div>
-						<div className="text-lg md:text-2xl font-bold text-[#0ca0f5]">
-							{disciplinaryActions.filter((action) => action.status === "in_progress").length}
-						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-					<CardContent className="p-3 md:p-4">
-						<div className="text-xs md:text-sm text-[#848496] mb-1">Completed</div>
-						<div className="text-lg md:text-2xl font-bold text-[#3cb371]">
-							{disciplinaryActions.filter((action) => action.status === "completed").length}
-						</div>
-					</CardContent>
-				</Card>
-			</div>
-
 			<h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">Disciplinary Actions</h3>
 
 			{/* Disciplinary Actions Table */}

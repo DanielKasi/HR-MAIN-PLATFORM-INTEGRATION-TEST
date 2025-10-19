@@ -107,6 +107,7 @@ export enum PERMISSION_CODES {
 	CAN_EDIT_EVENTS_AND_HOLIDAYS = "can_edit_event_and_holidays",
 	CAN_CREATE_EVENTS_AND_HOLIDAYS = "can_create_event_and_holidays",
 	CAN_DELETE_EVENTS_AND_HOLIDAYS = "can_delete_event_and_holidays",
+	CAN_UPDATE_EMPLOYEE_WORKING_DAYS = "can_update_employee_working_days",
 
 	// Document requests
 

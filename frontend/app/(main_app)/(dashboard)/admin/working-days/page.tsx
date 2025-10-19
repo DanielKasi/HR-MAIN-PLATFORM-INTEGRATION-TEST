@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InstitutionWorkingDays from "@/components/working-days/institution-working-days";
-import BranchWorkingDaysTab from "@/components/working-days/branch-working-days-tab";
+import BranchWorkingDaysTab from "@/components/working-days/branch-working-days";
 import { Button } from "@/components/ui/button";
 
 export default function AllWorkingDaysPage() {

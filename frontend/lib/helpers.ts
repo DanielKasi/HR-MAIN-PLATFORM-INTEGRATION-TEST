@@ -10,6 +10,7 @@ import { Role, Permission } from "@/types/user.types";
 import { store } from "@/store";
 import { ICountry } from "@/types/types.utils";
 import { INotification } from "@/store/notifications/types";
+import moment from "moment";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -105,6 +106,25 @@ export const fetchAndSetData = async <T>(
 			setErrorFn(errorMsg);
 		}
 	}
+};
+
+export const formatTime = (timeString: string): string => {
+	if (!timeString) return "";
+
+	// Split "HH:mm:ss" or "HH:mm" into parts
+	const [hoursStr, minutesStr = "0", secondsStr = "0"] = timeString.split(":");
+	let hours = parseInt(hoursStr, 10);
+	const minutes = parseInt(minutesStr, 10);
+
+	if (isNaN(hours) || isNaN(minutes)) return "";
+
+	const period = hours >= 12 ? "PM" : "AM";
+	hours = hours % 12 || 12; // convert 0–23 to 12-hour format
+
+	// Format minutes to always be two digits
+	const formattedMinutes = minutes.toString().padStart(2, "0");
+
+	return `${hours}:${formattedMinutes} ${period}`;
 };
 
 export async function fetchInstitutionBranchesFromAPI() {
