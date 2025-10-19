@@ -213,7 +213,7 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
 							}
 
 							return (
-								<div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
+								<div className="bg-white">
 									<Table>
 										<TableHeader>
 											<TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
@@ -226,40 +226,45 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
 												<TableHead className="font-semibold text-gray-800">Status</TableHead>
 											</TableRow>
 										</TableHeader>
-										<TableBody>
+										<>
 											{!data || !data.results.length ? (
-												<TableRow>
-													<TableCell className="col-span-full">
-														<div className="text-center py-8 text-[#848496]">
-															<Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-															<p>No asset allocations found for this employee</p>
-														</div>
-													</TableCell>
-												</TableRow>
+												<></>
 											) : (
-												data?.results.map((allocation) => (
-													<TableRow key={allocation.id} className="hover:bg-[#f7f7fb]/50">
-														<TableCell className="font-mono text-sm">
-															{allocation.alloc_code || "Unknown"}
-														</TableCell>
-														<TableCell className="font-medium">
-															{allocation.asset?.asset_name || "Unknown Asset"}
-														</TableCell>
-														<TableCell>
-															{allocation.allocated_by?.user?.fullname || "Unknown User"}
-														</TableCell>
-														<TableCell className="text-[#848496]">
-															{allocation.created_at
-																? formatDate(allocation.created_at)
-																: "Unknown"}
-														</TableCell>
-														<TableCell>
-															<StatusBadge status={allocation.allocation_status || "unknown"} />
-														</TableCell>
-													</TableRow>
-												))
+												// <TableBody className="col-span-5">
+												// 	<TableRow className="col-span-5">
+												// 		<TableCell className="col-span-5">
+												// 			<div className="flex flex-col items-center justify-center py-8 text-[#848496]">
+												// 				<Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+												// 				<p>No asset allocations found for this employee</p>
+												// 			</div>
+												// 		</TableCell>
+												// 	</TableRow>
+												// </TableBody>
+												<TableBody>
+													{data?.results.map((allocation) => (
+														<TableRow key={allocation.id} className="hover:bg-[#f7f7fb]/50">
+															<TableCell className="font-mono text-sm">
+																{allocation.alloc_code || "Unknown"}
+															</TableCell>
+															<TableCell className="font-medium">
+																{allocation.asset?.asset_name || "Unknown Asset"}
+															</TableCell>
+															<TableCell>
+																{allocation.allocated_by?.user?.fullname || "Unknown User"}
+															</TableCell>
+															<TableCell className="text-[#848496]">
+																{allocation.created_at
+																	? formatDate(allocation.created_at)
+																	: "Unknown"}
+															</TableCell>
+															<TableCell>
+																<StatusBadge status={allocation.allocation_status || "unknown"} />
+															</TableCell>
+														</TableRow>
+													))}
+												</TableBody>
 											)}
-										</TableBody>
+										</>
 									</Table>
 								</div>
 							);

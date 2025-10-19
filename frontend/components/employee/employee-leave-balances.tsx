@@ -105,22 +105,6 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
 
 	return (
 		<div className="space-y-4">
-			{/* Quick Stats - Profile Style */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-				<div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
-					<div className="text-xs text-[#848496] mb-1">Total Allocated</div>
-					<div className="text-lg font-bold text-gray-800">{totalAllocated} days</div>
-				</div>
-				<div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
-					<div className="text-xs text-[#848496] mb-1">Used</div>
-					<div className="text-lg font-bold text-[#e21732]">{totalUsed} days</div>
-				</div>
-				<div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
-					<div className="text-xs text-[#848496] mb-1">Available</div>
-					<div className="text-lg font-bold text-[#3cb371]">{totalAvailable} days</div>
-				</div>
-			</div>
-
 			{/* Compact Table - Profile Style */}
 			<div className="bg-white overflow-hidden">
 				<PaginatedTableWrapper<ILeaveBalance>

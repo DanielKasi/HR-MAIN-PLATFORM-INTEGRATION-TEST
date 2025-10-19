@@ -93,7 +93,7 @@ export default function UnlockDialog({
 			setIsLoading(true);
 			setError("");
 
-			const response = await apiRequest.get(`institution/profile/${selectedInstitution.id}/`);
+			const response = await apiRequest.get(`institution/profile/`);
 			const data = response.data;
 
 			if (data.results && data.count !== undefined) {

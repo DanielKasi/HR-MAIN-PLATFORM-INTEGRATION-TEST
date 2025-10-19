@@ -1871,8 +1871,24 @@ export interface IInstitutionDay {
 	opening_time: string;
 	closing_time: string;
 }
+
 export interface IInstitutionDayFormData {
 	day_id: number;
+	opening_time?: string | null;
+	closing_time?: string | null;
+}
+
+export interface IEmployeeDay {
+	id: number;
+	day_id: number;
+	day_type: IDayType;
+	opening_time?: string | null;
+	closing_time?: string | null;
+}
+
+export interface IEmployeeDayFormData {
+	day_id: number;
+	day_type: IDayType;
 	opening_time?: string | null;
 	closing_time?: string | null;
 }
@@ -2322,6 +2338,11 @@ export interface IBranchWorkingDays {
 	id: number;
 	branch: Branch;
 	branch_days: IBranchDay[];
+}
+
+export interface IEmployeeWorkingDays extends IBaseApprovable {
+	id: number;
+	days: number[];
 }
 
 export interface IShiftFormData {

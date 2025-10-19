@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ import type {
 import { toast } from "sonner";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
-import { formatCurrency, formatDate, getFileUrl } from "@/lib/helpers";
+import { formatCurrency, formatDate, getFileUrl, hasPermission } from "@/lib/helpers";
 import { useMobile } from "@/hooks/use-mobile";
 import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
 import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
@@ -65,6 +65,7 @@ import EmployeeDevices from "../../_components/employee-devices";
 import EmployeeDevicesLogs from "../../_components/employee-device-log";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
+import EmployeeWorkingDaysTab from "@/components/working-days/employee-working-days";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -90,7 +91,6 @@ export default function EmployeeProfile() {
 		| "devices"
 	>("general_info");
 	const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
-	const [attendancePage, setAttendancePage] = useState(1);
 	const [totalAttendanceRecords, setTotalAttendanceRecords] = useState(0);
 	const [loadingAttendance, setLoadingAttendance] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -98,6 +98,10 @@ export default function EmployeeProfile() {
 	const [documentsSubTab, setDocumentsSubTab] = useState<
 		"contracts" | "document_requests" | "signatures"
 	>("contracts");
+
+	const [attendanceSubTab, setAttendanceSubTab] = useState<"attendance" | "working_days">(
+		"attendance",
+	);
 
 	const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
 	const [spotcheckSubTab, setSpotcheckSubTab] = useState<"spotchecks" | "configs">("spotchecks");
@@ -122,6 +126,7 @@ export default function EmployeeProfile() {
 	const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
 
 	const isMobile = useMobile();
+	const router = useRouter();
 
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
@@ -151,55 +156,10 @@ export default function EmployeeProfile() {
 	const handleTabChange = useCallback(
 		(newTab: typeof activeTab) => {
 			if (newTab === activeTab) return;
-
 			setActiveTab(newTab);
-
-			if (newTab === "attendance" && !tabDataCache.attendance) {
-				fetchAttendanceRecords();
-			}
 		},
 		[activeTab, tabDataCache],
 	);
-
-	const fetchAttendanceRecords = useCallback(async () => {
-		if (!employeeId || loadingAttendance) return;
-
-		// Check cache first
-		if (tabDataCache.attendance) {
-			setAttendanceRecords(tabDataCache.attendance.records);
-			setTotalAttendanceRecords(tabDataCache.attendance.total);
-			return;
-		}
-
-		setLoadingAttendance(true);
-		try {
-			const response = await AttendanceAPI.fetchEmployeeAttendanceRecords(employeeId);
-
-			if (response) {
-				const attendanceData = {
-					records: response.results,
-					total: response.count,
-				};
-
-				setAttendanceRecords(attendanceData.records);
-				setTotalAttendanceRecords(attendanceData.total);
-
-				// Cache the data
-				setTabDataCache((prev) => ({
-					...prev,
-					attendance: attendanceData,
-				}));
-			}
-		} catch (error: any) {
-			let errorMessage = "Failed to fetch employee attendance records";
-			if (error?.message || error?.detail) {
-				errorMessage = error.message || error.detail;
-			}
-			toast.error(`${errorMessage}`);
-		} finally {
-			setLoadingAttendance(false);
-		}
-	}, [employeeId, loadingAttendance, tabDataCache.attendance]);
 
 	const fetchEmployee = useCallback(async () => {
 		if (!selectedInstitution || !employeeId) {
@@ -349,27 +309,29 @@ export default function EmployeeProfile() {
 		}
 	}, [employee, spotcheckSubTab]);
 
-	useEffect(() => {
-		if (activeTab === "attendance" && !tabDataCache.attendance) {
-			fetchAttendanceRecords();
+	const handleBack = () => {
+		if (hasPermission(PERMISSION_CODES.CAN_VIEW_EMPLOYEES)) {
+			router.push("/employees/employee-list");
+		} else {
+			router.back();
 		}
-	}, [activeTab, fetchAttendanceRecords, tabDataCache.attendance]);
+	};
 
 	// Tab configuration with lazy loading indicators
-	const tabConfig: Array<{ id: typeof activeTab; label: string; hasData: boolean }> = useMemo(
+	const tabConfig: Array<{ id: typeof activeTab; label: string }> = useMemo(
 		() => [
-			{ id: "general_info", label: "General Information", hasData: true },
-			{ id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance },
-			{ id: "discipline", label: "Discipline", hasData: true },
-			{ id: "leave", label: "Leave", hasData: true },
-			{ id: "assets", label: "Assets", hasData: true },
-			{ id: "payroll", label: "Payroll", hasData: true },
-			{ id: "documents", label: "Documents", hasData: true },
-			{ id: "spotchecks", label: "Spotchecks", hasData: true },
-			{ id: "penalties", label: "Penalties", hasData: true },
-			{ id: "shifts", label: "Shifts", hasData: true },
-			{ id: "performance", label: "Performance", hasData: true },
-			{ id: "devices", label: "Attached Devices", hasData: true },
+			{ id: "general_info", label: "General Information" },
+			{ id: "attendance", label: "Attendance" },
+			{ id: "discipline", label: "Discipline" },
+			{ id: "leave", label: "Leave" },
+			{ id: "assets", label: "Assets" },
+			{ id: "payroll", label: "Payroll" },
+			{ id: "documents", label: "Documents" },
+			{ id: "spotchecks", label: "Spotchecks" },
+			{ id: "penalties", label: "Penalties" },
+			{ id: "shifts", label: "Shifts" },
+			{ id: "performance", label: "Performance" },
+			{ id: "devices", label: "Attached Devices" },
 		],
 		[tabDataCache],
 	);
@@ -487,11 +449,13 @@ export default function EmployeeProfile() {
 							{/* Header section with back arrow, name, and action buttons */}
 							<div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 mb-2 gap-4">
 								<div className="flex items-center justify-start gap-4">
-									<Link href="/employees/employee-list">
-										<Button variant="outline" className="!h-10 !w-10 !rounded-full !aspect-square">
-											<ArrowLeft className="w-5 h-5" />
-										</Button>
-									</Link>
+									<Button
+										onClick={handleBack}
+										variant="outline"
+										className="!h-10 !w-10 !rounded-full !aspect-square"
+									>
+										<ArrowLeft className="w-5 h-5" />
+									</Button>
 
 									<h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 flex items-center justify-start gap-2 md:gap-3">
 										<span>{employee?.name || employee.user?.fullname || "Unknown Employee"}</span>
@@ -665,7 +629,7 @@ export default function EmployeeProfile() {
 									<div className="">
 										<Card className="bg-white border-[#e8e8f2] border-none p-0 shadow-none sm:shadow-sm sm:border">
 											<CardHeader className="border-b border-[#e8e8f2] pb-0 px-4 sm:px-6">
-												<div className="flex gap-2 sm:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
+												<div className="flex gap-2 sm:gap-4 lg:gap-8 relative overflow-x-auto no-scrollbar -mx-4 sm:mx-0">
 													<div className="flex gap-2 sm:gap-4 lg:gap-8 min-w-max px-4 sm:px-0">
 														{tabConfig.map((tab) => (
 															<button
@@ -690,7 +654,45 @@ export default function EmployeeProfile() {
 											<CardContent className="p-4 sm:p-6">
 												{activeTab === "attendance" && (
 													<>
+														{/* <div className="space-y-6">
+															<div className="border-b border-[#e8e8f2]">
+																<div className="flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
+																	<button
+																		onClick={() => setAttendanceSubTab("attendance")}
+																		className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+																			attendanceSubTab === "attendance"
+																				? "text-gray-800 font-semibold"
+																				: "text-[#848496] hover:text-gray-800"
+																		}`}
+																	>
+																		Attendance
+																		{attendanceSubTab === "attendance" && (
+																			<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																		)}
+																	</button>
+
+																	<button
+																		onClick={() => setAttendanceSubTab("working_days")}
+																		className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+																			documentsSubTab === "document_requests"
+																				? "text-gray-800 font-semibold"
+																				: "text-[#848496] hover:text-gray-800"
+																		}`}
+																	>
+																		Working Days
+																		{attendanceSubTab === "working_days" && (
+																			<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																		)}
+																	</button>
+																</div>
+															</div>
+														</div> */}
+														{/* {attendanceSubTab === "attendance" && ( */}
 														<SingleEmployeeAttendance employee={employee} />
+														{/* )} */}
+														{/* {attendanceSubTab === "working_days" && (
+															<EmployeeWorkingDaysTab employeeId={employee.id} />
+														)} */}
 													</>
 												)}
 
@@ -986,7 +988,7 @@ export default function EmployeeProfile() {
 													<div className="space-y-6">
 														{/* Leave Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
 																<button
 																	onClick={() => setLeaveSubTab("balances")}
 																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
@@ -1038,7 +1040,7 @@ export default function EmployeeProfile() {
 													<div className="space-y-6">
 														{/* Asset Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
 																<button
 																	onClick={() => setAssetSubTab("requests")}
 																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
@@ -1104,7 +1106,7 @@ export default function EmployeeProfile() {
 													<div className="space-y-6">
 														{/* Documents Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
 																<button
 																	onClick={() => setDocumentsSubTab("contracts")}
 																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
@@ -1172,7 +1174,7 @@ export default function EmployeeProfile() {
 													<div className="space-y-6">
 														{/* Spotcheck Sub-tabs */}
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
 																<button
 																	onClick={() => setSpotcheckSubTab("spotchecks")}
 																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
@@ -1181,10 +1183,7 @@ export default function EmployeeProfile() {
 																			: "text-[#848496] hover:text-gray-800"
 																	}`}
 																>
-																	<div className="flex items-center gap-2">
-																		<Clock className="w-4 h-4" />
-																		Spotchecks
-																	</div>
+																	<div className="flex items-center gap-2">Spotchecks</div>
 																	{spotcheckSubTab === "spotchecks" && (
 																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
 																	)}
@@ -1202,10 +1201,7 @@ export default function EmployeeProfile() {
 																				: "text-[#848496] hover:text-gray-800"
 																		}`}
 																	>
-																		<div className="flex items-center gap-2">
-																			<Settings className="w-4 h-4" />
-																			Spotcheck Configs
-																		</div>
+																		<div className="flex items-center gap-2">Spotcheck Configs</div>
 																		{spotcheckSubTab === "configs" && (
 																			<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
 																		)}
@@ -1549,7 +1545,7 @@ export default function EmployeeProfile() {
 												{activeTab === "devices" && employee && (
 													<div className="space-y-6">
 														<div className="border-b border-[#e8e8f2]">
-															<div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-hide">
+															<div className="flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
 																<button
 																	onClick={() => setDevicesSubTab("devices")}
 																	className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
@@ -1558,10 +1554,7 @@ export default function EmployeeProfile() {
 																			: "text-[#848496] hover:text-gray-800"
 																	}`}
 																>
-																	<div className="flex items-center gap-2">
-																		<Clock className="w-4 h-4" />
-																		Devices
-																	</div>
+																	<div className="flex items-center gap-2">Devices</div>
 																	{devicesSubTab === "devices" && (
 																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
 																	)}
@@ -1574,10 +1567,7 @@ export default function EmployeeProfile() {
 																			: "text-[#848496] hover:text-gray-800"
 																	}`}
 																>
-																	<div className="flex items-center gap-2">
-																		<Settings className="w-4 h-4" />
-																		Logs
-																	</div>
+																	<div className="flex items-center gap-2">Logs</div>
 																	{devicesSubTab === "logs" && (
 																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
 																	)}

@@ -171,6 +171,7 @@ import {
 	IAuditLog,
 	IInstitutionWorkingDaysFormData,
 	IBranchDayFormData,
+	IEmployeeWorkingDays,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -6922,6 +6923,29 @@ export const EMPLOYEE_API = {
 			return response.data as IPaginatedResponse<IWorkHourCount>;
 		},
 	},
+
+	WORKING_DAYS: {
+		getAll: async ({ employeeId }: { employeeId: number }) => {
+			const response = await apiRequest.get(`/employee/${employeeId}/working-days/`);
+
+			return response.data as IEmployeeWorkingDays;
+		},
+		create: async (
+			employeeId: number,
+			data: {
+				days: number[];
+			},
+		): Promise<IEmployeeWorkingDays> => {
+			const response = await apiRequest.post(`/employee/${employeeId}/working-days/`, data);
+			return response.data as IEmployeeWorkingDays;
+		},
+
+		update: async (employeeId: number, data: { days: number[] }) => {
+			const response = await apiRequest.patch(`/employee/${employeeId}/working-days/`, data);
+
+			return response.data as IEmployeeWorkingDays;
+		},
+	},
 };
 
 // Calendar API functions
@@ -8024,7 +8048,7 @@ export const usersAPI = {
 		return response.data as IPaginatedResponse<IUser>;
 	},
 	getProfilesByInstitutionId: async ({ institutionId }: { institutionId: number }) => {
-		const response = await apiRequest.get(`/institution/profile/${institutionId}/`);
+		const response = await apiRequest.get(`/institution/profile/`);
 
 		return response.data as IPaginatedResponse<UserProfile>;
 	},

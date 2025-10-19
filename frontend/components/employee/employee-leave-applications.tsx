@@ -467,11 +467,6 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 		);
 	}
 
-	// Calculate summary stats
-	const pendingCount = applications.filter((app) => app.status === "pending").length;
-	const approvedCount = applications.filter((app) => app.status === "approved").length;
-	const rejectedCount = applications.filter((app) => app.status === "rejected").length;
-
 	return (
 		<div className="space-y-4">
 			{/* Header with Add Button */}
@@ -613,26 +608,6 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 						</Button>
 					</DialogContent>
 				</Dialog>
-			</div>
-
-			{/* Quick Stats - Profile Style */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-				<div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
-					<div className="text-xs text-[#848496] mb-1">Total</div>
-					<div className="text-lg font-bold text-gray-800">{applications.length}</div>
-				</div>
-				<div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
-					<div className="text-xs text-[#848496] mb-1">Pending</div>
-					<div className="text-lg font-bold text-[#e21732]">{pendingCount}</div>
-				</div>
-				<div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
-					<div className="text-xs text-[#848496] mb-1">Approved</div>
-					<div className="text-lg font-bold text-[#3cb371]">{approvedCount}</div>
-				</div>
-				<div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
-					<div className="text-xs text-[#848496] mb-1">Rejected</div>
-					<div className="text-lg font-bold text-[#9ca3af]">{rejectedCount}</div>
-				</div>
 			</div>
 
 			{/* Applications Table - Profile Style */}
