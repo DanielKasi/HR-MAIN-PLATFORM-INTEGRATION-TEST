@@ -1,4 +1,5 @@
 from django.http import Http404
+from institution.tasks import send_ownership_transfer_email
 from recruitment.models import JobPosition
 from employee.service import create_owner_employee
 from employee.models import Employee, WorkType, EmployeeType
@@ -2963,6 +2964,12 @@ class OwnershipTransferAPIView(APIView, SortableAPIMixin):
         if serializer.is_valid():
             instance = serializer.save()
             instance.confirm_create()
+            if instance.new_owner:
+                send_ownership_transfer_email.delay(
+                    new_owner_id=instance.new_owner.id,
+                    institution_name=instance.institution.institution_name,
+                    transfer_reason=instance.transfer_reason
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
