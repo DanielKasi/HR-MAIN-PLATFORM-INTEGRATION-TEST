@@ -240,7 +240,7 @@ export default function InstitutionOwnershipTransferTab() {
 							<CardHeader>
 								<CardTitle className="flex items-center space-x-2">
 									<Shield className="h-5 w-5 text-yellow-600" />
-									<span>Current Owner</span>
+									<span>Current Super User</span>
 								</CardTitle>
 							</CardHeader>
 							<CardContent>

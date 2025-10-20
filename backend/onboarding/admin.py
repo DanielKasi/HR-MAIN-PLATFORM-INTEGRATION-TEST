@@ -1,20 +1,18 @@
 from django.contrib import admin
 from .models import (
     OnBoarding,
-    OffboardingStage,
-    InstitutionEmployeeSeparationTypes,
-    InstitutionSeparationPolicy,
-    ResignationRequest,
-    TerminationInitiation,
-    RetirementRequest,
-    EmployeeSeparation,
+    TerminationStage,
+    TerminationType,
+    TerminationTypeStage,
+    Offboarding,
+    OffboardingStageProgress,
+    HandoverReport
 )
 
 admin.site.register(OnBoarding)
-admin.site.register(OffboardingStage)
-admin.site.register(InstitutionEmployeeSeparationTypes)
-admin.site.register(InstitutionSeparationPolicy)
-admin.site.register(ResignationRequest)
-admin.site.register(TerminationInitiation)
-admin.site.register(RetirementRequest)
-admin.site.register(EmployeeSeparation)
+admin.site.register(TerminationStage)
+admin.site.register(TerminationType)
+admin.site.register(TerminationTypeStage)
+admin.site.register(Offboarding)
+admin.site.register(OffboardingStageProgress)
+admin.site.register(HandoverReport)
