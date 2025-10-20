@@ -1,4 +1,5 @@
 from datetime import date
+from employee.utilities import deactivate_employee
 from employee.models import Employee
 from users.models import CustomUser
 from recruitment.serializers import JobAdvertApplicationSerializer
@@ -207,7 +208,7 @@ class OffboardingStageProgressSerializer(serializers.ModelSerializer):
         if all_stages_done and offboarding.status not in ['COMPLETED', 'CANCELLED']:
             offboarding.status = 'COMPLETED'
             offboarding.save(update_fields=['status'])
-            offboarding.confirm_update()
+            deactivate_employee(offboarding.employee)
         return instance
     
 class HandoverReportSerializer(BaseApprovableSerializer):
