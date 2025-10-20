@@ -771,6 +771,7 @@ class EmployeeCreateAPIView(APIView):
     )
     # @method_decorator(permission_required('can_create_employees', raise_exception=True))
     def post(self, request):
+        print(request.data)
         site = get_current_site(request)
 
         if "file" in request.FILES:
@@ -831,9 +832,9 @@ class EmployeeCreateAPIView(APIView):
             )
 
         # Handle multipart/form-data
-        if not all(k in request.data for k in ["user.fullname", "user.email"]):
+        if not all(k in request.data for k in ["user.email"]):
             return Response(
-                {"detail": "Missing required user fields"},
+                {"error": "Missing required user fields"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

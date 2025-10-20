@@ -1062,7 +1062,7 @@ class EmployeeDay(BaseApprovableModel):
             if self.start_time >= self.end_time:
                 raise ValidationError("Start time must be before end time.")
             # Validate against BranchDay times
-            branch_day = self.employee_working_days.employee.department.branch.working_days.branch_days.filter(
+            branch_day = self.employee_working_days.employee.payroll_branch.working_days.branch_days.filter(
                 day=self.day
             ).first()
             if branch_day and branch_day.opening_time and branch_day.closing_time:
