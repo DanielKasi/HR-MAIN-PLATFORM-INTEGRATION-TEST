@@ -831,7 +831,6 @@ export default function AddEmployeeForm() {
 					fullname: formData.fullname,
 					email: formData.email,
 				},
-				email: formData.company_email?.email || "",
 				name: formData.fullname,
 				company_email: { email: formData.company_email?.email || "", provider: null },
 				phone_number: formData.phone_number,
