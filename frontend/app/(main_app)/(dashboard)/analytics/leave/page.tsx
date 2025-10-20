@@ -178,7 +178,7 @@ export default function AttendanceDashboard() {
 							/>
 						</div>
 
-						<LeaveTable />
+						{/* <LeaveTable /> */}
 					</div>
 					<ReportDialog
 						isOpen={isReportsDialogOpen}

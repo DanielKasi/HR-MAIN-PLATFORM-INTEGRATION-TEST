@@ -163,7 +163,7 @@ export default function PayrollDashboard() {
 							/>
 						</div>
 
-						<PayrollTable />
+						{/* <PayrollTable /> */}
 					</div>
 					<ReportDialog
 						isOpen={isReportsDialogOpen}
