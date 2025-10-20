@@ -8,6 +8,7 @@ from .views import (
     OnBoardingDetailAPI,
 
     OffboardingDashboardView,
+    ReorderOffboardingStageView,
     TerminationStageDetailView,
     TerminationStageListCreateView,
     TerminationTypeDetailView,
@@ -36,4 +37,5 @@ urlpatterns = [
     path("terminations/<int:pk>/", OffboardingDetailView.as_view()),
     path("analytics/", OffboardingDashboardView.as_view(), name="offboarding-analytics"),
     path('termination/handover-reports/<int:pk>/', HandoverReportDetailView.as_view(), name='handover-report-detail'),
+    path('termination/<int:separation_id>/reorder-stages/', ReorderOffboardingStageView.as_view(), name='reorder-offboarding-stages'),
 ]
