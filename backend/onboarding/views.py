@@ -398,23 +398,17 @@ class BulkOnBoardingCreateAPI(APIView):
 )
 class OffboardingDashboardView(APIView):
 
-    def get(self, request, institution_id):
+    def get(self, request):
         """
         Dashboard endpoint providing key offboarding metrics and recent activities.
         """
-        # Ensure the user has access to the institution
+        # Get institution_id from request.user.profile
         try:
-            institution_id = int(institution_id)
-        except ValueError:
+            institution_id = request.user.profile.institution.id  # Adjust based on your profile model
+        except AttributeError:
             return Response(
-                {'error': 'Invalid institution_id'},
+                {'error': 'User profile or institution not found'},
                 status=400
-            )
-
-        if not request.user.has_perm('view_institution', institution_id):
-            return Response(
-                {'error': 'You do not have permission to view this institution.'},
-                status=403
             )
 
         # Define date range (last 30 days)
