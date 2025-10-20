@@ -889,7 +889,6 @@ export default function UpdateEmployeeForm() {
 				},
 				name: formData.fullname,
 				company_email: { email: formData.company_email?.email || "", provider: null },
-				email: formData.company_email?.email || "",
 				phone_number: formData.phone_number,
 				phone_number_country_code: phoneCountryCode,
 				gender: formData.gender || "male",
