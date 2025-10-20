@@ -1,18 +1,12 @@
 from .models import (
-    OffboardingStage,
-    InstitutionEmployeeSeparationTypes,
-    InstitutionSeparationPolicy,
-    EmployeeSeparation,
-    ResignationRequest,
-    TerminationInitiation,
+    TerminationStage,
+    TerminationType,
+    Offboarding
 )
 
 REPORT_CONFIG = {
-    'Offboarding Stages': OffboardingStage,
-    'Separation Types': InstitutionEmployeeSeparationTypes,
-    'Separation Policies': InstitutionSeparationPolicy,
-    'Employee Separations': EmployeeSeparation,
-    'Resignation Requests': ResignationRequest,
-    'Termination Initiations': TerminationInitiation,
+    'Termination Stagse': TerminationStage,
+    'Termination Types' : TerminationType,
+    'Offboarding': Offboarding
 }
 
