@@ -145,7 +145,7 @@ export const JobApplicationApi = {
   create: async (applicationData: Partial<JobApplication> & { resume?: File | null; cover_letter?: File | null }, institutionId: number = 1): Promise<JobApplication> => {
     try {
       const endpoint = `/recruitment/institution/${institutionId}/job-application/`;
-    // console.log('[Portal API] Creating job application:', {
+    console.log('[Portal API] Creating job application:', {
         endpoint: `${API_BASE_URL}${endpoint}`,
         institutionId,
         applicationData
