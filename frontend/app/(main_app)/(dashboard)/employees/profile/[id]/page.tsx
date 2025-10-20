@@ -689,7 +689,9 @@ export default function EmployeeProfile() {
 															</div>
 														</div> */}
 														{/* {attendanceSubTab === "attendance" && ( */}
-														<SingleEmployeeAttendance employee={employee} />
+														<div className="mt-4">
+															<SingleEmployeeAttendance employee={employee} />
+														</div>
 														{/* )} */}
 														{/* {attendanceSubTab === "working_days" && (
 															<EmployeeWorkingDaysTab employeeId={employee.id} />
