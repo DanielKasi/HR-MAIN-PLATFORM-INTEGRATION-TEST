@@ -403,16 +403,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 										</DropdownMenuItem>
 									)}
 
-									{currentUser && currentUser.id === selectedInstitution?.institution_owner_id && (
-										<DropdownMenuItem
-											className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
-											onClick={() => router.push("/admin/settings?tab=ownership_transfer")}
-										>
-											<Icon icon="hugeicons:folder-transfer" className="!w-4 !h-4" />
-											<span>Ownership Transfer</span>
-										</DropdownMenuItem>
-									)}
-
 									<DropdownMenuSeparator className="my-1" />
 									<DropdownMenuItem
 										className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"

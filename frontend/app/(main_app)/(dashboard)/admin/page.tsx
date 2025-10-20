@@ -26,8 +26,12 @@ import { Separator } from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 import { PERMISSION_CODES } from "@/constants";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 
 export default function AdminPage() {
+	const currentUser = useSelector(selectUser);
+	const selectedInstitution = useSelector(selectSelectedInstitution);
 	return (
 		<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_PAGE}>
 			<div className="space-y-8">
@@ -187,6 +191,17 @@ export default function AdminPage() {
 										<span>Working days</span>
 									</Link>
 								</div>
+								{currentUser && currentUser.id === selectedInstitution?.institution_owner_id && (
+									<div className="">
+										<Link
+											href="/admin/settings?tab=ownership_transfer"
+											className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+										>
+											<Icon icon="hugeicons:folder-transfer" className="!w-4 !h-4" />
+											<span>Ownership Transfer</span>
+										</Link>
+									</div>
+								)}
 							</div>
 						</div>
 
