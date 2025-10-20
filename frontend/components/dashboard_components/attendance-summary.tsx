@@ -1,412 +1,550 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Calendar, Clock, User } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Calendar, Clock, Users } from "lucide-react";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import { Icon } from "@iconify/react";
 
-// Define types for our dummy data
-interface DummyEmployee {
-	id: number;
+interface DummyAttendanceEmployee {
 	name: string;
 	role: string;
-	checkInTime?: string; // For On Time & Late
-	status?: string; // For Absent (e.g., "On Leave")
+	department: string;
+	time?: string;
+	status?: string;
+	avatar: string;
 }
 
-export function AttendanceSummary() {
-	const [loading, setLoading] = useState(true);
+interface DummyAttendanceCategory {
+	male: number;
+	female: number;
+	total: number;
+	rate: number;
+	employees: DummyAttendanceEmployee[];
+}
 
-	// Dummy Data
-	const onTimeData: DummyEmployee[] = [
-		{ id: 1, name: "Musoke Paul", role: "Operations Officer", checkInTime: "7:32 AM" },
-		{ id: 2, name: "Nabwana Jane", role: "Project Manager", checkInTime: "7:15 AM" },
-		{ id: 3, name: "Kagwa Isaac", role: "Software Developer", checkInTime: "7:05 AM" },
-		{ id: 4, name: "Amani Grace", role: "Graphic Designer", checkInTime: "7:20 AM" },
-		{ id: 5, name: "Ssemakula Brian", role: "Data Analyst", checkInTime: "7:45 AM" },
-		{ id: 6, name: "Mugisha Rita", role: "Marketing Specialist", checkInTime: "7:30 PM" },
-		{ id: 7, name: "Lukwago Daniel", role: "Sales Analyst", checkInTime: "7:00 PM" },
-		{ id: 8, name: "Nabugodi Sarah", role: "Customer Support", checkInTime: "7:00 PM" },
-		{ id: 9, name: "Kanyere Simon", role: "HR Coordinator", checkInTime: "7:10 PM" },
-		{ id: 10, name: "Ochieng Faith", role: "Content Writer", checkInTime: "7:25 PM" },
-		{ id: 11, name: "Kamara John", role: "IT Support", checkInTime: "7:00 PM" },
-	];
+interface DummyAttendance {
+	date: string;
+	time: string;
+	onTime: DummyAttendanceCategory;
+	late: DummyAttendanceCategory;
+	absent: DummyAttendanceCategory;
+}
 
-	const lateData: DummyEmployee[] = [
-		{ id: 1, name: "Rwabwogo Isaac", role: "System Administrator", checkInTime: "10:00 AM" },
-		{ id: 2, name: "Kibuka Aisha", role: "Web Developer", checkInTime: "9:55 AM" },
-		{ id: 3, name: "Ssenyomo Robert", role: "Graphic Designer", checkInTime: "9:50 AM" },
-		{ id: 4, name: "Ochieng Fiona", role: "Content Creator", checkInTime: "9:45 AM" },
-		{ id: 5, name: "Nankya Brenda", role: "Sales Executive", checkInTime: "9:40 AM" },
-		{ id: 6, name: "Mugisha John", role: "Marketing Specialist", checkInTime: "9:35 AM" },
-		{ id: 7, name: "Atim Alice", role: "Data Analyst", checkInTime: "9:30 AM" },
-		{ id: 8, name: "Kakinda Grace", role: "UX Designer", checkInTime: "9:25 AM" },
-		{ id: 9, name: "Okwalinga David", role: "Software Engineer", checkInTime: "9:20 AM" },
-		{ id: 10, name: "Nabwana Sarah", role: "Product Manager", checkInTime: "9:15 AM" },
-		{ id: 11, name: "Ssempala John", role: "Head of Sales", checkInTime: "9:10 AM" },
-	];
-
-	const absentData: DummyEmployee[] = [
-		{ id: 1, name: "Ssemakula Peter", role: "Software Developer", status: "On Leave" },
-		{ id: 2, name: "Nabugodi Lydia", role: "Project Manager", status: "On Leave" },
-		{ id: 3, name: "Kiseka Brian", role: "Software Developer", status: "On Leave" },
-		{ id: 4, name: "Tumwebaze Sarah", role: "Data Analyst", status: "On Leave" },
-		{ id: 5, name: "Okello Richard", role: "Marketing Specialist", status: "On Leave" },
-		{ id: 6, name: "Abenakyo Esther", role: "Product Manager", status: "On Leave" },
-		{ id: 7, name: "Kibombo James", role: "HR Coordinator", status: "On Leave" },
-		{ id: 8, name: "Mugisha Kevin", role: "Sales Executive", status: "On Leave" },
-		{ id: 9, name: "Akello Grace", role: "Business Consultant", status: "On Leave" },
-		{ id: 10, name: "Ochieng Samuel", role: "Financial Analyst", status: "On Leave" },
-		{ id: 11, name: "Nalwanga Joy", role: "Customer Support", status: "On Leave" },
-	];
-
-	// Calculate stats
-	const onTimeStats = {
-		male: onTimeData.filter((emp) => emp.name.startsWith("M") || emp.name.startsWith("K")).length,
-		female:
-			onTimeData.length -
-			onTimeData.filter((emp) => emp.name.startsWith("M") || emp.name.startsWith("K")).length,
-		total: onTimeData.length,
+const attendanceData: DummyAttendance = {
+	date: "Monday, 12 April 2025",
+	time: "9:30 AM",
+	onTime: {
+		male: 120,
+		female: 301,
+		total: 421,
 		rate: 71,
-	};
-
-	const lateStats = {
-		male: lateData.filter((emp) => emp.name.startsWith("R") || emp.name.startsWith("K")).length,
-		female:
-			lateData.length -
-			lateData.filter((emp) => emp.name.startsWith("R") || emp.name.startsWith("K")).length,
-		total: lateData.length,
+		employees: [
+			{
+				name: "Musoke Paul",
+				role: "Customer Officer",
+				department: "Customer Service",
+				time: "7:32 AM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Nabwana Jane",
+				role: "Project Manager",
+				department: "Engineering",
+				time: "7:15 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Kagwa Isaac",
+				role: "System Developer",
+				department: "Engineering",
+				time: "7:05 AM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Amani Grace",
+				role: "Graphic Designer",
+				department: "Design",
+				time: "7:20 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Ssemakula Brian",
+				role: "UX Designer",
+				department: "Design",
+				time: "7:45 AM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Mugisha Rita",
+				role: "Marketing Manager",
+				department: "Marketing",
+				time: "7:30 PM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Lukwago Daniel",
+				role: "Sales Executive",
+				department: "Sales",
+				time: "7:00 PM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Nabugodi Sarah",
+				role: "Customer Support",
+				department: "Customer Service",
+				time: "7:00 PM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Kanyere Simon",
+				role: "HR Coordinator",
+				department: "Human Resources",
+				time: "7:10 PM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Ochieng Faith",
+				role: "Content Writer",
+				department: "Marketing",
+				time: "7:25 PM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Kamara John",
+				role: "IT Support",
+				department: "Engineering",
+				time: "7:00 PM",
+				avatar: "/man.jpg",
+			},
+		],
+	},
+	late: {
+		male: 62,
+		female: 91,
+		total: 153,
 		rate: 18,
-	};
-
-	const absentStats = {
-		male: absentData.filter((emp) => emp.name.startsWith("S") || emp.name.startsWith("K")).length,
-		female:
-			absentData.length -
-			absentData.filter((emp) => emp.name.startsWith("S") || emp.name.startsWith("K")).length,
-		total: absentData.length,
+		employees: [
+			{
+				name: "Rwabwogo Isaac",
+				role: "System Developer",
+				department: "Engineering",
+				time: "10:00 AM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Kibuka Aisha",
+				role: "Web Developer",
+				department: "Engineering",
+				time: "9:55 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Ssenyomo Robert",
+				role: "Graphic Designer",
+				department: "Design",
+				time: "9:50 AM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Ochieng Fiona",
+				role: "Content Writer",
+				department: "Marketing",
+				time: "9:45 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Nankya Brenda",
+				role: "Sales Executive",
+				department: "Sales",
+				time: "9:40 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Mugisha John",
+				role: "Marketing Specialist",
+				department: "Marketing",
+				time: "9:35 AM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Atim Alice",
+				role: "Data Analyst",
+				department: "Analytics",
+				time: "9:30 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Kakinda Grace",
+				role: "UX Designer",
+				department: "Design",
+				time: "9:25 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Okwelinga David",
+				role: "Software Engineer",
+				department: "Engineering",
+				time: "9:20 AM",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Nabwana Sarah",
+				role: "Product Manager",
+				department: "Product",
+				time: "9:15 AM",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Ssempala John",
+				role: "Head of Sales",
+				department: "Sales",
+				time: "9:10 AM",
+				avatar: "/man.jpg",
+			},
+		],
+	},
+	absent: {
+		male: 6,
+		female: 18,
+		total: 24,
 		rate: 11,
-	};
+		employees: [
+			{
+				name: "Ssemakula Peter",
+				role: "Software Developer",
+				department: "Engineering",
+				status: "On Leave",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Nabugodi Lydia",
+				role: "Project Manager",
+				department: "Engineering",
+				status: "",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Kiseka Brian",
+				role: "Software Developer",
+				department: "Engineering",
+				status: "",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Tumwebaze Sarah",
+				role: "Data Analyst",
+				department: "Analytics",
+				status: "On Leave",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Okello Richard",
+				role: "Marketing Specialist",
+				department: "Marketing",
+				status: "On Leave",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Abenakyo Esther",
+				role: "Content Manager",
+				department: "Marketing",
+				status: "On Leave",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Kibombo James",
+				role: "HR Coordinator",
+				department: "Human Resources",
+				status: "",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Mugisha Kevin",
+				role: "Sales Executive",
+				department: "Sales",
+				status: "",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Akello Grace",
+				role: "Business Consultant",
+				department: "Consulting",
+				status: "On Leave",
+				avatar: "/diverse-woman-portrait.png",
+			},
+			{
+				name: "Ochieng Samuel",
+				role: "Financial Analyst",
+				department: "Finance",
+				status: "",
+				avatar: "/man.jpg",
+			},
+			{
+				name: "Nalwanga Joy",
+				role: "Customer Support",
+				department: "Customer Service",
+				status: "",
+				avatar: "/diverse-woman-portrait.png",
+			},
+		],
+	},
+};
 
-	// Simulate loading
+export function AttendanceSummary() {
+	const [currentDate, setCurrentDate] = useState("");
+	const [currentTime, setCurrentTime] = useState("");
+
 	useEffect(() => {
-		const timer = setTimeout(() => setLoading(false), 800);
-		return () => clearTimeout(timer);
+		const updateDateTime = () => {
+			const now = new Date();
+
+			// Format date as "Monday, 12 April 2025"
+			const dateOptions: Intl.DateTimeFormatOptions = {
+				weekday: "long",
+				day: "numeric",
+				month: "long",
+				year: "numeric",
+			};
+			const formattedDate = now.toLocaleDateString("en-US", dateOptions);
+
+			// Format time as "9:30 AM"
+			const timeOptions: Intl.DateTimeFormatOptions = {
+				hour: "numeric",
+				minute: "2-digit",
+				hour12: true,
+			};
+			const formattedTime = now.toLocaleTimeString("en-US", timeOptions);
+
+			setCurrentDate(formattedDate);
+			setCurrentTime(formattedTime);
+		};
+
+		// Update immediately
+		updateDateTime();
+
+		// Update every second
+		const interval = setInterval(updateDateTime, 1000);
+
+		return () => clearInterval(interval);
 	}, []);
 
-	if (loading) {
-		return (
-			<div className="p-4">
-				<div className="flex justify-between mb-4">
-					<h2 className="text-lg font-semibold">ATTENDANCE SUMMARY</h2>
-					<div className="flex gap-4 text-sm">
-						<div className="flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-full">
-							<Calendar className="h-4 w-4" />
-							<span>Loading...</span>
+	return (
+		<div className="w-full">
+			<div className="p-6 bg-white rounded-xl shadow-sm ">
+				{/* Header */}
+				<div className="flex items-center justify-between mb-6">
+					<h1 className="text-xl font-bold text-foreground">ATTENDANCE SUMMARY</h1>
+					<div className="flex items-center gap-6">
+						<div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-100 rounded-xl p-2">
+							<Icon icon="hugeicons:calendar-03" className="!size-5" />
+							<span className="font-medium">{currentDate}</span>
 						</div>
-						<div className="flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-full">
-							<Clock className="h-4 w-4" />
-							<span>Loading...</span>
+						<div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-100 rounded-xl p-2">
+							<Icon icon="hugeicons:clock-01" className="!size-5" />
+							<span className="font-medium">{currentTime}</span>
 						</div>
 					</div>
 				</div>
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					{[...Array(3)].map((_, i) => (
-						<div key={i} className="bg-gray-100 rounded-2xl p-4 animate-pulse">
-							<div className="h-6 bg-gray-300 rounded w-32 mb-4"></div>
-							<div className="flex justify-between items-center mb-4">
-								<div className="h-4 bg-gray-300 rounded w-16"></div>
-								<div className="h-4 bg-gray-300 rounded w-8"></div>
-							</div>
-							<div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
-							<div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
-						</div>
-					))}
+
+				{/* Three Column Layout */}
+				<div className="grid grid-cols-1 lg:grid-cols-3 divide-x-2 divide-gray-200 gap-4">
+					{/* On Time Check-In */}
+					<AttendanceColumn
+						title="On Time Check-In"
+						bgColor="bg-green-100"
+						male={attendanceData.onTime.male}
+						female={attendanceData.onTime.female}
+						total={attendanceData.onTime.total}
+						rate={attendanceData.onTime.rate}
+						rateLabel="On-Time Rate"
+						rateColor="bg-green-500"
+						employees={attendanceData.onTime.employees}
+						timeColor="text-green-600"
+						className=""
+					/>
+
+					{/* Late Check-In */}
+					<AttendanceColumn
+						title="Late Check-In"
+						bgColor="bg-blue-100"
+						male={attendanceData.late.male}
+						female={attendanceData.late.female}
+						total={attendanceData.late.total}
+						rate={attendanceData.late.rate}
+						rateLabel="Late Arrival Rate"
+						rateColor="bg-blue-500"
+						employees={attendanceData.late.employees}
+						timeColor="text-blue-600"
+						className="!pl-3"
+					/>
+
+					{/* Absent */}
+					<AttendanceColumn
+						title="Absent"
+						bgColor="bg-red-100"
+						male={attendanceData.absent.male}
+						female={attendanceData.absent.female}
+						total={attendanceData.absent.total}
+						rate={attendanceData.absent.rate}
+						rateLabel="Absence Rate"
+						rateColor="bg-red-500"
+						employees={attendanceData.absent.employees}
+						isAbsent
+						className="!pl-3"
+					/>
 				</div>
 			</div>
-		);
-	}
+		</div>
+	);
+}
+
+interface AttendanceColumnProps {
+	title: string;
+	bgColor: string;
+	male: number;
+	female: number;
+	total: number;
+	rate: number;
+	rateLabel: string;
+	rateColor: string;
+	employees: Array<{
+		name: string;
+		role: string;
+		department: string;
+		time?: string;
+		status?: string;
+		avatar: string;
+	}>;
+	timeColor?: string;
+	isAbsent?: boolean;
+	className?: string;
+}
+
+function AttendanceColumn({
+	title,
+	bgColor,
+	male,
+	female,
+	total,
+	rate,
+	rateLabel,
+	rateColor,
+	employees,
+	timeColor,
+	isAbsent = false,
+	className = "",
+}: AttendanceColumnProps) {
+	const [selectedDepartment, setSelectedDepartment] = useState("all");
+
+	const departments = Array.from(new Set(employees.map((emp) => emp.department))).sort();
+
+	const filteredEmployees =
+		selectedDepartment === "all"
+			? employees
+			: employees.filter((emp) => emp.department === selectedDepartment);
 
 	return (
-		<div className="p-4">
-			{/* Header */}
-			<div className="flex justify-between mb-4">
-				<h2 className="text-lg font-semibold">ATTENDANCE SUMMARY</h2>
-				<div className="flex gap-4 text-sm">
-					<div className="flex items-center gap-1 bg-white border border-gray-200 px-3 py-1 rounded-full">
-						<Calendar className="h-4 w-4 text-gray-500" />
-						<span>Monday, 12 April 2025</span>
+		<div className={`flex flex-col gap-2 ${className}`}>
+			{/* Column Header */}
+			<div className={`${bgColor} p-4 rounded-lg`}>
+				<h2 className="text-sm font-semibold text-foreground">{title}</h2>
+			</div>
+
+			{/* Stats Section */}
+			<div className=" border border-border p-4 rounded-xl">
+				{/* Gender Breakdown */}
+				<div className="flex items-center justify-between mb-2">
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<Icon icon="hugeicons:male-02" className="!w-5 !h-5" />
+						<span>Male</span>
+						<span className="font-semibold text-foreground">{male}</span>
 					</div>
-					<div className="flex items-center gap-1 bg-white border border-gray-200 px-3 py-1 rounded-full">
-						<Clock className="h-4 w-4 text-gray-500" />
-						<span>9:30 AM</span>
+					<div className="text-sm text-muted-foreground">
+						Total {isAbsent ? "On-Time" : "On-Time"}
+					</div>
+				</div>
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<Icon icon="hugeicons:female-02" className="!w-5 !h-5" />
+						<span>Female</span>
+						<span className="font-semibold text-foreground">{female}</span>
+					</div>
+					<div className="text-3xl font-bold text-foreground">{total}</div>
+				</div>
+
+				{/* Rate */}
+				<div className="mt-3 border-t border-gray-200 pt-2">
+					<div className="flex items-center justify-between mb-2">
+						<span className="text-xs text-muted-foreground">{rateLabel}</span>
+						<div className="flex items-center gap-2">
+							<div className={`w-2 h-2 rounded-full ${rateColor}`} />
+							<span className="text-sm font-semibold text-foreground">{rate}%</span>
+						</div>
+					</div>
+					<div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+						<div className={`h-full ${rateColor}`} style={{ width: `${rate}%` }} />
 					</div>
 				</div>
 			</div>
+			<Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+				<SelectTrigger className="w-full !shadow-none rounded-xl">
+					<SelectValue placeholder="All Departments" />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="all">All Departments</SelectItem>
+					{departments.map((dept) => (
+						<SelectItem key={dept} value={dept}>
+							{dept}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 
-			{/* Cards Grid */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-				{/* On Time Check-In Card */}
-				<div className="border border-green-200 rounded-2xl overflow-hidden">
-					<div className="bg-green-100 px-4 py-2 font-semibold text-sm">On Time Check-In</div>
-					<div className="p-4">
-						<div className="flex justify-between items-center mb-4 bg-green-50">
-							<div className="flex flex-col gap-1">
-								<div className="flex items-center gap-1">
-									<User className="h-4 w-4 text-gray-500" />
-									<span className="text-xs">Male</span>
-									<span className="text-sm font-medium">{onTimeStats.male}</span>
-								</div>
-								<div className="flex items-center gap-1">
-									<User className="h-4 w-4 text-gray-500" />
-									<span className="text-xs">Female</span>
-									<span className="text-sm font-medium">{onTimeStats.female}</span>
-								</div>
-							</div>
-							<div className="text-right">
-								<div className="text-xs text-gray-500">Total On-Time</div>
-								<div className="text-xl font-bold">{onTimeStats.total}</div>
-							</div>
-						</div>
-						<div className="flex justify-between items-center mb-4">
-							<div className="text-xs text-gray-500">On-Time Rate</div>
-							<div className="flex items-center gap-1">
-								<div className="w-16 h-1 bg-green-400 rounded-full overflow-hidden">
-									<div
-										className="h-full bg-green-600"
-										style={{ width: `${onTimeStats.rate}%` }}
-									></div>
-								</div>
-								<span className="text-xs">{onTimeStats.rate}%</span>
-							</div>
-						</div>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" className="w-full justify-between text-xs p-0 h-auto">
-									All Departments
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="16"
-										height="16"
-										fill="currentColor"
-										viewBox="0 0 16 16"
-									>
-										<path
-											fillRule="evenodd"
-											d="M7.646 4.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708z"
-										/>
-										<path
-											fillRule="evenodd"
-											d="M7.646 8.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708z"
-										/>
-									</svg>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent>
-								<DropdownMenuItem>Engineering</DropdownMenuItem>
-								<DropdownMenuItem>Marketing</DropdownMenuItem>
-								<DropdownMenuItem>Sales</DropdownMenuItem>
-								<DropdownMenuItem>HR</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-						<div className="mt-4 space-y-2 max-h-[200px] overflow-y-auto pr-1">
-							{onTimeData.map((emp) => (
-								<div
-									key={emp.id}
-									className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
-								>
-									<div className="flex items-center gap-2">
-										<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium text-white">
-											{emp.name.split(" ")[0][0]}
-											{emp.name.split(" ")[1][0]}
-										</div>
-										<div>
-											<div className="text-sm font-medium">{emp.name}</div>
-											<div className="text-xs text-gray-500">{emp.role}</div>
-										</div>
-									</div>
-									<div className="text-sm text-green-600 font-medium">{emp.checkInTime}</div>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-
-				{/* Late Check-In Card */}
-				<div className="bg-blue-50 border border-blue-200 rounded-2xl overflow-hidden">
-					<div className="bg-blue-100 px-4 py-2 font-semibold text-sm">Late Check-In</div>
-					<div className="p-4">
-						<div className="flex justify-between items-center mb-4">
-							<div className="flex flex-col gap-1">
-								<div className="flex items-center gap-1">
-									<User className="h-4 w-4 text-gray-500" />
-									<span className="text-xs">Male</span>
-									<span className="text-sm font-medium">{lateStats.male}</span>
-								</div>
-								<div className="flex items-center gap-1">
-									<User className="h-4 w-4 text-gray-500" />
-									<span className="text-xs">Female</span>
-									<span className="text-sm font-medium">{lateStats.female}</span>
+			<div className="bg-white rounded-xl overflow-hidden mt-4">
+				<div className="max-h-[500px] overflow-y-auto no-scrollbar">
+					{filteredEmployees.map((employee: DummyAttendanceEmployee, index) => (
+						<div
+							key={index}
+							className="flex items-center justify-between p-3 border-b border-border last:border-b-0 hover:bg-gray-50 transition-colors"
+						>
+							<div className="flex items-center gap-3 flex-1 min-w-0">
+								<Avatar className="w-9 h-9 flex-shrink-0">
+									<AvatarImage src={employee.avatar || "/placeholder.svg"} alt={employee.name} />
+									<AvatarFallback>
+										{employee.name
+											.split(" ")
+											.map((n) => n[0])
+											.join("")}
+									</AvatarFallback>
+								</Avatar>
+								<div className="flex-1 min-w-0">
+									<p className="text-sm font-medium text-foreground truncate">{employee.name}</p>
+									<p className="text-xs text-muted-foreground truncate">{employee.role}</p>
 								</div>
 							</div>
-							<div className="text-right">
-								<div className="text-xs text-gray-500">Total On-Time</div>
-								<div className="text-xl font-bold">{lateStats.total}</div>
+							<div className="flex items-center gap-3 flex-shrink-0">
+								{!isAbsent && (
+									<>
+										<span className="text-xs text-muted-foreground">Apr 12, 2025</span>
+										<span className={`text-sm font-semibold ${timeColor}`}>{employee.time}</span>
+									</>
+								)}
+								{isAbsent && employee.status && (
+									<span className="text-xs text-muted-foreground bg-gray-100 p-2 py-1 rounded-xl">
+										{employee.status}
+									</span>
+								)}
 							</div>
 						</div>
-						<div className="flex justify-between items-center mb-4">
-							<div className="text-xs text-gray-500">Late Arrival Rate</div>
-							<div className="flex items-center gap-1">
-								<div className="w-16 h-1 bg-blue-400 rounded-full overflow-hidden">
-									<div className="h-full bg-blue-600" style={{ width: `${lateStats.rate}%` }}></div>
-								</div>
-								<span className="text-xs">{lateStats.rate}%</span>
-							</div>
-						</div>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" className="w-full justify-between text-xs p-0 h-auto">
-									All Departments
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="16"
-										height="16"
-										fill="currentColor"
-										viewBox="0 0 16 16"
-									>
-										<path
-											fillRule="evenodd"
-											d="M7.646 4.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708z"
-										/>
-										<path
-											fillRule="evenodd"
-											d="M7.646 8.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708z"
-										/>
-									</svg>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent>
-								<DropdownMenuItem>Engineering</DropdownMenuItem>
-								<DropdownMenuItem>Marketing</DropdownMenuItem>
-								<DropdownMenuItem>Sales</DropdownMenuItem>
-								<DropdownMenuItem>HR</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-						<div className="mt-4 space-y-2 max-h-[200px] overflow-y-auto pr-1">
-							{lateData.map((emp) => (
-								<div
-									key={emp.id}
-									className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
-								>
-									<div className="flex items-center gap-2">
-										<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium text-white">
-											{emp.name.split(" ")[0][0]}
-											{emp.name.split(" ")[1][0]}
-										</div>
-										<div>
-											<div className="text-sm font-medium">{emp.name}</div>
-											<div className="text-xs text-gray-500">{emp.role}</div>
-										</div>
-									</div>
-									<div className="text-sm text-blue-600 font-medium">{emp.checkInTime}</div>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-
-				{/* Absent Card */}
-				<div className="bg-red-50 border border-red-200 rounded-2xl overflow-hidden">
-					<div className="bg-red-100 px-4 py-2 font-semibold text-sm">Absent</div>
-					<div className="p-4">
-						<div className="flex justify-between items-center mb-4">
-							<div className="flex flex-col gap-1">
-								<div className="flex items-center gap-1">
-									<User className="h-4 w-4 text-gray-500" />
-									<span className="text-xs">Male</span>
-									<span className="text-sm font-medium">{absentStats.male}</span>
-								</div>
-								<div className="flex items-center gap-1">
-									<User className="h-4 w-4 text-gray-500" />
-									<span className="text-xs">Female</span>
-									<span className="text-sm font-medium">{absentStats.female}</span>
-								</div>
-							</div>
-							<div className="text-right">
-								<div className="text-xs text-gray-500">Total On-Time</div>
-								<div className="text-xl font-bold">{absentStats.total}</div>
-							</div>
-						</div>
-						<div className="flex justify-between items-center mb-4">
-							<div className="text-xs text-gray-500">Absence Rate</div>
-							<div className="flex items-center gap-1">
-								<div className="w-16 h-1 bg-red-400 rounded-full overflow-hidden">
-									<div
-										className="h-full bg-red-600"
-										style={{ width: `${absentStats.rate}%` }}
-									></div>
-								</div>
-								<span className="text-xs">{absentStats.rate}%</span>
-							</div>
-						</div>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" className="w-full justify-between text-xs p-0 h-auto">
-									All Departments
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="16"
-										height="16"
-										fill="currentColor"
-										viewBox="0 0 16 16"
-									>
-										<path
-											fillRule="evenodd"
-											d="M7.646 4.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708z"
-										/>
-										<path
-											fillRule="evenodd"
-											d="M7.646 8.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708z"
-										/>
-									</svg>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent>
-								<DropdownMenuItem>Engineering</DropdownMenuItem>
-								<DropdownMenuItem>Marketing</DropdownMenuItem>
-								<DropdownMenuItem>Sales</DropdownMenuItem>
-								<DropdownMenuItem>HR</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-						<div className="mt-4 space-y-2 max-h-[200px] overflow-y-auto pr-1">
-							{absentData.map((emp) => (
-								<div
-									key={emp.id}
-									className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
-								>
-									<div className="flex items-center gap-2">
-										<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium text-white">
-											{emp.name.split(" ")[0][0]}
-											{emp.name.split(" ")[1][0]}
-										</div>
-										<div>
-											<div className="text-sm font-medium">{emp.name}</div>
-											<div className="text-xs text-gray-500">{emp.role}</div>
-										</div>
-									</div>
-									<Badge variant="outline" className="text-xs px-2 py-1">
-										On Leave
-									</Badge>
-								</div>
-							))}
-						</div>
-					</div>
+					))}
 				</div>
 			</div>
 		</div>

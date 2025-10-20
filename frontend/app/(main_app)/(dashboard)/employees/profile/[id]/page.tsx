@@ -65,6 +65,7 @@ import EmployeeDevices from "../../_components/employee-devices";
 import EmployeeDevicesLogs from "../../_components/employee-device-log";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
+import { Icon } from "@iconify/react";
 import EmployeeWorkingDaysTab from "@/components/working-days/employee-working-days";
 
 export default function EmployeeProfile() {

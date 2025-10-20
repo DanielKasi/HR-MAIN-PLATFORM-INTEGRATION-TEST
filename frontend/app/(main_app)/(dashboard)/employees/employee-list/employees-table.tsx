@@ -288,54 +288,52 @@ export function EmployeesTable({
 	];
 
 	const fetchFirstPageWithCache = async () => {
-		console.log("\n\n Fetch called on employees  with should use cache : ", shouldUseCache);
 		if (!currentInstitution) throw new Error("No institution selected");
-		if (shouldUseCache) {
-			console.log("\n\n Using cache ");
-			setHasUsedCache(true);
-			const cachedData = cachedEmployeesPage;
+		// if (shouldUseCache) {
+		// 	console.log("\n\n Using cache ");
+		// 	setHasUsedCache(true);
+		// 	const cachedData = cachedEmployeesPage;
 
-			setTimeout(async () => {
-				try {
-					const freshData = await getPaginatedEmployees({
-						institutionId: currentInstitution.id,
-						page: 1,
-						ordering,
-						search: searchTerm || undefined,
-						position_id: positionSearchTermString || undefined,
-						department_id:
-							departmentSearchTerm && departmentSearchTerm.length > 0
-								? departmentSearchTerm.join(",")
-								: undefined,
-						salary_min: minSalary ? removeCommas(minSalary) : undefined,
-						salary_max: maxSalary ? removeCommas(maxSalary) : undefined,
-					});
+		// 	setTimeout(async () => {
+		// 		try {
+		// 			const freshData = await getPaginatedEmployees({
+		// 				institutionId: currentInstitution.id,
+		// 				page: 1,
+		// 				ordering,
+		// 				search: searchTerm || undefined,
+		// 				position_id: positionSearchTermString || undefined,
+		// 				department_id:
+		// 					departmentSearchTerm && departmentSearchTerm.length > 0
+		// 						? departmentSearchTerm.join(",")
+		// 						: undefined,
+		// 				salary_min: minSalary ? removeCommas(minSalary) : undefined,
+		// 				salary_max: maxSalary ? removeCommas(maxSalary) : undefined,
+		// 			});
 
-					if (
-						shouldCacheResults(
-							searchTerm,
-							positionSearchTerm,
-							departmentFilter,
-							minSalary,
-							maxSalary,
-							ordering,
-						)
-					) {
-						dispatch(cacheEmployeesPage(freshData));
-					}
+		// 			if (
+		// 				shouldCacheResults(
+		// 					searchTerm,
+		// 					positionSearchTerm,
+		// 					departmentFilter,
+		// 					minSalary,
+		// 					maxSalary,
+		// 					ordering,
+		// 				)
+		// 			) {
+		// 				dispatch(cacheEmployeesPage(freshData));
+		// 			}
 
-					if (tableRefreshRef.current) {
-						tableRefreshRef.current();
-					}
-				} catch (error) {
-					showErrorToast({ error, defaultMessage: "Background refresh failed" });
-				}
-			}, 0);
+		// 			if (tableRefreshRef.current) {
+		// 				tableRefreshRef.current();
+		// 			}
+		// 		} catch (error) {
+		// 			showErrorToast({ error, defaultMessage: "Background refresh failed" });
+		// 		}
+		// 	}, 0);
 
-			return cachedData!;
-		}
+		// 	return cachedData!;
+		// }
 
-		console.log("'n'n Fetching without 'shouldUseCache' with search value : ", searchTerm);
 		const result = await getPaginatedEmployees({
 			institutionId: currentInstitution.id,
 			page: 1,
@@ -376,7 +374,7 @@ export function EmployeesTable({
 			minSalary,
 			maxSalary,
 			ordering,
-			hasUsedCache,
+			// hasUsedCache,
 		];
 	}, [
 		searchTerm,
@@ -385,7 +383,7 @@ export function EmployeesTable({
 		minSalary,
 		maxSalary,
 		ordering,
-		hasUsedCache,
+		// hasUsedCache,
 	]);
 
 	return (

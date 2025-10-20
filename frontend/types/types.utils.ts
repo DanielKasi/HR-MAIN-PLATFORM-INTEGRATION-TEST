@@ -813,6 +813,7 @@ export interface IEmployeeFormData {
 	user: Pick<IUser, "fullname" | "email">;
 	id?: number;
 	name: string;
+	email: string;
 	company_email?: {
 		email: string;
 		provider: string | null;

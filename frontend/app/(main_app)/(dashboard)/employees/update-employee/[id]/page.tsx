@@ -472,6 +472,10 @@ export default function UpdateEmployeeForm() {
 	}, [employeeId, selectedInstitution]);
 
 	useEffect(() => {
+		console.log("\n\n Form data changed as : ", formData);
+	}, [formData]);
+
+	useEffect(() => {
 		setFormData((prev) => ({ ...prev, selected_branches: branches.map((br) => br.id) }));
 	}, [branches]);
 
@@ -483,7 +487,10 @@ export default function UpdateEmployeeForm() {
 			setFormData({
 				fullname: employee?.name || employee.user?.fullname || "",
 				email: employee.user?.email || "",
-				company_email: { email: employee.company_email?.email || "", provider: null },
+				company_email: {
+					email: employee.company_email?.email || employee?.email || "",
+					provider: null,
+				},
 				phone_number: employee.phone_number,
 				position: employee.position.id,
 				department: employee.department.id,
@@ -500,10 +507,7 @@ export default function UpdateEmployeeForm() {
 				is_active: employee.is_active,
 				skills: employee.skills,
 				has_children: employee.has_children,
-				selected_branches:
-					employee.user?.branches.map((b) => b.id) || employee?.payroll_branch?.id
-						? [employee?.payroll_branch?.id as unknown as number]
-						: [],
+				selected_branches: employee.user?.branches.map((b) => b.id) || [],
 				marital_status: employee.marital_status,
 				gender: employee.gender,
 				children: employee.children,
@@ -636,6 +640,12 @@ export default function UpdateEmployeeForm() {
 
 			setFormData(updatedFormData);
 		} else if (field === "company_email") {
+			console.log(
+				"\n\n Changing company email to : ",
+				value,
+				"\n\n With prev company email state : ",
+				formData,
+			);
 			setFormData((prev) => ({
 				...prev,
 				company_email: { email: value as string, provider: null },
@@ -879,6 +889,7 @@ export default function UpdateEmployeeForm() {
 				},
 				name: formData.fullname,
 				company_email: { email: formData.company_email?.email || "", provider: null },
+				email: formData.company_email?.email || "",
 				phone_number: formData.phone_number,
 				phone_number_country_code: phoneCountryCode,
 				gender: formData.gender || "male",
