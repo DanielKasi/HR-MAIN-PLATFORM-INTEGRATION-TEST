@@ -24,8 +24,10 @@ from .models import (
     EmployeeBirthdayTask,
 )
 
+
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = (
+        "employee_id",
         "get_user_fullname",
         "get_institution",
         "name",
@@ -35,10 +37,11 @@ class EmployeeAdmin(admin.ModelAdmin):
     )
     search_fields = (
         "name",
-        "position",
-        "department",
+        "position__name",
+        "department__name",
         "user__email",
         "user__fullname",
+        "employee_id",
     )
     list_filter = (
         "department",
@@ -84,6 +87,6 @@ admin.site.register(EmployeeCompanyEmail)
 admin.site.register(DocumentRequest)
 admin.site.register(DocumentRequestEmployee)
 admin.site.register(RequestedDocument)
-admin.site.register(Employee)
+admin.site.register(Employee, EmployeeAdmin)
 admin.site.register(EmployeeBirthdayTask)
 admin.site.register(EmployeeLogs)

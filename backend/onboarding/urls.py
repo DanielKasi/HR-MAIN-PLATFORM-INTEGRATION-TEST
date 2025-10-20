@@ -1,24 +1,18 @@
 from django.urls import path
 from .views import (
     BulkOnBoardingCreateAPI,
-    EmployeeSeparationListView,
+    HandoverReportDetailView,
+    OffboardingDetailView,
+    OffboardingListCreateView,
     OnBoardingListAPI,
     OnBoardingDetailAPI,
-    OffboardingStageListCreateView,
-    OffboardingStageDetailView,
-    InstitutionEmployeeSeparationTypesListCreateView,
-    InstitutionEmployeeSeparationTypesDetailView,
-    InstitutionSeparationPolicyDetailView,
-    InstitutionSeparationPolicyListCreateView,
-    ReorderSeparationStageView,
-    ResignationRequestListCreateView,
-    ResignationRequestDetailView,
-    ResignationRequestByLoggedInUser,
-    RetirementRequestDetailView,
-    RetirementRequestListCreateView,
-    TerminationInitiationListCreateView,
-    TerminationInitiationDetailView,
+
     OffboardingDashboardView,
+    ReorderOffboardingStageView,
+    TerminationStageDetailView,
+    TerminationStageListCreateView,
+    TerminationTypeDetailView,
+    TerminationTypeListCreateView,
 )
 
 urlpatterns = [
@@ -35,80 +29,13 @@ urlpatterns = [
     path(
         "bulk-create/", BulkOnBoardingCreateAPI.as_view(), name="bulk-onboarding-create"
     ),
-    path(
-        "offboarding-stages/",
-        OffboardingStageListCreateView.as_view(),
-        name="offboarding-stage-list-create",
-    ),
-    path(
-        "offboarding-stages/<int:stage_id>/",
-        OffboardingStageDetailView.as_view(),
-        name="offboarding-stage-detail",
-    ),
-    path(
-        "separation-types/",
-        InstitutionEmployeeSeparationTypesListCreateView.as_view(),
-        name="separation-types-list-create",
-    ),
-    path(
-        "separation-types/<int:separation_type_id>/",
-        InstitutionEmployeeSeparationTypesDetailView.as_view(),
-        name="separation-types-detail",
-    ),
-    path(
-        "separation-policies/",
-        InstitutionSeparationPolicyListCreateView.as_view(),
-        name="separation-policies-list-create",
-    ),
-    path(
-        "separation-policies/<int:policy_id>/",
-        InstitutionSeparationPolicyDetailView.as_view(),
-        name="separation-policies-detail",
-    ),
-    path(
-        "resignation-requests/",
-        ResignationRequestListCreateView.as_view(),
-        name="resignation-requests-list-create",
-    ),
-    path(
-        "resignation-requests/<int:request_id>/",
-        ResignationRequestDetailView.as_view(),
-        name="resignation-requests-detail",
-    ),
-    path(
-        "resignation-requests/by-loggedin-user/",
-        ResignationRequestByLoggedInUser.as_view(),
-        name="resignation-requests-by-user",
-    ),
-    path(
-        "termination-initiations/",
-        TerminationInitiationListCreateView.as_view(),
-        name="termination-initiations-list-create",
-    ),
-    path(
-        "termination-initiations/<int:termination_initiation_id>/",
-        TerminationInitiationDetailView.as_view(),
-        name="termination-initiations-detail",
-    ),
-    path(
-        "employee-separations/",
-        EmployeeSeparationListView.as_view(),
-        name="employee-separation-with-stages",
-    ),
-    path(
-        "employee-separations/<int:separation_id>/stage-reorder/",
-        ReorderSeparationStageView.as_view(),
-        name="update-separation-stage-positions",
-    ),
+    path("termination/stages/", TerminationStageListCreateView.as_view()),
+    path("termination/stages/<int:pk>/", TerminationStageDetailView.as_view()),
+    path("termination/types/", TerminationTypeListCreateView.as_view()),
+    path("termination/types/<int:pk>/", TerminationTypeDetailView.as_view()),
+    path("terminations/", OffboardingListCreateView.as_view()),
+    path("terminations/<int:pk>/", OffboardingDetailView.as_view()),
     path("analytics/", OffboardingDashboardView.as_view(), name="offboarding-analytics"),
-        path(
-        "retirement-requests/",
-        RetirementRequestListCreateView.as_view(),
-        name="retirement-request-list-create",
-    ),
-    path(
-        "retirement-requests/<int:retirement_request_id>/",
-        RetirementRequestDetailView.as_view(),
-        name="retirement-request-detail",
-    ),
+    path('termination/handover-reports/<int:pk>/', HandoverReportDetailView.as_view(), name='handover-report-detail'),
+    path('termination/<int:separation_id>/reorder-stages/', ReorderOffboardingStageView.as_view(), name='reorder-offboarding-stages'),
 ]

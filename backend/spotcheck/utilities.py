@@ -30,10 +30,21 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
         plain_message = (
             f"Please confirm your spotcheck by clicking the link: {intent_url}"
         )
+
+        user = spotcheck.employee.user
+        gender = spotcheck.employee.gender.lower()
+        # Choose appropriate salutation based on gender
+        if gender == "male":
+            salutation = "Mr. "
+        elif gender == "female":
+            salutation = "Ms. "
+        else:
+            salutation = ""
+
         html_message = render_to_string(
             "emails/spotcheck_email.html",
             context={
-                "employee_name": spotcheck.employee.user.fullname,
+                "employee_name": f"{salutation}{user.fullname}",
                 "spotcheck_link": f"{intent_url}",
             },
         )
@@ -42,7 +53,7 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
             message=plain_message,
             html_message=html_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[spotcheck.employee.user.email],
+            recipient_list=[user.email],
             fail_silently=False,
         )
         return True

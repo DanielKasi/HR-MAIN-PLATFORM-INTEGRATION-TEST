@@ -20,6 +20,25 @@ body {
 		-ms-overflow-style: none; /* IE and Edge */
 		scrollbar-width: none; /* Firefox */
 	}
+	.thin-scrollbar::-webkit-scrollbar {
+		width: 7px;
+		@apply bg-gray-200;
+	}
+	.thin-scrollbar::-webkit-scrollbar-thumb {
+		width: 6px;
+		border-radius: 8px;
+		@apply bg-gray-400;
+	}
+}
+
+::-webkit-scrollbar {
+	width: 7px;
+	@apply bg-gray-200;
+}
+::-webkit-scrollbar-thumb {
+	width: 6px;
+	border-radius: 8px;
+	@apply bg-gray-400;
 }
 
 @layer base {

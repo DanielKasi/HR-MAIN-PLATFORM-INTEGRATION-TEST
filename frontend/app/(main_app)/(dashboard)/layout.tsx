@@ -203,6 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	}, [pathname]);
 
 	const updateThemeColors = (hexColor: string) => {
+		console.log("\n\n Updating theme color with color : ", hexColor);
 		if (!hexColor) return;
 		try {
 			const hslValue = hexToHSL(hexColor);
@@ -402,16 +403,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 										</DropdownMenuItem>
 									)}
 
-									{currentUser && currentUser.id === selectedInstitution?.institution_owner_id && (
-										<DropdownMenuItem
-											className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
-											onClick={() => router.push("/admin/settings?tab=ownership_transfer")}
-										>
-											<Icon icon="hugeicons:folder-transfer" className="!w-4 !h-4" />
-											<span>Ownership Transfer</span>
-										</DropdownMenuItem>
-									)}
-
 									<DropdownMenuSeparator className="my-1" />
 									<DropdownMenuItem
 										className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
@@ -429,7 +420,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 					<div className="w-full p-2 relative min-w-0">
 						{selectedInstitution ? (
 							<>
-								<div className="overflow-y-auto max-h-[calc(100svh-4rem)] relative min-w-full">
+								<div className="overflow-y-auto max-h-[calc(100svh-4rem)] relative min-w-full thin-scrollbar">
 									{children}
 								</div>
 							</>

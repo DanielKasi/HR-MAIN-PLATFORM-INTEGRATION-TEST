@@ -4,7 +4,7 @@ import type { ApprovalTasksDashboardResponse, TaskType } from "@/types/types.uti
 import { useEffect, useState, useMemo } from "react";
 import { ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getDashboardTasksAnalytics } from "@/lib/utils";
+import { getDashboardTasksAnalytics, showErrorToast } from "@/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -129,8 +129,7 @@ export function TasksCards({ branchId }: { branchId: string | null }) {
 			];
 			setAllTasksList(mockTasks);
 		} catch (error) {
-			console.error("Error fetching all tasks:", error);
-			// Optionally set an error state for the dropdown
+			showErrorToast({ error, defaultMessage: "Error fetching all tasks" });
 		}
 	};
 

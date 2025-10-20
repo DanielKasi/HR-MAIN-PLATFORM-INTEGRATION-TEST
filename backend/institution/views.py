@@ -1,4 +1,6 @@
 from django.http import Http404
+from communication.models import Notification
+from institution.tasks import send_ownership_transfer_email
 from recruitment.models import JobPosition
 from employee.service import create_owner_employee
 from employee.models import Employee, WorkType, EmployeeType
@@ -2963,6 +2965,24 @@ class OwnershipTransferAPIView(APIView, SortableAPIMixin):
         if serializer.is_valid():
             instance = serializer.save()
             instance.confirm_create()
+            if instance.new_owner:
+                send_ownership_transfer_email.delay(
+                    new_owner_id=instance.new_owner.id,
+                    institution_name=instance.institution.institution_name,
+                    transfer_reason=instance.transfer_reason
+                )
+
+                notification_message = (
+                    f"You have been assigned as the new super user of {instance.institution.institution_name}. "
+                    f"Reason: {instance.transfer_reason or 'No specific reason provided.'}"
+                )
+                Notification.objects.create(
+                    user_id=instance.new_owner,
+                    message=notification_message,
+                    model_name='OwnershipTransfer',
+                    object_id=str(instance.id),
+                    requires_acknowledgment=True
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

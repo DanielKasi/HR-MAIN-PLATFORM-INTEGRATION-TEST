@@ -224,23 +224,18 @@ export default function Dashboard() {
 					<BarHChart
 						title={"Payroll by Department"}
 						data={{
-							"This week": [
-								{ department: "Technology", count: 20_000_000 },
-								{ department: "Sales", count: 16_000_000 },
-								{ department: "Marketing", count: 12_000_000 },
-								{ department: "Operations", count: 10_000_000 },
-							],
+							"This Year": data?.payroll_by_department || [],
 						}}
-						dataKey={"count"}
-						nameKey={"department"}
+						dataKey={"payroll"}
+						nameKey={"dept"}
 						color={colors[3]}
 						rounded
 					/>
 				</div>
-				<Card className="rounded-xl !border-none shadow-sm">
+				{/* <Card className="rounded-xl !border-none shadow-sm">
 					<EmployeeAttendance showingOnDashboard={true} scope={{ type: "default" }} />
-				</Card>
-				{/* <AttendanceSummary/> */}
+				</Card> */}
+				<AttendanceSummary />
 			</div>
 		</div>
 	);

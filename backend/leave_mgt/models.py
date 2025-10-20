@@ -6,7 +6,8 @@ from users.models import CustomUser
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
-from approval.models import BaseApprovableModel
+from approval.models import Approval, BaseApprovableModel
+from django.db import transaction
 
 
 class LeaveType(BaseApprovableModel):
@@ -317,6 +318,31 @@ class LeaveApplication(BaseApprovableModel):
             'created_at',
             'created_by__fullname'
         ))
+    
+    @transaction.atomic
+    def finish_workflow(self, approval: Approval):
+        from .utils import LeaveBalanceManager
+        if approval.status == "completed":
+            if approval.action.name == "create":
+                self.status = "pending"
+                self.save(update_fields=['status'])
+            elif approval.action.name == "update":
+                if self.rejection_reason:
+                    self.status = "rejected"  
+                    LeaveBalanceManager.update_balance_on_rejection(self)
+                else:
+                    self.status = "approved"
+                    self.approved_by = approval.approved_by
+                    self.approved_at = timezone.now()
+                    LeaveBalanceManager.update_balance_on_approval(self)
+                self.save(update_fields=['status', 'approved_by', 'approved_at'])
+            elif approval.action.name == "delete":
+                self.status = "CANCELLED"
+                self.save(update_fields=['status'])
+        elif approval.status == "rejected":
+            self.status = "REJECTED"
+            self.rejection_reason = approval.rejection_reason or "Approval rejected"
+            self.save(update_fields=['status', 'rejection_reason'])  
 
 
 class LeavePolicy(BaseApprovableModel):

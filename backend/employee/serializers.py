@@ -590,7 +590,8 @@ class EmployeeDaySerializer(BaseApprovableSerializer):
 
     class Meta:
         model = EmployeeDay
-        fields = '__all__'
+        fields = ["id", "day", "start_time", "end_time", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -599,62 +600,73 @@ class EmployeeDaySerializer(BaseApprovableSerializer):
 
 
 class EmployeeWorkingDaysSerializer(BaseApprovableSerializer):
-    days = serializers.PrimaryKeyRelatedField(
-        queryset=SystemDay.objects.all(),
-        many=True,
-    )
+    employee_days = EmployeeDaySerializer(many=True, required=False)
 
     class Meta:
         model = EmployeeWorkingDays
-        fields = "__all__"
-        read_only_fields = ["id", "employee"]
+        fields = ["id", "employee", "employee_days", "created_at", "updated_at"]
+        read_only_fields = ["id", "employee", "created_at", "updated_at"]
 
     def validate(self, data):
-        selected_days = data.get("days")
+        employee_days = data.get("employee_days", [])
+        selected_days = [employee_day["day"] for employee_day in employee_days]
         instance = self.instance
         employee = data.get("employee") or (instance.employee if instance else None)
 
+        if not employee:
+            raise serializers.ValidationError({"error": "Employee must be provided."})
+
+        if not hasattr(employee, "department") or not employee.department:
+            raise serializers.ValidationError({"error": "Employee must have a department."})
+
+        institution = employee.department.institution
+        if not institution:
+            raise serializers.ValidationError({"error": "Employee's department must be linked to an institution."})
+
         if employee.payroll_branch and hasattr(employee.payroll_branch, "working_days"):
             allowed_days = employee.payroll_branch.working_days.days.all()
-
         else:
-            institution = employee.department.institution
-
             if not hasattr(institution, "working_days"):
                 raise serializers.ValidationError(
-                    {"error": f"Institution does not have working days defined."}
+                    {"error": "Institution does not have working days defined."}
                 )
-
             allowed_days = institution.working_days.days.all()
 
         for day in selected_days:
             if day not in allowed_days:
                 raise serializers.ValidationError(
-                    {
-                        "error": f"{day.day_name} is not a valid working day for this institution/branch."
-                    }
+                    {"error": f"{day.day_name} is not a valid working day for this institution/branch."}
                 )
 
         return data
 
-    def update(self, instance, validated_data):
-        days = validated_data.pop("days", None)
-
-        if days is not None:
-            instance.days.set(days)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
+    def create(self, validated_data):
+        employee_days_data = validated_data.pop("employee_days", [])
+        instance = EmployeeWorkingDays.objects.create(**validated_data)
+        for day_data in employee_days_data:
+            EmployeeDay.objects.create(employee_working_days=instance, **day_data)
         return instance
 
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep["days"] = EmployeeDaySerializer(
-            instance.employee_days.all(), many=True
-        ).data
-        return rep
+    def update(self, instance, validated_data):
+        employee_days_data = validated_data.pop("employee_days", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if employee_days_data is not None:
+            instance.employee_days.all().delete()
+            for day_data in employee_days_data:
+                EmployeeDay.objects.create(employee_working_days=instance, **day_data)
+
+        return instance
+
+    # def to_representation(self, instance):
+    #     instance = EmployeeWorkingDays.objects.filter(id=instance.id).select_related(
+    #         "employee__user", "employee__department__institution"
+    #     ).prefetch_related("employee_days__day").first()
+    #     rep = super().to_representation(instance)
+    #     rep["days"] = EmployeeDaySerializer(instance.employee_days.all(), many=True).data
+    #     return rep
 
 
 class EmployeeAttendanceSerializer(BaseApprovableSerializer):

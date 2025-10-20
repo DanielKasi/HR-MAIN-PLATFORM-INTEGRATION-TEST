@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.db.models import Q
 from django.db import transaction
+from onboarding.models import TerminationType
 from employee.service import create_owner_employee
 from users.models import Permission, PermissionCategory, SystemType, System, CustomUser
 from approval.models import Action
@@ -62,12 +63,159 @@ class Command(BaseCommand):
         self.create_default_system_days()
         self.create_default_bank_info()
         self.create_default_performance_data()
+        self.create_default_termination_types()
         self.create_tax_rules_for_institutions()
         self.create_default_awards()
         self.generate_usernames()
         self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
         self.sync_education_qualifications()
+
+    def create_default_termination_types(self):
+        """Create default TerminationType records for all institutions."""
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Creating default termination types for institutions...\n")
+        )
+
+        default_termination_types = [
+            {
+                "name": "Resignation",
+                "description": "Employee voluntarily decides to leave to pursue new opportunities or personal goals, such as a new job or education.",
+                "requires_handover_report": True
+            },
+            {
+                "name": "Retirement",
+                "description": "Employee voluntarily leaves due to reaching retirement age or personal decision after long-term service.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Mutual Agreement",
+                "description": "Both employer and employee mutually agree to end the employment relationship after discussions about role fit or other factors.",
+                "requires_handover_report": True
+            },
+            {
+                "name": "Job Abandonment",
+                "description": "Employee stops reporting to work without formal resignation or communication.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Layoff",
+                "description": "Position is eliminated due to financial, restructuring, or operational reasons, such as company downsizing.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Dismissal for Cause",
+                "description": "Employee is terminated for misconduct, violation of policy, or poor performance, such as repeated tardiness or dishonesty.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Termination Due to Poor Performance",
+                "description": "Employee is terminated for failing to meet job expectations after warnings and performance improvement plans.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "End of Contract",
+                "description": "Employment contract naturally expires and is not renewed, such as after a project concludes.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Retrenchment",
+                "description": "Job loss due to financial losses or restructuring, with legal compensation, often after mergers or role overlaps.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Dismissal Due to Misconduct",
+                "description": "Termination for serious violations such as theft, harassment, or fraud, e.g., falsifying expense reports.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Termination Due to Illness or Incapacity",
+                "description": "Employee cannot continue work due to long-term illness or inability to perform essential duties after medical review.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Constructive Dismissal",
+                "description": "Employee resigns due to intolerable working conditions created by the employer, such as continuous harassment or unfair demotion.",
+                "requires_handover_report": True
+            },
+            {
+                "name": "Retrenchment under Reorganization",
+                "description": "Job loss caused by corporate restructuring or mergers, resulting in consolidated departments or overlapping roles.",
+                "requires_handover_report": False
+            },
+            {
+                "name": "Probationary Termination",
+                "description": "Employment ends during the probationary period due to unsatisfactory performance after assessment.",
+                "requires_handover_report": False
+            }
+        ]
+
+        institutions = Institution.objects.all()
+        total_created = 0
+        total_updated = 0
+
+        for institution in institutions:
+            self.stdout.write(
+                f"Processing termination types for {institution.institution_name}"
+            )
+            created_count = 0
+            updated_count = 0
+
+            for term_data in default_termination_types:
+                try:
+                    term_type, created = TerminationType.objects.update_or_create(
+                        institution=institution,
+                        name=term_data["name"],
+                        defaults={
+                            "description": term_data["description"],
+                            "requires_handover_report": term_data["requires_handover_report"]
+                        }
+                    )
+                    if created:
+                        created_count += 1
+                        total_created += 1
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f"  ✅ Created termination type: {term_type.name} for {institution.institution_name}"
+                            )
+                        )
+                    else:
+                        updated_count += 1
+                        total_updated += 1
+                        self.stdout.write(
+                            self.style.NOTICE(
+                                f"  ♻️ Updated termination type: {term_type.name} for {institution.institution_name}"
+                            )
+                        )
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"  ❌ Failed to create/update termination type '{term_data['name']}' for {institution.institution_name}: {str(e)}"
+                        )
+                    )
+
+            self.stdout.write(
+                self.style.NOTICE(
+                    f"  📊 {institution.institution_name}: Created {created_count}, Updated {updated_count}"
+                )
+            )
+
+        self.stdout.write(
+            "\n" + self.style.MIGRATE_LABEL("📋 Termination Types Summary")
+        )
+        self.stdout.write(
+            self.style.NOTICE(
+                f"  ➕ Created: {total_created} termination type(s)"
+            )
+        )
+        self.stdout.write(
+            self.style.NOTICE(
+                f"  ♻️ Updated: {total_updated} termination type(s)"
+            )
+        )
+        self.stdout.write(
+            self.style.SUCCESS("\n🎉 Termination types created successfully!")
+        )    
 
     def sync_education_qualifications(self):
         """Update education records with null qualifications by assigning appropriate QualificationAwards."""
