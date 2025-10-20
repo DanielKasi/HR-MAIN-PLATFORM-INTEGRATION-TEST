@@ -32,7 +32,7 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
         )
 
         user = spotcheck.employee.user
-        gender = user.gender.lower()
+        gender = spotcheck.employee.gender.lower()
         # Choose appropriate salutation based on gender
         if gender == "male":
             salutation = "Mr. "
