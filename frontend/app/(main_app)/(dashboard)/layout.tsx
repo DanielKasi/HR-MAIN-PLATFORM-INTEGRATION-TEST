@@ -203,6 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	}, [pathname]);
 
 	const updateThemeColors = (hexColor: string) => {
+		console.log("\n\n Updating theme color with color : ", hexColor);
 		if (!hexColor) return;
 		try {
 			const hslValue = hexToHSL(hexColor);

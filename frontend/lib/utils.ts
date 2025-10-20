@@ -1629,9 +1629,12 @@ export const createEmployee = async ({
 			formData.append("user.fullname", employeeData.user.fullname || "");
 			formData.append("user.email", employeeData.user.email || "");
 		}
+		if (employeeData.company_email) {
+			formData.append("company_email.email", employeeData.company_email.email);
+		}
 
 		Object.entries(employeeData).forEach(([key, value]) => {
-			if (key === "user") return;
+			if (key === "user" || key === "company_email") return;
 
 			if (key === "employee_profile_picture" && value instanceof File) {
 				formData.append(key, value);
@@ -1704,16 +1707,18 @@ export const updateEmployee = async ({
 	employeeId: number;
 	employeeData: IEmployeeFormData;
 }) => {
-	console.log("\n\n Updating employee with data : ", employeeData);
 	const formData = new FormData();
 
 	if (employeeData.user) {
 		formData.append("user.fullname", employeeData.user.fullname);
 		formData.append("user.email", employeeData.user.email);
 	}
+	if (employeeData.company_email) {
+		formData.append("company_email.email", employeeData.company_email.email);
+	}
 
 	Object.entries(employeeData).forEach(([key, value]) => {
-		if (key === "user") return;
+		if (key === "user" || key === "company_email") return;
 
 		if (key === "employee_profile_picture" && value instanceof File) {
 			formData.append(key, value);
