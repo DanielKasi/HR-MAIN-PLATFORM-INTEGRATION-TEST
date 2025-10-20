@@ -395,13 +395,13 @@ class BulkOnBoardingCreateAPI(APIView):
 )
 class OffboardingDashboardView(APIView):
 
-    def get(self, request, institution_id):
+    def get(self, request):
         """
         Dashboard endpoint providing key offboarding metrics and recent activities.
         """
         # Ensure the user has access to the institution
         try:
-            institution_id = int(institution_id)
+            institution_id = request.user.profile.institution
         except ValueError:
             return Response(
                 {'error': 'Invalid institution_id'},
