@@ -117,12 +117,10 @@ export default function AssetsDashboard() {
 							<BarHChart
 								title={"Assets Allocation by Department"}
 								data={{
-									"All Assets": [
-										{ department: "Accounting", count: 12 },
-										{ department: "IT / Technology", count: 42 },
-										{ department: "Sales", count: 20 },
-										{ department: "Marketing", count: 14 },
-									],
+									Departments: Object.entries(data.department_allocation).map(([dept, count]) => ({
+										department: dept,
+										count: count as number,
+									})),
 								}}
 								dataKey={"count"}
 								nameKey={"department"}

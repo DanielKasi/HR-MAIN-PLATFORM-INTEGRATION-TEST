@@ -610,6 +610,18 @@ export interface IAttendanceDashboard {
 	spotchecks_failure_rate?: number;
 	late_comers_today: ILatecomer[];
 	failed_spotchecks_today: IFailedSpotcheckToday[];
+	department_wise_overtime?: Array<{
+		department: string;
+		hours: number;
+	}>;
+	department_wise_attendance?: Array<{
+		department: string;
+		on_time: number;
+		late: number;
+		absent: number;
+	}>;
+	absenteeism_rate?: number;
+	employees_on_leave_today?: number;
 }
 
 export interface IFeedbackField {
