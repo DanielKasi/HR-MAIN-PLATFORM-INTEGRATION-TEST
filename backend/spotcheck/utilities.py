@@ -26,7 +26,7 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
 
     try:
         intent_url = f"{settings.FRONTEND_URL}spot-checks/?intent=spot_check&intent_id={spotcheck.id}"
-        subject = "Spot Check"
+        subject = "Spot Check Alert — Immediate Action Required"
         plain_message = (
             f"Please confirm your spotcheck by clicking the link: {intent_url}"
         )
