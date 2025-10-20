@@ -41,7 +41,7 @@ export default function BarHChart({
 
 	const [category, setCategory] = React.useState(groups[0]);
 
-	const [items, setItems] = React.useState(data[groups[0]] || ([] as Entry[]));
+	const [items, setItems] = React.useState<Entry[]>([]);
 
 	React.useEffect(() => {
 		if (data) {
@@ -54,6 +54,12 @@ export default function BarHChart({
 			setCategory(groups[0]);
 		}
 	}, [groups]);
+
+	React.useEffect(() => {
+		if (data && groups) {
+			setItems(data[groups[0]] || ([] as Entry[]));
+		}
+	}, [data, groups]);
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {

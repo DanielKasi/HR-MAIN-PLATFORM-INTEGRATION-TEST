@@ -236,7 +236,7 @@ export function TasksCards({ branchId }: { branchId: string | null }) {
 
 					<DropdownMenuContent
 						align="start"
-						className="h-fit px-2 rounded-xl max-h-[80vh] overflow-hidden"
+						className="h-fit p-4 rounded-xl"
 						style={{ width: "var(--radix-dropdown-menu-trigger-width)" }}
 					>
 						<div className="flex items-center justify-between gap-4 mb-2">
@@ -287,7 +287,7 @@ export function TasksCards({ branchId }: { branchId: string | null }) {
 						</div>
 
 						{/* Task List */}
-						<div className="max-h-[30vh] overflow-y-auto">
+						<div className="!max-h-[55svh] overflow-y-auto">
 							{allTasksList.length > 0 ? (
 								allTasksList.map((task) => (
 									<DropdownMenuItem

@@ -106,8 +106,8 @@ function* login({
 }
 
 function* logout() {
-	const defaultPrimaryColor = "142.1 76.2% 36.3%";
-	const defaultRingColor = "142.1 76.2% 36.3%";
+	const defaultPrimaryColor = "199 93% 50%";
+	const defaultRingColor = "199 93% 50%";
 	const defaultSideBarAccentColor = "240 4.8% 95.9%";
 
 	try {
