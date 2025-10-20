@@ -322,11 +322,6 @@ export default function AIAssistantWidget() {
 
 				{isOpen && (
 					<div className="absolute bottom-16 right-0 mb-1">
-						<div className="absolute bottom-0 right-6 transform translate-y-full z-20">
-							<div className="w-0 h-0 border-l-[18px] border-r-[18px] border-t-[18px] border-l-transparent border-r-transparent border-t-white drop-shadow-2xl animate-in fade-in duration-300" />
-							<div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 h-3 bg-gradient-to-b from-white to-transparent opacity-80" />
-						</div>
-
 						<Card
 							ref={cardRef}
 							className="shadow-2xl border-0 bg-white rounded-2xl overflow-hidden relative animate-in slide-in-from-bottom-4 zoom-in-95 duration-300"
