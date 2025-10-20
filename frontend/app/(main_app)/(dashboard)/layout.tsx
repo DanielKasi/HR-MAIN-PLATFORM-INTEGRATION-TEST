@@ -429,7 +429,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 					<div className="w-full p-2 relative min-w-0">
 						{selectedInstitution ? (
 							<>
-								<div className="overflow-y-auto max-h-[calc(100svh-4rem)] relative min-w-full">
+								<div className="overflow-y-auto max-h-[calc(100svh-4rem)] relative min-w-full thin-scrollbar">
 									{children}
 								</div>
 							</>

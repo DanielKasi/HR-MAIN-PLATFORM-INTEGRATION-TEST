@@ -101,7 +101,7 @@ export default function EmployeesPage() {
 					<CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 						<h1 className="text-xl md:text-2xl font-bold">Employees</h1>
 
-						<div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 w-full sm:w-auto">
+						<div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full sm:w-auto">
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
@@ -147,7 +147,7 @@ export default function EmployeesPage() {
 					</CardTitle>
 
 					{/* Search and Filters Section */}
-					<div className="flex flex-col gap-4 mt-6 sm:mt-12 overflow-visible">
+					<div className="flex flex-col lg:flex-row gap-4 mt-6 sm:mt-12 overflow-visible">
 						{/* Search Bar */}
 						<div className="relative w-full">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -175,9 +175,9 @@ export default function EmployeesPage() {
 
 						{/* Filters - Hidden on mobile by default, shown when toggled */}
 						<div
-							className={`${showFilters ? "flex flex-col" : "hidden"} sm:flex sm:flex-col lg:flex-row gap-4 items-start lg:items-end`}
+							className={`${showFilters ? "flex flex-col" : "hidden"} sm:flex sm:flex-col lg:!flex-row gap-4 items-start lg:items-end`}
 						>
-							<div className="grid grid-cols-1 xs:grid-cols-2 gap-3 w-full">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
 								<JobPositionSearchableSelect
 									value={positionSearchTerm}
 									onValueChange={setPositionSearchTerm}

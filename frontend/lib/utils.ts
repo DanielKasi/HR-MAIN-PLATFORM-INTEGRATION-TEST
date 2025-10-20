@@ -1620,14 +1620,13 @@ export const createEmployee = async ({
 	institutionId: number;
 	employeeData: IEmployeeFormData;
 }) => {
-	console.log("\n\n Creating employee with data : ", employeeData);
 	try {
 		const formData = new FormData();
 
 		formData.append("institutionId", institutionId.toString());
 
 		if (employeeData.user) {
-			// formData.append("user.fullname", employeeData.user.fullname || "");
+			formData.append("user.fullname", employeeData.user.fullname || "");
 			formData.append("user.email", employeeData.user.email || "");
 		}
 
@@ -1709,7 +1708,7 @@ export const updateEmployee = async ({
 	const formData = new FormData();
 
 	if (employeeData.user) {
-		// formData.append("user.fullname", employeeData.user.fullname);
+		formData.append("user.fullname", employeeData.user.fullname);
 		formData.append("user.email", employeeData.user.email);
 	}
 
@@ -2174,7 +2173,7 @@ export const deleteEmployeeType = async ({
 export const attachEmployeeToBranches = async (
 	payload: AttachBranchesPayload,
 ): Promise<{ data: EmployeeBranchSummary } | null> => {
-	const response = await apiRequest.post("branches/attach/", payload);
+	const response = await apiRequest.post("employee/branches/attach/", payload);
 	return response.data as { data: EmployeeBranchSummary };
 };
 
