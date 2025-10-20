@@ -2,11 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Spot Check Alert — Immediate Action Required</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f7;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        background-color: #e9ecef;
         margin: 0;
         padding: 0;
         color: #333333;
@@ -16,93 +17,155 @@
         max-width: 600px;
         margin: 40px auto;
         background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #ff3c00, #b33300);
+        padding: 20px;
+        text-align: center;
+      }
+
+      .header img {
+        max-width: 150px;
+        height: auto;
+      }
+
+      .content {
         padding: 30px;
-        border-radius: 6px;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
       }
 
       h1 {
-        font-size: 20px;
-        color: #000000;
-        margin-bottom: 25px;
-        font-weight: bold;
+        font-size: 24px;
+        color: #1a2a44;
+        margin-bottom: 20px;
+        font-weight: 700;
+        text-align: center;
       }
 
       p {
         font-size: 16px;
         line-height: 1.6;
         margin-bottom: 15px;
+        color: #444444;
       }
 
       strong {
         font-weight: 600;
+        color: #1a2a44;
       }
 
       .highlight-box {
-        border-left: 4px solid #d93025;
-        background-color: #f9f9f9;
-        padding: 12px 15px;
-        font-size: 15px;
-        color: #444444;
+        background-color: #fff3e0;
+        border-left: 5px solid #d32f2f;
+        padding: 15px 20px;
         margin: 20px 0;
+        border-radius: 8px;
+        font-size: 15px;
+        color: #333333;
+        position: relative;
+      }
+
+      .highlight-box::before {
+        content: '⚠';
+        font-size: 20px;
+        margin-right: 10px;
+        vertical-align: middle;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: #007bff;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 500;
+        margin: 20px 0;
+        text-align: center;
+        transition: background-color 0.3s ease;
+      }
+
+      .button:hover {
+        background-color: #0056b3;
       }
 
       .footer {
         margin-top: 30px;
         font-size: 14px;
-        color: #777777;
+        color: #6c757d;
         line-height: 1.5;
+        text-align: center;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #e9ecef;
       }
 
       .footer strong {
-        color: #000000;
+        color: #1a2a44;
+      }
+
+      @media screen and (max-width: 600px) {
+        .container {
+          margin: 20px;
+          padding: 15px;
+        }
+
+        h1 {
+          font-size: 20px;
+        }
+
+        p {
+          font-size: 14px;
+        }
+
+        .button {
+          width: 100%;
+          box-sizing: border-box;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Spot Check Alert — Immediate Action Required</h1>
-
-      <p>Dear <strong>{{ employee_name }}</strong>,</p>
-
-      <p>
-        This is an
-        <strong>automated attendance verification notice</strong> from
-        <strong>PERACOSOFT</strong>.
-        <br />
-        A <strong>spot check</strong> has been initiated to confirm your
-        physical presence at the workplace.
-      </p>
-
-      <p>
-        Please verify your attendance <strong>immediately</strong> by
-        authenticating through the designated
-        <strong>clock-in device</strong> (using your <strong>face</strong> or
-        <strong>hand</strong> recognition).
-      </p>
-
-      <div class="highlight-box">
-        <strong
-          >Failure to complete this verification may result in compliance
-          implications or applicable administrative penalties</strong
-        >
-        in accordance with company policy.
+      <div class="header">
+        <!-- Replace with your logo URL -->
+        <img src="https://via.placeholder.com/150x50?text=PERACOSOFT+Logo" alt="PERACOSOFT Logo" />
       </div>
+      <div class="content">
+        <h1>Spot Check Alert — Immediate Action Required</h1>
 
-      <p>
-        If you believe this message was sent in error or are experiencing
-        technical difficulties, please contact your
-        <strong>supervisor</strong> or the
-        <strong>Human Resource Department</strong> promptly.
-      </p>
+        <p>Dear <strong>{{ employee_name }}</strong>,</p>
 
-      <p class="footer">
+        <p>
+          This is an <strong>automated attendance verification notice</strong> from
+          <strong>PERACOSOFT</strong>.<br />
+          A <strong>spot check</strong> has been initiated to confirm your physical presence at the workplace.
+        </p>
+
+        <p>
+          Please verify your attendance <strong>immediately</strong> by authenticating through the designated
+          <strong>clock-in device</strong> (using your <strong>face</strong> or <strong>hand</strong> recognition).
+        </p>
+
+        <div class="highlight-box">
+          <strong>Failure to complete this verification may result in compliance implications or applicable administrative penalties</strong> in accordance with company policy.
+        </div>
+
+        <p>
+          If you believe this message was sent in error or are experiencing technical difficulties, please contact your
+          <strong>supervisor</strong> or the <strong>Human Resource Department</strong> promptly.
+        </p>
+
+      </div>
+      <div class="footer">
         Kind regards,<br />
         <strong>PERACOSOFT Attendance Automation System</strong><br /><br />
-        <em
-          >This is an automated message. Please do not reply to this email.</em
-        >
-      </p>
+        <em>This is an automated message. Please do not reply to this email.</em>
+      </div>
     </div>
   </body>
 </html>
