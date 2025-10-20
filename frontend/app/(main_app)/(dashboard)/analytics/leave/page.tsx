@@ -23,75 +23,75 @@ import { ReportDialog } from "@/components/dialogs/reports-dialog";
 export default function AttendanceDashboard() {
 	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
 	const initialData: ILeaveDashboard = {
-		total_leave_applications: 3,
-		applications_by_status: [
-			{
-				status: "",
-				count: 1,
-			},
-		],
-		applications_by_leave_type: [
-			{ leave_type: "annual", count: 20 },
-			{ leave_type: "sick", count: 30 },
-			{ leave_type: "maternity", count: 10 },
-		],
-		leave_balances_by_type: [
-			{
-				leave_type: "annual",
-				total_allocated_days: 3,
-				total_used_days: 1,
-				total_available_days: 2,
-			},
-		],
-		average_leave_days_taken: 3,
-		pending_approvals: 4,
-		applications_over_time: [
-			{ month: "JAN", count: 2 },
-			{ month: "FEB", count: 21 },
-			{ month: "MAR", count: 32 },
-			{ month: "APR", count: 25 },
-			{ month: "JUN", count: 12 },
-			{ month: "JUL", count: 2 },
-			{ month: "AUG", count: 52 },
-			{ month: "SEP", count: 7 },
-			{ month: "OCT", count: 23 },
-			{ month: "NOV", count: 12 },
-			{ month: "DEC", count: 23 },
-		],
+		total_leave_applications: 0,
+		applications_by_status: [],
+		applications_by_leave_type: [],
+		leave_balances_by_type: [],
+		average_leave_days_taken: 0,
+		pending_approvals: 0,
+		applications_over_time: [],
 	};
+
 	const getGroupCards = (data: ILeaveDashboard) => [
 		{
 			title: "Leave Requests",
-			value: data.total_leave_applications,
+			value: data.total_leave_applications || 0,
 			color: "text-orange-600",
 			bg: "bg-orange-100",
 			icon: "hugeicons:beach",
 			link: "#",
 		},
 		{
-			title: "Approved Requests",
+			title: "Pending Approvals",
 			color: "text-indigo-600",
 			bg: "bg-indigo-100",
-			value: data.total_leave_applications,
+			value: data.pending_approvals || 0,
 			icon: "hugeicons:calendar-01",
 			link: "#",
 		},
 		{
-			title: "Pending Requests",
-			value: data.total_leave_applications,
+			title: "Avg Leave Days",
+			value: `${data.average_leave_days_taken || 0} days`,
 			color: "text-emerald-600",
 			bg: "bg-emerald-100",
 			icon: "hugeicons:calendar-04",
 			link: "#",
 		},
 		{
-			title: "Leave Utilization Rate",
-			value: data.total_leave_applications + "%",
+			title: "Leave Utilization",
+			value: `${calculateUtilizationRate(data.leave_balances_by_type)}%`,
 			color: "text-blue-600",
 			bg: "bg-blue-100",
 			icon: "hugeicons:sailboat-coastal",
 		},
 	];
+
+	// Helper function to calculate utilization rate from leave balances
+	const calculateUtilizationRate = (leaveBalances: any[]): number => {
+		if (!leaveBalances || !Array.isArray(leaveBalances)) return 0;
+
+		const totalUsed = leaveBalances.reduce(
+			(sum, balance) => sum + (balance.total_used_days || 0),
+			0,
+		);
+		const totalAllocated = leaveBalances.reduce(
+			(sum, balance) => sum + (balance.total_allocated_days || 0),
+			0,
+		);
+
+		if (totalAllocated === 0) return 0;
+		return Math.round((totalUsed / totalAllocated) * 100);
+	};
+
+	// Helper to transform applications by status for bar chart
+	const transformApplicationsByStatus = (applicationsData: any[]) => {
+		if (!applicationsData || !Array.isArray(applicationsData)) return [];
+
+		return applicationsData.map((item) => ({
+			department: item.status || "Unknown",
+			count: item.count || 0,
+		}));
+	};
 
 	return (
 		<LoadingComponent
@@ -135,40 +135,28 @@ export default function AttendanceDashboard() {
 							))}
 						</div>
 
-						{/* leaves over time */}
+						{/* leaves over time - NOW USING REAL DATA */}
 						<Linechart
 							title={"Leaves Over Time"}
 							label={""}
 							data={{
-								"2025": [
-									{ month: "JAN", count: 12 },
-									{ month: "FEB", count: 21 },
-									{ month: "MAR", count: 43 },
-									{ month: "APR", count: 20 },
-									{ month: "JUN", count: 12 },
-									{ month: "JUL", count: 30 },
-									{ month: "AUG", count: 12 },
-									{ month: "SEP", count: 32 },
-									{ month: "OCT", count: 52 },
-									{ month: "NOV", count: 72 },
-									{ month: "DEC", count: 12 },
-								],
+								"2025": data.applications_over_time || [],
 							}}
 							dataKey={["count"]}
 							nameKey={"month"}
-							colors={["#3CB371", "#FF1B1C", "#0CA0F5"]}
+							colors={["#3CB371"]}
 							className="w-full"
 						/>
 
 						{/* Charts Section */}
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-							{/* leaves taken by type */}
+							{/* leaves taken by type - USING REAL DATA */}
 							<Piechart
 								totalStr={""}
 								title={"Most Taken Leaves"}
 								label={""}
 								data={{
-									"2025": data.applications_by_leave_type,
+									"2025": data.applications_by_leave_type || [],
 								}}
 								dataKey={"count"}
 								nameKey={"leave_type"}
@@ -176,16 +164,11 @@ export default function AttendanceDashboard() {
 								className="w-full"
 							/>
 
-							{/* department-wise leave usage */}
+							{/* applications by status - USING REAL DATA */}
 							<BarHChart
-								title={"Department-wise Leave Usage"}
+								title={"Applications by Status"}
 								data={{
-									"This week": [
-										{ department: "Technology", count: 20 },
-										{ department: "Sales", count: 16 },
-										{ department: "Marketing", count: 12 },
-										{ department: "Operations", count: 10 },
-									],
+									Current: transformApplicationsByStatus(data.applications_by_status),
 								}}
 								dataKey={"count"}
 								nameKey={"department"}

@@ -29,11 +29,7 @@ export default function PerformancePage() {
 		},
 		employee_objectives: {
 			total: 0,
-			status_distribution: {
-				not_sarted: 0,
-				on_track: 0,
-				closed: 0,
-			},
+			status_distribution: [],
 		},
 		key_results: {
 			total: 0,
@@ -50,10 +46,7 @@ export default function PerformancePage() {
 		},
 		question_templates: {
 			total: 0,
-			category_distribution: {
-				general: 0,
-				performance_review: 0,
-			},
+			category_distribution: [],
 		},
 		bonus_point_settings: {
 			total: 0,
@@ -61,11 +54,7 @@ export default function PerformancePage() {
 		},
 		meetings: {
 			total: 0,
-			mode_distribution: {
-				online: 0,
-				hybrid: 0,
-				physical: 0,
-			},
+			mode_distribution: [],
 		},
 	});
 	const [loading, setLoading] = useState(true);
@@ -92,6 +81,17 @@ export default function PerformancePage() {
 		fetchAnalytics();
 	}, [currentInstitution]);
 
+	// Helper function to transform object data to array format for PieChart
+	const transformObjectToArray = (obj: any): Array<{ name: string; count: number }> => {
+		if (!obj) return [];
+		if (Array.isArray(obj)) return obj; // Already an array
+
+		return Object.entries(obj).map(([key, value]) => ({
+			name: key,
+			count: value as number,
+		}));
+	};
+
 	const cards = [
 		{
 			title: "Active Periods",
@@ -116,7 +116,7 @@ export default function PerformancePage() {
 		},
 		{
 			title: "Feedback Entries",
-			value: analytics.feedback?.total || 0,
+			value: analytics.feedback_360?.total || 0,
 			icon: <MessageSquare className="h-5 w-5" />,
 			description: "360° feedback",
 			link: "/performance/feedback",
@@ -130,11 +130,9 @@ export default function PerformancePage() {
 			icon: <Users className="h-6 w-6" />,
 			href: "/performance/employee-objectives",
 			color: "bg-purple-500",
-			stats: analytics?.employee_objectives?.status_distribution || {
-				not_started: 0,
-				on_track: 0,
-				closed: 0,
-			},
+			stats: transformObjectToArray(analytics?.employee_objectives?.status_distribution),
+			dataKey: "count",
+			nameKey: "name",
 		},
 		{
 			title: "Meetings",
@@ -142,21 +140,18 @@ export default function PerformancePage() {
 			icon: <Video className="h-6 w-6" />,
 			href: "/performance/meetings",
 			color: "bg-indigo-500",
-			stats: analytics?.meetings?.mode_distribution || {
-				online: 0,
-				hybrid: 0,
-				physical: 0,
-			},
+			stats: transformObjectToArray(analytics?.meetings?.mode_distribution),
+			dataKey: "count",
+			nameKey: "name",
 		},
 		{
 			title: "Question Templates",
-			description: "",
-			href: "#",
+			description: `Total: ${analytics?.question_templates?.total || 0} templates`,
+			href: "/performance/question-templates",
 			color: "bg-purple-500",
-			stats: analytics?.question_templates?.category_distribution || {
-				general: 0,
-				performance_review: 0,
-			},
+			stats: analytics?.question_templates?.category_distribution || [],
+			dataKey: "count",
+			nameKey: "category",
 		},
 	];
 
@@ -240,12 +235,14 @@ export default function PerformancePage() {
 						<PieChart
 							title={g.title}
 							key={g.title}
-							data={g.stats}
+							data={{
+								Distribution: g.stats,
+							}}
 							colors={colors}
 							totalStr={""}
 							label={""}
-							dataKey={""}
-							nameKey={""}
+							dataKey={g.dataKey}
+							nameKey={g.nameKey}
 						></PieChart>
 					))}
 				</div>
