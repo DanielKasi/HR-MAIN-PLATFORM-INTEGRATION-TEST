@@ -158,7 +158,7 @@ export default function OffboardingStagesPage() {
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="flex justify-between items-center mb-6">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Offboarding Stages</h1>
+					<h1 className="text-3xl font-bold tracking-tight">Termination Stages</h1>
 				</div>
 			</div>
 
@@ -195,9 +195,7 @@ export default function OffboardingStagesPage() {
 								<DialogContent>
 									<DialogHeader>
 										<DialogTitle>Add New Stage</DialogTitle>
-										<DialogDescription>
-											Create a new stage for the offboarding process
-										</DialogDescription>
+										<DialogDescription>Create a new termination stage</DialogDescription>
 									</DialogHeader>
 									<Form {...form}>
 										<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -229,7 +227,7 @@ export default function OffboardingStagesPage() {
 											/>
 											<DialogFooter>
 												<Button type="submit" className="w-full">
-													Create Stage
+													Create Termination Stage
 												</Button>
 											</DialogFooter>
 										</form>
@@ -282,7 +280,7 @@ export default function OffboardingStagesPage() {
 										<div className="text-center py-8 text-gray-500">
 											{searchTerm
 												? "No stages found matching your search criteria"
-												: "No offboarding stages found"}
+												: "No Termination stages found"}
 										</div>
 									);
 								}

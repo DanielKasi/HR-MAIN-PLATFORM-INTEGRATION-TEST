@@ -118,7 +118,7 @@ export default function SeparationPolicyTypesPage() {
 	}, [selectedInstitution?.id]);
 
 	const handleCreateSuccess = (newPolicyType: ISeparationType) => {
-		toast.success("Separation type created successfully");
+		toast.success("termination type created successfully");
 		setIsCreateDialogOpen(false); // Close the create dialog
 		form.reset(); // Reset the form
 		if (from) {
@@ -132,13 +132,13 @@ export default function SeparationPolicyTypesPage() {
 		setIsEditDialogOpen(false);
 		setEditingPolicyType(null);
 		form.reset(); // Reset the form
-		toast.success("Separation type updated successfully");
+		toast.success("termination type updated successfully");
 		refreshTableRef.current?.();
 	};
 
 	const handleDeleteSuccess = (deletedId: number) => {
 		setPolicyTypeToDelete(null);
-		toast.success("Separation type deleted successfully");
+		toast.success("termination type deleted successfully");
 		refreshTableRef.current?.();
 	};
 
@@ -161,7 +161,9 @@ export default function SeparationPolicyTypesPage() {
 			}
 		} catch (error) {
 			toast.error(
-				editingPolicyType ? "Failed to update separation type" : "Failed to create separation type",
+				editingPolicyType
+					? "Failed to update termination type"
+					: "Failed to create termination type",
 			);
 		}
 	};
@@ -171,7 +173,7 @@ export default function SeparationPolicyTypesPage() {
 			await SeparationPolicyTypesAPI.delete(policyType.id);
 			handleDeleteSuccess(policyType.id);
 		} catch (error) {
-			toast.error("Failed to delete separation type");
+			toast.error("Failed to delete termination type");
 		}
 	};
 
@@ -207,7 +209,7 @@ export default function SeparationPolicyTypesPage() {
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="flex justify-between items-center mb-6">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Separation Types</h1>
+					<h1 className="text-3xl font-bold tracking-tight">Termination Types</h1>
 				</div>
 			</div>
 
@@ -219,7 +221,7 @@ export default function SeparationPolicyTypesPage() {
 							<div className="relative flex-1 max-w-sm">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
 								<Input
-									placeholder="Search separation types..."
+									placeholder="Search termination types..."
 									value={searchTerm}
 									onChange={(e) => setSearchTerm(e.target.value)}
 									className="pl-10"
@@ -237,13 +239,13 @@ export default function SeparationPolicyTypesPage() {
 									<DialogTrigger asChild>
 										<Button>
 											<Plus className="h-4 w-4 mr-2" />
-											Add Separation Type
+											Add Termination Type
 										</Button>
 									</DialogTrigger>
 									<DialogContent>
 										<DialogHeader>
-											<DialogTitle>Add New Separation Type</DialogTitle>
-											<DialogDescription>Create a new separation type</DialogDescription>
+											<DialogTitle>Add New Termination Type</DialogTitle>
+											<DialogDescription>Create a new termination type</DialogDescription>
 										</DialogHeader>
 										<Form {...form}>
 											<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -254,7 +256,7 @@ export default function SeparationPolicyTypesPage() {
 														<FormItem>
 															<FormLabel>Type Name</FormLabel>
 															<FormControl>
-																<Input placeholder="Enter separation type name" {...field} />
+																<Input placeholder="Enter termination type name" {...field} />
 															</FormControl>
 															<FormMessage />
 														</FormItem>
@@ -357,7 +359,7 @@ export default function SeparationPolicyTypesPage() {
 													)}
 												/>
 												<DialogFooter>
-													<Button type="submit">Create Separation Type</Button>
+													<Button type="submit">Create Termination Type</Button>
 												</DialogFooter>
 											</form>
 										</Form>
@@ -382,8 +384,8 @@ export default function SeparationPolicyTypesPage() {
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Edit Separation Type</DialogTitle>
-						<DialogDescription>Update the details of this separation type</DialogDescription>
+						<DialogTitle>Edit Termination Type</DialogTitle>
+						<DialogDescription>Update the details of this termination type</DialogDescription>
 					</DialogHeader>
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -394,7 +396,7 @@ export default function SeparationPolicyTypesPage() {
 									<FormItem>
 										<FormLabel>Type Name</FormLabel>
 										<FormControl>
-											<Input placeholder="Enter separation type name" {...field} />
+											<Input placeholder="Enter termination type name" {...field} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -502,7 +504,7 @@ export default function SeparationPolicyTypesPage() {
 										<div className="space-y-0.5">
 											<FormLabel className="text-base">Active Status</FormLabel>
 											<FormDescription>
-												Determine if this separation type is currently active
+												Determine if this termination type is currently active
 											</FormDescription>
 										</div>
 										<FormControl>
@@ -512,7 +514,7 @@ export default function SeparationPolicyTypesPage() {
 								)}
 							/>
 							<DialogFooter>
-								<Button type="submit">Update Separation Type</Button>
+								<Button type="submit">Update Termination Type</Button>
 							</DialogFooter>
 						</form>
 					</Form>
@@ -551,7 +553,7 @@ export default function SeparationPolicyTypesPage() {
 
 								if (!data || data.results.length === 0) {
 									return (
-										<div className="text-center py-8 text-gray-500">No separation types found</div>
+										<div className="text-center py-8 text-gray-500">No termination types found</div>
 									);
 								}
 
@@ -677,9 +679,9 @@ export default function SeparationPolicyTypesPage() {
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Delete Separation Type</DialogTitle>
+						<DialogTitle>Delete Termination Type</DialogTitle>
 						<DialogDescription>
-							Are you sure you want to delete this separation type? This action cannot be undone.
+							Are you sure you want to delete this termination type? This action cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

@@ -202,6 +202,7 @@ import keys from "@/components/projects/tasks/keys";
 import { number } from "zod";
 import { Branch } from "@/types/branch.types";
 import { IOwnershipTransferFormData } from "@/types/institution.types";
+import { on } from "process";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -4713,16 +4714,34 @@ export const getEmployeeDashboard = async (): Promise<IEmployeeDashboard> => {
 		throw error;
 	}
 };
+
 export const getOffboardingDashboard = async (): Promise<OffboardingData> => {
 	try {
-		const response = await apiRequest.get("on-boarding/analytics/");
-
+		// The endpoint is /api/on-boarding/analytics/ and returns data for the authenticated user's institution
+		const response = await apiRequest.get(`on-boarding/analytics/`);
 		return response.data as OffboardingData;
 	} catch (error) {
 		throw error;
 	}
 };
 
+export interface CurrentUser {
+	id: string;
+	institution_id?: string;
+	institution_name?: string;
+	email: string;
+	full_name?: string;
+	fullname?: string;
+}
+
+export const getCurrentUser = async (): Promise<CurrentUser> => {
+	try {
+		const response = await apiRequest.get("user/details");
+		return response.data as CurrentUser;
+	} catch (error) {
+		throw new Error("Failed to fetch user data");
+	}
+};
 export const getAssetDashboard = async (): Promise<AssetsData> => {
 	try {
 		const response = await apiRequest.get("assets/analytics/");

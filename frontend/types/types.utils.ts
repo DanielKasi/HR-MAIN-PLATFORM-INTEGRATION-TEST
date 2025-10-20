@@ -169,28 +169,27 @@ export type OffboardingData = {
 		total: number;
 	};
 	category_counts: {
-		resignation: number;
-		termination: number;
-		retirement: number;
-		layoff: number;
-		other: number;
+		[key: string]: number;
 	};
 	pending_requests: {
-		resignation: number;
-		termination: number;
-		retirement: number;
-		layoff: number;
-		other: number;
+		resignations: number;
+		terminations: number;
+		retirements: number;
 		total: number;
 	};
 	recent_separations: {
 		id: number;
 		employee_name: string;
 		separation_type: string;
+		category: string;
 		effective_date: string;
 		separation_status: string;
 		additional_notes: string;
 	}[];
+	date_range: {
+		start_date: string;
+		end_date: string;
+	};
 };
 
 export interface IReportsToDetails {
