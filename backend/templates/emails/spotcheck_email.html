@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Spot Check Alert</title>
+    <title>Spot Check Alert — Immediate Action Required</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -11,60 +11,97 @@
         padding: 0;
         color: #333333;
       }
+
       .container {
         max-width: 600px;
         margin: 40px auto;
         background-color: #ffffff;
         padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
       }
+
       h1 {
-        color: #d93025;
-        font-size: 24px;
-        margin-bottom: 20px;
+        font-size: 20px;
+        color: #000000;
+        margin-bottom: 25px;
+        font-weight: bold;
       }
+
       p {
         font-size: 16px;
-        line-height: 1.5;
+        line-height: 1.6;
+        margin-bottom: 15px;
       }
-      .button {
-        display: inline-block;
-        margin-top: 20px;
-        padding: 12px 25px;
-        background-color: #d93025;
-        color: #000000;
-        text-decoration: none;
-        border-radius: 5px;
-        font-weight: bold;
-        font-size: 16px;
+
+      strong {
+        font-weight: 600;
       }
+
+      .highlight-box {
+        border-left: 4px solid #d93025;
+        background-color: #f9f9f9;
+        padding: 12px 15px;
+        font-size: 15px;
+        color: #444444;
+        margin: 20px 0;
+      }
+
       .footer {
         margin-top: 30px;
         font-size: 14px;
-        color: #888888;
-        text-align: center;
+        color: #777777;
+        line-height: 1.5;
+      }
+
+      .footer strong {
+        color: #000000;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Spot Check Alert</h1>
-      <p>Hello {{ employee_name }},</p>
+      <h1>Spot Check Alert — Immediate Action Required</h1>
+
+      <p>Dear <strong>{{ employee_name }}</strong>,</p>
+
       <p>
-        This is an automated spot check. You are required to confirm your
-        presence at work by pressing your hand or face on the clockin machine.
+        This is an
+        <strong>automated attendance verification notice</strong> from
+        <strong>PERACOSOFT</strong>.
+        <br />
+        A <strong>spot check</strong> has been initiated to confirm your
+        physical presence at the workplace.
       </p>
+
       <p>
+        Please verify your attendance <strong>immediately</strong> by
+        authenticating through the designated
+        <strong>clock-in device</strong> (using your <strong>face</strong> or
+        <strong>hand</strong> recognition).
+      </p>
+
+      <div class="highlight-box">
         <strong
-          >Failure to confirm may result in penalties or compliance
-          issues.</strong
+          >Failure to complete this verification may result in compliance
+          implications or applicable administrative penalties</strong
         >
+        in accordance with company policy.
+      </div>
+
+      <p>
+        If you believe this message was sent in error or are experiencing
+        technical difficulties, please contact your
+        <strong>supervisor</strong> or the
+        <strong>Human Resource Department</strong> promptly.
       </p>
 
       <p class="footer">
-        This is an automated message. If you believe you received this in error,
-        contact your supervisor.
+        Kind regards,<br />
+        <strong>PERACOSOFT Attendance Automation System</strong><br /><br />
+        <em
+          >This is an automated message. Please do not reply to this email.</em
+        >
       </p>
     </div>
   </body>
