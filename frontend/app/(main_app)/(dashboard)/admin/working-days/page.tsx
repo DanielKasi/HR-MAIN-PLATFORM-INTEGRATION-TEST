@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InstitutionWorkingDays from "@/components/working-days/institution-working-days";
-import BranchWorkingDaysTab from "@/components/working-days/branch-working-days-tab";
+import BranchWorkingDaysTab from "@/components/working-days/branch-working-days";
 import { Button } from "@/components/ui/button";
 
 export default function AllWorkingDaysPage() {
 	const router = useRouter();
 
 	return (
-		<div className="p-4 rounded-xl bg-gray-50">
+		<div className="p-4 rounded-xl min-h-screen">
 			<div className="flex items-start gap-2">
 				<Button
 					size="sm"

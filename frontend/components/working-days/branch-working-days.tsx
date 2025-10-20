@@ -1,20 +1,15 @@
 "use client";
-
 import type {
 	ISystemWorkingDay,
 	IBranchWorkingDays,
-	IBranchDay,
 	IBranchDayFormData,
 } from "@/types/types.utils";
-
 import { useState, useEffect } from "react";
 import { RotateCcw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
-
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,7 +20,11 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { branchesAPI, showErrorToast, systemAPI } from "@/lib/utils";
 import { Branch } from "@/types/branch.types";
 
-export default function BranchWorkingDaysTab() {
+interface BranchWorkingDaysProps {
+	selectedBranchId?: number | null;
+}
+
+export default function BranchWorkingDaysTab({ selectedBranchId }: BranchWorkingDaysProps) {
 	const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([]);
 	const [branchWorkingDays, setBranchWorkingDays] = useState<IBranchWorkingDays | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +32,6 @@ export default function BranchWorkingDaysTab() {
 	const [error, setError] = useState<string | null>(null);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const branches = selectedInstitution?.branches || [];
-
 	const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
 	useEffect(() => {
@@ -41,6 +39,15 @@ export default function BranchWorkingDaysTab() {
 			fetchData();
 		}
 	}, [selectedBranch]);
+
+	useEffect(() => {
+		if (selectedBranchId) {
+			const branch = branches.find((br) => br.id);
+			if (branch) {
+				setSelectedBranch(branch);
+			}
+		}
+	}, [selectedBranchId]);
 
 	const fetchSystemWorkingDays = async () => {
 		try {
@@ -63,9 +70,7 @@ export default function BranchWorkingDaysTab() {
 	};
 
 	const fetchData = async () => {
-		if (!selectedBranch) {
-			return;
-		}
+		if (!selectedBranch) return;
 		setIsLoading(true);
 		await fetchSystemWorkingDays();
 		await fetchBranchWorkingDays(selectedBranch.id);
@@ -86,12 +91,9 @@ export default function BranchWorkingDaysTab() {
 			toast.error("No branch selected");
 			return;
 		}
-
 		try {
 			setIsSaving(true);
-			// Assume transformForAPI handles the form data including times
-			const apiPayload = transformForAPI(days); // Update this function to include opening_time and closing_time
-
+			const apiPayload = transformForAPI(days);
 			if (!branchWorkingDays) {
 				const created = await branchesAPI.WORKING_DAYS.create({
 					branch_days: apiPayload,
@@ -147,7 +149,7 @@ export default function BranchWorkingDaysTab() {
 				<CardHeader className="border-b">
 					<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 						<div>
-							<CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+							<CardTitle className="text-2xl font-bold text-gray-900">
 								Branch Working Days
 							</CardTitle>
 							<CardDescription className="text-gray-600 mt-2">
@@ -155,35 +157,36 @@ export default function BranchWorkingDaysTab() {
 								physical or remote.
 							</CardDescription>
 						</div>
-						{/* Branch Selector */}
-						<div className="flex items-center gap-2">
-							<Label htmlFor="branch-select" className="text-sm font-medium text-gray-700">
-								Branch:
-							</Label>
-							<Select
-								value={selectedBranch?.id.toString() || ""}
-								onValueChange={(val) => {
-									const branch = branches.find((b) => b.id === Number(val));
-									setSelectedBranch(branch || null);
-								}}
-							>
-								<SelectTrigger className="w-[180px]">
-									<SelectValue placeholder="Select a branch" />
-								</SelectTrigger>
-								<SelectContent>
-									{branches.map((branch) => (
-										<SelectItem key={branch.id} value={branch.id.toString()}>
-											{branch.branch_name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+						{!selectedBranchId && (
+							<div className="flex items-center gap-2">
+								<Label htmlFor="branch-select" className="text-sm font-medium text-gray-700">
+									Branch:
+								</Label>
+								<Select
+									value={selectedBranch?.id.toString() || ""}
+									onValueChange={(val) => {
+										const branch = branches.find((b) => b.id === Number(val));
+										setSelectedBranch(branch || null);
+									}}
+								>
+									<SelectTrigger className="w-[180px]">
+										<SelectValue placeholder="Select a branch" />
+									</SelectTrigger>
+									<SelectContent>
+										{branches.map((branch) => (
+											<SelectItem key={branch.id} value={branch.id.toString()}>
+												{branch.branch_name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						)}
 					</div>
 				</CardHeader>
 			</Card>
 
-			{selectedBranch && branchWorkingDays && (
+			{selectedBranch && (
 				<ApprovableInstancePageLayout instance={branchWorkingDays} onInstanceRefresh={fetchData}>
 					<WorkingDaysManager
 						scope={{
@@ -196,20 +199,6 @@ export default function BranchWorkingDaysTab() {
 						isSaving={isSaving}
 					/>
 				</ApprovableInstancePageLayout>
-			)}
-
-			{/* Show WorkingDaysManager without approval wrapper when no working days exist yet */}
-			{selectedBranch && !branchWorkingDays && (
-				<WorkingDaysManager
-					scope={{
-						type: "branch",
-						branchId: selectedBranch.id,
-						branchWorkingDays: branchWorkingDays,
-					}}
-					systemWorkingDays={systemWorkingDays}
-					onBranchDaysUpdate={handleBranchWorkingDaysUpdate}
-					isSaving={isSaving}
-				/>
 			)}
 		</div>
 	);

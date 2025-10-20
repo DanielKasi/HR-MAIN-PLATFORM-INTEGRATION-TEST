@@ -171,6 +171,7 @@ import {
 	IAuditLog,
 	IInstitutionWorkingDaysFormData,
 	IBranchDayFormData,
+	IEmployeeWorkingDays,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -1619,13 +1620,14 @@ export const createEmployee = async ({
 	institutionId: number;
 	employeeData: IEmployeeFormData;
 }) => {
+	console.log("\n\n Creating employee with data : ", employeeData);
 	try {
 		const formData = new FormData();
 
 		formData.append("institutionId", institutionId.toString());
 
 		if (employeeData.user) {
-			formData.append("user.fullname", employeeData.user.fullname || "");
+			// formData.append("user.fullname", employeeData.user.fullname || "");
 			formData.append("user.email", employeeData.user.email || "");
 		}
 
@@ -1635,8 +1637,8 @@ export const createEmployee = async ({
 			if (key === "employee_profile_picture" && value instanceof File) {
 				formData.append(key, value);
 			} else if (key === "selected_branches" && Array.isArray(value)) {
-				value.forEach((branchId) => {
-					formData.append("selected_branches", branchId.toString());
+				value.forEach((branchId, idx) => {
+					formData.append(`selected_branches[${idx}]`, branchId.toString());
 				});
 			} else if (key === "children" && Array.isArray(value)) {
 				value.forEach((child: IChild, index) => {
@@ -1701,12 +1703,13 @@ export const updateEmployee = async ({
 	employeeData,
 }: {
 	employeeId: number;
-	employeeData: any;
+	employeeData: IEmployeeFormData;
 }) => {
+	console.log("\n\n Updating employee with data : ", employeeData);
 	const formData = new FormData();
 
 	if (employeeData.user) {
-		formData.append("user.fullname", employeeData.user.fullname);
+		// formData.append("user.fullname", employeeData.user.fullname);
 		formData.append("user.email", employeeData.user.email);
 	}
 
@@ -1716,8 +1719,8 @@ export const updateEmployee = async ({
 		if (key === "employee_profile_picture" && value instanceof File) {
 			formData.append(key, value);
 		} else if (key === "selected_branches" && Array.isArray(value)) {
-			value.forEach((branchId) => {
-				formData.append("selected_branches", branchId.toString());
+			value.forEach((branchId, idx) => {
+				formData.append(`selected_branches[${idx}]`, branchId.toString());
 			});
 		} else if (key === "children" && Array.isArray(value)) {
 			value.forEach((child: IChild, index) => {
@@ -2170,28 +2173,16 @@ export const deleteEmployeeType = async ({
 
 export const attachEmployeeToBranches = async (
 	payload: AttachBranchesPayload,
-): Promise<EmployeeBranchSummary | null> => {
-	try {
-		const response = await apiRequest.post("branches/attach/", payload);
-
-		return response.data.data as EmployeeBranchSummary;
-	} catch (error) {
-		// console.error("Error attaching employee to branches:", error);
-		throw error;
-	}
+): Promise<{ data: EmployeeBranchSummary } | null> => {
+	const response = await apiRequest.post("branches/attach/", payload);
+	return response.data as { data: EmployeeBranchSummary };
 };
 
 export const getEmployeeBranches = async (
 	employeeId: number,
-): Promise<EmployeeBranchSummary | null> => {
-	try {
-		const response = await apiRequest.get(`${employeeId}/branches/`);
-
-		return response.data.data as EmployeeBranchSummary;
-	} catch (error) {
-		// console.error("Error fetching branches for employee:", error);
-		throw error;
-	}
+): Promise<{ data: EmployeeBranchSummary } | null> => {
+	const response = await apiRequest.get(`${employeeId}/branches/`);
+	return response.data as { data: EmployeeBranchSummary };
 };
 
 export const setDefaultBranch = async (
@@ -6932,6 +6923,29 @@ export const EMPLOYEE_API = {
 			return response.data as IPaginatedResponse<IWorkHourCount>;
 		},
 	},
+
+	WORKING_DAYS: {
+		getAll: async ({ employeeId }: { employeeId: number }) => {
+			const response = await apiRequest.get(`/employee/${employeeId}/working-days/`);
+
+			return response.data as IEmployeeWorkingDays;
+		},
+		create: async (
+			employeeId: number,
+			data: {
+				days: number[];
+			},
+		): Promise<IEmployeeWorkingDays> => {
+			const response = await apiRequest.post(`/employee/${employeeId}/working-days/`, data);
+			return response.data as IEmployeeWorkingDays;
+		},
+
+		update: async (employeeId: number, data: { days: number[] }) => {
+			const response = await apiRequest.patch(`/employee/${employeeId}/working-days/`, data);
+
+			return response.data as IEmployeeWorkingDays;
+		},
+	},
 };
 
 // Calendar API functions
@@ -7250,7 +7264,7 @@ export const showErrorToast = ({
 	error?: any;
 	defaultMessage?: string;
 }) => {
-	const errorMessage =
+	const errorMessage: string =
 		typeof error?.detail === "string"
 			? error.detail
 			: typeof error?.error === "string"
@@ -7260,6 +7274,7 @@ export const showErrorToast = ({
 					: defaultMessage;
 
 	toast.error(errorMessage);
+	return errorMessage;
 };
 
 export const showSuccessToast = (message: string) => {
@@ -8033,7 +8048,7 @@ export const usersAPI = {
 		return response.data as IPaginatedResponse<IUser>;
 	},
 	getProfilesByInstitutionId: async ({ institutionId }: { institutionId: number }) => {
-		const response = await apiRequest.get(`/institution/profile/${institutionId}/`);
+		const response = await apiRequest.get(`/institution/profile/`);
 
 		return response.data as IPaginatedResponse<UserProfile>;
 	},

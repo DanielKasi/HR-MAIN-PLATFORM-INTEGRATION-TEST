@@ -55,12 +55,16 @@ export const TicketCategorySearchableSelect = memo(
 		}, []);
 
 		const handleSelect = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<TicketCategory>) => {
-				if (!selectedItems.includes(itemId)) {
+			(itemIds: (string | number)[], _items: PaginatedSelectItem<TicketCategory>[]) => {
+				if (
+					itemIds.filter((item) =>
+						selectedItems.find((s_item) => s_item.toString() !== item.toString()),
+					)
+				) {
 					if (multiple) {
-						onValueChange([...selectedItems, itemId]);
+						onValueChange([...selectedItems, ...itemIds]);
 					} else {
-						onValueChange([itemId]);
+						onValueChange(itemIds);
 					}
 				}
 			},
@@ -68,14 +72,13 @@ export const TicketCategorySearchableSelect = memo(
 		);
 
 		const handleRemove = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<TicketCategory>) => {
-				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+			(itemIds: (string | number)[], _item: PaginatedSelectItem<TicketCategory>[]) => {
+				const newItems = selectedItems.filter((id) => !itemIds.map(String).includes(id.toString()));
 				setSelectedItems(newItems);
 				onValueChange(newItems);
 			},
 			[selectedItems, onValueChange],
 		);
-
 		return (
 			<div className={className}>
 				<PaginatedSearchableSelect<TicketCategory, { search?: string; page?: number }>

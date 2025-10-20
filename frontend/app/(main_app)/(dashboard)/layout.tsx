@@ -429,7 +429,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 					<div className="w-full p-2 relative min-w-0">
 						{selectedInstitution ? (
 							<>
-								<div className="overflow-y-auto max-h-[88svh] relative min-w-full">{children}</div>
+								<div className="overflow-y-auto max-h-[calc(100svh-4rem)] relative min-w-full">
+									{children}
+								</div>
 							</>
 						) : (
 							<CreateOrganisationWizard />

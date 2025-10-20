@@ -70,6 +70,7 @@ import {
 	getEmployeeById,
 	updateEmployee,
 	EMPLOYEE_API,
+	attachEmployeeToBranches,
 } from "@/lib/utils";
 import { useBranches } from "@/hooks/use-branches";
 import { MultiSelectBranches } from "@/components/multi-select-branches";
@@ -83,6 +84,8 @@ import { BankAccountSearchableSelect } from "@/components/selects/bank-accounts-
 import { formatCurrency } from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
 import { BankTypeSearchableSelect } from "@/components/selects/bank-types-select";
+import BranchSearchableSelect from "@/components/selects/branch-searchable-select";
+import { duration } from "moment";
 
 interface Child extends IChild {}
 interface NextOfKin extends INextOfKin {}
@@ -243,6 +246,10 @@ export default function UpdateEmployeeForm() {
 	>({
 		fullname: "",
 		email: "",
+		company_email: {
+			email: "",
+			provider: null,
+		},
 		phone_number: "",
 		position: 0,
 		department: 0,
@@ -475,8 +482,8 @@ export default function UpdateEmployeeForm() {
 			setThisEmployee(employee);
 			setFormData({
 				fullname: employee?.name || employee.user?.fullname || "",
-				email: employee.email,
-				company_email: employee.company_email?.email || "",
+				email: employee.user?.email || "",
+				company_email: { email: employee.company_email?.email || "", provider: null },
 				phone_number: employee.phone_number,
 				position: employee.position.id,
 				department: employee.department.id,
@@ -508,6 +515,7 @@ export default function UpdateEmployeeForm() {
 					account_name: employee.bank_accounts[0].account_name,
 				})),
 				work_experiences: employee.work_experiences,
+				payroll_branch: employee.payroll_branch?.id,
 			});
 
 			setChildren(employee.children);
@@ -627,6 +635,11 @@ export default function UpdateEmployeeForm() {
 			};
 
 			setFormData(updatedFormData);
+		} else if (field === "company_email") {
+			setFormData((prev) => ({
+				...prev,
+				company_email: { email: value as string, provider: null },
+			}));
 		} else {
 			const updatedFormData = {
 				...formData,
@@ -864,7 +877,8 @@ export default function UpdateEmployeeForm() {
 					fullname: formData.fullname,
 					email: formData.email,
 				},
-				email: formData.email,
+				name: formData.fullname,
+				company_email: { email: formData.company_email?.email || "", provider: null },
 				phone_number: formData.phone_number,
 				phone_number_country_code: phoneCountryCode,
 				gender: formData.gender || "male",
@@ -927,24 +941,45 @@ export default function UpdateEmployeeForm() {
 				dataToSubmit["company_email"] = formData.company_email;
 			}
 
-			await updateEmployee({
+			const updatedEmployee = await updateEmployee({
 				employeeId: parseInt(employeeId),
 				employeeData: dataToSubmit,
 			});
+			if (updatedEmployee) {
+				showSuccessToast("Employee updated successfully");
+				await attachEmployeeToNewBranches({
+					employee_id: updatedEmployee.id,
+					branches: formData.selected_branches,
+				});
+			}
 			router.push("/employees/employee-list");
-			showSuccessToast("Employee created successfully");
 		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error
-					? error.message
-					: "An unknown error occurred while creating the employee.";
-
-			showErrorToast({ error, defaultMessage: "Failed to create employee" });
-			setSubmitError(
-				typeof error === "object" ? "An error occurred while creating the employee" : errorMessage,
-			);
+			const errorMessage = showErrorToast({ error, defaultMessage: "Failed to update employee" });
+			setSubmitError(errorMessage);
 		} finally {
 			setIsSubmitting(false);
+		}
+	};
+
+	const attachEmployeeToNewBranches = async ({
+		employee_id,
+		branches,
+	}: {
+		employee_id: number;
+		branches: number[];
+	}) => {
+		if (!branches || !branches.length) {
+			return;
+		}
+		try {
+			toast.info("attaching to selected branches");
+			await attachEmployeeToBranches({
+				employee_id,
+				branches: branches.map((br) => ({ branch_id: br, is_default: false })),
+			});
+			toast.success("Employee attached to branches successfully");
+		} catch (error) {
+			showErrorToast({ error, defaultMessage: "Failed to attach employee to selected branches" });
 		}
 	};
 
@@ -1130,7 +1165,7 @@ export default function UpdateEmployeeForm() {
 												<Input
 													id="company_email"
 													type="email"
-													value={formData.company_email || ""}
+													value={formData.company_email?.email || ""}
 													onChange={(e) => handleInputChange("company_email", e.target.value)}
 													placeholder="email@mycompany.com"
 													className="h-12 rounded-2xl"
@@ -1545,194 +1580,197 @@ export default function UpdateEmployeeForm() {
 			case 2:
 				return (
 					<div className="space-y-8">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-							<div className="space-y-2">
-								<Label className="text-sm font-medium text-gray-700">Department *</Label>
-								<Input
-									value={
-										selectedJobPositon?.department_details?.name ||
-										thisEmployee?.department.name ||
-										""
-									}
-									disabled
-									className="h-12 rounded-2xl"
-								/>
+						<div className="">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-700">Department *</Label>
+									<Input
+										value={
+											selectedJobPositon?.department_details?.name ||
+											thisEmployee?.department.name ||
+											""
+										}
+										disabled
+										className="h-12 rounded-2xl"
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="position" className="text-sm font-medium text-gray-700">
+										Position *
+									</Label>
+									<JobPositionSearchableSelect
+										defaultLabel={
+											selectedJobPositon ? selectedJobPositon.name : thisEmployee?.position.name
+										}
+										setPositions={setPositions}
+										value={[formData.position || ""]}
+										onValueChange={(values) => {
+											if (values.length > 0) {
+												handleInputChange("position", Number(values[0]));
+											}
+										}}
+									/>
+									{!formData.position && (
+										<p className="text-red-400 text-xs">Job position is required</p>
+									)}
+								</div>
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="position" className="text-sm font-medium text-gray-700">
-									Position *
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+								<div className="space-y-2">
+									<Label htmlFor="workType" className="text-sm font-medium text-gray-700">
+										Work Type
+									</Label>
+									<div className="flex gap-2">
+										<Select
+											value={formData.work_type > 0 ? formData.work_type.toString() : ""}
+											onValueChange={(value: string) =>
+												handleInputChange("work_type", Number.parseInt(value))
+											}
+										>
+											<SelectTrigger className="h-12 rounded-2xl">
+												<SelectValue placeholder="Select work type" />
+											</SelectTrigger>
+											<SelectContent>
+												{workTypes.length > 0 ? (
+													workTypes.map((workType) => (
+														<SelectItem key={workType.id} value={workType.id.toString()}>
+															{workType.name}
+														</SelectItem>
+													))
+												) : (
+													<div className="px-2 py-1.5 text-sm text-gray-500">
+														No work types available
+													</div>
+												)}
+											</SelectContent>
+										</Select>
+										<Button
+											type="button"
+											onClick={() => setIsWorkTypeModalOpen(true)}
+											variant="outline"
+											size="icon"
+											className="shrink-0 h-12 w-12 rounded-2xl"
+											title="Add new work type"
+										>
+											<Plus className="w-4 h-4" />
+										</Button>
+									</div>
+									{!formData.work_type && (
+										<p className="text-red-400 text-xs">Work type is required</p>
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="employeeType" className="text-sm font-medium text-gray-700">
+										Employee Type Name
+									</Label>
+									<div className="flex gap-2">
+										<Select
+											value={formData.employee_type > 0 ? formData.employee_type.toString() : ""}
+											onValueChange={(value) =>
+												handleInputChange("employee_type", Number.parseInt(value))
+											}
+										>
+											<SelectTrigger className="h-12 rounded-2xl">
+												<SelectValue placeholder="Select employee type name" />
+											</SelectTrigger>
+											<SelectContent>
+												{employeeTypes.length > 0 ? (
+													employeeTypes.map((employeeType) => (
+														<SelectItem key={employeeType.id} value={employeeType.id.toString()}>
+															{employeeType.name}
+														</SelectItem>
+													))
+												) : (
+													<div className="px-2 py-1.5 text-sm text-gray-500">
+														No employee type names available
+													</div>
+												)}
+											</SelectContent>
+										</Select>
+										<Button
+											type="button"
+											onClick={() => setIsEmployeeTypeModalOpen(true)}
+											variant="outline"
+											size="icon"
+											className="shrink-0 h-12 w-12 rounded-2xl"
+											title="Add new employee type"
+										>
+											<Plus className="w-4 h-4" />
+										</Button>
+									</div>
+									{!formData.employee_type && (
+										<p className="text-red-400 text-xs">Employee type is required</p>
+									)}
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+								<div className="space-y-2">
+									<Label htmlFor="dateOfJoining" className="text-sm font-medium text-gray-700">
+										Date of Joining *
+									</Label>
+									<Input
+										id="dateOfJoining"
+										type="date"
+										max={maxDateToDay}
+										value={formData.date_of_joining || ""}
+										onChange={(e) => handleInputChange("date_of_joining", e.target.value)}
+										className="h-12 rounded-2xl"
+										required
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="skills" className="text-sm font-medium text-gray-700">
+										Skills
+									</Label>
+									<Input
+										id="skills"
+										value={formData.skills || ""}
+										onChange={(e) => handleInputChange("skills", e.target.value)}
+										placeholder="Enter skills"
+										className="h-12 rounded-2xl"
+									/>
+								</div>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="space-y-4">
+								<Label htmlFor="attached_branches" className="text-sm font-medium text-gray-700">
+									Attached branches
 								</Label>
-								<JobPositionSearchableSelect
-									defaultLabel={
-										selectedJobPositon ? selectedJobPositon.name : thisEmployee?.position.name
-									}
-									setPositions={setPositions}
-									value={[formData.position || ""]}
+								<BranchSearchableSelect
+									className="!rounded-2xl !h-12"
+									value={formData.selected_branches}
 									onValueChange={(values) => {
-										if (values.length > 0) {
-											handleInputChange("position", Number(values[0]));
+										handleInputChange("selected_branches", values.map(Number));
+									}}
+									placeholder="Select branches to attach this employee to"
+									defaultLabel="Employee Branches"
+									multiple={true}
+								/>
+							</div>
+							<div className="space-y-4">
+								<Label htmlFor="attached_branches" className="text-sm font-medium text-gray-700">
+									Payroll Branch
+								</Label>
+								<BranchSearchableSelect
+									className="!rounded-2xl !h-12"
+									value={formData.payroll_branch ? [formData.payroll_branch] : []}
+									onValueChange={(values) => {
+										if (values.length) {
+											handleInputChange("payroll_branch", Number(values[0]));
 										}
 									}}
-								/>
-								{!formData.position && (
-									<p className="text-red-400 text-xs">Job position is required</p>
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="workType" className="text-sm font-medium text-gray-700">
-									Work Type
-								</Label>
-								<div className="flex gap-2">
-									<Select
-										value={formData.work_type > 0 ? formData.work_type.toString() : ""}
-										onValueChange={(value: string) =>
-											handleInputChange("work_type", Number.parseInt(value))
-										}
-									>
-										<SelectTrigger className="h-12 rounded-2xl">
-											<SelectValue placeholder="Select work type" />
-										</SelectTrigger>
-										<SelectContent>
-											{workTypes.length > 0 ? (
-												workTypes.map((workType) => (
-													<SelectItem key={workType.id} value={workType.id.toString()}>
-														{workType.name}
-													</SelectItem>
-												))
-											) : (
-												<div className="px-2 py-1.5 text-sm text-gray-500">
-													No work types available
-												</div>
-											)}
-										</SelectContent>
-									</Select>
-									<Button
-										type="button"
-										onClick={() => setIsWorkTypeModalOpen(true)}
-										variant="outline"
-										size="icon"
-										className="shrink-0 h-12 w-12 rounded-2xl"
-										title="Add new work type"
-									>
-										<Plus className="w-4 h-4" />
-									</Button>
-								</div>
-								{!formData.work_type && (
-									<p className="text-red-400 text-xs">Work type is required</p>
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="employeeType" className="text-sm font-medium text-gray-700">
-									Employee Type Name
-								</Label>
-								<div className="flex gap-2">
-									<Select
-										value={formData.employee_type > 0 ? formData.employee_type.toString() : ""}
-										onValueChange={(value) =>
-											handleInputChange("employee_type", Number.parseInt(value))
-										}
-									>
-										<SelectTrigger className="h-12 rounded-2xl">
-											<SelectValue placeholder="Select employee type name" />
-										</SelectTrigger>
-										<SelectContent>
-											{employeeTypes.length > 0 ? (
-												employeeTypes.map((employeeType) => (
-													<SelectItem key={employeeType.id} value={employeeType.id.toString()}>
-														{employeeType.name}
-													</SelectItem>
-												))
-											) : (
-												<div className="px-2 py-1.5 text-sm text-gray-500">
-													No employee type names available
-												</div>
-											)}
-										</SelectContent>
-									</Select>
-									<Button
-										type="button"
-										onClick={() => setIsEmployeeTypeModalOpen(true)}
-										variant="outline"
-										size="icon"
-										className="shrink-0 h-12 w-12 rounded-2xl"
-										title="Add new employee type"
-									>
-										<Plus className="w-4 h-4" />
-									</Button>
-								</div>
-								{!formData.employee_type && (
-									<p className="text-red-400 text-xs">Employee type is required</p>
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="dateOfJoining" className="text-sm font-medium text-gray-700">
-									Date of Joining *
-								</Label>
-								<Input
-									id="dateOfJoining"
-									type="date"
-									max={maxDateToDay}
-									value={formData.date_of_joining || ""}
-									onChange={(e) => handleInputChange("date_of_joining", e.target.value)}
-									className="h-12 rounded-2xl"
-									required
+									placeholder="Select payroll branch for this employee"
+									defaultLabel="Payroll Branch"
+									multiple={false}
 								/>
 							</div>
-
-							{/* <div className="space-y-2">
-                <Label htmlFor="qualifications" className="text-sm font-medium text-gray-700">
-                  Qualifications
-                </Label>
-                <Input
-                  id="qualifications"
-                  value={formData.qualifications}
-                  onChange={(e) => handleInputChange("qualifications", e.target.value)}
-                  placeholder="Enter qualifications"
-                  className="h-12 rounded-2xl"
-                />
-              </div> */}
-
-							<div className="space-y-2">
-								<Label htmlFor="skills" className="text-sm font-medium text-gray-700">
-									Skills
-								</Label>
-								<Input
-									id="skills"
-									value={formData.skills || ""}
-									onChange={(e) => handleInputChange("skills", e.target.value)}
-									placeholder="Enter skills"
-									className="h-12 rounded-2xl"
-								/>
-							</div>
-						</div>
-
-						{/* Employee Branches */}
-						<div className="space-y-4">
-							<MultiSelectBranches
-								className="!rounded-2xl !h-12"
-								branches={branches}
-								selectedBranches={formData.selected_branches}
-								onSelectionChange={(selectedIds) =>
-									handleInputChange("selected_branches", selectedIds)
-								}
-								loading={branchesLoading}
-								error={branchesError}
-								placeholder="Select branches for this employee"
-								label="Employee Branches"
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label className="text-sm font-medium text-black-700">Payroll Branch</Label>
-							<Input
-								value={thisEmployee?.payroll_branch?.branch_name || ""}
-								disabled
-								className="h-12 rounded-2xl text-gray-900 disabled:text-gray-900 disabled:opacity-100"
-							/>
 						</div>
 
 						{/* Work Experience Section */}
@@ -1801,7 +1839,7 @@ export default function UpdateEmployeeForm() {
 			case 3:
 				return (
 					<div className="space-y-8">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 							<div className="space-y-2">
 								<Label htmlFor="bank" className="text-sm font-medium text-gray-700">
 									Bank
@@ -1989,19 +2027,8 @@ export default function UpdateEmployeeForm() {
                   </div> */}
 
 									<div
-										className={`flex flex-col md:flex-row items-start md:items-center justify-between gap-8`}
+										className={`flex flex-col md:flex-row items-start md:items-center justify-between gap-8 !w-full`}
 									>
-										{/* {currentStep > 1 && (
-                      <Button
-                        type="button"
-                        onClick={prevStep}
-                        variant="outline"
-                        disabled={isSubmitting}
-                        className="w-full md:w-56 lg:!w-72 rounded-full !h-12"
-                      >
-                        Previous
-                      </Button>
-                    )} */}
 										{currentStep < steps.length ? (
 											<>
 												<Button
@@ -2011,7 +2038,7 @@ export default function UpdateEmployeeForm() {
 														e.stopPropagation();
 														nextStep();
 													}}
-													className="w-full md:w-56 lg:!w-72 rounded-full !h-12"
+													className="w-full md:w-1/2 rounded-full !h-12"
 													disabled={!isCurrentStepValid() || isValidating}
 												>
 													{isValidating ? (
@@ -2027,7 +2054,7 @@ export default function UpdateEmployeeForm() {
 										) : (
 											<Button
 												type="submit"
-												className=" text-white w-full md:w-56 lg:!w-72 rounded-full !h-12"
+												className=" text-white w-full md:w-1/2 rounded-full !h-12"
 												disabled={isSubmitting || !isCurrentStepValid()}
 											>
 												{isSubmitting ? (

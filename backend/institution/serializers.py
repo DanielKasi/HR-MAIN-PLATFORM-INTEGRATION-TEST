@@ -267,9 +267,14 @@ class InstitutionBankAccountSerializer(BaseApprovableSerializer):
 
 class InstitutionDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
+    #  My approach 
     day_id = serializers.PrimaryKeyRelatedField(
-        queryset=SystemDay.objects.all(), source="day", write_only=True, required=True
+        queryset=SystemDay.objects.all(), source="day", required=True
     )
+    # Previously
+    # day_id = serializers.PrimaryKeyRelatedField(
+    #     queryset=SystemDay.objects.all(), source="day", write_only=True, required=True
+    # )
 
     class Meta:
         model = InstitutionDay
@@ -352,8 +357,12 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
             raise serializers.ValidationError(
                 {"error": "User must be authenticated to update working days."}
             )
+        
 
-        institution_days_data = validated_data.pop("institution_days", [])
+        institution_days_data = request.data.pop("institution_days", [])
+
+        # Previously
+        # institution_days_data = validated_data.pop("institution_days", [])
 
         # Delete existing institution days
         instance.institution_days.all().delete()
@@ -388,9 +397,15 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
 
 class BranchDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
+
+    #  My approach
     day_id = serializers.PrimaryKeyRelatedField(
-        queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
+        queryset=SystemDay.objects.all(), source="day", required=True
     )
+    # Previously
+    # day_id = serializers.PrimaryKeyRelatedField(
+    #     queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
+    # )
 
     class Meta:
         model = BranchDay

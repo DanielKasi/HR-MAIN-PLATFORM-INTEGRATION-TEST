@@ -215,6 +215,11 @@
       "code": "can_export_employees_to_excel",
       "name": "Can Export Employees List To Excel",
       "description": "Allows exporting employees' list to excel"
+    },
+        {
+      "code": "can_update_employee_working_days",
+      "name": "Can Update Employee Working Days",
+      "description": "Allows updating working days of specific employees"
     }
   ],
   "Recruitment & Selection": [

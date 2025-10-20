@@ -55,12 +55,16 @@ export const UserProfileSearchableSelect = memo(
 		}, []);
 
 		const handleSelect = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<UserProfile>) => {
-				if (!selectedItems.includes(itemId)) {
+			(itemIds: (string | number)[], _items: PaginatedSelectItem<UserProfile>[]) => {
+				if (
+					itemIds.filter((item) =>
+						selectedItems.find((s_item) => s_item.toString() !== item.toString()),
+					)
+				) {
 					if (multiple) {
-						onValueChange([...selectedItems, itemId]);
+						onValueChange([...selectedItems, ...itemIds]);
 					} else {
-						onValueChange([itemId]);
+						onValueChange(itemIds);
 					}
 				}
 			},
@@ -68,8 +72,8 @@ export const UserProfileSearchableSelect = memo(
 		);
 
 		const handleRemove = useCallback(
-			(itemId: string | number, _item: PaginatedSelectItem<UserProfile>) => {
-				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+			(itemIds: (string | number)[], _item: PaginatedSelectItem<UserProfile>[]) => {
+				const newItems = selectedItems.filter((id) => !itemIds.map(String).includes(id.toString()));
 				setSelectedItems(newItems);
 				onValueChange(newItems);
 			},

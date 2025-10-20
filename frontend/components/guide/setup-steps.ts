@@ -21,7 +21,7 @@ export const SETUP_STEPS: SetupStep[] = [
 		id: "add-staff",
 		title: "Add Staff and Permissions",
 		description: "Add staff assignees with appropriate permissions",
-		endpoint_to_check: "institution/profile/{InstitutionId}/",
+		endpoint_to_check: "institution/profile/",
 		to_complete_step_page_link: "/users",
 		status: "pending",
 	},

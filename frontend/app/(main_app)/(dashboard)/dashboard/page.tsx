@@ -16,7 +16,6 @@ import { EventsAndHolidaysWidget } from "@/components/dashboard-new/events-and-h
 import { institutionAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { IInstitutionAnalytics } from "@/types/types.utils";
-import EmployeeAttendance from "@/components/attendance/employee-attendance";
 import { USER_GENDER } from "@/types/user.types";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import AnnouncementCarousel from "@/components/dashboard_components/announcements-carousel";
@@ -26,6 +25,8 @@ import DonutChart from "@/app/(main_app)/(dashboard)/analytics/_components/pie.c
 import DepartmentTreeMap from "@/app/(main_app)/(dashboard)/analytics/employees/department.treemap";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
+import { AttendanceSummary } from "@/components/dashboard_components/attendance-summary";
+import EmployeeAttendance from "@/components/attendance/employee-attendance";
 
 export default function Dashboard() {
 	const [data, setData] = useState<IInstitutionAnalytics | null>(null);
@@ -146,11 +147,11 @@ export default function Dashboard() {
 					</div>
 				</div>
 
-				{/* <TasksCards branchId={null} /> */}
+				<TasksCards branchId={null} />
 
 				{/* Main Content */}
 				<div className="flex flex-col gap-10 max-md:h-max">
-					<div className="grid grid-cols-1 lg:grid-cols-3 !max-h-full gap-4 h-[38rem] max-lg:h-max !max-lg:w-full">
+					<div className="grid grid-cols-1 lg:grid-cols-3 !max-h-full gap-y-4 lg:gap-x-4 h-[38rem] max-lg:h-max max-lg:!w-full">
 						<div className="col-span-2 flex flex-col justify-between gap-4 h-full">
 							<MetricCards data={data?.basic_counts} onRefresh={refreshData} loading={loading} />
 
@@ -174,17 +175,17 @@ export default function Dashboard() {
 					</div>
 
 					{/* Charts Grid */}
-					<div className="!mt-7 flex !h-[22rem]">
+					<div className="md:mt-6 lg:mt-7 xl:mt-2 flex flex-col lg:flex-row lg:!h-[22rem]">
 						<div className="grid grid-cols-1 !w-full lg:grid-cols-3 gap-4 !h-full">
 							<EmployeeCountChart
-								className="!h-full"
+								className="lg:!h-full"
 								data={data?.employees_per_department}
 								onRefresh={refreshData}
 								loading={loading}
 							/>
 							{data && (
 								<DonutChart
-									className="!h-full"
+									className="lg:!h-full"
 									title="Gender Distribution"
 									totalStr="Total Employees"
 									data={[
@@ -201,7 +202,10 @@ export default function Dashboard() {
 								/>
 							)}
 
-							<EventsAndHolidaysWidget className=" !h-full overflow-y-auto" />
+							<EventsAndHolidaysWidget
+								contentClassName="overflow-y-auto !h-full pb-24 pt-4"
+								className="h-[24rem] lg:!h-full overflow-hidden"
+							/>
 						</div>
 					</div>
 				</div>
@@ -236,6 +240,7 @@ export default function Dashboard() {
 				<Card className="rounded-xl !border-none shadow-sm">
 					<EmployeeAttendance showingOnDashboard={true} scope={{ type: "default" }} />
 				</Card>
+				{/* <AttendanceSummary/> */}
 			</div>
 		</div>
 	);

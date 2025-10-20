@@ -10,6 +10,16 @@ body {
 	.text-balance {
 		text-wrap: balance;
 	}
+	/* Chrome, Safari, and Opera */
+	.no-scrollbar::-webkit-scrollbar {
+		display: none;
+	}
+
+	/* IE, Edge, and Firefox */
+	.no-scrollbar {
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
 }
 
 @layer base {
@@ -99,4 +109,7 @@ body {
 	body {
 		@apply bg-background text-foreground;
 	}
+}
+.scrollbar-hide {
+	scrollbar-width: 0;
 }

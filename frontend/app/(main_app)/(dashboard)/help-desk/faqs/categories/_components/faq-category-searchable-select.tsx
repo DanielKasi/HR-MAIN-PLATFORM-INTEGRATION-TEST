@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
@@ -50,21 +50,31 @@ export const FAQCategorySearchableSelect = ({
 		return await FAQ_CATEGORIES_API.getPaginatedFromUrl({ url });
 	};
 
-	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<FAQCategory>) => {
-		if (!selectedItems.includes(itemId)) {
-			if (multiple) {
-				onValueChange([...selectedItems, itemId]);
-			} else {
-				onValueChange([itemId]);
+	const handleSelect = useCallback(
+		(itemIds: (string | number)[], _items: PaginatedSelectItem<FAQCategory>[]) => {
+			if (
+				itemIds.filter((item) =>
+					selectedItems.find((s_item) => s_item.toString() !== item.toString()),
+				)
+			) {
+				if (multiple) {
+					onValueChange([...selectedItems, ...itemIds]);
+				} else {
+					onValueChange(itemIds);
+				}
 			}
-		}
-	};
+		},
+		[multiple, selectedItems, onValueChange],
+	);
 
-	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<FAQCategory>) => {
-		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
-		setSelectedItems(newItems);
-		onValueChange(newItems);
-	};
+	const handleRemove = useCallback(
+		(itemIds: (string | number)[], _item: PaginatedSelectItem<FAQCategory>[]) => {
+			const newItems = selectedItems.filter((id) => !itemIds.map(String).includes(id.toString()));
+			setSelectedItems(newItems);
+			onValueChange(newItems);
+		},
+		[selectedItems, onValueChange],
+	);
 
 	return (
 		<div className={className}>
