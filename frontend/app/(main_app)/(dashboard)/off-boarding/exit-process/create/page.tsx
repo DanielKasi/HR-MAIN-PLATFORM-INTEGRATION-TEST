@@ -20,7 +20,7 @@ interface FormData {
 	last_working_day: string;
 	reason: string;
 	status: "INITIATED";
-	initiator_type: "EMPLOYEE" | "MANAGER" | "HR";
+	// initiator_type: "EMPLOYEE" | "MANAGER" | "HR";
 	is_paid_after_termination: boolean;
 	final_payment_date: string;
 	created_by: number | null;
@@ -45,7 +45,7 @@ const ExitProcessCreate = () => {
 		last_working_day: new Date().toISOString().split("T")[0],
 		reason: "",
 		status: "INITIATED",
-		initiator_type: "MANAGER", // Default to MANAGER for termination initiations
+		// initiator_type: "MANAGER", // Default to MANAGER for termination initiations
 		is_paid_after_termination: false,
 		final_payment_date: new Date().toISOString().split("T")[0],
 		created_by: currentUserId,
@@ -127,7 +127,7 @@ const ExitProcessCreate = () => {
 					last_working_day: formData.last_working_day,
 					reason: formData.reason,
 					status: formData.status,
-					initiator_type: formData.initiator_type,
+					// initiator_type: formData.initiator_type,
 					is_paid_after_termination: formData.is_paid_after_termination,
 					final_payment_date: formData.final_payment_date,
 					created_by: formData.created_by,
@@ -293,7 +293,7 @@ const ExitProcessCreate = () => {
 									</Label>
 								</div>
 
-								<div className="space-y-2">
+								{/* <div className="space-y-2">
 									<Label htmlFor="initiator_type" className="text-sm font-medium text-gray-800">
 										Initiator Type
 									</Label>
@@ -308,7 +308,7 @@ const ExitProcessCreate = () => {
 										<option value="MANAGER">Manager</option>
 										<option value="HR">HR</option>
 									</select>
-								</div>
+								</div> */}
 							</div>
 
 							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-gray-200">
