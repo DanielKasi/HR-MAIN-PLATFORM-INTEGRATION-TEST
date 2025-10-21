@@ -109,7 +109,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const [canViewAdmin, setCanViewAdmin] = useState(false);
 	const [canViewSettings, setCanViewSettings] = useState(false);
 	const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-
 	const [isAdminHovered, setIsAdminHovered] = useState(false);
 
 	const handleMouseEnter = () => {

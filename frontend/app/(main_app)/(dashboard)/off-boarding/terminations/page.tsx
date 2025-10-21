@@ -209,7 +209,7 @@ export default function TerminationInitiationsPage() {
 															</Badge>
 														</TableCell>
 														<TableCell>
-															{termination.separation.initiated_by.user.fullname}
+															{termination.separation.initiated_by?.user.fullname || ""}
 														</TableCell>
 														<TableCell>
 															{new Date(termination.created_at).toLocaleDateString()}

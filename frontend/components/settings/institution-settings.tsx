@@ -1,6 +1,6 @@
 "use client";
 
-import type { IUserInstitutionFormData } from "@/types";
+import type { IUserInstitutionFormData } from "@/types/other";
 
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";

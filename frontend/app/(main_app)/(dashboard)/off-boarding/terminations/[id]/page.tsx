@@ -124,7 +124,9 @@ export default function TerminationInitiationDetailsPage() {
 								</div>
 								<div>
 									<dt className="text-sm font-medium text-muted-foreground">Initiated By</dt>
-									<dd className="text-base">{termination.separation.initiated_by.user.fullname}</dd>
+									<dd className="text-base">
+										{termination.separation.initiated_by?.user.fullname || ""}
+									</dd>
 								</div>
 							</dl>
 						</CardContent>

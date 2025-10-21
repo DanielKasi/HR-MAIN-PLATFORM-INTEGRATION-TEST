@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
-import { IKYCDocument } from "@/types";
+import { IKYCDocument } from "@/types/other";
 import { EditDocumentModal } from "@/components/edit-document-modal";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
