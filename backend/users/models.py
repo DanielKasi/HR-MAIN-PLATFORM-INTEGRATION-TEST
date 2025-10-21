@@ -106,26 +106,33 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedMod
 
     def get_token(self):
         """Generate a custom JWT token with additional user details."""
+        
         institution = None
         if hasattr(self, "profile") and self.profile:
             institution = self.profile.institution
+        else:
+            institution = None
 
+        # Set token lifetime based on institution.user_inactivity_time
         if institution and institution.user_inactivity_time:
             lifetime = timedelta(minutes=institution.user_inactivity_time)
         else:
-            lifetime = settings.SIMPLE_JWT.get(
-                "ACCESS_TOKEN_LIFETIME", timedelta(hours=1)
-            )
+            lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
 
-        one_day = timedelta(days=1)
-
+        # Generate refresh token
         refresh = RefreshToken.for_user(self)
-        refresh.access_token.lifetime = lifetime
+
+        # Set access token lifetime
+        refresh.access_token.set_exp(lifetime=lifetime)
+        
+        # Add custom claims to the token
         refresh["email"] = self.email
         refresh["fullname"] = self.fullname
-        refresh["lifetime"] = int(one_day.total_seconds()) / 60
+        refresh["lifetime"] = int(lifetime.total_seconds()) / 60  # Store lifetime in minutes
 
-        return {"refresh": str(refresh), "access": str(refresh.access_token)}
+        access_token = str(refresh.access_token)
+
+        return {"refresh": str(refresh), "access": access_token}
 
     def get_all_permissions(self, obj=None):
         """Get all permissions for this user."""

@@ -67,7 +67,6 @@ class Command(BaseCommand):
         self.create_tax_rules_for_institutions()
         self.create_default_awards()
         self.generate_usernames()
-        self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
         self.sync_education_qualifications()
 
@@ -831,82 +830,6 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error during deletion: {str(e)}"))
             raise
-
-    def resend_welcome_emails(self, reset_password, employee_ids=None):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Resending welcome emails...\n")
-        )
-        if employee_ids:
-            try:
-                employee_ids = [int(id.strip()) for id in employee_ids.split(",")]
-                employees = Employee.objects.filter(id__in=employee_ids)
-            except ValueError:
-                self.stdout.write(
-                    self.style.ERROR(
-                        "Invalid employee IDs provided. Use comma-separated integers."
-                    )
-                )
-                return
-        else:
-            employees = Employee.objects.filter(
-                Q(user__welcome_email_sent=False)
-                | Q(user__welcome_email_sent__isnull=True)
-            )
-        if not employees.exists():
-            self.stdout.write(
-                self.style.NOTICE("No employees found to resend welcome emails.")
-            )
-            return
-        success_count = 0
-        error_count = 0
-        skip_count = 0
-        for employee in employees:
-            if not employee.user or not employee.user.email:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"Skipping employee {employee.user.fullname if employee.user else 'Unnamed'}: No user or email"
-                    )
-                )
-                skip_count += 1
-                continue
-            try:
-                password = None
-                if reset_password:
-                    password = generate_compliant_password()
-                    employee.user.set_password(password)
-                    employee.user.is_password_verified = True
-                    employee.user.welcome_email_sent = False
-                    employee.user.save()
-                send_employee_welcome_email.delay_on_commit(
-                    employee.user.email,
-                    employee.user.fullname,
-                    password,
-                    employee.gender,
-                )
-                employee.user.welcome_email_sent = True
-                employee.user.save()
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Welcome email resent to {employee.user.email} for employee '{employee.user.fullname}'"
-                    )
-                )
-                success_count += 1
-            except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"Failed to resend email to {employee.user.email} for employee '{employee.user.fullname}': {str(e)}"
-                    )
-                )
-                error_count += 1
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Welcome Emails Summary"))
-        self.stdout.write(
-            self.style.NOTICE(f"  ➕ Successfully resent: {success_count}")
-        )
-        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Welcome emails processing completed!")
-        )
 
     def create_default_awards(self):
         self.stdout.write(

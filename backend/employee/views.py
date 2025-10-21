@@ -560,6 +560,7 @@ class ResendWelcomeLink(APIView):
             request.get_host(),
             user.email,
             user.fullname,
+            user.username,
             new_password,
             company_name=company_name,
             gender=employee.gender,  
@@ -624,6 +625,8 @@ class EmployeeCreateAPIView(APIView):
                 "employee_type",
                 "position",
                 "department",
+                "has_children",
+                
             ]:
                 final_data[key.replace("[]", "")] = (
                     values[0] if len(values) == 1 else values
@@ -741,6 +744,9 @@ class EmployeeCreateAPIView(APIView):
         if "is_active" in final_data:
             final_data["is_active"] = str(final_data["is_active"]).lower() == "true"
 
+        if "has_children" in final_data:
+            final_data["has_children"] = str(final_data["has_children"]).lower() == "true"
+
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
 
@@ -852,10 +858,12 @@ class EmployeeCreateAPIView(APIView):
                 employee.user.is_email_verified = True
                 employee.user.welcome_email_sent = True
                 employee.user.save()
+                
                 send_employee_welcome_email.delay_on_commit(
                     request.get_host(),
                     employee.user.email,
                     employee.user.fullname,
+                    employee.user.username,
                     data["user"]["password"],
                     company_name=request.user.profile.institution.institution_name,
                     gender=employee.gender,
@@ -889,6 +897,7 @@ class EmployeeCreateAPIView(APIView):
                 request.get_host(),
                 employee.user.email,
                 employee.user.fullname,
+                employee.user.username,
                 final_data["user"]["password"],
                 company_name=request.user.profile.institution.institution_name,
                 gender=employee.gender,
@@ -901,7 +910,6 @@ class EmployeeCreateAPIView(APIView):
     @transaction.atomic
     def handle_bulk_upload(self, request):
 
-        logger = logging.getLogger(__name__)
 
         site = get_current_site(request)
         institution = getattr(request.user.profile, "institution", None)
@@ -1661,7 +1669,6 @@ class EmployeeCreateAPIView(APIView):
                         )
                     continue
 
-                logger.info(f"Row {group.index[0] + 2} employee_data: {employee_data}")
 
                 serializer_context = {"request": request}
                 existing_employee = (
@@ -1718,15 +1725,14 @@ class EmployeeCreateAPIView(APIView):
                 employees.append(employee)
                 if existing_employee:
                     updated_count += 1
-                    logger.info(f"Updated employee: {employee.id}, employee_id: {employee.employee_id}, user: {employee.user.email}")
                 else:
                     created_count += 1
-                    logger.info(f"Created employee: {employee.id}, employee_id: {employee.employee_id}, user: {employee.user.email}")
                     if isinstance(employee_data["user"], dict) and employee_data["user"].get("password"):
                         send_employee_welcome_email.delay_on_commit(
                             request.get_host(),
                             employee.user.email,
                             employee.user.fullname,
+                            employee.user.username,
                             employee_data["user"]["password"],
                             company_name=institution.institution_name,
                             gender=employee_data["gender"],
@@ -1979,6 +1985,7 @@ class EmployeeUpdateAPIView(APIView):
                 "employee_type",
                 "position",
                 "department",
+                "has_children",
             ]:
                 final_data[key.replace("[]", "")] = (
                     values[0] if len(values) == 1 else values
@@ -2155,6 +2162,9 @@ class EmployeeUpdateAPIView(APIView):
 
         if "is_active" in final_data:
             final_data["is_active"] = str(final_data["is_active"]).lower() == "true"
+
+        if "has_children" in final_data:
+            final_data["has_children"] = str(final_data["has_children"]).lower() == "true"
 
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
@@ -2741,7 +2751,7 @@ class EmployeeAttendanceListCreateAPIView(APIView, SortableAPIMixin):
         "check_in_time",
         "check_out_time",
     ]
-    default_ordering = ["employee"]
+    default_ordering = ["-date"]
 
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
@@ -4717,7 +4727,7 @@ class DocumentUploadView(APIView):
         document_request_employee = get_object_or_404(DocumentRequestEmployee, pk=request_employee_id)
         if document_request_employee.employee.user != request.user:
             return Response(
-                {"detail": "Not authorized to upload this document."},
+                {"error": "Not authorized to upload this document."},
                 status=status.HTTP_403_FORBIDDEN
             )
         serializer = RequestedDocumentSerializer(data=request.data, context={"request": request})
