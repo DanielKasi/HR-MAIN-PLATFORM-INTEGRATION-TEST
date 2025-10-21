@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    AssetRequestApproveRejectView,
     AssetRequestListCreateView,
     AssetRequestDetailView,
     AssetAllocationListCreateView,
@@ -30,6 +31,7 @@ urlpatterns = [
         AssetRequestDetailView.as_view(),
         name="asset-request-detail",
     ),
+    path("asset-requests/<int:pk>/approve/", AssetRequestApproveRejectView.as_view(), name="asset-request-approve"),
     path(
         "asset-allocations/",
         AssetAllocationListCreateView.as_view(),
