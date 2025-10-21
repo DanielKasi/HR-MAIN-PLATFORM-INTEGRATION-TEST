@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Institution Ownership Transfer</title>
+</head>
+<body style="margin: 0; padding: 0; background: linear-gradient(135deg, #fff5eb 0%, #ffe8d1 100%); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <div style="max-width: 600px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(255, 107, 0, 0.15);">
+        
+        <!-- Header with gradient -->
+        <div style="background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); padding: 40px 30px; text-align: center;">
+            <div style="background: rgba(255, 255, 255, 0.2); width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255, 255, 255, 0.3);">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Ownership Transfer Confirmation</h1>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <p style="color: #333; font-size: 16px; margin-bottom: 20px;">{{ salutation }},</p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.8; margin-bottom: 25px;">
+                We are pleased to inform you that you have been assigned as the new super user of:
+            </p>
+
+            <!-- Institution Card -->
+            <div style="background: linear-gradient(135deg, #fff5eb 0%, #ffe8d1 100%); border-left: 4px solid #ff6b00; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <div style="color: #ff6b00; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Institution Name</div>
+                <div style="color: #333; font-size: 20px; font-weight: 600;">{{ institution_name }}</div>
+            </div>
+
+            <!-- Transfer Reason -->
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 30px; border: 1px solid #e9ecef;">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2V22M17 5H9.5C8.57174 5 7.6815 5.36875 7.02513 6.02513C6.36875 6.6815 6 7.57174 6 8.5C6 9.42826 6.36875 10.3185 7.02513 10.9749C7.6815 11.6313 8.57174 12 9.5 12H14.5C15.4283 12 16.3185 12.3687 16.9749 13.0251C17.6313 13.6815 18 14.5717 18 15.5C18 16.4283 17.6313 17.3185 16.9749 17.9749C16.3185 18.6313 15.4283 19 14.5 19H6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Transfer Reason</div>
+                </div>
+                <div style="color: #495057; font-size: 15px; line-height: 1.6; padding-left: 44px;">{{ transfer_reason }}</div>
+            </div>
+
+            <!-- Info Box -->
+            <div style="background: #fff9f5; border: 1px solid #ffd4b3; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                <div style="display: flex; align-items: start;">
+                    <div style="color: #ff6b00; font-size: 20px; margin-right: 12px; margin-top: 2px;">ℹ️</div>
+                    <div style="flex: 1;">
+                        <div style="color: #333; font-size: 15px; line-height: 1.7;">
+                            As the new owner, you now have <strong style="color: #ff6b00;">full administrative responsibilities</strong> for the institution. Please contact our support team if you have any questions or require assistance.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Button -->
+            {% comment %} <div style="text-align: center; margin-bottom: 30px;">
+                <a href="#" style="display: inline-block; background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3); transition: transform 0.2s;">
+                    Access Your Institution
+                </a>
+            </div> {% endcomment %}
+
+            <p style="color: #555; font-size: 15px; line-height: 1.8; margin-bottom: 5px;">Best regards,</p>
+            <p style="color: #333; font-size: 15px; font-weight: 600; margin: 0;">Your Institution Management Team</p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f8f9fa; padding: 20px 30px; border-top: 1px solid #e9ecef; text-align: center;">
+            <p style="color: #6c757d; font-size: 13px; margin: 0; line-height: 1.6;">
+                Need help? <a href="#" style="color: #ff6b00; text-decoration: none; font-weight: 600;">Contact Support</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

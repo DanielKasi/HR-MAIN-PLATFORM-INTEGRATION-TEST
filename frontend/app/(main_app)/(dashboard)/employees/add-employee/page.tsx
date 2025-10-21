@@ -561,8 +561,6 @@ export default function AddEmployeeForm() {
 
 		// Clear any errors
 		setSubmitError(null);
-
-		toast.success("Form cleared successfully");
 	};
 
 	const handleInputChange = (
@@ -737,7 +735,7 @@ export default function AddEmployeeForm() {
 				// 	formData.tin.trim() &&
 				// 	formData.nssf_no.trim()
 				// );
-				return true;
+				return !formData.tin.trim() || formData.tin.trim().length < 13;
 			default:
 				return false;
 		}
@@ -827,8 +825,6 @@ export default function AddEmployeeForm() {
 		setIsSubmitting(true);
 		setSubmitError(null);
 
-		// console.log("\n\n Creating with data : ", formData);
-
 		try {
 			const dataToSubmit: IEmployeeFormData = {
 				user: {
@@ -896,6 +892,8 @@ export default function AddEmployeeForm() {
 							}
 						: undefined,
 			};
+
+			console.log("\n\n Creating with data : ", dataToSubmit);
 
 			if (formData.company_email) {
 				dataToSubmit["company_email"] = formData.company_email;
@@ -1848,9 +1846,9 @@ export default function AddEmployeeForm() {
 										A Tax Identification Number number is required
 									</p>
 								)} */}
-								{formData.tin && formData.tin.length > 15 && (
+								{formData.tin && formData.tin.length > 12 && (
 									<p className="text-red-400 text-xs">
-										Tax Identification Number number cannot exceed 15 characters
+										Tax Identification Number number cannot exceed 12 characters
 									</p>
 								)}
 							</div>

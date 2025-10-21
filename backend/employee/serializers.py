@@ -22,6 +22,7 @@ from .models import (
     EmployeeDay,
     EmployeeShift,
 )
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
@@ -281,9 +282,12 @@ class EmployeeSerializer(BaseApprovableSerializer):
     company_email = EmployeeCompanyEmailSerializer(required=False, allow_null=True)
 
     def get_company_email(self, obj):
-        email = obj.company_emails.first()  # Only one company email due to unique_together
-        if email:
-            return EmployeeCompanyEmailSerializer(email).data
+        try:
+            email = obj.company_email  # Use the correct related_name
+            if email:
+                return EmployeeCompanyEmailSerializer(email).data
+        except ObjectDoesNotExist:
+            pass
         return None
 
     class Meta:
@@ -325,11 +329,11 @@ class EmployeeSerializer(BaseApprovableSerializer):
         spouse_data = validated_data.pop("spouse", None)
         company_email_data = validated_data.pop("company_email", None)
 
+
         user = None
         if user_data:
             email = user_data.get("email")
             user_id = user_data.get("id")
-            print(f"User data: id={user_id}, email={email}")
 
             if email:
                 existing_user = CustomUser.objects.filter(email=email).first()
@@ -339,13 +343,11 @@ class EmployeeSerializer(BaseApprovableSerializer):
                             {"error": f"Provided user id {user_id} does not match existing user with email {email}."}
                         )
                     user = existing_user
-                    print(f"Using existing user: {user.id}, {user.email}")
                 else:
                     user_data["fullname"] = name or user_data.get("fullname")
                     user_serializer = CustomUserSerializer(data=user_data)
                     user_serializer.is_valid(raise_exception=True)
                     user = user_serializer.save()
-                    print(f"Created new user: {user.id}, {user.email}")
             else:
                 raise serializers.ValidationError({"error": "Email is required."})
 
@@ -404,7 +406,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
             Spouse.objects.create(employee=employee, **spouse_data)
 
         if company_email_data and company_email_data.get("email"):
-            company_email_data["employee"] = employee
+            company_email_data["employee"] = employee.id  # Use employee ID instead of object
             company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data)
             company_email_serializer.is_valid(raise_exception=True)
             company_email_serializer.save()
@@ -505,7 +507,10 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 existing_spouse.delete()
 
         if company_email_data is not None:
-            existing_company_email = instance.company_emails.first()  # Only one company email
+            try:
+                existing_company_email = instance.company_email  # Access the OneToOneField
+            except ObjectDoesNotExist:
+                existing_company_email = None  # Handle case where no company email exists
             if company_email_data and company_email_data.get("email"):
                 company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data)
                 company_email_serializer.is_valid(raise_exception=True)
@@ -544,6 +549,8 @@ class EmployeeSerializer(BaseApprovableSerializer):
             data["position"] = data["position_details"]
         if data["payroll_branch"]:
             data["payroll_branch"] = BranchSerializer(instance.payroll_branch).data
+        if data["checkin_branch"]:
+            data["checkin_branch"] = BranchSerializer(instance.checkin_branch).data    
         data["work_type"] = WorkTypeSerializer(instance.work_type).data
         data["employee_type"] = EmployeeTypeSerializer(instance.employee_type).data
         data["next_of_kin"] = NextOfKinSerializer(instance.next_of_kins.all(), many=True).data

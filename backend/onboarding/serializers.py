@@ -1,4 +1,5 @@
 from datetime import date
+from employee.utilities import deactivate_employee
 from employee.models import Employee
 from users.models import CustomUser
 from recruitment.serializers import JobAdvertApplicationSerializer
@@ -194,6 +195,22 @@ class OffboardingStageProgressSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'error': 'This stage cannot be skipped.'})
         return data
     
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        offboarding = instance.offboarding
+        all_stages_done = not OffboardingStageProgress.objects.filter(
+            offboarding=offboarding,
+            completed=False,
+            skipped=False,
+            deleted_at__isnull=True
+        ).exists()
+        if all_stages_done and offboarding.status not in ['COMPLETED', 'CANCELLED']:
+            offboarding.status = 'COMPLETED'
+            offboarding.save(update_fields=['status'])
+            deactivate_employee(offboarding.employee)
+        return instance
+    
 class HandoverReportSerializer(BaseApprovableSerializer):
     class Meta:
         model = HandoverReport
@@ -229,11 +246,24 @@ class OffboardingSerializer(serializers.ModelSerializer):
     )
     stage_progress = OffboardingStageProgressSerializer(many=True, read_only=True)
     handover_report = HandoverReportSerializer(read_only=True)
+    current_stage = serializers.SerializerMethodField(read_only=True)
+
 
     class Meta:
         model = Offboarding
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_current_stage(self, obj):
+        current_stage = OffboardingStageProgress.objects.filter(
+            offboarding=obj,
+            completed=False,
+            skipped=False,
+            deleted_at__isnull=True
+        ).order_by('custom_order').first()
+        if current_stage:
+            return OffboardingStageProgressSerializer(current_stage).data
+        return None    
 
     def validate(self, data):
         termination_type = data.get('termination_type')
@@ -272,3 +302,39 @@ class OffboardingSerializer(serializers.ModelSerializer):
         if offboarding.termination_type.requires_handover_report:
             HandoverReport.objects.create(offboarding=offboarding)
         return offboarding 
+    
+class OffboardingStageProgressReorderSerializer(serializers.Serializer):
+    source_stage_id = serializers.IntegerField(
+        help_text="ID of the OffboardingStageProgress to move"
+    )
+    target_stage_id = serializers.IntegerField(
+        help_text="ID of the OffboardingStageProgress to move the source stage above"
+    )
+
+    def validate(self, data):
+        source_stage_id = data.get('source_stage_id')
+        target_stage_id = data.get('target_stage_id')
+        separation_id = self.context.get('separation_id')
+
+        if source_stage_id == target_stage_id:
+            raise serializers.ValidationError({
+                'error': 'Source and target stage IDs must be different.'
+            })
+
+        try:
+            source_stage = OffboardingStageProgress.objects.get(
+                id=source_stage_id,
+                offboarding_id=separation_id,
+                deleted_at__isnull=True
+            )
+            target_stage = OffboardingStageProgress.objects.get(
+                id=target_stage_id,
+                offboarding_id=separation_id,
+                deleted_at__isnull=True
+            )
+        except OffboardingStageProgress.DoesNotExist:
+            raise serializers.ValidationError({
+                'error': 'Source or target stage not found for this offboarding.'
+            })
+
+        return data    

@@ -37,11 +37,29 @@ export default function BarHChart({
 	className,
 	select = true,
 }: Props) {
-	const [groups] = React.useState(Object.keys(data).sort().reverse());
+	const [groups, setGroups] = React.useState<string[]>([]);
 
 	const [category, setCategory] = React.useState(groups[0]);
 
-	const [items, setItems] = React.useState(data[groups[0]] || ([] as Entry[]));
+	const [items, setItems] = React.useState<Entry[]>([]);
+
+	React.useEffect(() => {
+		if (data) {
+			setGroups(Object.keys(data).sort().reverse());
+		}
+	}, [data]);
+
+	React.useEffect(() => {
+		if (groups) {
+			setCategory(groups[0]);
+		}
+	}, [groups]);
+
+	React.useEffect(() => {
+		if (data && groups) {
+			setItems(data[groups[0]] || ([] as Entry[]));
+		}
+	}, [data, groups]);
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
@@ -112,7 +130,7 @@ export default function BarHChart({
 						/>
 						<Bar
 							dataKey={dataKey}
-							radius={rounded ? 4 : 0}
+							radius={rounded ? 8 : 0}
 							fill="#0CA0F5"
 							background={{ fill: "hsl(var(--accent))" }}
 						>
@@ -125,7 +143,7 @@ export default function BarHChart({
 							<LabelList
 								dataKey={nameKey}
 								position="insideTopLeft"
-								offset={-16}
+								offset={-12}
 								className="fill-slate-600 text-xs sm:text-sm lg:text-base"
 								fontSize={12}
 							/>

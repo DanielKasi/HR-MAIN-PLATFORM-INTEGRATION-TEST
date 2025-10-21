@@ -13,6 +13,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 from .models import (
     HandoverReport,
     Offboarding,
+    OffboardingStageProgress,
     OnBoarding,
     TerminationStage,
     TerminationType,
@@ -20,6 +21,8 @@ from .models import (
 from .serializers import (
     HandoverReportSerializer,
     OffboardingSerializer,
+    OffboardingStageProgressReorderSerializer,
+    OffboardingStageProgressSerializer,
     OnBoardingSerializer,
     TerminationStageSerializer,
     TerminationTypeSerializer,
@@ -399,19 +402,13 @@ class OffboardingDashboardView(APIView):
         """
         Dashboard endpoint providing key offboarding metrics and recent activities.
         """
-        # Ensure the user has access to the institution
+        # Get institution_id from request.user.profile
         try:
-            institution_id = request.user.profile.institution
-        except ValueError:
+            institution_id = request.user.profile.institution.id  # Adjust based on your profile model
+        except AttributeError:
             return Response(
-                {'error': 'Invalid institution_id'},
+                {'error': 'User profile or institution not found'},
                 status=400
-            )
-
-        if not request.user.has_perm('view_institution', institution_id):
-            return Response(
-                {'error': 'You do not have permission to view this institution.'},
-                status=403
             )
 
         # Define date range (last 30 days)
@@ -1056,3 +1053,105 @@ class HandoverReportDetailView(APIView):
             report.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+    
+class ReorderOffboardingStageView(APIView):
+
+    @extend_schema(
+        request=OffboardingStageProgressReorderSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=OffboardingStageProgressSerializer(many=True),
+                description="Stages reordered successfully."
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Invalid input or policy violation."
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Offboarding or stages not found."
+            )
+        },
+        tags=["Offboarding"],
+        summary="Reorder Offboarding Stage Progress",
+        description="Move one OffboardingStageProgress above another, swapping their custom_order values."
+    )
+    @transaction.atomic
+    def post(self, request, separation_id):
+        try:
+            offboarding = Offboarding.objects.get(
+                id=separation_id,
+                termination_type__institution=request.user.profile.institution,
+                deleted_at__isnull=True
+            )
+        except Offboarding.DoesNotExist:
+            return Response(
+                {"detail": "Offboarding not found or not authorized."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = OffboardingStageProgressReorderSerializer(
+            data=request.data, context={"separation_id": separation_id}
+        )
+        if serializer.is_valid():
+            source_stage_id = serializer.validated_data["source_stage_id"]
+            target_stage_id = serializer.validated_data["target_stage_id"]
+
+            try:
+                with transaction.atomic():
+                    # Lock the rows to prevent race conditions
+                    source_stage = OffboardingStageProgress.objects.select_for_update().get(
+                        id=source_stage_id, offboarding=offboarding
+                    )
+                    target_stage = OffboardingStageProgress.objects.select_for_update().get(
+                        id=target_stage_id, offboarding=offboarding
+                    )
+
+                    # Get the current custom_order values
+                    source_order = source_stage.custom_order
+                    target_order = target_stage.custom_order
+
+                    # Use a temporary placeholder to avoid unique constraint violation
+                    max_order = OffboardingStageProgress.objects.filter(
+                        offboarding=offboarding, deleted_at__isnull=True
+                    ).aggregate(Max("custom_order"))["custom_order__max"] or 0
+                    temp_order = max_order + 1
+
+                    # Step 1: Set source_stage to temporary order
+                    source_stage.custom_order = temp_order
+                    source_stage.save(update_fields=["custom_order"])
+
+                    # Step 2: Set target_stage to source_stage's original order
+                    target_stage.custom_order = source_order
+                    target_stage.save(update_fields=["custom_order"])
+
+                    # Step 3: Set source_stage to target_stage's original order
+                    source_stage.custom_order = target_order
+                    source_stage.save(update_fields=["custom_order"])
+
+                    # Return the updated list of stages for the offboarding
+                    stages = OffboardingStageProgress.objects.filter(
+                        offboarding=offboarding, deleted_at__isnull=True
+                    ).order_by("custom_order").select_related("stage")
+                    response_serializer = OffboardingStageProgressSerializer(
+                        stages, many=True, context={"request": request}
+                    )
+                    return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+            except OffboardingStageProgress.DoesNotExist:
+                return Response(
+                    {"error": "Source or target stage does not exist."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except IntegrityError as e:
+                return Response(
+                    {"error": f"Database error during reordering: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            except Exception as e:
+                return Response(
+                    {"error": f"Unexpected error: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

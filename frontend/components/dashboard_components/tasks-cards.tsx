@@ -4,7 +4,7 @@ import type { ApprovalTasksDashboardResponse, TaskType } from "@/types/types.uti
 import { useEffect, useState, useMemo } from "react";
 import { ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getDashboardTasksAnalytics } from "@/lib/utils";
+import { getDashboardTasksAnalytics, showErrorToast } from "@/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -129,8 +129,7 @@ export function TasksCards({ branchId }: { branchId: string | null }) {
 			];
 			setAllTasksList(mockTasks);
 		} catch (error) {
-			console.error("Error fetching all tasks:", error);
-			// Optionally set an error state for the dropdown
+			showErrorToast({ error, defaultMessage: "Error fetching all tasks" });
 		}
 	};
 
@@ -216,100 +215,104 @@ export function TasksCards({ branchId }: { branchId: string | null }) {
 					<ArrowRight className="text-green-500 h-4 w-4" />
 				</div>
 			</div>
+			<div className="!col-span-1">
+				{/* All Tasks Dropdown */}
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant={"outline"}
+							className="flex items-center justify-between cursor-pointer !rounded-2xl min-h-14 w-full"
+						>
+							<div className="flex items-center justify-start gap-4">
+								<Icon icon="hugeicons:task-02" className="!w-6 !h-6" />
+								<span>All Tasks</span>
+								<Badge variant={"secondary"} className="text-base font-semibold px-4">
+									{allTasks}
+								</Badge>
+							</div>
+							<ChevronDown />
+						</Button>
+					</DropdownMenuTrigger>
 
-			{/* All Tasks Dropdown */}
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild className="col-span-1 !rounded-2xl">
-					<Button
-						variant={"outline"}
-						className="flex items-center justify-between cursor-pointer !rounded-2xl min-h-14 w-full"
+					<DropdownMenuContent
+						align="start"
+						className="h-fit p-4 rounded-xl"
+						style={{ width: "var(--radix-dropdown-menu-trigger-width)" }}
 					>
-						<div className="flex items-center justify-start gap-4">
-							<Icon icon="hugeicons:task-02" className="!w-6 !h-6" />
-							<span>All Tasks</span>
-							<Badge variant={"secondary"} className="text-base font-semibold px-4">
-								{allTasks}
-							</Badge>
+						<div className="flex items-center justify-between gap-4 mb-2">
+							<h3 className="font-semibold">All Tasks ({allTasks})</h3>
+							{/* Nested Modules Dropdown */}
+							<div className="mb-4">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant="ghost"
+											className="w-full justify-between text-sm font-medium p-2 hover:bg-gray-100"
+										>
+											<span>All Modules ({modules.length})</span>
+											<ChevronDown className="h-4 w-4" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end" className="w-[220px] max-h-60 overflow-y-auto">
+										<DropdownMenuItem className="p-2 text-sm text-muted-foreground">
+											<div className="flex justify-start gap-2 items-center w-full">
+												<span>All modules</span>
+												<span className="text-xs text-muted-foreground">({allTasks})</span>
+											</div>
+										</DropdownMenuItem>
+										{modules.length > 0 ? (
+											modules.map((mod, idx) => (
+												<DropdownMenuItem key={idx} className="p-2 text-sm">
+													<div className="flex justify-start gap-2 items-center w-full">
+														<span>{mod.name}</span>
+														<span className="text-xs text-muted-foreground">({mod.count})</span>
+													</div>
+												</DropdownMenuItem>
+											))
+										) : (
+											<DropdownMenuItem className="p-2 text-sm text-muted-foreground">
+												No modules found
+											</DropdownMenuItem>
+										)}
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
 						</div>
-						<ChevronDown />
-					</Button>
-				</DropdownMenuTrigger>
-
-				<DropdownMenuContent className="!w-[calc(100%-1rem)] h-fit p-4 mx-auto rounded-xl max-h-[80vh] overflow-hidden">
-					<div className="flex items-center justify-between gap-4">
-						<h3 className="font-semibold mb-2">All Tasks ({allTasks})</h3>
-
-						{/* Nested Modules Dropdown */}
 						<div className="mb-4">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="ghost"
-										className="w-full justify-between text-sm font-medium p-2 hover:bg-gray-100"
+							<input
+								type="text"
+								placeholder="Search tasks or modules..."
+								className="w-full p-2 text-sm border rounded-xl"
+							/>
+						</div>
+
+						{/* Task List */}
+						<div className="!max-h-[55svh] overflow-y-auto">
+							{allTasksList.length > 0 ? (
+								allTasksList.map((task) => (
+									<DropdownMenuItem
+										key={task.id}
+										className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
 									>
-										<span>All Modules ({modules.length})</span>
-										<ChevronDown className="h-4 w-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-[220px] max-h-60 overflow-y-auto">
-									<DropdownMenuItem className="p-2 text-sm text-muted-foreground">
-										<div className="flex justify-start gap-2 items-center w-full">
-											<span>All modules</span>
-											<span className="text-xs text-muted-foreground">({allTasks})</span>
+										<div className="flex justify-between items-center w-full">
+											<div className="flex-1 pr-2">
+												<p className="font-medium">{task.title}</p>
+												<p className="text-xs text-muted-foreground py-1">
+													<span className="rounded-lg p-2 py-1 bg-gray-100">{task.module}</span>•{" "}
+													{task.createdAt}
+												</p>
+											</div>
+											<ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
 										</div>
 									</DropdownMenuItem>
-									{modules.length > 0 ? (
-										modules.map((mod, idx) => (
-											<DropdownMenuItem key={idx} className="p-2 text-sm">
-												<div className="flex justify-start gap-2 items-center w-full">
-													<span>{mod.name}</span>
-													<span className="text-xs text-muted-foreground">({mod.count})</span>
-												</div>
-											</DropdownMenuItem>
-										))
-									) : (
-										<DropdownMenuItem className="p-2 text-sm text-muted-foreground">
-											No modules found
-										</DropdownMenuItem>
-									)}
-								</DropdownMenuContent>
-							</DropdownMenu>
+								))
+							) : (
+								<p className="text-sm text-muted-foreground p-2">No tasks available.</p>
+							)}
 						</div>
-					</div>
-					<div className="mb-4">
-						<input
-							type="text"
-							placeholder="Search tasks or modules..."
-							className="w-full p-2 text-sm border rounded-xl"
-						/>
-					</div>
-
-					{/* Task List */}
-					<div className="max-h-[30vh] overflow-y-auto">
-						{allTasksList.length > 0 ? (
-							allTasksList.map((task) => (
-								<DropdownMenuItem
-									key={task.id}
-									className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-								>
-									<div className="flex justify-between items-center w-full">
-										<div className="flex-1 pr-2">
-											<p className="font-medium">{task.title}</p>
-											<p className="text-xs text-muted-foreground py-1">
-												<span className="rounded-lg p-2 py-1 bg-gray-100">{task.module}</span>•{" "}
-												{task.createdAt}
-											</p>
-										</div>
-										<ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-									</div>
-								</DropdownMenuItem>
-							))
-						) : (
-							<p className="text-sm text-muted-foreground p-2">No tasks available.</p>
-						)}
-					</div>
-				</DropdownMenuContent>
-			</DropdownMenu>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
 		</div>
 	);
 }

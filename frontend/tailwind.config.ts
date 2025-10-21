@@ -22,8 +22,7 @@ const config: Config = {
 					800: "hsl(var(--chart-8))",
 					900: "hsl(var(--chart-9))",
 				},
-				mainColor: "#0CA0F5",
-				myblack: "#162032",
+
 				background: "hsl(var(--background))",
 				foreground: "hsl(var(--foreground))",
 				card: {
@@ -35,9 +34,9 @@ const config: Config = {
 					foreground: "hsl(var(--popover-foreground))",
 				},
 				primary: {
-					DEFAULT: "#0CA0F5",
-					foreground: "hsl(0, 0%, 100%)",
-					hover: "hsl(199, 93%, 43%)",
+					DEFAULT: "hsl(var(--primary))",
+					foreground: "hsl(var(--primary-foreground))",
+					hover: "hsl(var(--primary-hover))",
 				},
 				secondary: {
 					DEFAULT: "hsl(var(--secondary))",

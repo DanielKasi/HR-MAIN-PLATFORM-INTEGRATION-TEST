@@ -4,19 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 
-import {
-	Search,
-	RefreshCw,
-	ArrowLeft,
-	ChevronDown,
-	ChevronUp,
-	Clock,
-	ArrowRight,
-} from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import apiRequest from "@/lib/apiRequest";
 
 import {
@@ -31,6 +21,8 @@ import { showErrorToast, cn, AUDIT_LOGS_API } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 import type { IAuditLog, IPaginatedResponse } from "@/types/types.utils";
+import { AuditLogsTable } from "./_components/audit-logs-table";
+import { Icon } from "@iconify/react";
 
 const safeStringify = (value: any): string => {
 	if (value === undefined || value === null) {
@@ -425,7 +417,7 @@ export default function AuditLogsPage() {
 					</div>
 
 					<div className="flex flex-wrap items-center gap-3">
-						<div className="relative flex-1 max-w-md min-w-[250px]">
+						<div className="relative flex-1 w-full max-w-xl min-w-[250px] xl:!min-w-[20rem] xl:max-w-lg">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<Input
 								type="text"
@@ -436,7 +428,7 @@ export default function AuditLogsPage() {
 							/>
 						</div>
 
-						<div className="flex items-center gap-2 ml-auto flex-wrap">
+						<div className="flex justify-start items-center gap-2 xl:ml-auto flex-wrap">
 							<Select value={actionFilter} onValueChange={setActionFilter}>
 								<SelectTrigger className="w-[150px] focus:ring-0 focus:ring-offset-0">
 									<SelectValue placeholder="Action" />
@@ -491,15 +483,16 @@ export default function AuditLogsPage() {
 								onClick={handleRefresh}
 								disabled={loading}
 							>
-								<RefreshCw
-									className={`h-4 w-4 ${loading && auditLogs.length === 0 ? "animate-spin" : ""}`}
+								<Icon
+									icon="hugeicons:refresh"
+									className={`!size-6 ${loading && auditLogs.length === 0 ? "animate-spin" : ""}`}
 								/>
 							</Button>
 						</div>
 					</div>
 				</div>
-
-				{initialLoad && loading ? (
+				<AuditLogsTable searchQuery={searchTerm} actionFilter={actionFilter} />
+				{/* {initialLoad && loading ? (
 					<div className="space-y-4">
 						{[1, 2, 3].map((i) => (
 							<div key={i} className="flex gap-3">
@@ -647,7 +640,7 @@ export default function AuditLogsPage() {
 							</div>
 						)}
 					</div>
-				)}
+				)} */}
 			</div>
 		</div>
 	);

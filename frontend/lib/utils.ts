@@ -1621,19 +1621,21 @@ export const createEmployee = async ({
 	institutionId: number;
 	employeeData: IEmployeeFormData;
 }) => {
-	console.log("\n\n Creating employee with data : ", employeeData);
 	try {
 		const formData = new FormData();
 
 		formData.append("institutionId", institutionId.toString());
 
 		if (employeeData.user) {
-			// formData.append("user.fullname", employeeData.user.fullname || "");
+			formData.append("user.fullname", employeeData.user.fullname || "");
 			formData.append("user.email", employeeData.user.email || "");
+		}
+		if (employeeData.company_email) {
+			formData.append("company_email.email", employeeData.company_email.email);
 		}
 
 		Object.entries(employeeData).forEach(([key, value]) => {
-			if (key === "user") return;
+			if (key === "user" || key === "company_email") return;
 
 			if (key === "employee_profile_picture" && value instanceof File) {
 				formData.append(key, value);
@@ -1706,16 +1708,18 @@ export const updateEmployee = async ({
 	employeeId: number;
 	employeeData: IEmployeeFormData;
 }) => {
-	console.log("\n\n Updating employee with data : ", employeeData);
 	const formData = new FormData();
 
 	if (employeeData.user) {
-		// formData.append("user.fullname", employeeData.user.fullname);
+		formData.append("user.fullname", employeeData.user.fullname);
 		formData.append("user.email", employeeData.user.email);
+	}
+	if (employeeData.company_email) {
+		formData.append("company_email.email", employeeData.company_email.email);
 	}
 
 	Object.entries(employeeData).forEach(([key, value]) => {
-		if (key === "user") return;
+		if (key === "user" || key === "company_email") return;
 
 		if (key === "employee_profile_picture" && value instanceof File) {
 			formData.append(key, value);
@@ -2175,7 +2179,7 @@ export const deleteEmployeeType = async ({
 export const attachEmployeeToBranches = async (
 	payload: AttachBranchesPayload,
 ): Promise<{ data: EmployeeBranchSummary } | null> => {
-	const response = await apiRequest.post("branches/attach/", payload);
+	const response = await apiRequest.post("employee/branches/attach/", payload);
 	return response.data as { data: EmployeeBranchSummary };
 };
 

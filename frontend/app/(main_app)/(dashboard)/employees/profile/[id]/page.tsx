@@ -65,6 +65,7 @@ import EmployeeDevices from "../../_components/employee-devices";
 import EmployeeDevicesLogs from "../../_components/employee-device-log";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
+import { Icon } from "@iconify/react";
 import EmployeeWorkingDaysTab from "@/components/working-days/employee-working-days";
 
 export default function EmployeeProfile() {
@@ -688,7 +689,9 @@ export default function EmployeeProfile() {
 															</div>
 														</div> */}
 														{/* {attendanceSubTab === "attendance" && ( */}
-														<SingleEmployeeAttendance employee={employee} />
+														<div className="mt-4">
+															<SingleEmployeeAttendance employee={employee} />
+														</div>
 														{/* )} */}
 														{/* {attendanceSubTab === "working_days" && (
 															<EmployeeWorkingDaysTab employeeId={employee.id} />

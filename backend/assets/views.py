@@ -25,7 +25,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from institution.models import Institution
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from users.models import Profile
 from django.db.models import Q, Count
@@ -559,7 +559,80 @@ class AssetRequestDetailView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
 
+class AssetRequestApproveRejectView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=AssetRequestSerializer,
+                description="Asset request approved/rejected successfully.",
+            ),
+            400: OpenApiResponse(
+                description="Invalid action or request is not in pending status.",
+            ),
+            404: OpenApiResponse(
+                description="Asset request not found or you don't have permission.",
+            ),
+        },
+        tags=["Asset Management"],
+        parameters=[
+            OpenApiParameter(
+                name="action",
+                type=str,
+                description="Action to perform: 'approve' or 'reject'",
+                required=True,
+                enum=['approve', 'reject']
+            ),
+        ],
+    )
+    @transaction.atomic()
+    def post(self, request, pk):
+        try:
+            asset_request = AssetRequest.objects.get(
+                pk=pk,
+                asset__institution=request.user.profile.institution
+            )
+        except AssetRequest.DoesNotExist:
+            return Response(
+                {"error": "Asset request not found or you don't have permission."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if asset_request.asset_request_status != 'pending':
+            return Response(
+                {"error": "Action not allowed. Asset request must be in pending status."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        action = request.query_params.get("action")
+        if action not in ['approve', 'reject']:
+            return Response(
+                {"error": "Invalid action. Use 'approve' or 'reject'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if action == 'approve':
+            asset_request.asset_request_status = 'approved'
+            asset_request.save()
+
+            # Create AssetAllocation upon approval
+            allocation = AssetAllocation(
+                asset=asset_request.asset,
+                allocated_to=asset_request.requester,
+                responding_to_request=asset_request,
+                allocated_by=request.user.profile,
+                allocation_status="allocated",
+                approval_status="active",
+            )
+            allocation.save()
+        else:  # reject
+            asset_request.asset_request_status = 'rejected'
+            asset_request.save()
+
+        serializer = AssetRequestSerializer(asset_request)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class AssetAllocationListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]

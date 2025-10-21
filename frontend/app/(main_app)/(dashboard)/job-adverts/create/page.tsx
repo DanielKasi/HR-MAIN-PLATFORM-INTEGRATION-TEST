@@ -543,8 +543,6 @@ export default function JobAdvertsPage() {
 
 		// Clear from Redux
 		dispatch(clearJobAdvertForm());
-
-		toast.success("Form cleared successfully");
 	};
 
 	const handleJobPositionCreated = (newJobPosition: IJobPosition) => {

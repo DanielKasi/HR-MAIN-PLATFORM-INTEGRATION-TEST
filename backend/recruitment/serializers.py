@@ -89,21 +89,46 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, data):
+        # Get job_position_advert from data or from instance (for updates)
         job_position_advert = data.get("job_position_advert")
-        content_type = ContentType.objects.get_for_model(JobPositionAdvert)
-        required_documents = RequiredDocument.objects.filter(
-            content_type=content_type, object_id=job_position_advert.id, is_optional=False
-        )
+        
+        # If not in data (partial update), get from existing instance
+        if not job_position_advert and self.instance:
+            job_position_advert = self.instance.job_position_advert
+        
+        # If still None, check if it's in the context (sometimes passed via view)
+        if not job_position_advert:
+            job_position_advert = self.context.get('job_position_advert')
+        
+        # If we still don't have it, raise an error
+        if not job_position_advert:
+            raise serializers.ValidationError({
+                "error": "Job position advert is required."
+            })
+        
+        # Only validate required documents on creation (POST), not on updates (PATCH/PUT)
         request = self.context.get("request")
-        files = getattr(request, 'FILES', {}) if request else {}
-        post_data = getattr(request, 'POST', {}) if request else {}
-
-        for req_doc in required_documents:
-            file_key = f"document_{req_doc.id}"
-            if file_key not in files:
-                raise serializers.ValidationError(
-                    f"Missing required document: {req_doc.document_name}"
-                )
+        if request and request.method == 'POST':
+            content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+            required_documents = RequiredDocument.objects.filter(
+                content_type=content_type, 
+                object_id=job_position_advert.id, 
+                is_optional=False
+            )
+            
+            files = getattr(request, 'FILES', {}) if request else {}
+            
+            # Check for missing required documents
+            missing_docs = []
+            for req_doc in required_documents:
+                file_key = f"document_{req_doc.id}"
+                if file_key not in files:
+                    missing_docs.append(req_doc.document_name)
+            
+            if missing_docs:
+                raise serializers.ValidationError({
+                    "error": f"Missing required documents: {', '.join(missing_docs)}"
+                })
 
         return data
 

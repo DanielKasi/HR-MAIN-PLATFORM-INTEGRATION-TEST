@@ -1233,8 +1233,6 @@ export default function ApplicationsPage() {
 
 		// Clear from Redux
 		dispatch(clearApplicationForm());
-
-		toast.success("Form cleared successfully");
 	};
 
 	const handleViewApplication = (applicationId: number) => {

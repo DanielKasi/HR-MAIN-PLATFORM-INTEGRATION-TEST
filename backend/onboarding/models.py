@@ -216,6 +216,23 @@ class Offboarding(BaseApprovableModel):
             'created_at'
         ))
     
+    @transaction.atomic
+    def finish_workflow(self, approval):
+        if approval.status == "completed":
+            if approval.action.name == "create":
+                self.status = "IN_PROGRESS"  
+                self.save(update_fields=['status'])
+            elif approval.action.name == "update":
+                self.save()  
+            elif approval.action.name == "delete":
+                self.status = "CANCELLED"
+                self.save(update_fields=['status'])
+        elif approval.status == "rejected":
+            self.status = "REJECTED"
+            self.save(update_fields=['status'])
+              
+                
+    
 class OffboardingStageProgress(SoftDeletableTimeStampedModel):
     offboarding = models.ForeignKey(Offboarding, on_delete=models.CASCADE, related_name='stage_progress')
     stage = models.ForeignKey(TerminationStage, on_delete=models.CASCADE)
