@@ -2746,7 +2746,7 @@ class EmployeeAttendanceListCreateAPIView(APIView, SortableAPIMixin):
         "check_in_time",
         "check_out_time",
     ]
-    default_ordering = ["check_in_time"]
+    default_ordering = ["-date"]
 
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
