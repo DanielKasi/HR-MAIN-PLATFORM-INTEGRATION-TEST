@@ -567,6 +567,7 @@ class DeviceCallbackView(APIView):
                             datetime_str,
                         ]
                     ):
+                        continue
                         return Response(
                             {
                                 "detail": "Missing required fields in record: serial_number, external_user_id, record_reference, datetime."
@@ -578,6 +579,8 @@ class DeviceCallbackView(APIView):
                     try:
                         device = Device.objects.get(serial_number=serial_number)
                     except Device.DoesNotExist:
+                        continue
+
                         return Response(
                             {
                                 "detail": f"Device with serial number {serial_number} not found."

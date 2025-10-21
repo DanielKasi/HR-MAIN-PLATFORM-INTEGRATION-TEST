@@ -600,7 +600,8 @@ class EmployeePenalty(BaseApprovableModel):
         amount = config.get_calculated_amount(employee_salary)  
 
         # Generate descriptive notes based on penalty type
-        notes = cls._generate_attendance_penalty_notes(attendance, penalty_type)
+        # notes = cls._generate_attendance_penalty_notes(attendance, penalty_type)
+        notes = 'You were late with type: ' + penalty_type
 
         # Create the penalty
         penalty = cls.objects.create(
@@ -629,7 +630,8 @@ class EmployeePenalty(BaseApprovableModel):
 
 
         # Generate descriptive notes for spotcheck penalty
-        notes = cls._generate_spotcheck_penalty_notes(spotcheck, penalty_type)
+        # notes = cls._generate_spotcheck_penalty_notes(spotcheck, penalty_type)
+        notes = 'Spotcheck penalty of type: ' + penalty_type
 
         penalty = cls.objects.create(
             employee=employee,
