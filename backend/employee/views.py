@@ -625,6 +625,7 @@ class EmployeeCreateAPIView(APIView):
                 "position",
                 "department",
                 "has_children",
+                
             ]:
                 final_data[key.replace("[]", "")] = (
                     values[0] if len(values) == 1 else values
@@ -4721,7 +4722,7 @@ class DocumentUploadView(APIView):
         document_request_employee = get_object_or_404(DocumentRequestEmployee, pk=request_employee_id)
         if document_request_employee.employee.user != request.user:
             return Response(
-                {"detail": "Not authorized to upload this document."},
+                {"error": "Not authorized to upload this document."},
                 status=status.HTTP_403_FORBIDDEN
             )
         serializer = RequestedDocumentSerializer(data=request.data, context={"request": request})

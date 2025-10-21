@@ -583,14 +583,14 @@ class BranchShift(BaseApprovableModel):
 
         if self.start_time < branch_opening_time:
             raise ValidationError(
-                f"Shift start time ({self.start_time}) cannot be before branch opening time ({branch_opening_time})."
+                {"error": f"Shift start time ({self.start_time}) cannot be before branch opening time ({branch_opening_time})."}
             )
         if self.end_time > branch_closing_time:
             raise ValidationError(
-                f"Shift end time ({self.end_time}) cannot be after branch closing time ({branch_closing_time})."
+                {"error": f"Shift end time ({self.end_time}) cannot be after branch closing time ({branch_closing_time})."}
             )
         if self.start_time >= self.end_time:
-            raise ValidationError("Shift start time must be before end time.")
+            raise ValidationError({"error": "Shift start time must be before end time."})
 
     def save(self, *args, **kwargs):
         self.full_clean()

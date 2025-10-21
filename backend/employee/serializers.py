@@ -549,6 +549,8 @@ class EmployeeSerializer(BaseApprovableSerializer):
             data["position"] = data["position_details"]
         if data["payroll_branch"]:
             data["payroll_branch"] = BranchSerializer(instance.payroll_branch).data
+        if data["checkin_branch"]:
+            data["checkin_branch"] = BranchSerializer(instance.checkin_branch).data    
         data["work_type"] = WorkTypeSerializer(instance.work_type).data
         data["employee_type"] = EmployeeTypeSerializer(instance.employee_type).data
         data["next_of_kin"] = NextOfKinSerializer(instance.next_of_kins.all(), many=True).data
