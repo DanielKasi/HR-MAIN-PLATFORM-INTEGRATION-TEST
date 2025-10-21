@@ -1696,13 +1696,47 @@ export interface ISeparationTypeFormData {
 export interface IOffboardingStage {
 	id: number;
 	institution: number;
-	stage_name: string;
-	stage_description: string;
+	name: string;
+	description: string;
 	is_active: boolean;
+	order: number;
+	approval_status: "under_creation" | "approved" | "rejected";
+	approvals?: string;
+	created_by?: number;
+	updated_by?: number;
 	created_at: string;
 	updated_at: string;
+	deleted_at?: string | null;
 }
 
+export interface ITerminationType {
+	id: number;
+	approvals?: string;
+	supported_stages: ISupportedStage[];
+	created_at: string;
+	updated_at: string;
+	deleted_at?: string | null;
+	is_active: boolean;
+	approval_status: "under_creation" | "approved" | "rejected";
+	name: string;
+	description: string;
+	requires_handover_report: boolean;
+	created_by?: number;
+	updated_by?: number;
+	institution: number;
+}
+
+export interface IOffboardingStageFormData {
+	name: string;
+	description: string;
+	is_active?: boolean;
+	institution: number;
+	order?: number;
+	approval_status?: "under_creation" | "approved" | "rejected";
+	created_by?: number;
+	updated_by?: number;
+	deleted_at?: string | null;
+}
 export interface IOffboardingStageFormData {
 	institution: number | string;
 	stage_name: string;

@@ -57,24 +57,65 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { cn, OffboardingStagesAPI, SeparationPolicyTypesAPI } from "@/lib/utils";
-import { ISeparationType, IOffboardingStage } from "@/types/types.utils";
+import { ISeparationType, IOffboardingStage,ISupportedStage  } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 
-const SEPARATION_CATEGORIES = [
-	{ value: "resignation", label: "Resignation" },
-	{ value: "termination", label: "Termination" },
-	{ value: "retirement", label: "Retirement" },
-] as const;
+export interface ISeparationType {
+	id: number;
+	institution: number;
+	name: string; // Changed from separation_type
+	description: string;
+	supported_stages: ISupportedStage[]; // Changed structure
+	is_active: boolean;
+	approval_status: "under_creation" | "approved" | "rejected";
+	requires_handover_report: boolean;
+	approvals?: string;
+	created_by?: number;
+	updated_by?: number;
+	created_at: string;
+	updated_at: string;
+	deleted_at?: string | null;
+}
+
+export interface ISupportedStage {
+	id: number;
+	stage: IOffboardingStage;
+	is_active: boolean;
+	can_be_skipped: boolean;
+	order: number;
+	created_by?: number;
+	updated_by?: number;
+	termination_type: number;
+	created_at: string;
+	updated_at: string;
+	deleted_at?: string | null;
+}
+
+export interface IOffboardingStage {
+	id: number;
+	institution: number;
+	name: string;
+	description: string;
+	is_active: boolean;
+	order: number;
+	approval_status: "under_creation" | "approved" | "rejected";
+	approvals?: string;
+	created_by?: number;
+	updated_by?: number;
+	created_at: string;
+	updated_at: string;
+	deleted_at?: string | null;
+}
 
 const formSchema = z.object({
 	separation_type: z.string().min(2, "Type name must be at least 2 characters"),
 	description: z.string().min(2, "Description must be at least 2 characters"),
 	supported_stages: z.array(z.number()),
-	category: z.enum(["resignation", "termination", "retirement", "contract_end", "other"]),
 	is_active: z.boolean().optional(),
+	requires_handover_report: z.boolean().optional(),
 });
 
 export default function SeparationPolicyTypesPage() {
@@ -97,8 +138,8 @@ export default function SeparationPolicyTypesPage() {
 			separation_type: "",
 			description: "",
 			supported_stages: [],
-			category: "resignation",
 			is_active: true,
+			requires_handover_report: false,
 		},
 	});
 
@@ -106,7 +147,6 @@ export default function SeparationPolicyTypesPage() {
 		if (!selectedInstitution?.id) return;
 		try {
 			const data = await OffboardingStagesAPI.getAll({ institutionId: selectedInstitution.id });
-
 			setStages(data.results);
 		} catch (error) {
 			toast.error("Failed to fetch offboarding stages");
@@ -118,9 +158,9 @@ export default function SeparationPolicyTypesPage() {
 	}, [selectedInstitution?.id]);
 
 	const handleCreateSuccess = (newPolicyType: ISeparationType) => {
-		toast.success("termination type created successfully");
-		setIsCreateDialogOpen(false); // Close the create dialog
-		form.reset(); // Reset the form
+		toast.success("Termination type created successfully");
+		setIsCreateDialogOpen(false);
+		form.reset();
 		if (from) {
 			router.push(from);
 		} else {
@@ -131,31 +171,39 @@ export default function SeparationPolicyTypesPage() {
 	const handleUpdateSuccess = (updatedPolicyType: ISeparationType) => {
 		setIsEditDialogOpen(false);
 		setEditingPolicyType(null);
-		form.reset(); // Reset the form
-		toast.success("termination type updated successfully");
+		form.reset();
+		toast.success("Termination type updated successfully");
 		refreshTableRef.current?.();
 	};
 
 	const handleDeleteSuccess = (deletedId: number) => {
 		setPolicyTypeToDelete(null);
-		toast.success("termination type deleted successfully");
+		toast.success("Termination type deleted successfully");
 		refreshTableRef.current?.();
 	};
 
 	const handleSubmit = async (values: z.infer<typeof formSchema>) => {
 		if (!selectedInstitution) {
+			toast.error("No institution selected");
 			return;
 		}
 		try {
 			if (editingPolicyType) {
 				await SeparationPolicyTypesAPI.update({
 					policyTypeId: editingPolicyType.id,
-					policyTypeData: values,
+					policyTypeData: {
+						...values,
+						institution: selectedInstitution.id,
+					},
 				});
 				handleUpdateSuccess(editingPolicyType);
 			} else {
+				// For creation, make sure to include institution
 				await SeparationPolicyTypesAPI.create({
-					policyTypeData: { ...values },
+					policyTypeData: {
+						...values,
+						institution: selectedInstitution.id,
+					},
 				});
 				handleCreateSuccess({} as ISeparationType);
 			}
@@ -179,14 +227,19 @@ export default function SeparationPolicyTypesPage() {
 
 	const handleEdit = (policyType: ISeparationType) => {
 		setEditingPolicyType(policyType);
+
+		// Extract stage IDs from the supported_stages array
+		const stageIds =
+			policyType.supported_stages?.map((supportedStage) =>
+				typeof supportedStage.stage === "number" ? supportedStage.stage : supportedStage.stage.id,
+			) || [];
+
 		form.reset({
-			separation_type: policyType.separation_type,
+			separation_type: policyType.name, // Use 'name' field from new API
 			description: policyType.description,
-			supported_stages: Array.isArray(policyType.supported_stages)
-				? policyType.supported_stages.map((stage) => (typeof stage === "number" ? stage : stage.id))
-				: [],
-			category: policyType.category,
+			supported_stages: stageIds,
 			is_active: policyType.is_active,
+			requires_handover_report: policyType.requires_handover_report,
 		});
 		setIsEditDialogOpen(true);
 	};
@@ -277,30 +330,6 @@ export default function SeparationPolicyTypesPage() {
 												/>
 												<FormField
 													control={form.control}
-													name="category"
-													render={({ field }) => (
-														<FormItem>
-															<FormLabel>Category</FormLabel>
-															<Select onValueChange={field.onChange} defaultValue={field.value}>
-																<FormControl>
-																	<SelectTrigger>
-																		<SelectValue placeholder="Select a category" />
-																	</SelectTrigger>
-																</FormControl>
-																<SelectContent>
-																	{SEPARATION_CATEGORIES.map((category) => (
-																		<SelectItem key={category.value} value={category.value}>
-																			{category.label}
-																		</SelectItem>
-																	))}
-																</SelectContent>
-															</Select>
-															<FormMessage />
-														</FormItem>
-													)}
-												/>
-												<FormField
-													control={form.control}
 													name="supported_stages"
 													render={({ field }) => (
 														<FormItem>
@@ -326,7 +355,7 @@ export default function SeparationPolicyTypesPage() {
 																<SelectContent>
 																	{stages.map((stage) => (
 																		<SelectItem key={stage.id} value={stage.id.toString()}>
-																			{stage.stage_name}
+																			{stage.name}
 																		</SelectItem>
 																	))}
 																</SelectContent>
@@ -344,7 +373,7 @@ export default function SeparationPolicyTypesPage() {
 																				variant="secondary"
 																				className="flex items-center gap-1"
 																			>
-																				{stage.stage_name}
+																				{stage.name}
 																				<X
 																					className="h-3 w-3 cursor-pointer"
 																					onClick={() => removeStage(stageId)}
@@ -355,6 +384,25 @@ export default function SeparationPolicyTypesPage() {
 																</div>
 															)}
 															<FormMessage />
+														</FormItem>
+													)}
+												/>
+												<FormField
+													control={form.control}
+													name="requires_handover_report"
+													render={({ field }) => (
+														<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+															<div className="space-y-0.5">
+																<FormLabel className="text-base">
+																	Requires Handover Report
+																</FormLabel>
+																<FormDescription>
+																	Require employees to submit a handover report
+																</FormDescription>
+															</div>
+															<FormControl>
+																<Switch checked={field.value} onCheckedChange={field.onChange} />
+															</FormControl>
 														</FormItem>
 													)}
 												/>
@@ -417,30 +465,6 @@ export default function SeparationPolicyTypesPage() {
 							/>
 							<FormField
 								control={form.control}
-								name="category"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Category</FormLabel>
-										<Select onValueChange={field.onChange} defaultValue={field.value}>
-											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Select a category" />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent>
-												{SEPARATION_CATEGORIES.map((category) => (
-													<SelectItem key={category.value} value={category.value}>
-														{category.label}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<FormField
-								control={form.control}
 								name="supported_stages"
 								render={({ field }) => (
 									<FormItem>
@@ -466,7 +490,7 @@ export default function SeparationPolicyTypesPage() {
 											<SelectContent>
 												{stages.map((stage) => (
 													<SelectItem key={stage.id} value={stage.id.toString()}>
-														{stage.stage_name}
+														{stage.name}
 													</SelectItem>
 												))}
 											</SelectContent>
@@ -482,7 +506,7 @@ export default function SeparationPolicyTypesPage() {
 															variant="secondary"
 															className="flex items-center gap-1"
 														>
-															{stage.stage_name}
+															{stage.name}
 															<X
 																className="h-3 w-3 cursor-pointer"
 																onClick={() => removeStage(stageId)}
@@ -505,6 +529,23 @@ export default function SeparationPolicyTypesPage() {
 											<FormLabel className="text-base">Active Status</FormLabel>
 											<FormDescription>
 												Determine if this termination type is currently active
+											</FormDescription>
+										</div>
+										<FormControl>
+											<Switch checked={field.value} onCheckedChange={field.onChange} />
+										</FormControl>
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="requires_handover_report"
+								render={({ field }) => (
+									<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+										<div className="space-y-0.5">
+											<FormLabel className="text-base">Requires Handover Report</FormLabel>
+											<FormDescription>
+												Require employees to submit a handover report
 											</FormDescription>
 										</div>
 										<FormControl>
@@ -542,13 +583,12 @@ export default function SeparationPolicyTypesPage() {
 							footerClassName="pt-4"
 						>
 							{({ data, loading, refresh }) => {
-								// Store refresh function in ref when component mounts/updates
 								useEffect(() => {
 									refreshTableRef.current = refresh;
 								}, [refresh]);
 
 								if (loading) {
-									return <TableSkeleton rows={10} columns={6} />;
+									return <TableSkeleton rows={10} columns={5} />;
 								}
 
 								if (!data || data.results.length === 0) {
@@ -566,28 +606,14 @@ export default function SeparationPolicyTypesPage() {
 														Type Name
 														<Button
 															size="sm"
-															variant={ordering === "separation_type" ? "default" : "outline"}
-															onClick={() =>
-																setOrdering(ordering === "separation_type" ? "" : "separation_type")
-															}
+															variant={ordering === "name" ? "default" : "outline"}
+															onClick={() => setOrdering(ordering === "name" ? "" : "name")}
 														>
 															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
 														</Button>
 													</TableHead>
-
 													<TableHead>Description</TableHead>
-
-													<TableHead>
-														Category
-														<Button
-															size="sm"
-															variant={ordering === "category" ? "default" : "outline"}
-															onClick={() => setOrdering(ordering === "category" ? "" : "category")}
-														>
-															<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
-														</Button>
-													</TableHead>
-
+													<TableHead>Supported Stages</TableHead>
 													<TableHead>Status</TableHead>
 													<TableHead>Created At</TableHead>
 													<TableHead className="text-right">Actions</TableHead>
@@ -596,18 +622,29 @@ export default function SeparationPolicyTypesPage() {
 											<TableBody>
 												{data.results.map((policyType) => (
 													<TableRow key={policyType.id}>
-														<TableCell className="font-medium">
-															{policyType.separation_type}
-														</TableCell>
+														<TableCell className="font-medium">{policyType.name}</TableCell>
 														<TableCell className="text-muted-foreground">
 															{policyType.description}
 														</TableCell>
 														<TableCell>
-															{
-																SEPARATION_CATEGORIES.find(
-																	(cat) => cat.value === policyType.category,
-																)?.label
-															}
+															<div className="flex flex-wrap gap-1">
+																{policyType.supported_stages?.slice(0, 3).map((supportedStage) => (
+																	<Badge
+																		key={supportedStage.id}
+																		variant="outline"
+																		className="text-xs"
+																	>
+																		{typeof supportedStage.stage === "object"
+																			? supportedStage.stage.name
+																			: "Stage"}
+																	</Badge>
+																))}
+																{policyType.supported_stages?.length > 3 && (
+																	<Badge variant="outline" className="text-xs">
+																		+{policyType.supported_stages.length - 3} more
+																	</Badge>
+																)}
+															</div>
 														</TableCell>
 														<TableCell>
 															<Badge
