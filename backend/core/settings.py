@@ -24,13 +24,13 @@ FIELD_ENCRYPTION_KEY = os.environ.get("FIELD_ENCRYPTION_KEY")
 if not FIELD_ENCRYPTION_KEY:
     raise RuntimeError("FIELD_ENCRYPTION_KEY is missing. Set it in your .env file.")
 
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-ZOOM_API_KEY = os.getenv('ZOOM_API_KEY')
-ZOOM_API_SECRET = os.getenv('ZOOM_API_SECRET')
-TEAMS_CLIENT_ID = os.getenv('TEAMS_CLIENT_ID')
-TEAMS_CLIENT_SECRET = os.getenv('TEAMS_CLIENT_SECRET')
-TEAMS_TENANT_ID = os.getenv('TEAMS_TENANT_ID')
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+ZOOM_API_KEY = os.getenv("ZOOM_API_KEY")
+ZOOM_API_SECRET = os.getenv("ZOOM_API_SECRET")
+TEAMS_CLIENT_ID = os.getenv("TEAMS_CLIENT_ID")
+TEAMS_CLIENT_SECRET = os.getenv("TEAMS_CLIENT_SECRET")
+TEAMS_TENANT_ID = os.getenv("TEAMS_TENANT_ID")
 
 INSTALLED_APPS = [
     "daphne",
@@ -71,12 +71,10 @@ INSTALLED_APPS = [
     "spotcheck",
     "django_celery_beat",
     "communication",
-    'django.contrib.sites',
-    'helpdesk',
-    'reports',
-    'devices',
-    
-    
+    "django.contrib.sites",
+    "helpdesk",
+    "reports",
+    "devices",
 ]
 
 MIDDLEWARE = [
@@ -225,8 +223,8 @@ STORAGES = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    'users.authentication.CustomAuthBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    "users.authentication.CustomAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 # Email configuration for Baifam Group domain
@@ -282,6 +280,6 @@ BACKEND_URL = os.getenv("BACKEND_URL", "https://server.peracosoft.com/")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-LOGIN_URL = '/login'
+LOGIN_URL = "/login"
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production")

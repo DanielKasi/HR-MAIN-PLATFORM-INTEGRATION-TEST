@@ -22,6 +22,7 @@ class Device(BaseApprovableModel):
     status = models.CharField(
         max_length=20, choices=DeviceStatus.choices, default=DeviceStatus.ACTIVE
     )
+    last_connection_time = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Device"
