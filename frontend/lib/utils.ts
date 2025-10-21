@@ -202,6 +202,7 @@ import keys from "@/components/projects/tasks/keys";
 import { number } from "zod";
 import { Branch } from "@/types/branch.types";
 import { IOwnershipTransferFormData } from "@/types/institution.types";
+import { on } from "process";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -4721,16 +4722,34 @@ export const getEmployeeDashboard = async (): Promise<IEmployeeDashboard> => {
 		throw error;
 	}
 };
+
 export const getOffboardingDashboard = async (): Promise<OffboardingData> => {
 	try {
-		const response = await apiRequest.get("on-boarding/analytics/");
-
+		// The endpoint is /api/on-boarding/analytics/ and returns data for the authenticated user's institution
+		const response = await apiRequest.get(`on-boarding/analytics/`);
 		return response.data as OffboardingData;
 	} catch (error) {
 		throw error;
 	}
 };
 
+export interface CurrentUser {
+	id: string;
+	institution_id?: string;
+	institution_name?: string;
+	email: string;
+	full_name?: string;
+	fullname?: string;
+}
+
+export const getCurrentUser = async (): Promise<CurrentUser> => {
+	try {
+		const response = await apiRequest.get("user/details");
+		return response.data as CurrentUser;
+	} catch (error) {
+		throw new Error("Failed to fetch user data");
+	}
+};
 export const getAssetDashboard = async (): Promise<AssetsData> => {
 	try {
 		const response = await apiRequest.get("assets/analytics/");
@@ -5291,8 +5310,7 @@ export const SeparationPolicyTypesAPI = {
 		searchParams?: URLSearchParams;
 	}): Promise<IPaginatedResponse<ISeparationType>> => {
 		try {
-			const response = await apiRequest.get(`on-boarding/separation-types/?${searchParams}`);
-
+			const response = await apiRequest.get(`on-boarding/termination/types/?${searchParams}`);
 			return response.data as IPaginatedResponse<ISeparationType>;
 		} catch (error) {
 			throw error;
@@ -5318,13 +5336,16 @@ export const SeparationPolicyTypesAPI = {
 			if (search) {
 				params.append("search", search);
 			}
-			ordering && params.append("ordering", ordering);
-			const endpoint = `on-boarding/separation-types/?${params.toString()}`;
+			if (ordering) {
+				params.append("ordering", ordering);
+			}
+
+			const endpoint = `on-boarding/termination/types/?${params.toString()}`;
 			const response = await apiRequest.get(endpoint);
 
 			return response.data as IPaginatedResponse<ISeparationType>;
 		} catch (error) {
-			console.error("Error fetching paginated separation policy types:", error);
+			console.error("Error fetching paginated termination types:", error);
 			throw error;
 		}
 	},
@@ -5336,34 +5357,52 @@ export const SeparationPolicyTypesAPI = {
 	}): Promise<IPaginatedResponse<ISeparationType>> => {
 		try {
 			const response = await apiRequest.get(forceUrlToHttps(url));
-
 			return response.data as IPaginatedResponse<ISeparationType>;
 		} catch (error) {
-			console.error("Error fetching separation policy types from URL:", error);
+			console.error("Error fetching termination types from URL:", error);
 			throw error;
 		}
 	},
 
 	getById: async (policyTypeId: number): Promise<ISeparationType | null> => {
 		try {
-			const response = await apiRequest.get(`on-boarding/separation-types/${policyTypeId}/`);
-
+			const response = await apiRequest.get(`on-boarding/termination/types/${policyTypeId}/`);
 			return response.data as ISeparationType;
 		} catch (error) {
 			throw error;
 		}
 	},
 
-	create: async ({
-		policyTypeData,
-	}: {
-		policyTypeData: Partial<ISeparationTypeFormData>;
-	}): Promise<ISeparationType | null> => {
+	create: async ({ policyTypeData }: { policyTypeData: any }): Promise<ISeparationType | null> => {
 		try {
-			const response = await apiRequest.post("on-boarding/separation-types/", policyTypeData);
+			// Get institution from the policyTypeData
+			const institutionId = policyTypeData.institution;
 
+			if (!institutionId) {
+				throw new Error("Institution ID is required");
+			}
+
+			// Transform the data to match the new API structure
+			const payload = {
+				name: policyTypeData.separation_type,
+				description: policyTypeData.description,
+				is_active: policyTypeData.is_active ?? true,
+				requires_handover_report: policyTypeData.requires_handover_report ?? false,
+				institution: institutionId,
+				stage_data:
+					policyTypeData.supported_stages?.map((stageId: number, index: number) => ({
+						stage_id: stageId, // Changed from 'stage' to 'stage_id'
+						can_be_skipped: false,
+						order: index,
+					})) || [],
+			};
+
+			console.log("Creating termination type with payload:", payload); // For debugging
+
+			const response = await apiRequest.post("on-boarding/termination/types/", payload);
 			return response.data as ISeparationType;
 		} catch (error) {
+			console.error("Error creating termination type:", error);
 			throw error;
 		}
 	},
@@ -5373,26 +5412,56 @@ export const SeparationPolicyTypesAPI = {
 		policyTypeData,
 	}: {
 		policyTypeId: number;
-		policyTypeData: Partial<ISeparationTypeFormData>;
+		policyTypeData: any;
 	}): Promise<ISeparationType | null> => {
 		try {
-			const response = await apiRequest.patch(
-				`on-boarding/separation-types/${policyTypeId}/`,
-				policyTypeData,
-			);
+			// Transform the data to match the new API structure
+			const payload: any = {};
 
+			if (policyTypeData.separation_type !== undefined) {
+				payload.name = policyTypeData.separation_type;
+			}
+			if (policyTypeData.description !== undefined) {
+				payload.description = policyTypeData.description;
+			}
+			if (policyTypeData.is_active !== undefined) {
+				payload.is_active = policyTypeData.is_active;
+			}
+			if (policyTypeData.requires_handover_report !== undefined) {
+				payload.requires_handover_report = policyTypeData.requires_handover_report;
+			}
+			if (policyTypeData.institution !== undefined) {
+				payload.institution = policyTypeData.institution;
+			}
+			if (policyTypeData.supported_stages !== undefined) {
+				payload.stage_data = policyTypeData.supported_stages.map(
+					(stageId: number, index: number) => ({
+						stage_id: stageId, // Changed from 'stage' to 'stage_id'
+						can_be_skipped: false,
+						order: index,
+					}),
+				);
+			}
+
+			console.log("Updating termination type with payload:", payload); // For debugging
+
+			const response = await apiRequest.patch(
+				`on-boarding/termination/types/${policyTypeId}/`,
+				payload,
+			);
 			return response.data as ISeparationType;
 		} catch (error) {
+			console.error("Error updating termination type:", error);
 			throw error;
 		}
 	},
 
 	delete: async (policyTypeId: number): Promise<boolean> => {
 		try {
-			await apiRequest.delete(`on-boarding/separation-types/${policyTypeId}/`);
-
+			await apiRequest.delete(`on-boarding/termination/types/${policyTypeId}/`);
 			return true;
 		} catch (error) {
+			console.error("Error deleting termination type:", error);
 			throw error;
 		}
 	},
@@ -5408,8 +5477,7 @@ export const OffboardingStagesAPI = {
 		searchParams?: URLSearchParams;
 	}): Promise<IPaginatedResponse<IOffboardingStage>> => {
 		try {
-			const response = await apiRequest.get(`on-boarding/offboarding-stages/?${searchParams}`);
-
+			const response = await apiRequest.get(`on-boarding/termination/stages/?${searchParams}`);
 			return response.data as IPaginatedResponse<IOffboardingStage>;
 		} catch (error) {
 			throw error;
@@ -5435,13 +5503,16 @@ export const OffboardingStagesAPI = {
 			if (search) {
 				params.append("search", search);
 			}
-			ordering && params.append("ordering", ordering);
-			const endpoint = `on-boarding/offboarding-stages/?${params.toString()}`;
+			if (ordering) {
+				params.append("ordering", ordering);
+			}
+
+			const endpoint = `on-boarding/termination/stages/?${params.toString()}`;
 			const response = await apiRequest.get(endpoint);
 
 			return response.data as IPaginatedResponse<IOffboardingStage>;
 		} catch (error) {
-			console.error("Error fetching paginated offboarding stages:", error);
+			console.error("Error fetching paginated termination stages:", error);
 			throw error;
 		}
 	},
@@ -5456,14 +5527,14 @@ export const OffboardingStagesAPI = {
 
 			return response.data as IPaginatedResponse<IOffboardingStage>;
 		} catch (error) {
-			console.error("Error fetching offboarding stages from URL:", error);
+			console.error("Error fetching termination stages from URL:", error);
 			throw error;
 		}
 	},
 
 	getById: async (stageId: number): Promise<IOffboardingStage | null> => {
 		try {
-			const response = await apiRequest.get(`on-boarding/offboarding-stages/${stageId}/`);
+			const response = await apiRequest.get(`on-boarding/termination/stages/${stageId}/`);
 
 			return response.data as IOffboardingStage;
 		} catch (error) {
@@ -5477,7 +5548,7 @@ export const OffboardingStagesAPI = {
 		stageData: IOffboardingStageFormData;
 	}): Promise<IOffboardingStage | null> => {
 		try {
-			const response = await apiRequest.post("on-boarding/offboarding-stages/", stageData);
+			const response = await apiRequest.post("on-boarding/termination/stages/", stageData);
 
 			return response.data as IOffboardingStage;
 		} catch (error) {
@@ -5494,7 +5565,7 @@ export const OffboardingStagesAPI = {
 	}): Promise<IOffboardingStage | null> => {
 		try {
 			const response = await apiRequest.patch(
-				`on-boarding/offboarding-stages/${stageId}/`,
+				`on-boarding/termination/stages/${stageId}/`,
 				stageData,
 			);
 
@@ -5506,7 +5577,7 @@ export const OffboardingStagesAPI = {
 
 	delete: async (stageId: number): Promise<boolean> => {
 		try {
-			await apiRequest.delete(`on-boarding/offboarding-stages/${stageId}/`);
+			await apiRequest.delete(`on-boarding/termination/stages/${stageId}/`);
 
 			return true;
 		} catch (error) {
