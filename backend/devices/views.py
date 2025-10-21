@@ -542,6 +542,7 @@ class DeviceCallbackView(APIView):
 
         try:
             if event == "log":
+                # print(f"payload: {payload}")
                 if not payload.get("records"):
                     return Response(
                         {"detail": "Missing records for log event."},
@@ -558,6 +559,15 @@ class DeviceCallbackView(APIView):
                     record_reference = record.get("record_reference")
                     datetime_str = record.get("datetime")
 
+
+                    created_already_log = EmployeeLogs.objects.filter(
+                        record_reference=record_reference
+                    ).exists()
+
+                    if created_already_log:
+                        print(f"Log with reference {record_reference} already exists. Skipping.")
+                        continue
+
                     if not all(
                         [
                             serial_number,
@@ -566,6 +576,7 @@ class DeviceCallbackView(APIView):
                             datetime_str,
                         ]
                     ):
+                        continue
                         return Response(
                             {
                                 "detail": "Missing required fields in record: serial_number, external_user_id, record_reference, datetime."
@@ -577,6 +588,8 @@ class DeviceCallbackView(APIView):
                     try:
                         device = Device.objects.get(serial_number=serial_number)
                     except Device.DoesNotExist:
+                        continue
+
                         return Response(
                             {
                                 "detail": f"Device with serial number {serial_number} not found."

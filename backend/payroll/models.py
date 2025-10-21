@@ -600,7 +600,8 @@ class EmployeePenalty(BaseApprovableModel):
         amount = config.get_calculated_amount(employee_salary)  
 
         # Generate descriptive notes based on penalty type
-        notes = cls._generate_attendance_penalty_notes(attendance, penalty_type)
+        # notes = cls._generate_attendance_penalty_notes(attendance, penalty_type)
+        notes = 'You were late with type: ' + penalty_type
 
         # Create the penalty
         penalty = cls.objects.create(
@@ -615,7 +616,7 @@ class EmployeePenalty(BaseApprovableModel):
         return penalty
 
     @classmethod
-    def create_from_spotcheck(cls, spotcheck, penalty_type):    
+    def create_from_spotcheck(cls, spotcheck, penalty_type):
         if penalty_type not in ['no_response_spotcheck', 'late_spotcheck_response']:
             return None
 
@@ -629,7 +630,8 @@ class EmployeePenalty(BaseApprovableModel):
 
 
         # Generate descriptive notes for spotcheck penalty
-        notes = cls._generate_spotcheck_penalty_notes(spotcheck, penalty_type)
+        # notes = cls._generate_spotcheck_penalty_notes(spotcheck, penalty_type)
+        notes = 'Spotcheck penalty of type: ' + penalty_type
 
         penalty = cls.objects.create(
             employee=employee,
@@ -645,13 +647,15 @@ class EmployeePenalty(BaseApprovableModel):
     def _generate_attendance_penalty_notes(cls, attendance, penalty_type):
         """Generate descriptive notes for attendance-based penalties"""
         notes_map = {
-            'late_coming': f"Late arrival penalty - Employee arrived {attendance.late_minutes} minutes late on {attendance.date.strftime('%B %d, %Y')}. Scheduled time: {attendance.employee.payroll_branch.opening_time}, Actual check-in: {attendance.check_in_time}",
-            'early_leaving': f"Early departure penalty - Employee left {attendance.early_checkout_minutes} minutes early on {attendance.date.strftime('%B %d, %Y')}. Scheduled end: {attendance.employee.payroll_branch.closing_time}, Actual check-out: {attendance.check_out_time}",
+            'late_coming': f"Late arrival penalty - Employee arrived {attendance.late_minutes} minutes late on {attendance.date.strftime('%B %d, %Y')}. Scheduled time: {attendance.employee.payroll_branch.branch_opening_time}, Actual check-in: {attendance.check_in_time}",
+            'early_leaving': f"Early departure penalty - Employee left {attendance.early_checkout_minutes} minutes early on {attendance.date.strftime('%B %d, %Y')}. Scheduled end: {attendance.employee.payroll_branch.branch_closing_time}, Actual check-out: {attendance.check_out_time}",
             'absent': f"Absence penalty - Employee was marked absent on {attendance.date.strftime('%B %d, %Y')}. No check-in or check-out recorded for scheduled shift."
         }
         
         return notes_map.get(penalty_type, f"Penalty for {penalty_type} on {attendance.date.strftime('%B %d, %Y')}")
 
+
+    # TODO: This method is using time which seems to be in a different format spotcheck_time_formatted is using hours presumably in utc
     @classmethod
     def _generate_spotcheck_penalty_notes(cls, spotcheck, penalty_type):
         """Generate descriptive notes for spotcheck-based penalties"""
@@ -662,53 +666,45 @@ class EmployeePenalty(BaseApprovableModel):
         
         # Get spotcheck settings to determine deadlines
         employee = spotcheck.employee
-        setting = None
+        spotcheck_setting = None
         
         # Try employee-specific setting first
         try:
-            setting = EmployeeSpotCheckSetting.objects.filter(employee=employee).first()
+            spotcheck_setting = EmployeeSpotCheckSetting.objects.filter(employee=employee).first()
         except:
             pass
             
         # Then branch setting
-        if not setting:
+        if not spotcheck_setting:
             try:
                 branch = employee.payroll_branch
-                setting = BranchSpotCheckSetting.objects.filter(branch=branch).first()
+                spotcheck_setting = BranchSpotCheckSetting.objects.filter(branch=branch).first()
             except:
                 pass
                 
         # Finally institution setting
-        if not setting:
+        if not spotcheck_setting:
             try:
                 institution = getattr(employee.payroll_branch, 'institution', None) or getattr(employee.department, 'institution', None)
                 if institution:
-                    setting = InstitutionSpotCheckSetting.objects.filter(institution=institution).first()
+                    spotcheck_setting = InstitutionSpotCheckSetting.objects.filter(institution=institution).first()
             except:
                 pass
         
         # Default expiry minutes if no setting found
-        expires_after_minutes = getattr(setting, 'expires_after_minutes', 30) if setting else 30
-        late_starts_after_minutes = getattr(setting, 'late_starts_after_minutes', 15) if setting else 15
+        expires_after_minutes = getattr(spotcheck_setting, 'expires_after_minutes', 30) if spotcheck_setting else 30
+        late_starts_after_minutes = getattr(spotcheck_setting, 'late_starts_after_minutes', 15) if spotcheck_setting else 15
         
         # Calculate deadline times
         late_deadline = spotcheck_time + timedelta(minutes=late_starts_after_minutes)
         expiry_deadline = spotcheck_time + timedelta(minutes=expires_after_minutes)
         
-        # Format location info
-        location_info = ""
-        if spotcheck.address:
-            location_info = f"Location: {spotcheck.address}"
-        elif spotcheck.latitude and spotcheck.longitude:
-            location_info = f"Coordinates: {spotcheck.latitude:.6f}, {spotcheck.longitude:.6f}"
-        else:
-            location_info = "Location: Not specified"
-        
+
         if penalty_type == 'no_response_spotcheck':
             expiry_formatted = expiry_deadline.strftime('%I:%M %p')
             notes = (f"No response to spotcheck penalty - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
                     f"Employee failed to respond by the deadline of {expiry_formatted} "
-                    f"({expires_after_minutes} minutes window). {location_info}. "
+                    f"({expires_after_minutes} minutes window)."
                     f"Initiated by: {spotcheck.get_initiated_by_display()}")
                     
         elif penalty_type == 'late_spotcheck_response':
@@ -719,15 +715,15 @@ class EmployeePenalty(BaseApprovableModel):
                 
                 notes = (f"Late spotcheck response penalty - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
                         f"Employee responded {delay_minutes} minutes late at {response_formatted} "
-                        f"(should have responded by {late_deadline_formatted}). {location_info}. "
+                        f"(should have responded by {late_deadline_formatted})."
                         f"Initiated by: {spotcheck.get_initiated_by_display()}")
             else:
                 notes = (f"Late spotcheck response penalty - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
-                        f"Employee response was recorded as late. {location_info}. "
+                        f"Employee response was recorded as late."
                         f"Initiated by: {spotcheck.get_initiated_by_display()}")
         else:
             notes = (f"Spotcheck penalty ({penalty_type}) - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
-                    f"{location_info}. Initiated by: {spotcheck.get_initiated_by_display()}")
+                    f"Initiated by: {spotcheck.get_initiated_by_display()}")
         
         # Add notes from spotcheck if available
         if spotcheck.notes:
@@ -751,6 +747,8 @@ class EmployeePenalty(BaseApprovableModel):
                 config = InstitutionPenaltyConfig.objects.filter(
                     institution=institution, penalty_type=penalty_type
                 ).first()
+        
+        return config
   
 class PenaltyWaiveRequest(BaseApprovableModel):
     penalty = models.ForeignKey(EmployeePenalty, on_delete=models.CASCADE, related_name='waiverequests')

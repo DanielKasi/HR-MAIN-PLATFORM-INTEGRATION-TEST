@@ -233,7 +233,7 @@ export default function DashboardSideBar() {
 			submenu: [
 				{ title: "Analytics", href: "/analytics/attendance" },
 				// { title: "Biometric Devices", href: "#" },
-				{ title: "Attendance", href: "/employees/attendance" },
+				{ title: "Register", href: "/employees/attendance" },
 				// { title: "Attendance Requests", href: "#" },
 				{ title: "Hour Account", href: "/employees/hour-count" },
 				{ title: "Work Records", href: "/employees/attendance/work-records" },
