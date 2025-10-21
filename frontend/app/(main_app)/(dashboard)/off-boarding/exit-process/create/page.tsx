@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { ArrowLeft, ChevronDown, Check, Upload, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Check, Upload, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,11 +41,14 @@ const ExitProcessCreate = () => {
 	// State for termination types
 	const [terminationTypes, setTerminationTypes] = useState<ITerminationType[]>([]);
 	const [loadingTerminationTypes, setLoadingTerminationTypes] = useState(false);
-	const [selectedTerminationType, setSelectedTerminationType] = useState<ITerminationType | null>(null);
+	const [selectedTerminationType, setSelectedTerminationType] = useState<ITerminationType | null>(
+		null,
+	);
 	const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
 	// State for handover report
 	const [handoverReport, setHandoverReport] = useState<File | null>(null);
+	const [handoverReportText, setHandoverReportText] = useState("");
 
 	const [formData, setFormData] = useState<FormData>({
 		employee_id: null,
@@ -72,7 +75,7 @@ const ExitProcessCreate = () => {
 		try {
 			setLoadingTerminationTypes(true);
 			console.log("Fetching termination types from API...");
-			
+
 			const typesData = await ExitProcessAPI.getAllTerminationTypesSmart(currentInstitution.id);
 
 			if (typesData.length === 0) {
@@ -85,17 +88,17 @@ const ExitProcessCreate = () => {
 			setTerminationTypes(typesData);
 
 			if (typeId && !hasUserInteracted) {
-				const preselectedType = typesData.find(type => type.id === Number(typeId));
+				const preselectedType = typesData.find((type) => type.id === Number(typeId));
 				if (preselectedType) {
 					setSelectedTerminationType(preselectedType);
-					setFormData(prev => ({ ...prev, termination_type_id: preselectedType.id }));
+					setFormData((prev) => ({ ...prev, termination_type_id: preselectedType.id }));
 				}
 			}
 		} catch (err) {
 			console.error("Error fetching termination types:", err);
-			showErrorToast({ 
-				error: err, 
-				defaultMessage: "Failed to fetch termination types from server. Please try again." 
+			showErrorToast({
+				error: err,
+				defaultMessage: "Failed to fetch termination types from server. Please try again.",
 			});
 			setTerminationTypes([]);
 		} finally {
@@ -105,13 +108,13 @@ const ExitProcessCreate = () => {
 
 	useEffect(() => {
 		console.log("Redux auth state:", { user: currentUser });
-		
+
 		if (currentUserId === null) {
 			setAuthError(
 				"No logged-in user found. Please ensure you are logged in or check Redux state.",
 			);
 		}
-		
+
 		setIsLoadingUser(false);
 	}, [currentUserId, currentUser]);
 
@@ -153,16 +156,17 @@ const ExitProcessCreate = () => {
 
 	const handleTerminationTypeChange = (type: ITerminationType) => {
 		setSelectedTerminationType(type);
-		setFormData(prev => ({ 
-			...prev, 
-			termination_type_id: type.id
+		setFormData((prev) => ({
+			...prev,
+			termination_type_id: type.id,
 		}));
 		setIsDropdownOpen(false);
 		setHasUserInteracted(true);
-		
+
 		// Clear handover report if new type doesn't require it
 		if (!type.requires_handover_report) {
 			setHandoverReport(null);
+			setHandoverReportText("");
 		}
 	};
 
@@ -179,6 +183,20 @@ const ExitProcessCreate = () => {
 				showErrorToast({ defaultMessage: "File size must be less than 10MB" });
 				return;
 			}
+
+			// Validate file type
+			const allowedTypes = [
+				"application/pdf",
+				"application/msword",
+				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				"text/plain",
+			];
+
+			if (!allowedTypes.includes(file.type)) {
+				showErrorToast({ defaultMessage: "Please upload a PDF, DOC, DOCX, or TXT file" });
+				return;
+			}
+
 			setHandoverReport(file);
 		}
 	};
@@ -193,7 +211,7 @@ const ExitProcessCreate = () => {
 	const handleSubmit = useCallback(
 		async (e: React.FormEvent) => {
 			e.preventDefault();
-			
+
 			if (!formData.employee_id || formData.employee_id === 0) {
 				showErrorToast({ defaultMessage: "Please select a valid employee" });
 				return;
@@ -208,9 +226,13 @@ const ExitProcessCreate = () => {
 			}
 
 			// Validate handover report if required
-			if (selectedTerminationType?.requires_handover_report && !handoverReport) {
-				showErrorToast({ defaultMessage: "Handover report is required for this termination type" });
-				return;
+			if (selectedTerminationType?.requires_handover_report) {
+				if (!handoverReport && !handoverReportText.trim()) {
+					showErrorToast({
+						defaultMessage: "Please provide either a handover report file or text",
+					});
+					return;
+				}
 			}
 
 			try {
@@ -225,22 +247,52 @@ const ExitProcessCreate = () => {
 					status: formData.status,
 					initiator_type: "EMPLOYER",
 					is_paid_after_termination: formData.is_paid_after_termination,
-					final_payment_date: formData.is_paid_after_termination ? formData.final_payment_date : undefined,
+					final_payment_date: formData.is_paid_after_termination
+						? formData.final_payment_date
+						: undefined,
 					created_by: currentUserId,
 					updated_by: currentUserId,
 				};
 
 				console.log("Submitting termination data:", terminationData);
-				
-				// If handover report exists, you may need to upload it separately
-				// This depends on your API structure
-				if (handoverReport) {
-					console.log("Handover report attached:", handoverReport.name);
-					// TODO: Upload handover report via API
-					// await ExitProcessAPI.uploadHandoverReport(handoverReport);
+
+				// Step 1: Create the termination
+				const createdTermination = await ExitProcessAPI.create({ terminationData });
+
+				if (!createdTermination) {
+					throw new Error("Failed to create termination");
 				}
 
-				await ExitProcessAPI.create({ terminationData });
+				console.log("Termination created successfully:", createdTermination.id);
+
+				// Step 2: Upload handover report if required and provided
+				if (
+					selectedTerminationType?.requires_handover_report &&
+					(handoverReport || handoverReportText.trim())
+				) {
+					try {
+						console.log("Uploading handover report...");
+
+						await ExitProcessAPI.createHandoverReport({
+							handoverData: {
+								offboarding: createdTermination.id,
+								report_text: handoverReportText.trim() || undefined,
+								report_file: handoverReport || undefined,
+								created_by: currentUserId,
+								updated_by: currentUserId,
+							},
+						});
+
+						console.log("Handover report uploaded successfully");
+					} catch (handoverError) {
+						console.error("Error uploading handover report:", handoverError);
+						showErrorToast({
+							error: handoverError,
+							defaultMessage: "Termination created but handover report upload failed",
+						});
+						// Don't throw - termination was created successfully
+					}
+				}
 
 				showSuccessToast("Termination process initiated successfully");
 				router.push("/off-boarding/exit-process");
@@ -251,7 +303,15 @@ const ExitProcessCreate = () => {
 				setLoading(false);
 			}
 		},
-		[formData, currentInstitution, currentUserId, selectedTerminationType, handoverReport, router],
+		[
+			formData,
+			currentInstitution,
+			currentUserId,
+			selectedTerminationType,
+			handoverReport,
+			handoverReportText,
+			router,
+		],
 	);
 
 	const handleBack = () => {
@@ -336,9 +396,9 @@ const ExitProcessCreate = () => {
 									) : terminationTypes.length === 0 ? (
 										<div className="text-center py-4 border border-gray-300 rounded-lg">
 											<span className="text-sm text-gray-600">No termination types available</span>
-											<Button 
-												variant="outline" 
-												size="sm" 
+											<Button
+												variant="outline"
+												size="sm"
 												className="mt-2"
 												onClick={() => fetchTerminationTypes()}
 											>
@@ -352,10 +412,18 @@ const ExitProcessCreate = () => {
 												onClick={() => setIsDropdownOpen(!isDropdownOpen)}
 												className="w-full h-10 bg-white border border-input rounded-lg px-3 py-2 text-sm ring-offset-background focus:border-gray-400 focus:ring-2 focus:ring-ring focus:ring-offset-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
 											>
-												<span className={selectedTerminationType ? "text-gray-900" : "text-muted-foreground"}>
-													{selectedTerminationType ? selectedTerminationType.name : "Select termination type"}
+												<span
+													className={
+														selectedTerminationType ? "text-gray-900" : "text-muted-foreground"
+													}
+												>
+													{selectedTerminationType
+														? selectedTerminationType.name
+														: "Select termination type"}
 												</span>
-												<ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+												<ChevronDown
+													className={`h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+												/>
 											</button>
 
 											{isDropdownOpen && (
@@ -377,7 +445,7 @@ const ExitProcessCreate = () => {
 											)}
 										</div>
 									)}
-									
+
 									{selectedTerminationType && (
 										<div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
 											<div className="flex items-center justify-between">
@@ -391,7 +459,9 @@ const ExitProcessCreate = () => {
 														</p>
 													)}
 												</div>
-												<span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(selectedTerminationType.category)}`}>
+												<span
+													className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(selectedTerminationType.category)}`}
+												>
 													{selectedTerminationType.category}
 												</span>
 											</div>
@@ -400,11 +470,13 @@ const ExitProcessCreate = () => {
 													<strong>Note:</strong> This termination type requires a handover report
 												</p>
 											)}
-											{selectedTerminationType.supported_stages && selectedTerminationType.supported_stages.length > 0 && (
-												<p className="text-xs text-blue-600 mt-1">
-													<strong>Stages:</strong> {selectedTerminationType.supported_stages.length} stages configured
-												</p>
-											)}
+											{selectedTerminationType.supported_stages &&
+												selectedTerminationType.supported_stages.length > 0 && (
+													<p className="text-xs text-blue-600 mt-1">
+														<strong>Stages:</strong>{" "}
+														{selectedTerminationType.supported_stages.length} stages configured
+													</p>
+												)}
 										</div>
 									)}
 								</div>
@@ -425,13 +497,19 @@ const ExitProcessCreate = () => {
 								</div>
 							</div>
 
-							{/* Handover Report Upload - Only show if required */}
+							{/* Handover Report Section - Only show if required */}
 							{selectedTerminationType?.requires_handover_report && (
-								<div className="space-y-2">
-									<Label htmlFor="handover_report" className="text-sm font-medium text-gray-800">
-										Handover Report *
-									</Label>
+								<div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+									<div className="flex items-center gap-2">
+										<FileText className="h-5 w-5 text-gray-600" />
+										<h3 className="text-sm font-semibold text-gray-800">Handover Report *</h3>
+									</div>
+
+									{/* File Upload */}
 									<div className="space-y-2">
+										<Label htmlFor="handover_report" className="text-sm font-medium text-gray-700">
+											Upload Document (Optional)
+										</Label>
 										<input
 											ref={fileInputRef}
 											type="file"
@@ -440,25 +518,29 @@ const ExitProcessCreate = () => {
 											accept=".pdf,.doc,.docx,.txt"
 											className="hidden"
 										/>
-										
+
 										{!handoverReport ? (
 											<button
 												type="button"
 												onClick={() => fileInputRef.current?.click()}
-												className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex flex-col items-center justify-center gap-2 text-gray-600 hover:text-gray-700"
+												className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex flex-col items-center justify-center gap-2 text-gray-600 hover:text-gray-700 bg-white"
 											>
 												<Upload className="h-6 w-6" />
 												<span className="text-sm">Click to upload handover report</span>
-												<span className="text-xs text-gray-500">PDF, DOC, DOCX, TXT (Max 10MB)</span>
+												<span className="text-xs text-gray-500">
+													PDF, DOC, DOCX, TXT (Max 10MB)
+												</span>
 											</button>
 										) : (
 											<div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
 												<div className="flex items-center gap-2">
 													<div className="p-2 bg-green-100 rounded">
-														<Upload className="h-4 w-4 text-green-600" />
+														<FileText className="h-4 w-4 text-green-600" />
 													</div>
 													<div>
-														<p className="text-sm font-medium text-green-800">{handoverReport.name}</p>
+														<p className="text-sm font-medium text-green-800">
+															{handoverReport.name}
+														</p>
 														<p className="text-xs text-green-600">
 															{(handoverReport.size / 1024 / 1024).toFixed(2)} MB
 														</p>
@@ -474,9 +556,29 @@ const ExitProcessCreate = () => {
 											</div>
 										)}
 									</div>
+
+									{/* Text Input */}
+									<div className="space-y-2">
+										<Label
+											htmlFor="handover_report_text"
+											className="text-sm font-medium text-gray-700"
+										>
+											Or Enter Report Text
+										</Label>
+										<Textarea
+											id="handover_report_text"
+											value={handoverReportText}
+											onChange={(e) => setHandoverReportText(e.target.value)}
+											placeholder="Enter handover report details here..."
+											className="w-full min-h-[120px] resize-vertical bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400 rounded-lg"
+										/>
+										<p className="text-xs text-gray-500">
+											You can provide either a file, text, or both for the handover report.
+										</p>
+									</div>
 								</div>
 							)}
-							
+
 							{/* Payment Options */}
 							<div className="space-y-4">
 								<div className="flex items-center space-x-2">
@@ -517,7 +619,10 @@ const ExitProcessCreate = () => {
 								{/* Final Payment Date - Only show if checkbox is checked */}
 								{formData.is_paid_after_termination && (
 									<div className="space-y-2">
-										<Label htmlFor="final_payment_date" className="text-sm font-medium text-gray-800">
+										<Label
+											htmlFor="final_payment_date"
+											className="text-sm font-medium text-gray-800"
+										>
 											Final Payment Date *
 										</Label>
 										<Input
@@ -570,7 +675,7 @@ const ExitProcessCreate = () => {
 											Creating Termination...
 										</div>
 									) : (
-										`Create ${selectedTerminationType?.name || 'Termination'} Process`
+										`Create ${selectedTerminationType?.name || "Termination"} Process`
 									)}
 								</Button>
 							</div>

@@ -44,6 +44,19 @@ export interface ITerminationType {
 	updated_at: string;
 }
 
+export interface IHandoverReport {
+	id: number;
+	report_text: string;
+	report_file: string;
+	created_at: string;
+	updated_at: string;
+	approval_status: "under_creation" | "approved" | "rejected";
+	is_active: boolean;
+	created_by: number;
+	updated_by: number;
+	offboarding: number;
+}
+
 export interface ITermination {
 	id: number;
 	employee: {
@@ -63,10 +76,7 @@ export interface ITermination {
 	reason: string;
 	status: "INITIATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 	stage_progress: ITerminationStage[];
-	handover_report: {
-		report_text: string;
-		report_file: string;
-	} | null;
+	handover_report: IHandoverReport | null;
 	created_at: string;
 	updated_at: string;
 	initiator_type: "EMPLOYEE" | "EMPLOYER";
@@ -86,6 +96,14 @@ export interface CreateTerminationData {
 	created_by?: number;
 	updated_by?: number;
 	initiated_by_id?: number;
+}
+
+export interface CreateHandoverReportData {
+	offboarding: number; // The termination ID
+	report_text?: string;
+	report_file?: File;
+	created_by: number;
+	updated_by: number;
 }
 
 export const ExitProcessAPI = {
@@ -216,6 +234,79 @@ export const ExitProcessAPI = {
 			throw error;
 		}
 	},
+
+	// Create handover report (separate from termination creation)
+	createHandoverReport: async ({
+		handoverData,
+	}: {
+		handoverData: CreateHandoverReportData;
+	}): Promise<IHandoverReport | null> => {
+		try {
+			const formData = new FormData();
+			formData.append("offboarding", handoverData.offboarding.toString());
+			formData.append("created_by", handoverData.created_by.toString());
+			formData.append("updated_by", handoverData.updated_by.toString());
+
+			if (handoverData.report_text) {
+				formData.append("report_text", handoverData.report_text);
+			}
+
+			if (handoverData.report_file) {
+				formData.append("report_file", handoverData.report_file);
+			}
+
+			console.log("Creating handover report for termination:", handoverData.offboarding);
+			const response = await apiRequest.post("on-boarding/handover-reports/", formData, {
+				headers: {
+					"Content-Type": "multipart/form-data",
+				},
+			});
+			return response.data as IHandoverReport;
+		} catch (error) {
+			console.error("Error creating handover report:", error);
+			throw error;
+		}
+	},
+
+	// Update handover report
+	updateHandoverReport: async ({
+		handoverReportId,
+		handoverData,
+	}: {
+		handoverReportId: number;
+		handoverData: Partial<CreateHandoverReportData>;
+	}): Promise<IHandoverReport | null> => {
+		try {
+			const formData = new FormData();
+
+			if (handoverData.report_text !== undefined) {
+				formData.append("report_text", handoverData.report_text);
+			}
+
+			if (handoverData.report_file) {
+				formData.append("report_file", handoverData.report_file);
+			}
+
+			if (handoverData.updated_by !== undefined) {
+				formData.append("updated_by", handoverData.updated_by.toString());
+			}
+
+			const response = await apiRequest.patch(
+				`on-boarding/handover-reports/${handoverReportId}/`,
+				formData,
+				{
+					headers: {
+						"Content-Type": "multipart/form-data",
+					},
+				},
+			);
+			return response.data as IHandoverReport;
+		} catch (error) {
+			console.error("Error updating handover report:", error);
+			throw error;
+		}
+	},
+
 	// Update termination
 	update: async ({
 		terminationId,
@@ -325,9 +416,6 @@ export const ExitProcessAPI = {
 		}
 	},
 
-	// Method to get ALL active termination types with pagination handling
-	// Replace the getAllActiveTerminationTypes method in your ExitProcessAPI with this fixed version:
-
 	getAllActiveTerminationTypes: async (institutionId: number): Promise<ITerminationType[]> => {
 		try {
 			let allTypes: ITerminationType[] = [];
@@ -335,18 +423,14 @@ export const ExitProcessAPI = {
 
 			console.log("Starting to fetch all termination types with pagination...");
 
-			// Keep fetching until no more pages
 			while (nextUrl) {
 				console.log(`Fetching from: ${nextUrl}`);
 
-				// Use the appropriate method based on URL type
 				let response;
 				if (nextUrl.startsWith("http")) {
-					// If it's a full URL, extract the path after /api/
 					try {
 						const url = new URL(nextUrl);
 						const pathAndQuery = url.pathname + url.search;
-						// Remove /api/ prefix if present
 						const cleanPath = pathAndQuery.startsWith("/api/")
 							? pathAndQuery.substring(5)
 							: pathAndQuery;
@@ -358,7 +442,6 @@ export const ExitProcessAPI = {
 						break;
 					}
 				} else {
-					// It's already a relative path
 					response = await apiRequest.get(nextUrl);
 				}
 
@@ -367,10 +450,7 @@ export const ExitProcessAPI = {
 				console.log(`Fetched ${data.results.length} types from current page`);
 				console.log(`Total count from API: ${data.count}`);
 
-				// Add current page results to our collection
 				allTypes = [...allTypes, ...data.results];
-
-				// Get next URL
 				nextUrl = data.next;
 
 				console.log(`Next URL: ${nextUrl || "None (last page)"}`);
@@ -379,7 +459,6 @@ export const ExitProcessAPI = {
 
 			console.log(`Finished fetching. Total termination types: ${allTypes.length}`);
 
-			// Filter active types
 			const activeTypes = allTypes.filter((type) => type.is_active);
 			console.log(`Active termination types: ${activeTypes.length}`);
 
@@ -390,7 +469,6 @@ export const ExitProcessAPI = {
 		}
 	},
 
-	// Alternative method to get all types with large page size (if API supports it)
 	getAllTerminationTypesLargePage: async (institutionId: number): Promise<ITerminationType[]> => {
 		try {
 			console.log("Fetching all termination types with large page size...");
@@ -410,10 +488,8 @@ export const ExitProcessAPI = {
 		}
 	},
 
-	// Smart method that tries large page first, then falls back to pagination
 	getAllTerminationTypesSmart: async (institutionId: number): Promise<ITerminationType[]> => {
 		try {
-			// First try with large page size (more efficient if supported)
 			try {
 				const types = await ExitProcessAPI.getAllTerminationTypesLargePage(institutionId);
 				if (types.length > 0) {
@@ -424,7 +500,6 @@ export const ExitProcessAPI = {
 				console.log("Large page size method failed, falling back to pagination:", largePageError);
 			}
 
-			// Fall back to pagination method
 			console.log("Using pagination method as fallback");
 			return await ExitProcessAPI.getAllActiveTerminationTypes(institutionId);
 		} catch (error) {
