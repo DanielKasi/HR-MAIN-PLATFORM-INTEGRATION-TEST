@@ -145,7 +145,7 @@ export default function SettingsPage() {
 											activeTab === "superuser_transfer" ? "text-primary" : "text-gray-900"
 										}`}
 									>
-										Institution Ownership Transfer
+										Institution Superuser Transfer
 									</div>
 									<div
 										className={`text-xs lg:text-sm hidden lg:block ${
