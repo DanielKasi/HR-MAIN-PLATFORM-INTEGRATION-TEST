@@ -29,7 +29,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
 import { showErrorToast } from "@/lib/utils";
 import { ITermination, ITerminationStage } from "../page";
-import { useAppSelector } from "@/lib/hooks";
+// import { useAppSelector } from "@/lib/hooks";
 
 // Stage progress component
 interface StageProgressProps {
@@ -493,11 +493,11 @@ export default function ExitProcessViewPage() {
 						<CardContent className="space-y-3">
 							<Button
 								variant="outline"
-								className="w-full justify-start focus-visible:ring-0 focus-visible:ring-offset-0"
 								onClick={() => router.push(`/off-boarding/exit-process/${terminationId}/edit`)}
+								className="focus-visible:ring-0 focus-visible:ring-offset-0"
 							>
 								<Edit className="h-4 w-4 mr-2" />
-								Edit Process
+								Edit
 							</Button>
 
 							{termination.handover_report?.report_file && (
