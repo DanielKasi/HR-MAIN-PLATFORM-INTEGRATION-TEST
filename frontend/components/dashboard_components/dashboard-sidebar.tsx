@@ -14,7 +14,7 @@ import { Button } from "../ui/button";
 
 import { NavItemComponent } from "./navigation/nav-item";
 
-import { PERMISSION_CODES } from "@/constants";
+import { MAIN_DOMAIN_URL, PERMISSION_CODES } from "@/constants";
 import { EMPLOYEE_API, showErrorToast } from "@/lib/utils";
 import {
 	selectAccessToken,
@@ -23,7 +23,7 @@ import {
 	selectUser,
 	selectUserLoading,
 } from "@/store/auth/selectors";
-import { hasPermission } from "@/lib/helpers";
+import { hasPermission, removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
 import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
 import { IEmployee } from "@/types/types.utils";
 import { NavItem } from "@/types/other";
@@ -402,9 +402,9 @@ export default function DashboardSideBar() {
 						isSideBarOpen ? "w-64" : "w-20"
 					} bg-white border-r border-gray-100 fixed h-full transition-all duration-300 z-30`}
 				>
-					<div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
+					<div className="p-4 border-b border-gray-100 h-16 max-h-16 flex items-center">
 						<div className="flex items-center gap-3">
-							<div className="!w-10 !h-10 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
+							<div className="!w-10 !h-10 !aspect-square text-[var(--sidebar-primary-foreground)] rounded-lg !bg-transparent flex items-center justify-center overflow-hidden relative">
 								{selectedInstitution ? (
 									<>
 										{InstitutionLogo ? (
@@ -412,7 +412,7 @@ export default function DashboardSideBar() {
 												alt="Institution Logo"
 												className="object-cover object-center !w-full !h-full"
 												fill
-												src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
+												src={`${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || MAIN_DOMAIN_URL)}/${removeLeadingSlash(InstitutionLogo)}`}
 											/>
 										) : (
 											<Icon icon="hugeicons:building-05" width="24" height="24" />
@@ -478,7 +478,7 @@ export default function DashboardSideBar() {
 											alt="Institution Logo"
 											className="object-cover rounded-xl"
 											fill
-											src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
+											src={`${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || MAIN_DOMAIN_URL)}/${removeLeadingSlash(InstitutionLogo)}`}
 										/>
 									) : (
 										<Icon icon="hugeicons:building-05" width="24" height="24" />

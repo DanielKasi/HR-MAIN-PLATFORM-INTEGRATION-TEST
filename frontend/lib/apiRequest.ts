@@ -5,9 +5,10 @@ import { store } from "@/store";
 import { logoutStart, setAccessToken, setRefreshToken } from "@/store/auth/actions";
 import { LoginResponse } from "@/utils/auth-utils";
 import { MAIN_DOMAIN_URL } from "@/constants";
+import { removeTrailingSlash } from "./helpers";
 
 const axiosJsonInstance = axios.create({
-	baseURL: process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`,
+	baseURL: removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`),
 	headers: {},
 	timeout: 40000,
 	validateStatus: (status) => status !== 401 && status !== 403,
@@ -15,7 +16,6 @@ const axiosJsonInstance = axios.create({
 
 axiosJsonInstance.interceptors.request.use((config) => {
 	const token = store.getState().auth.accessToken;
-
 	if (token) {
 		config.headers.Authorization = `Bearer ${token}`;
 	}
@@ -62,8 +62,23 @@ axiosJsonInstance.interceptors.response.use(
 			originalRequest._retry = true;
 
 			const refreshToken = store.getState().auth.refreshToken;
+			const lastRefreshTime = store.getState().auth.lastRefreshTimeMilliseconds;
+			const inactivityTime = store.getState().auth.inactivityTimeout;
+			const now = Date.now();
 
-			if (!refreshToken || originalRequest.url?.endsWith("/user/token/refresh")) {
+			console.log(
+				"\n\n Last refresh time : ",
+				lastRefreshTime,
+				"\n\n Inactivity time : ",
+				inactivityTime,
+				"\n\n Now  : ",
+				now,
+			);
+			if (
+				!refreshToken ||
+				originalRequest.url?.endsWith("/user/token/refresh") ||
+				(lastRefreshTime && now >= lastRefreshTime + inactivityTime)
+			) {
 				if (typeof window !== "undefined") {
 					store.dispatch(logoutStart());
 				}
@@ -85,7 +100,7 @@ axiosJsonInstance.interceptors.response.use(
 			isRefreshing = true;
 			try {
 				const response = await axios.post(
-					`${process.env.NEXT_PUBLIC_API_URL || MAIN_DOMAIN_URL}/user/token/refresh/`,
+					`${removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`)}/user/token/refresh/`,
 					{ refresh: refreshToken },
 					{
 						headers: {

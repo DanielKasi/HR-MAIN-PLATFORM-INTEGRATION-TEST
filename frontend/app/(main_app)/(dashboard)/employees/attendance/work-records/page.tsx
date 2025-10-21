@@ -33,11 +33,11 @@ import {
 } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import { selectSelectedInstitution, selectAccessToken } from "@/store/auth/selectors";
-import { getDepartments, getJobPositions, fetchEmployees } from "@/lib/utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { MAIN_DOMAIN_URL } from "@/constants";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
+import { removeTrailingSlash } from "@/lib/helpers";
 
 const attendanceCodes = {
 	"P-onT": { label: "Present on Time", color: "bg-green-100 text-green-800" },
@@ -256,7 +256,7 @@ export default function AttendanceTable() {
 				payload.target_employees = employeeIds;
 			}
 			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`}/employee/attendance2excel/`,
+				`${removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`)}/employee/attendance2excel/`,
 				{
 					method: "POST",
 					headers: {

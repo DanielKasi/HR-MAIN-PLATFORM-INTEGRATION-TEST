@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import type { IOrganisationFormData } from "@/types/types.utils";
+import { useZoomLevel } from "@/hooks/use-zoom-level";
 
 const STEPS: StepItem[] = [
 	{
@@ -134,6 +135,15 @@ export default function CreateOrganisationWizard() {
 		phoneNumber: string;
 		isValid: boolean;
 	}>({ country: null, countryCode: "", phoneNumber: "", isValid: true });
+
+	const zoomLevel = useZoomLevel();
+
+	const getZoomAdjustedHeight = (height: number) => {
+		if (zoomLevel > 100) {
+			return height * (100 / zoomLevel);
+		}
+		return height;
+	};
 
 	useEffect(() => {
 		if (currentUser) {
@@ -803,7 +813,12 @@ export default function CreateOrganisationWizard() {
 								)}
 							</div>
 						) : (
-							<div className="grid grid-cols-1 gap-4 max-h-[60vh] overflow-y-auto pr-4 py-4">
+							<div
+								style={{
+									maxHeight: `${getZoomAdjustedHeight(60)}vh`,
+								}}
+								className="grid grid-cols-1 gap-4 overflow-y-auto pr-4 py-4"
+							>
 								{filteredDepartments.map((dept, deptIndex) => (
 									<Card
 										key={deptIndex}
@@ -995,7 +1010,11 @@ export default function CreateOrganisationWizard() {
 							</div>
 						)}
 						<div
-							className={`px-6 py-4 ${errorMessage ? "h-[50svh] max-h-[50vh]" : "h-[60svh] max-h-[60vh]"} overflow-y-auto`}
+							style={{
+								maxHeight: `${errorMessage ? getZoomAdjustedHeight(50) : getZoomAdjustedHeight(60)}vh`,
+								height: `${errorMessage ? getZoomAdjustedHeight(50) : getZoomAdjustedHeight(60)}svh`,
+							}}
+							className={`px-6 py-4 overflow-y-auto`}
 						>
 							{renderStepContent()}
 						</div>

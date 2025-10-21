@@ -40,6 +40,7 @@ export type AuthState = {
 	inactivityTimeout: number;
 	logoutWarningVisible: boolean;
 	refreshInProgress: boolean;
+	lastRefreshTimeMilliseconds: number | null; // Sets the refresh time in milliseconds
 };
 
 const intialAuthState: AuthState = {
@@ -57,6 +58,7 @@ const intialAuthState: AuthState = {
 	temporaryPermissions: [],
 	inactivityTimeout: 0,
 	logoutWarningVisible: false,
+	lastRefreshTimeMilliseconds: null,
 	refreshInProgress: false,
 };
 
@@ -84,7 +86,8 @@ export const authReducer = (
 				},
 			};
 		case AUTH_ACTION_TYPES.SET_ACCESS_TOKEN:
-			return { ...state, accessToken: action.payload as string };
+			const now = Date.now();
+			return { ...state, accessToken: action.payload as string, lastRefreshTimeMilliseconds: now };
 
 		case AUTH_ACTION_TYPES.SET_REFRESH_TOKEN:
 			return { ...state, refreshToken: action.payload as string };
@@ -159,7 +162,6 @@ export const authReducer = (
 				temporaryPermissions: action.payload as Permission[],
 			};
 		case AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS:
-			// console.log("\n\n Got dispatched action : ", action)
 			return { ...state, temporaryPermissions: [] };
 		case AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT:
 			return { ...state, inactivityTimeout: action.payload as number };
@@ -189,6 +191,11 @@ export const authReducer = (
 					loading: false,
 					value: action.payload as IEmployee,
 				},
+			};
+		case AUTH_ACTION_TYPES.SET_LAST_REFRESH_TIME:
+			return {
+				...state,
+				lastRefreshTimeMilliseconds: action.payload as number,
 			};
 		default:
 			return state;

@@ -9,7 +9,7 @@ import { CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { PERMISSION_CODES } from "@/constants";
+import { MAIN_DOMAIN_URL, PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useSelector } from "react-redux";
@@ -26,6 +26,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Icon } from "@iconify/react";
+import { removeTrailingSlash } from "@/lib/helpers";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -62,7 +63,7 @@ export default function EmployeesPage() {
 		try {
 			setIsExportingToExcel(true);
 			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL}/employee/export-employee-excel/${institutionId}/`,
+				`${removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`)}/employee/export-employee-excel/${institutionId}/`,
 				{
 					method: "GET",
 					headers: {

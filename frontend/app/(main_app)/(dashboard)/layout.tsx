@@ -14,8 +14,8 @@ import Link from "next/link";
 import CreateOrganisationWizard from "./create-organisation/page";
 import QuickActionsWidget from "@/components/quick-actions-widget";
 
-import { PERMISSION_CODES } from "@/constants";
-import { selectAttachedInstitutions } from "@/store/auth/selectors";
+import { MAIN_DOMAIN_URL, PERMISSION_CODES } from "@/constants";
+import { selectAttachedInstitutions, selectRelatedEmployee } from "@/store/auth/selectors";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -49,7 +49,7 @@ import {
 	userActivityDetected,
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
-import { hasPermission } from "@/lib/helpers";
+import { hasPermission, removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
 import {
@@ -129,23 +129,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const accessToken = useSelector(selectAccessToken);
 	const userIsLoading = useSelector(selectUserLoading);
 	const isSideBarOpen = useSelector(selectSideBarOpened);
+	const relatedEmployee = useSelector(selectRelatedEmployee);
 	const announcementForAcknowledgment = useSelector(selectRequiredAnnouncementAcknowledgment);
 	const dispatch = useDispatch();
 	const router = useRouter();
 	const appLayoutRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
-		const handleActivity = (e: MouseEvent) => {
-			if (announcementForAcknowledgment) {
-				e.stopPropagation();
-				e.preventDefault();
-				return;
-			}
-			if (currentUser && appLayoutRef.current) {
-				dispatch(userActivityDetected());
-			}
-		};
-
 		appLayoutRef.current?.addEventListener("mousedown", handleActivity);
 
 		return () => {
@@ -153,9 +143,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		};
 	}, [dispatch, currentUser, appLayoutRef, announcementForAcknowledgment]);
 
+	const handleActivity = (e: MouseEvent) => {
+		if (announcementForAcknowledgment) {
+			e.stopPropagation();
+			e.preventDefault();
+			return;
+		}
+		if (currentUser && appLayoutRef.current) {
+			dispatch(userActivityDetected());
+		}
+	};
 	useEffect(() => {
 		dispatch(fetchRemoteUserStart());
 		dispatch(fetchUpToDateInstitution());
+		dispatch(userActivityDetected());
 	}, []);
 
 	useEffect(() => {
@@ -202,7 +203,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	}, [pathname]);
 
 	const updateThemeColors = (hexColor: string) => {
-		console.log("\n\n Updating theme color with color : ", hexColor);
 		if (!hexColor) return;
 		try {
 			const hslValue = hexToHSL(hexColor);
@@ -362,9 +362,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<div className="flex items-center gap-2 rounded-full px-2 py-2 cursor-pointer hover:bg-gray-200 hover:bg-opacity-30 active:bg-gray-400 active:bg-opacity-40 transition-all duration-200">
-										<div className="!w-9 !h-9 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center relative">
+										<div className="!w-9 !h-9 bg-transparent rounded-full overflow-hidden flex items-center justify-center relative">
 											<Image
-												src={"/images/profile-placeholder.jpg"}
+												src={
+													relatedEmployee?.employee_profile_picture
+														? `${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || MAIN_DOMAIN_URL)}/${removeLeadingSlash(relatedEmployee?.employee_profile_picture || "")}`
+														: "/images/profile-placeholder.jpg"
+												}
 												fill
 												alt={"Profile"}
 												className="!w-full !h-full object-cover object-center"

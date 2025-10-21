@@ -15,6 +15,8 @@ import { Switch } from "@/components/ui/switch";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { setSelectedInstitution, setAttachedInstitutions } from "@/store/auth/actions";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
+import { removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
+import { MAIN_DOMAIN_URL } from "@/constants";
 
 interface InstitutionSettingsProps {
 	onSave?: () => void;
@@ -25,7 +27,7 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 	const institution = useSelector(selectSelectedInstitution);
 	const attachedInstitutions = useSelector(selectAttachedInstitutions);
 
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState<Partial<IUserInstitutionFormData>>({
 		institution_name: "",
 		institution_email: "",
 		first_phone_number: "",
@@ -33,6 +35,7 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 		is_attendance_penalties_enabled: false,
 		latitude: 0,
 		longitude: 0,
+		user_inactivity_time: 0,
 	});
 	const [logoFile, setLogoFile] = useState<File | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +48,7 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 		latitude: 0,
 		longitude: 0,
 		logo: false,
+		user_inactivity_time: 0,
 	});
 
 	// Initialize form data when institution changes
@@ -58,11 +62,12 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 				is_attendance_penalties_enabled: institution.is_attendance_penalties_enabled || false,
 				latitude: institution.latitude || 0,
 				longitude: institution.longitude || 0,
+				user_inactivity_time: institution.user_inactivity_time || 0,
 			});
 		}
 	}, [institution]);
 
-	const handleInputChange = (field: string, value: string | number | boolean) => {
+	const handleInputChange = (field: keyof typeof formData, value: string | number | boolean) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
@@ -117,6 +122,7 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 				is_attendance_penalties_enabled: formData.is_attendance_penalties_enabled,
 				latitude: formData.latitude,
 				longitude: formData.longitude,
+				user_inactivity_time: formData.user_inactivity_time,
 			};
 
 			if (logoFile) {
@@ -146,6 +152,7 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 				latitude: 0,
 				longitude: 0,
 				logo: false,
+				user_inactivity_time: 0,
 			});
 
 			setLogoFile(null);
@@ -178,7 +185,7 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 								src={
 									logoFile
 										? URL.createObjectURL(logoFile)
-										: process.env.NEXT_PUBLIC_BASE_URL + institution?.institution_logo!
+										: `${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || MAIN_DOMAIN_URL)}/${removeLeadingSlash(institution?.institution_logo!)}`
 								}
 								alt="Institution Logo"
 								className="w-full h-full object-cover object-center"
@@ -353,6 +360,34 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 								handleInputChange("is_attendance_penalties_enabled", checked)
 							}
 						/>
+					</div>
+				</div>
+
+				<div className="space-y-2">
+					<Label className="text-sm font-medium text-gray-700">Inactivity Time (In minutes)</Label>
+					<div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+						{isEditing.user_inactivity_time ? (
+							<Input
+								id="user_inactivity_time"
+								type="number"
+								min={5}
+								value={formData.user_inactivity_time}
+								onChange={(e) => handleInputChange("user_inactivity_time", e.target.value)}
+								className="flex-1 rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
+							/>
+						) : (
+							<div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+								{formData.user_inactivity_time || "Not set"}
+							</div>
+						)}
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => toggleEdit("user_inactivity_time")}
+							className="rounded-lg border-gray-200 hover:bg-gray-50 w-full sm:w-auto"
+						>
+							{isEditing.user_inactivity_time ? "Cancel" : "Change"}
+						</Button>
 					</div>
 				</div>
 			</div>

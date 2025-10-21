@@ -19,6 +19,7 @@ import { clearStateIfStructureChanged } from "./storeUtils";
 
 import rootReducer, { RootState } from "@/store/rootReducer";
 import rootSaga from "@/store/rootSaga";
+import { now } from "moment";
 
 const createNoopStorage = () => {
 	return {
@@ -89,10 +90,11 @@ export const configureAppStore = () => {
 	// Run the root saga
 	(store as AppStore).sagaTask = sagaMiddleware.run(rootSaga);
 
-	store.subscribe(() => {
-		const state = store.getState();
-		console.log("\n\n Current related employee object : ", state.auth.relatedEmployee);
-	});
+	// store.subscribe(() => {
+	// 	const state = store.getState();
+	// 	console.log("Current access token : ", state.auth.accessToken)
+	// 	console.log("\n\n Current inactivity timeout object : ", state.auth.inactivityTimeout, "\n\n Last refresh in milliseconds : ", state.auth.lastRefreshTimeMilliseconds, "\n\n Now : ", Date.now(), "\n\n The sum : ", state.auth.lastRefreshTimeMilliseconds || 0 + state.auth.inactivityTimeout);
+	// });
 
 	return store;
 };

@@ -40,6 +40,7 @@ import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import { MAIN_DOMAIN_URL } from "@/constants";
+import { removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
 
 const STATUS_STYLES = {
 	submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -251,8 +252,9 @@ export default function TerminationInitiationsPage() {
 																			<DropdownMenuItem
 																				onClick={() =>
 																					window.open(
-																						process.env.NEXT_PUBLIC_BASE_URL ||
-																							MAIN_DOMAIN_URL + termination.termination_letter!,
+																						`${removeTrailingSlash(
+																							process.env.NEXT_PUBLIC_BASE_URL || MAIN_DOMAIN_URL,
+																						)}/${removeLeadingSlash(termination.termination_letter!)}`,
 																						"_blank",
 																					)
 																				}
