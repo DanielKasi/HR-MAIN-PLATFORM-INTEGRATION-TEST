@@ -560,6 +560,7 @@ class ResendWelcomeLink(APIView):
             request.get_host(),
             user.email,
             user.fullname,
+            user.username,
             new_password,
             company_name=company_name,
             gender=employee.gender,  
@@ -857,10 +858,12 @@ class EmployeeCreateAPIView(APIView):
                 employee.user.is_email_verified = True
                 employee.user.welcome_email_sent = True
                 employee.user.save()
+                
                 send_employee_welcome_email.delay_on_commit(
                     request.get_host(),
                     employee.user.email,
                     employee.user.fullname,
+                    employee.user.username,
                     data["user"]["password"],
                     company_name=request.user.profile.institution.institution_name,
                     gender=employee.gender,
@@ -894,6 +897,7 @@ class EmployeeCreateAPIView(APIView):
                 request.get_host(),
                 employee.user.email,
                 employee.user.fullname,
+                employee.user.username,
                 final_data["user"]["password"],
                 company_name=request.user.profile.institution.institution_name,
                 gender=employee.gender,
@@ -1728,6 +1732,7 @@ class EmployeeCreateAPIView(APIView):
                             request.get_host(),
                             employee.user.email,
                             employee.user.fullname,
+                            employee.user.username,
                             employee_data["user"]["password"],
                             company_name=institution.institution_name,
                             gender=employee_data["gender"],

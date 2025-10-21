@@ -30,6 +30,7 @@ def send_employee_welcome_email(
     domain: str,
     email: str,
     fullname: str,
+    username:str,
     password: str,
     company_name: Optional[str] = None,
     site_id: Optional[int] = None,
@@ -88,6 +89,7 @@ def send_employee_welcome_email(
         context = {
             "greeting": f"Dear {greeting}",
             "fullname": fullname,
+            "username": username,
             "email": email,
             "password": password,
             "company_name": company,
@@ -120,6 +122,7 @@ Your employee account has been created successfully with the following login cre
 │ LOGIN CREDENTIALS           │
 ├─────────────────────────────┤
 │ Email:    {email:<15} │
+│ Username: {username:<15} │
 │ Password: {password:<15} │
 └─────────────────────────────┘
 
@@ -188,6 +191,7 @@ def send_bulk_welcome_emails(
                 email=employee["email"],
                 fullname=employee["fullname"],
                 password=employee["password"],
+                username=employee.get("username"),
                 company_name=employee.get("company_name"),
                 site_id=site_id,
             )
@@ -207,6 +211,7 @@ def send_welcome_email_from_view(
     email: str,
     fullname: str,
     password: str,
+    username: str,
     company_name: Optional[str] = None,
 ):
     """
@@ -228,6 +233,7 @@ def send_welcome_email_from_view(
         email=email,
         fullname=fullname,
         password=password,
+        username=username,
         company_name=company_name,
         site_id=site.id,
     )
