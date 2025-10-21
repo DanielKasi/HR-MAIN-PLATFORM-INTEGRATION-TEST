@@ -645,8 +645,8 @@ class EmployeePenalty(BaseApprovableModel):
     def _generate_attendance_penalty_notes(cls, attendance, penalty_type):
         """Generate descriptive notes for attendance-based penalties"""
         notes_map = {
-            'late_coming': f"Late arrival penalty - Employee arrived {attendance.late_minutes} minutes late on {attendance.date.strftime('%B %d, %Y')}. Scheduled time: {attendance.employee.payroll_branch.opening_time}, Actual check-in: {attendance.check_in_time}",
-            'early_leaving': f"Early departure penalty - Employee left {attendance.early_checkout_minutes} minutes early on {attendance.date.strftime('%B %d, %Y')}. Scheduled end: {attendance.employee.payroll_branch.closing_time}, Actual check-out: {attendance.check_out_time}",
+            'late_coming': f"Late arrival penalty - Employee arrived {attendance.late_minutes} minutes late on {attendance.date.strftime('%B %d, %Y')}. Scheduled time: {attendance.employee.payroll_branch.branch_opening_time}, Actual check-in: {attendance.check_in_time}",
+            'early_leaving': f"Early departure penalty - Employee left {attendance.early_checkout_minutes} minutes early on {attendance.date.strftime('%B %d, %Y')}. Scheduled end: {attendance.employee.payroll_branch.branch_closing_time}, Actual check-out: {attendance.check_out_time}",
             'absent': f"Absence penalty - Employee was marked absent on {attendance.date.strftime('%B %d, %Y')}. No check-in or check-out recorded for scheduled shift."
         }
         
