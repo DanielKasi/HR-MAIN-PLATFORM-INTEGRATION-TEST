@@ -247,7 +247,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	};
 
 	useEffect(() => {
-		const fallbackColor = "#078c24";
+		const fallbackColor = "#0CA0F5";
 		const themeColorToUse = selectedInstitution?.theme_color || fallbackColor;
 
 		updateThemeColors(themeColorToUse);
