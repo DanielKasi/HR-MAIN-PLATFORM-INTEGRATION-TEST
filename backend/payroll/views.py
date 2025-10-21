@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema,  OpenApiTypes
-
+from django.db import transaction
 from utilities.pagination import CustomPageNumberPagination
 from .models import (
     EmployeeAllowance,
@@ -1153,13 +1153,70 @@ class PenaltyWaiveRequestDetailAPIView(APIView):
         waive_request.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class PenaltyWaiveApproveRejectView(APIView):
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=PenaltyWaiveRequestSerializer,
+                description="Penalty waive request approved/rejected successfully.",
+            ),
+            400: OpenApiResponse(
+                description="Invalid action. Use 'approve' or 'reject'.",
+            ),
+            404: OpenApiResponse(
+                description="Penalty waive request not found.",
+            ),
+        },
+        tags=["Penalty Management"],
+        parameters=[
+            OpenApiParameter(
+                name="action",
+                type=str,
+                description="Action to perform: 'approve' or 'reject'",
+                required=True,
+                enum=['approve', 'reject']
+            ),
+        ],
+    )
+    @transaction.atomic()
+    def post(self, request, pk):
+        try:
+            waive_request = PenaltyWaiveRequest.objects.get(
+                pk=pk,
+                penalty__employee__institution=request.user.profile.institution
+            )
+        except PenaltyWaiveRequest.DoesNotExist:
+            return Response(
+                {"error": "Penalty waive request not found or you don't have permission."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        action = request.query_params.get("action")
+        if action not in ['approve', 'reject']:
+            return Response(
+                {"error": "Invalid action. Use 'approve' or 'reject'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if action == 'approve':
+            waive_request.penalty.status = 'waived'
+            waive_request.penalty.save()
+        else:  # reject
+            waive_request.penalty.status = 'applied'
+            waive_request.penalty.save()
+
+        serializer = PenaltyWaiveRequestSerializer(waive_request)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class EmployeePenaltyDetailAPIView(APIView):
     @extend_schema(tags=["Employee Penalties"])
     def get(self, request, pk):
         try:
             penalty = EmployeePenalty.objects.get(pk=pk)
         except EmployeePenalty.DoesNotExist:
-            return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = EmployeePenaltySerializer(penalty)
         return Response(serializer.data)
@@ -1169,7 +1226,7 @@ class EmployeePenaltyDetailAPIView(APIView):
         try:
             penalty = EmployeePenalty.objects.get(pk=pk)
         except EmployeePenalty.DoesNotExist:
-            return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
 
         penalty.approval_status = 'under_update'
         serializer = EmployeePenaltySerializer(penalty, data=request.data, partial=True)
@@ -1184,7 +1241,7 @@ class EmployeePenaltyDetailAPIView(APIView):
         try:
             penalty = EmployeePenalty.objects.get(pk=pk)
         except EmployeePenalty.DoesNotExist:
-            return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
 
         penalty.approval_status = 'under_deletion'
         penalty.delete()
