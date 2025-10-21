@@ -194,11 +194,11 @@ export default function AdminPage() {
 								{currentUser && currentUser.id === selectedInstitution?.institution_owner_id && (
 									<div className="">
 										<Link
-											href="/admin/settings?tab=ownership_transfer"
+											href="/admin/settings?tab=superuser_transfer"
 											className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
 										>
 											<Icon icon="hugeicons:folder-transfer" className="!w-4 !h-4" />
-											<span>Ownership Transfer</span>
+											<span>Super User Transfer</span>
 										</Link>
 									</div>
 								)}
