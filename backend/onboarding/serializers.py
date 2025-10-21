@@ -276,7 +276,7 @@ class OffboardingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'error': 'Termination type must belong to the user\'s institution.'
             })
-        if employee and employee.institution != institution:
+        if employee and employee.payroll_branch.institution != institution:
             raise serializers.ValidationError({
                 'error': 'Employee must belong to the user\'s institution.'
             })
