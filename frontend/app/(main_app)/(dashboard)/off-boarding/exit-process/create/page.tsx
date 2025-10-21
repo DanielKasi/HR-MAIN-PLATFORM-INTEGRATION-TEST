@@ -45,6 +45,7 @@ const ExitProcessCreate = () => {
 		null,
 	);
 	const [hasUserInteracted, setHasUserInteracted] = useState(false);
+	const [isInitialLoad, setIsInitialLoad] = useState(true);
 
 	// State for handover report
 	const [handoverReport, setHandoverReport] = useState<File | null>(null);
@@ -87,13 +88,17 @@ const ExitProcessCreate = () => {
 
 			setTerminationTypes(typesData);
 
-			if (typeId && !hasUserInteracted) {
+			// Only preselect if typeId is provided AND this is the initial load
+			if (typeId && isInitialLoad && !hasUserInteracted) {
 				const preselectedType = typesData.find((type) => type.id === Number(typeId));
 				if (preselectedType) {
+					console.log("Preselecting termination type from URL:", preselectedType.name);
 					setSelectedTerminationType(preselectedType);
 					setFormData((prev) => ({ ...prev, termination_type_id: preselectedType.id }));
 				}
 			}
+
+			setIsInitialLoad(false);
 		} catch (err) {
 			console.error("Error fetching termination types:", err);
 			showErrorToast({
@@ -155,6 +160,7 @@ const ExitProcessCreate = () => {
 	};
 
 	const handleTerminationTypeChange = (type: ITerminationType) => {
+		console.log("User selected termination type:", type.name);
 		setSelectedTerminationType(type);
 		setFormData((prev) => ({
 			...prev,
