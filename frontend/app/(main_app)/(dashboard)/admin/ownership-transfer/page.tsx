@@ -156,7 +156,7 @@ export default function InstitutionOwnershipTransferTab() {
 
 			await institutionAPI.transferOwnerShip({ transferData });
 
-			toast.success("Ownership transferred successfully!");
+			toast.success("Super User transferred successfully!");
 			// await fetchShopContext();
 			setSelectedNewOwner(null);
 			setPostTransferAction("");
@@ -166,7 +166,7 @@ export default function InstitutionOwnershipTransferTab() {
 			// logout user after transfer
 			dispatch(logoutStart());
 		} catch (error: any) {
-			showErrorToast({ error, defaultMessage: "Failed to transfer ownership" });
+			showErrorToast({ error, defaultMessage: "Failed to transfer superuser" });
 			handleApiError(error);
 		} finally {
 			setIsTransferring(false);
@@ -195,7 +195,7 @@ export default function InstitutionOwnershipTransferTab() {
 				<div className="flex items-center justify-center min-h-[400px]">
 					<div className="text-center space-y-4">
 						<Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin mx-auto" />
-						<p className="text-muted-foreground">Loading ownership transfer page...</p>
+						<p className="text-muted-foreground">Loading superuser transfer page...</p>
 					</div>
 				</div>
 			</div>
@@ -223,10 +223,10 @@ export default function InstitutionOwnershipTransferTab() {
 				{/* Header */}
 				<div className="space-y-2">
 					<div className="flex items-center space-x-3">
-						<h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transfer Ownership</h1>
+						<h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transfer Superuser</h1>
 					</div>
 					<p className="text-base sm:text-lg text-muted-foreground sm:px-0">
-						Transfer ownership of your institution to another team member. Choose what happens to
+						Transfer superuser of your institution to another team member. Choose what happens to
 						your account after the transfer.
 					</p>
 				</div>
@@ -287,7 +287,7 @@ export default function InstitutionOwnershipTransferTab() {
 									<span>Transfer Details</span>
 								</CardTitle>
 								<CardDescription>
-									Complete the form below to transfer ownership. All fields are required.
+									Complete the form below to transfer superuser. All fields are required.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4 sm:space-y-6">
@@ -413,7 +413,7 @@ export default function InstitutionOwnershipTransferTab() {
 								<div className="space-y-3">
 									<Label className="text-base font-semibold">Step 3: Reason for Transfer</Label>
 									<Textarea
-										placeholder="Please provide a detailed reason for the ownership transfer..."
+										placeholder="Please provide a detailed reason for the superuser transfer..."
 										value={transferReason}
 										onChange={(e) => setTransferReason(e.target.value)}
 										rows={4}
@@ -458,7 +458,7 @@ export default function InstitutionOwnershipTransferTab() {
 											) : (
 												<>
 													<ArrowRight className="h-5 w-5 mr-2" />
-													Transfer Ownership
+													Transfer Superuser
 												</>
 											)}
 										</Button>
@@ -467,11 +467,11 @@ export default function InstitutionOwnershipTransferTab() {
 										<DialogHeader>
 											<DialogTitle className="flex items-center space-x-2">
 												<AlertTriangle className="h-5 w-5 text-red-500" />
-												<span>Confirm Ownership Transfer</span>
+												<span>Confirm Superuser Transfer</span>
 											</DialogTitle>
 											<DialogDescription className="text-left space-y-2">
 												<p>
-													You are about to transfer ownership to{" "}
+													You are about to transfer superuser to{" "}
 													<strong>{newOwner?.fullname || ""}</strong>.
 												</p>
 												{postTransferAction === "new_role" ? (
@@ -539,7 +539,7 @@ export default function InstitutionOwnershipTransferTab() {
 							<CardHeader>
 								<CardTitle className="flex items-center space-x-2">
 									<History className="h-5 w-5" />
-									<span>Ownership History</span>
+									<span>Superuser History</span>
 								</CardTitle>
 								<CardDescription>Previous ownership transfers for this institution</CardDescription>
 							</CardHeader>
