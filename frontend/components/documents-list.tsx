@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
-import { IKYCDocument } from "@/types";
+import { IKYCDocument } from "@/types/other";
 import { EditDocumentModal } from "@/components/edit-document-modal";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { removeTrailingSlash } from "@/lib/helpers";
+import { MAIN_DOMAIN_URL } from "@/constants";
 
 interface DocumentsListProps {
 	className?: string;
@@ -39,7 +41,7 @@ export function DocumentsList({ className, refreshTrigger, onDocumentChange }: D
 
 	// Helper function to build full document URL
 	const buildDocumentUrl = (documentFile: string): string => {
-		let baseURL = process.env.NEXT_PUBLIC_API_URL;
+		let baseURL = removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`);
 
 		// Remove 'api' from the URL if it exists
 		if (baseURL && baseURL.endsWith("/api")) {

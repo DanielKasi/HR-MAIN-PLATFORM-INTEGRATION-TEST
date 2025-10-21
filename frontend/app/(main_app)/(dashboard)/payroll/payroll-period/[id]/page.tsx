@@ -140,7 +140,7 @@ export default function PayrollPeriodDetails() {
 				searchParams.append("search", search);
 			}
 
-			const response = await bankAccountsAPI.getAll(`?${searchParams.toString()}`);
+			const response = await bankAccountsAPI.getAll({ search, page, page_size: 20 });
 
 			if (reset) {
 				setBankAccounts(response.results);

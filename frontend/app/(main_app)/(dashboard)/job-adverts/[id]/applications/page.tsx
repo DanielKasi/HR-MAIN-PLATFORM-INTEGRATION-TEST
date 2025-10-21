@@ -103,6 +103,7 @@ import { createInterviewStage, getInterviewStages, createInterview } from "@/lib
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
+import { removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
 
 const statusColors = {
 	new: "bg-blue-100 text-blue-800",
@@ -1593,7 +1594,7 @@ export default function ApplicationsPage() {
 												<div className="py-1 flex flex-col gap-2 items-start">
 													<Button variant="link" size="sm" className="h-auto p-0" asChild>
 														<a
-															href={`${process.env.NEXT_PUBLIC_BASE_URL}${application.resume}`}
+															href={`${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || "")}/${removeLeadingSlash(application.resume)}`}
 															target="_blank"
 															rel="noopener noreferrer"
 														>
@@ -1603,7 +1604,7 @@ export default function ApplicationsPage() {
 													{application.cover_letter && (
 														<Button variant="link" size="sm" className="h-auto p-0" asChild>
 															<a
-																href={`${process.env.NEXT_PUBLIC_BASE_URL}${application.cover_letter}`}
+																href={`${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || "")}/${removeLeadingSlash(application.cover_letter)}`}
 																target="_blank"
 																rel="noopener noreferrer"
 															>

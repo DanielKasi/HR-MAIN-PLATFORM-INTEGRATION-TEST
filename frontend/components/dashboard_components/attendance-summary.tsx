@@ -369,6 +369,7 @@ export function AttendanceSummary() {
 						employees={attendanceData.onTime.employees}
 						timeColor="text-green-600"
 						className=""
+						totalLabel="Total On-Time"
 					/>
 
 					{/* Late Check-In */}
@@ -384,6 +385,7 @@ export function AttendanceSummary() {
 						employees={attendanceData.late.employees}
 						timeColor="text-blue-600"
 						className="!pl-3"
+						totalLabel="Total Late"
 					/>
 
 					{/* Absent */}
@@ -399,6 +401,7 @@ export function AttendanceSummary() {
 						employees={attendanceData.absent.employees}
 						isAbsent
 						className="!pl-3"
+						totalLabel="Total Absent"
 					/>
 				</div>
 			</div>
@@ -425,6 +428,7 @@ interface AttendanceColumnProps {
 	}>;
 	timeColor?: string;
 	isAbsent?: boolean;
+	totalLabel: string;
 	className?: string;
 }
 
@@ -441,6 +445,7 @@ function AttendanceColumn({
 	timeColor,
 	isAbsent = false,
 	className = "",
+	totalLabel = "",
 }: AttendanceColumnProps) {
 	const [selectedDepartment, setSelectedDepartment] = useState("all");
 
@@ -467,9 +472,7 @@ function AttendanceColumn({
 						<span>Male</span>
 						<span className="font-semibold text-foreground">{male}</span>
 					</div>
-					<div className="text-sm text-muted-foreground">
-						Total {isAbsent ? "On-Time" : "On-Time"}
-					</div>
+					<div className="text-sm text-muted-foreground">{totalLabel}</div>
 				</div>
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -533,7 +536,6 @@ function AttendanceColumn({
 							<div className="flex items-center gap-3 flex-shrink-0">
 								{!isAbsent && (
 									<>
-										<span className="text-xs text-muted-foreground">Apr 12, 2025</span>
 										<span className={`text-sm font-semibold ${timeColor}`}>{employee.time}</span>
 									</>
 								)}

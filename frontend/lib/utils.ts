@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { apiPost } from "@/lib/apiRequest";
 
 import apiRequest from "./apiRequest";
-import { forceUrlToHttps } from "./helpers";
+import { forceUrlToHttps, removeTrailingSlash } from "./helpers";
 
 import {
 	IDepartment,
@@ -1280,7 +1280,9 @@ export const downloadEmployeesTemplate = async ({
 	accessToken: string;
 }): Promise<void> => {
 	try {
-		const baseURL = process.env.NEXT_PUBLIC_API_URL;
+		const baseURL = removeTrailingSlash(
+			process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`,
+		);
 
 		// Create a direct fetch request for file download
 		const response = await fetch(`${baseURL}/employee/template/`, {
@@ -1343,7 +1345,7 @@ export const downloadPayrollPasslipsReport = async ({
 	};
 
 	const response = await fetch(
-		`${process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`}/payroll/export-passlips-report2excel/`,
+		`${removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`)}/payroll/export-passlips-report2excel/`,
 		{
 			method: "POST",
 			headers: {
@@ -1380,7 +1382,7 @@ export const downloadSinglePayslip = async ({
 	accessToken: string;
 	payslipId: string | number;
 }): Promise<void> => {
-	const url = `${process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`}/payroll/payslips/${payslipId}/download/`;
+	const url = `${removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`)}/payroll/payslips/${payslipId}/download/`;
 
 	const response = await fetch(url, {
 		method: "GET",
@@ -1491,7 +1493,9 @@ export const downloadPayrollDocument = async ({
 	payingAccountId: string | number;
 }): Promise<void> => {
 	try {
-		const baseURL = process.env.NEXT_PUBLIC_API_URL;
+		const baseURL = removeTrailingSlash(
+			process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`,
+		);
 
 		// Create a direct fetch request for file download
 		const response = await fetch(
@@ -5666,9 +5670,9 @@ export const bankTypesAPI = {
 };
 
 export const bankAccountsAPI = {
-	getAll: async (searchParams?: { search?: string; page?: number }) => {
+	getAll: async (searchParams?: { search?: string; page?: number; page_size?: number }) => {
 		const urlParams = new URLSearchParams();
-		Object.entries(searchParams || { page: 1 }).forEach(([key, value]) => {
+		Object.entries(searchParams || { page: 1, page_size: 20 }).forEach(([key, value]) => {
 			if (value) {
 				urlParams.append(key, value.toString());
 			}

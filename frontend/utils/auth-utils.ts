@@ -3,7 +3,7 @@ import axios from "axios";
 import { Permission, IUser } from "@/types/user.types";
 import { IUserInstitution } from "@/types/other";
 import apiRequest from "@/lib/apiRequest";
-import { getInstitutionById } from "@/lib/helpers";
+import { getInstitutionById, removeTrailingSlash } from "@/lib/helpers";
 import { store } from "@/store";
 import { clearTemporaryPermissions, setTemporaryPermissions } from "@/store/auth/actions";
 import { MAIN_DOMAIN_URL } from "@/constants";
@@ -69,7 +69,7 @@ export const fetchRemoteInstitutionById = async (
 export const AUTH_API = {
 	refreshTokens: async ({ refreshToken }: { refreshToken: string }) => {
 		const response = await axios.post(
-			`${process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`}/user/token/refresh/`,
+			`${removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`)}/user/token/refresh/`,
 			{ refresh: refreshToken },
 			{
 				headers: {

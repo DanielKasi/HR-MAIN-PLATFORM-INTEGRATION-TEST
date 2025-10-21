@@ -222,7 +222,7 @@ export default function Dashboard() {
 						/>
 					)}
 					<BarHChart
-						title={"Payroll by Department"}
+						title={"Salary By Department"}
 						data={{
 							"This Year": data?.payroll_by_department || [],
 						}}

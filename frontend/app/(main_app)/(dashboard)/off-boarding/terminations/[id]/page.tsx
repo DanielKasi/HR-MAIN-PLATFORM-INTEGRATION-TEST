@@ -14,6 +14,7 @@ import { MAIN_DOMAIN_URL } from "@/constants";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 import FixedLoader from "@/components/fixed-loader";
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
+import { removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
 
 const STATUS_STYLES = {
 	submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -98,8 +99,9 @@ export default function TerminationInitiationDetailsPage() {
 						variant="outline"
 						onClick={() =>
 							window.open(
-								process.env.NEXT_PUBLIC_BASE_URL ||
-									`${MAIN_DOMAIN_URL}` + termination.termination_letter!,
+								`${removeTrailingSlash(
+									process.env.NEXT_PUBLIC_BASE_URL || MAIN_DOMAIN_URL,
+								)}/${removeLeadingSlash(termination.termination_letter!)}`,
 								"_blank",
 							)
 						}
@@ -124,7 +126,9 @@ export default function TerminationInitiationDetailsPage() {
 								</div>
 								<div>
 									<dt className="text-sm font-medium text-muted-foreground">Initiated By</dt>
-									<dd className="text-base">{termination.separation.initiated_by.user.fullname}</dd>
+									<dd className="text-base">
+										{termination.separation.initiated_by?.user.fullname || ""}
+									</dd>
 								</div>
 							</dl>
 						</CardContent>

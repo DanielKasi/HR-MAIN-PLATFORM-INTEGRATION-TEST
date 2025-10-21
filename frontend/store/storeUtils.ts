@@ -45,14 +45,19 @@ export const clearStateIfStructureChanged = () => {
 	}
 };
 
-// Utility to parse JWT lifetime
+/**
+ *
+ * @param token
+ * @returns The parsed lifetime from a JWT token (In milliseconds)
+ */
 export function parseJwtLifetime(token: string): number {
+	let lifetimeSeconds = 30;
 	try {
 		const payload = JSON.parse(atob(token.split(".")[1]));
-		const lifetimeMinutes = payload.lifetime || 30;
-
-		return lifetimeMinutes * 60 * 1000;
+		lifetimeSeconds = payload.lifetime || 30;
+		console.log("\n\n Lifetime seconds : ", lifetimeSeconds);
+		return lifetimeSeconds * 60 * 1000;
 	} catch {
-		return 30 * 60 * 1000;
+		return lifetimeSeconds * 60 * 1000;
 	}
 }

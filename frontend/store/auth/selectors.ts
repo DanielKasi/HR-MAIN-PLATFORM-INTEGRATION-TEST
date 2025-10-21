@@ -71,3 +71,8 @@ export const selectRelatedEmployee = createSelector(
 	[authSlice],
 	(slice) => slice.relatedEmployee.value,
 );
+
+export const selectLastRefreshTimeInMilliseconds = createSelector(
+	[authSlice],
+	(slice) => slice.lastRefreshTimeMilliseconds,
+);

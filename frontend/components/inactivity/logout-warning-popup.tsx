@@ -6,17 +6,17 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 
 import { selectLogoutWarningVisible } from "@/store/auth/selectors";
-import { cancelLogout, confirmLogout } from "@/store/auth/actions";
+import { cancelLogout, confirmLogout, userActivityDetected } from "@/store/auth/actions";
 
 const LogoutWarningPopup: React.FC = () => {
-	const [timer, setTimer] = useState<number>(60000);
+	const [timer, setTimer] = useState<number>(30000);
 	const visible = useSelector(selectLogoutWarningVisible);
 	const timerRef = useRef<NodeJS.Timeout | null>(null);
 	const dispatch = useDispatch();
 
 	useEffect(() => {
-		if (timer < 60000 && timerRef.current) {
-			setTimer(60000);
+		if (timer < 30000 && timerRef.current) {
+			setTimer(30000);
 		}
 	}, [timerRef.current]);
 
@@ -39,7 +39,7 @@ const LogoutWarningPopup: React.FC = () => {
 	if (!visible) return null;
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[250] pointer-events-none">
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[250]">
 			<div className="bg-white p-6 rounded-lg shadow-lg">
 				<p className="mb-4">
 					You will be logged out in {timer / 1000} seconds due to inactivity. Stay logged in?
@@ -48,7 +48,6 @@ const LogoutWarningPopup: React.FC = () => {
 					<Button
 						className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 						onClick={(e) => {
-							e.stopPropagation();
 							dispatch(cancelLogout());
 						}}
 					>
@@ -57,7 +56,6 @@ const LogoutWarningPopup: React.FC = () => {
 					<Button
 						className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
 						onClick={(e) => {
-							e.stopPropagation();
 							dispatch(confirmLogout());
 						}}
 					>

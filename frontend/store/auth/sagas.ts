@@ -45,9 +45,10 @@ import {
 } from "./actions";
 import {
 	selectInactivityTimeout,
+	selectLastRefreshTimeInMilliseconds,
+	selectLogoutWarningVisible,
 	selectRefreshInProgress,
 	selectRefreshToken,
-	selectRelatedEmployeeLoading,
 	selectSelectedInstitution,
 	selectUser,
 } from "./selectors";
@@ -85,7 +86,7 @@ function* login({
 		yield put(setRefreshToken(loginResponse.tokens.refresh));
 
 		const lifetime: number = parseJwtLifetime(loginResponse.tokens.access);
-
+		console.log("\n\n New lifetime on login : ", lifetime);
 		yield put(setInactivityTimeout(lifetime));
 		yield put(setCurrentUser(loginResponse.user));
 		yield put(userActivityDetected());
@@ -187,50 +188,102 @@ function* resetInactivityOnAccessRefreshed() {
 
 function* inactivityWatcher() {
 	let timeoutTask: Task | null = null; // Track the timeout task
+	console.log("\n\n Inactivity watcher Hit !!!");
+
+	// Handle persisted logout warning on reload
+	const logoutWarningVisible: boolean = yield select(selectLogoutWarningVisible);
+	if (logoutWarningVisible) {
+		const lastRefresh: number = yield select(selectLastRefreshTimeInMilliseconds);
+		const duration: number = yield select(selectInactivityTimeout);
+		let remaining = lastRefresh + duration - Date.now();
+
+		if (remaining <= 0) {
+			yield put(logoutSuccess());
+		} else {
+			timeoutTask = yield fork(function* (): Generator<Effect, void, unknown> {
+				const raceResult = yield race({
+					timeout: delay(remaining),
+					cancel: take(AUTH_ACTION_TYPES.CANCEL_LOGOUT),
+					confirm: take(AUTH_ACTION_TYPES.CONFIRM_LOGOUT),
+					activity: take(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED),
+				});
+				const { timeout, cancel, confirm, activity } = raceResult as InactivityRaceResult;
+				console.log("\n\n Under inactivity logout ...");
+				if (timeout) {
+					const refreshInProgress = yield select(selectRefreshInProgress);
+					if (!refreshInProgress as unknown as boolean) {
+						yield put(logoutSuccess());
+					}
+				} else if (confirm) {
+					yield put(hideLogoutWarning());
+					yield put(logoutStart());
+				} else if (cancel) {
+					console.log("\n\n Cancel logout dispatched ...");
+					yield put(hideLogoutWarning());
+					yield put(refreshAccessTokenStart());
+				} else if (activity) {
+					yield put(hideLogoutWarning());
+					yield put(refreshAccessTokenStart()); // Refresh on activity during warning
+				}
+			});
+		}
+	}
 
 	while (true) {
+		// console.log("\n\n Got into the condition ...")
 		const user: IUser | null = yield select(selectUser);
 
 		if (!user) {
 			yield take(AUTH_ACTION_TYPES.SET_USER); // Wait for login
 			continue;
 		}
+
 		yield take(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED);
 		if (timeoutTask) {
+			// console.log("\n\n Found timeout task and cancelled...")
 			yield cancel(timeoutTask); // Cancel previous timeout
 		}
-		const inactivityTimeout: number = yield select(selectInactivityTimeout);
 
-		if (inactivityTimeout <= 60000) continue; // Skip invalid timeouts
+		const lastRefresh: number = yield select(selectLastRefreshTimeInMilliseconds);
+		const duration: number = yield select(selectInactivityTimeout);
+		let remaining = lastRefresh + duration - Date.now();
+		// console.log("\n\n The remaining time in the saga : ", remaining)
+
+		if (remaining <= 0) {
+			yield put(logoutSuccess());
+			continue;
+		}
+
+		const warningDelay = Math.max(0, remaining - 30000);
+		const raceTimeout = remaining - warningDelay;
+
 		timeoutTask = yield fork(function* (): Generator<Effect, void, unknown> {
-			yield delay(inactivityTimeout - 60000); // Wait until 60s before expiry
+			yield delay(warningDelay); // Wait until warning time
 			yield put(showLogoutWarning());
 
 			const raceResult = yield race({
-				timeout: delay(60000), // 60s warning period
+				timeout: delay(raceTimeout), // Adjusted timeout to match expiration
 				cancel: take(AUTH_ACTION_TYPES.CANCEL_LOGOUT),
 				confirm: take(AUTH_ACTION_TYPES.CONFIRM_LOGOUT),
 				activity: take(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED),
 			});
 			const { timeout, cancel, confirm, activity } = raceResult as InactivityRaceResult;
-
+			console.log("\n\n Under inactivity logout ...");
 			if (timeout) {
-				// console.log("\n\n Timeout set as : ", timeout)
 				const refreshInProgress = yield select(selectRefreshInProgress);
-
 				if (!refreshInProgress as unknown as boolean) {
 					yield put(logoutSuccess());
 				}
 			} else if (confirm) {
-				// console.log("\n\n Logout is confirmed from saga ...")
 				yield put(hideLogoutWarning());
 				yield put(logoutStart());
 			} else if (cancel) {
+				console.log("\n\n Cancel logout dispatched ...");
 				yield put(hideLogoutWarning());
 				yield put(refreshAccessTokenStart());
 			} else if (activity) {
-				// console.log("\n\n Activity detected from saga ...")
 				yield put(hideLogoutWarning());
+				yield put(refreshAccessTokenStart()); // Refresh on activity during warning
 			}
 		});
 	}
@@ -284,7 +337,7 @@ export function* authSaga() {
 		fork(watchLogout),
 		fork(watchFetchRemoteUser),
 		fork(watchUpToDateInstitutionFetch),
-		// fork(inactivityWatcher),
+		fork(inactivityWatcher),
 		fork(watchUserRelatedEmployeeFetch),
 	]);
 }
