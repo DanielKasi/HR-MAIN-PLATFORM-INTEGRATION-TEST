@@ -542,7 +542,7 @@ class DeviceCallbackView(APIView):
 
         try:
             if event == "log":
-                print(f"payload: {payload}")
+                # print(f"payload: {payload}")
                 if not payload.get("records"):
                     return Response(
                         {"detail": "Missing records for log event."},
