@@ -13,77 +13,41 @@ import {
 	CartesianGrid,
 	ResponsiveContainer,
 } from "recharts";
-import { Users, Clock, CheckCircle, AlertCircle, FileText, User } from "lucide-react";
+import { Users, Clock, CheckCircle, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { getOffboardingDashboard, getCurrentUser } from "@/lib/utils";
+import { getOffboardingDashboard } from "@/lib/utils";
 import { ReportDialog } from "../dialogs/reports-dialog";
-import { Badge } from "@/components/ui/badge";
 
-// Status colors for badges
 const statusColors = {
-	planned: "bg-blue-100 text-blue-800 border-blue-200",
-	completed: "bg-green-100 text-green-800 border-green-200",
-	cancelled: "bg-red-100 text-red-800 border-red-200",
+	Completed: "bg-green-100 text-green-800 border-green-200",
+	Planned: "bg-blue-100 text-blue-800 border-blue-200",
+	Cancelled: "bg-red-100 text-red-800 border-red-200",
 };
-
-// Category colors for consistent styling
-const categoryColors = {
-	resignation: "hsl(var(--chart-1))",
-	termination: "hsl(var(--chart-2))",
-	retirement: "hsl(var(--chart-3))",
-	layoff: "hsl(var(--chart-4))",
-	other: "hsl(var(--chart-5))",
-};
-
-// User interface
-interface CurrentUser {
-	id: string;
-	institution_id?: string;
-	institution_name?: string;
-	email: string;
-	full_name?: string;
-	fullname?: string;
-	roles?: Array<{ institution: number | string }>;
-}
 
 export default function OffboardingDashboard() {
 	const [data, setData] = useState<OffboardingData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
-	const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
 	useEffect(() => {
-		async function fetchUserAndData() {
+		async function fetchData() {
 			try {
-				setLoading(true);
-
-				// Get current user
-				const userData = await getCurrentUser();
-
-				// Set current user with full name from either full_name or fullname
-				const userWithFullName = {
-					...userData,
-					full_name: userData.full_name || userData.fullname || "User",
-				};
-				setCurrentUser(userWithFullName as CurrentUser);
-
-				// Fetch dashboard data - backend returns data for authenticated user's institution
 				const dashboardData = await getOffboardingDashboard();
+
 				setData(dashboardData);
 			} catch (err) {
-				console.error("Error fetching data:", err);
 				setError(err instanceof Error ? err.message : "Failed to fetch data");
 			} finally {
 				setLoading(false);
 			}
 		}
 
-		fetchUserAndData();
+		fetchData();
 	}, []);
 
 	if (loading) {
@@ -100,9 +64,8 @@ export default function OffboardingDashboard() {
 	if (error) {
 		return (
 			<div className="min-h-screen bg-background p-6 flex items-center justify-center">
-				<div className="text-center max-w-md">
-					<AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-					<p className="text-red-500 mb-4">{error}</p>
+				<div className="text-center">
+					<p className="text-red-500 mb-4">Error: {error}</p>
 					<Button onClick={() => window.location.reload()}>Retry</Button>
 				</div>
 			</div>
@@ -117,65 +80,23 @@ export default function OffboardingDashboard() {
 		);
 	}
 
-	// Prepare chart data for separation status
 	const separationStatusData = [
 		{ name: "Planned", value: data.separation_counts.planned, fill: "hsl(var(--chart-1))" },
 		{ name: "Completed", value: data.separation_counts.completed, fill: "hsl(var(--chart-2))" },
 		{ name: "Cancelled", value: data.separation_counts.cancelled, fill: "hsl(var(--chart-3))" },
 	];
 
-	// Prepare category data - handle the dynamic properties from API
-	const categoryData = [
-		{
-			category: "Resignation",
-			count: data.category_counts.resignation || data.category_counts.additionalProp1 || 0,
-			fill: categoryColors.resignation,
-		},
-		{
-			category: "Termination",
-			count: data.category_counts.termination || data.category_counts.additionalProp2 || 0,
-			fill: categoryColors.termination,
-		},
-		{
-			category: "Retirement",
-			count: data.category_counts.retirement || data.category_counts.additionalProp3 || 0,
-			fill: categoryColors.retirement,
-		},
-		{ category: "Layoff", count: data.category_counts.layoff || 0, fill: categoryColors.layoff },
-		{ category: "Other", count: data.category_counts.other || 0, fill: categoryColors.other },
-	].filter((item) => item.count > 0);
+	const categoryData = Object.entries(data.category_counts).map(([category, count]) => ({
+		category: category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, " "),
+		count,
+	}));
 
-	// Prepare pending requests data - use the correct property names from API
-	const pendingRequestsData = [
-		{
-			type: "Resignations",
-			count: data.pending_requests.resignations || 0,
-			fill: "hsl(var(--chart-1))",
-		},
-		{
-			type: "Terminations",
-			count: data.pending_requests.terminations || 0,
-			fill: "hsl(var(--chart-2))",
-		},
-		{
-			type: "Retirements",
-			count: data.pending_requests.retirements || 0,
-			fill: "hsl(var(--chart-3))",
-		},
-	].filter((item) => item.count > 0);
-
-	// Format date for display
-	const formatDate = (dateString: string) => {
-		try {
-			return new Date(dateString).toLocaleDateString("en-US", {
-				year: "numeric",
-				month: "short",
-				day: "numeric",
-			});
-		} catch {
-			return dateString; // Return original string if date parsing fails
-		}
-	};
+	const pendingRequestsData = Object.entries(data.pending_requests)
+		.filter(([key]) => key !== "total")
+		.map(([type, count]) => ({
+			type: type.charAt(0).toUpperCase() + type.slice(1),
+			count,
+		}));
 
 	return (
 		<div className="min-h-screen bg-background p-6">
@@ -188,24 +109,9 @@ export default function OffboardingDashboard() {
 						</h1>
 						<p className="text-muted-foreground mt-1">
 							Track employee separations and manage offboarding processes
-							{currentUser?.institution_name && (
-								<span className="text-sm ml-2 text-blue-600">• {currentUser.institution_name}</span>
-							)}
-							{data.date_range && (
-								<span className="text-sm ml-2 text-muted-foreground">
-									({formatDate(data.date_range.start_date)} - {formatDate(data.date_range.end_date)}
-									)
-								</span>
-							)}
 						</p>
 					</div>
-					<div className="flex items-center gap-4">
-						{currentUser && (
-							<div className="flex items-center gap-2 text-sm text-muted-foreground">
-								<User className="h-4 w-4" />
-								<span>{currentUser.full_name || currentUser.fullname || currentUser.email}</span>
-							</div>
-						)}
+					<div className="flex items-center justify-end gap-8">
 						<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
 							Generate Reports
 						</Button>
@@ -213,7 +119,7 @@ export default function OffboardingDashboard() {
 				</div>
 
 				{/* Key Metrics Cards */}
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 					<Card className="bg-card border-border">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium text-card-foreground">
@@ -225,7 +131,7 @@ export default function OffboardingDashboard() {
 							<div className="text-2xl font-bold text-card-foreground">
 								{data.separation_counts.total}
 							</div>
-							<p className="text-xs text-muted-foreground">All separations</p>
+							<p className="text-xs text-muted-foreground">All time separations</p>
 						</CardContent>
 					</Card>
 
@@ -253,43 +159,31 @@ export default function OffboardingDashboard() {
 							<div className="text-2xl font-bold text-card-foreground">
 								{data.separation_counts.completed}
 							</div>
-							<p className="text-xs text-muted-foreground">Processed</p>
+							<p className="text-xs text-muted-foreground">Successfully processed</p>
 						</CardContent>
 					</Card>
 
 					<Card className="bg-card border-border">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium text-card-foreground">Active</CardTitle>
-							<AlertCircle className="h-4 w-4 text-muted-foreground" />
+							<CardTitle className="text-sm font-medium text-card-foreground">Planned</CardTitle>
+							<Calendar className="h-4 w-4 text-muted-foreground" />
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold text-card-foreground">
 								{data.separation_counts.planned}
 							</div>
-							<p className="text-xs text-muted-foreground">In progress</p>
-						</CardContent>
-					</Card>
-
-					<Card className="bg-card border-border">
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium text-card-foreground">Cancelled</CardTitle>
-							<FileText className="h-4 w-4 text-muted-foreground" />
-						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-card-foreground">
-								{data.separation_counts.cancelled}
-							</div>
-							<p className="text-xs text-muted-foreground">Cancelled separations</p>
+							<p className="text-xs text-muted-foreground">Future separations</p>
 						</CardContent>
 					</Card>
 				</div>
 
 				{/* Charts Section */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{/* Separation Status Distribution */}
 					<Card className="bg-card border-border">
 						<CardHeader>
-							<CardTitle className="text-card-foreground">Separation Status</CardTitle>
-							<CardDescription>Current status of all separations</CardDescription>
+							<CardTitle className="text-card-foreground">Separation Status Distribution</CardTitle>
+							<CardDescription>Breakdown of separation statuses</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<ChartContainer
@@ -323,6 +217,7 @@ export default function OffboardingDashboard() {
 						</CardContent>
 					</Card>
 
+					{/* Category Breakdown */}
 					<Card className="bg-card border-border">
 						<CardHeader>
 							<CardTitle className="text-card-foreground">Separation Categories</CardTitle>
@@ -350,104 +245,30 @@ export default function OffboardingDashboard() {
 				</div>
 
 				{/* Pending Requests Chart */}
-				{pendingRequestsData.length > 0 && (
-					<Card className="bg-card border-border">
-						<CardHeader>
-							<CardTitle className="text-card-foreground">Pending Requests by Type</CardTitle>
-							<CardDescription>Breakdown of requests awaiting approval</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<ChartContainer
-								config={{
-									count: { label: "Count", color: "hsl(var(--chart-1))" },
-								}}
-								className="h-[250px]"
-							>
-								<ResponsiveContainer width="100%" height="100%">
-									<BarChart data={pendingRequestsData} layout="horizontal">
-										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis type="number" />
-										<YAxis dataKey="type" type="category" width={100} />
-										<ChartTooltip content={<ChartTooltipContent />} />
-										<Bar dataKey="count" fill="hsl(var(--chart-1))" />
-									</BarChart>
-								</ResponsiveContainer>
-							</ChartContainer>
-						</CardContent>
-					</Card>
-				)}
-
-				{/* Recent Separations Table */}
-				{data.recent_separations.length > 0 &&
-					data.recent_separations.some((sep) => sep.employee_name !== "string") && (
-						<Card className="bg-card border-border">
-							<CardHeader>
-								<CardTitle className="text-card-foreground">Recent Separations</CardTitle>
-								<CardDescription>Latest separation activities</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-4">
-									{data.recent_separations
-										.filter((separation) => separation.employee_name !== "string")
-										.map((separation) => (
-											<div
-												key={separation.id}
-												className="flex items-center justify-between p-4 border rounded-lg"
-											>
-												<div className="flex-1">
-													<div className="flex items-center gap-4">
-														<div>
-															<p className="font-medium text-foreground">
-																{separation.employee_name}
-															</p>
-															<p className="text-sm text-muted-foreground">
-																{separation.separation_type} • {separation.category} •{" "}
-																{formatDate(separation.effective_date)}
-															</p>
-														</div>
-													</div>
-													{separation.additional_notes &&
-														separation.additional_notes !== "string" && (
-															<p className="text-sm text-muted-foreground mt-1">
-																{separation.additional_notes}
-															</p>
-														)}
-												</div>
-												<div className="flex items-center gap-4">
-													<Badge
-														className={
-															statusColors[
-																separation.separation_status as keyof typeof statusColors
-															] || "bg-gray-100 text-gray-800 border-gray-200"
-														}
-													>
-														{separation.separation_status.charAt(0).toUpperCase() +
-															separation.separation_status.slice(1)}
-													</Badge>
-												</div>
-											</div>
-										))}
-								</div>
-							</CardContent>
-						</Card>
-					)}
-
-				{/* Empty State for Recent Separations */}
-				{data.recent_separations.length === 0 ||
-					(data.recent_separations.every((sep) => sep.employee_name === "string") && (
-						<Card className="bg-card border-border">
-							<CardHeader>
-								<CardTitle className="text-card-foreground">Recent Separations</CardTitle>
-								<CardDescription>No recent separation activities</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<div className="text-center py-8 text-muted-foreground">
-									<FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-									<p>No separation activities in the current period</p>
-								</div>
-							</CardContent>
-						</Card>
-					))}
+				<Card className="bg-card border-border">
+					<CardHeader>
+						<CardTitle className="text-card-foreground">Pending Requests by Type</CardTitle>
+						<CardDescription>Current requests awaiting approval</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<ChartContainer
+							config={{
+								count: { label: "Count", color: "hsl(var(--chart-1))" },
+							}}
+							className="h-[250px]"
+						>
+							<ResponsiveContainer width="100%" height="100%">
+								<BarChart data={pendingRequestsData} layout="horizontal">
+									<CartesianGrid strokeDasharray="3 3" />
+									<XAxis type="number" />
+									<YAxis dataKey="type" type="category" width={100} />
+									<ChartTooltip content={<ChartTooltipContent />} />
+									<Bar dataKey="count" fill="hsl(var(--chart-1))" />
+								</BarChart>
+							</ResponsiveContainer>
+						</ChartContainer>
+					</CardContent>
+				</Card>
 			</div>
 			<ReportDialog
 				isOpen={isReportsDialogOpen}
