@@ -57,58 +57,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { cn, OffboardingStagesAPI, SeparationPolicyTypesAPI } from "@/lib/utils";
-import { ISeparationType, IOffboardingStage,ISupportedStage  } from "@/types/types.utils";
+import { ISeparationType, IOffboardingStage, ISupportedStage } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
-
-export interface ISeparationType {
-	id: number;
-	institution: number;
-	name: string; // Changed from separation_type
-	description: string;
-	supported_stages: ISupportedStage[]; // Changed structure
-	is_active: boolean;
-	approval_status: "under_creation" | "approved" | "rejected";
-	requires_handover_report: boolean;
-	approvals?: string;
-	created_by?: number;
-	updated_by?: number;
-	created_at: string;
-	updated_at: string;
-	deleted_at?: string | null;
-}
-
-export interface ISupportedStage {
-	id: number;
-	stage: IOffboardingStage;
-	is_active: boolean;
-	can_be_skipped: boolean;
-	order: number;
-	created_by?: number;
-	updated_by?: number;
-	termination_type: number;
-	created_at: string;
-	updated_at: string;
-	deleted_at?: string | null;
-}
-
-export interface IOffboardingStage {
-	id: number;
-	institution: number;
-	name: string;
-	description: string;
-	is_active: boolean;
-	order: number;
-	approval_status: "under_creation" | "approved" | "rejected";
-	approvals?: string;
-	created_by?: number;
-	updated_by?: number;
-	created_at: string;
-	updated_at: string;
-	deleted_at?: string | null;
-}
 
 const formSchema = z.object({
 	separation_type: z.string().min(2, "Type name must be at least 2 characters"),

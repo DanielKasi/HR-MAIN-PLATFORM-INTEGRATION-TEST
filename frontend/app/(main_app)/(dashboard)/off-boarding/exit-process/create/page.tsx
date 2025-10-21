@@ -16,19 +16,23 @@ import { apiPost } from "@/lib/apiRequest";
 
 interface FormData {
 	employee_id: number | null;
+	termination_type_id: number | null;
 	last_working_day: string;
-	letter: File | null;
-	comments: string;
-	category: "resignation" | "termination";
+	reason: string;
+	status: "INITIATED";
+	initiator_type: "EMPLOYEE" | "MANAGER" | "HR";
+	is_paid_after_termination: boolean;
+	final_payment_date: string;
 	created_by: number | null;
 	updated_by: number | null;
-	initiated_by: number | null;
+	initiated_by_id: number | null;
 }
 
 const ExitProcessCreate = () => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const category = searchParams.get("category") as "resignation" | "termination" | null;
+	const typeId = searchParams.get("typeId");
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const currentUser = useSelector(selectUser);
 	const currentUserId = currentUser?.id || null;
@@ -37,14 +41,16 @@ const ExitProcessCreate = () => {
 
 	const [formData, setFormData] = useState<FormData>({
 		employee_id: null,
+		termination_type_id: typeId ? Number(typeId) : null,
 		last_working_day: new Date().toISOString().split("T")[0],
-		letter: null,
-		comments: "",
-		category:
-			category && ["resignation", "termination"].includes(category) ? category : "resignation",
+		reason: "",
+		status: "INITIATED",
+		initiator_type: "MANAGER", // Default to MANAGER for termination initiations
+		is_paid_after_termination: false,
+		final_payment_date: new Date().toISOString().split("T")[0],
 		created_by: currentUserId,
 		updated_by: currentUserId,
-		initiated_by: currentUserId,
+		initiated_by_id: currentUserId,
 	});
 	const [selectedEmployee, setSelectedEmployee] = useState<(string | number)[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -68,18 +74,16 @@ const ExitProcessCreate = () => {
 			...prev,
 			created_by: currentUserId,
 			updated_by: currentUserId,
-			initiated_by: currentUserId,
+			initiated_by_id: currentUserId,
 		}));
 	}, [currentUserId]);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-		const { name, value } = e.target;
-		setFormData((prev) => ({ ...prev, [name]: value }));
-	};
-
-	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0] || null;
-		setFormData((prev) => ({ ...prev, letter: file }));
+		const { name, value, type } = e.target;
+		setFormData((prev) => ({
+			...prev,
+			[name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+		}));
 	};
 
 	const handleEmployeeSelect = (value: (string | number)[]) => {
@@ -100,59 +104,50 @@ const ExitProcessCreate = () => {
 				});
 				return;
 			}
-			if (formData.category === "termination" && !formData.employee_id) {
+			if (!formData.employee_id) {
 				showErrorToast({ defaultMessage: "Please select an employee" });
 				return;
 			}
-			if (!formData.letter) {
-				showErrorToast({
-					defaultMessage: `Please upload a ${formData.category === "termination" ? "termination" : "resignation"} letter`,
-				});
+			if (!formData.termination_type_id) {
+				showErrorToast({ defaultMessage: "Termination type is required" });
+				return;
+			}
+			if (!formData.reason.trim()) {
+				showErrorToast({ defaultMessage: "Please provide a reason for termination" });
 				return;
 			}
 
 			try {
 				setLoading(true);
-				const formPayload = new FormData();
 
-				// Common fields for both termination and resignation
-				formPayload.append("last_working_day", formData.last_working_day);
-				formPayload.append("comments", formData.comments);
-				formPayload.append("approval_status", "under_creation");
-				formPayload.append("is_active", "true");
-				formPayload.append("created_by", currentUserId.toString());
-				formPayload.append("updated_by", currentUserId.toString());
+				const payload = {
+					employee_id: formData.employee_id,
+					termination_type_id: formData.termination_type_id,
+					initiated_by_id: formData.initiated_by_id,
+					last_working_day: formData.last_working_day,
+					reason: formData.reason,
+					status: formData.status,
+					initiator_type: formData.initiator_type,
+					is_paid_after_termination: formData.is_paid_after_termination,
+					final_payment_date: formData.final_payment_date,
+					created_by: formData.created_by,
+					updated_by: formData.updated_by,
+					is_active: true,
+					approval_status: "under_creation",
+				};
 
-				if (category === "termination") {
-					// Termination-specific fields
-					if (formData.employee_id) {
-						formPayload.append("employee_id", formData.employee_id.toString());
-					}
-					formPayload.append("initiation_status", "submitted");
-					if (formData.letter) {
-						formPayload.append("termination_letter", formData.letter);
-					}
-					await apiPost("/on-boarding/termination-initiations/", formPayload);
-				} else if (category === "resignation") {
-					// Resignation-specific fields
-					// NOTE: Do NOT send employee_id for resignations - backend uses logged-in user
-					formPayload.append("request_status", "submitted"); // Different field name!
-					if (formData.letter) {
-						formPayload.append("resignation_letter", formData.letter); // Different field name!
-					}
-					await apiPost("/on-boarding/resignation-requests/", formPayload);
-				}
+				await apiPost("/on-boarding/terminations/", payload);
 
-				showSuccessToast(`${formData.category} request submitted successfully`);
+				showSuccessToast("Termination process initiated successfully");
 				router.push("/off-boarding/exit-process");
 			} catch (error: any) {
 				console.error("Submission error:", error);
-				showErrorToast({ error, defaultMessage: "Failed to submit request" });
+				showErrorToast({ error, defaultMessage: "Failed to initiate termination process" });
 			} finally {
 				setLoading(false);
 			}
 		},
-		[formData, currentInstitution, currentUserId, router, category],
+		[formData, currentInstitution, currentUserId, router],
 	);
 
 	const handleBack = () => {
@@ -184,11 +179,10 @@ const ExitProcessCreate = () => {
 							</Button>
 							<div>
 								<CardTitle className="text-2xl sm:text-3xl font-semibold text-gray-800">
-									{formData.category === "termination" ? "Termination" : "Resignation"} Request
+									Create Termination Process
 								</CardTitle>
 								<p className="text-sm text-gray-600 mt-1">
-									Create a new {formData.category === "termination" ? "termination" : "resignation"}{" "}
-									process
+									Initiate a new employee termination process
 								</p>
 							</div>
 						</div>
@@ -208,34 +202,31 @@ const ExitProcessCreate = () => {
 						)}
 
 						<form onSubmit={handleSubmit} className="space-y-6">
-							{/* Employee Selection - ONLY for Termination */}
-							{formData.category === "termination" && (
-								<div className="space-y-2">
-									<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
-										Select Employee *
-									</Label>
-									<EmployeeSearchableSelect
-										id="employee_id"
-										value={selectedEmployee}
-										onValueChange={handleEmployeeSelect}
-										placeholder="Select an employee"
-										multiple={false}
-										className="w-full"
-									/>
-								</div>
-							)}
+							{/* Employee Selection */}
+							<div className="space-y-2">
+								<Label htmlFor="employee_id" className="text-sm font-medium text-gray-800">
+									Select Employee *
+								</Label>
+								<EmployeeSearchableSelect
+									id="employee_id"
+									value={selectedEmployee}
+									onValueChange={handleEmployeeSelect}
+									placeholder="Select an employee"
+									multiple={false}
+									className="w-full"
+								/>
+							</div>
 
-							{/* Info message for resignations */}
-							{formData.category === "resignation" && (
-								<div className="p-4 bg-primary-50 border border-primary rounded-md">
-									<p className="text-sm text-gray-500">
-										<strong>Note:</strong> You are submitting your own resignation. The system will
-										automatically link this request to your employee profile.
+							{/* Termination Type Info */}
+							{formData.termination_type_id && (
+								<div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+									<p className="text-sm text-blue-700">
+										<strong>Termination Type:</strong> ID {formData.termination_type_id}
 									</p>
 								</div>
 							)}
 
-							{/* Date and File Upload in Grid */}
+							{/* Date and Reason in Grid */}
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 								<div className="space-y-2">
 									<Label htmlFor="last_working_day" className="text-sm font-medium text-gray-800">
@@ -253,33 +244,71 @@ const ExitProcessCreate = () => {
 								</div>
 
 								<div className="space-y-2">
-									<Label htmlFor="letter" className="text-sm font-medium text-gray-800">
-										{formData.category === "termination" ? "Termination" : "Resignation"} Letter *
+									<Label htmlFor="final_payment_date" className="text-sm font-medium text-gray-800">
+										Final Payment Date
 									</Label>
 									<Input
-										type="file"
-										id="letter"
-										name="letter"
-										accept=".pdf,.doc,.docx"
-										onChange={handleFileChange}
+										type="date"
+										id="final_payment_date"
+										name="final_payment_date"
+										value={formData.final_payment_date}
+										onChange={handleInputChange}
 										className="w-full bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400"
-										required
 									/>
 								</div>
 							</div>
 
+							{/* Reason */}
 							<div className="space-y-2">
-								<Label htmlFor="comments" className="text-sm font-medium text-gray-800">
-									Comments
+								<Label htmlFor="reason" className="text-sm font-medium text-gray-800">
+									Reason for Termination *
 								</Label>
 								<Textarea
-									id="comments"
-									name="comments"
-									value={formData.comments}
+									id="reason"
+									name="reason"
+									value={formData.reason}
 									onChange={handleInputChange}
-									placeholder="Enter any comments or context for this process..."
+									placeholder="Enter the reason for termination..."
+									required
 									className="w-full min-h-[120px] resize-vertical bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400"
 								/>
+							</div>
+
+							{/* Payment Options */}
+							<div className="space-y-4">
+								<div className="flex items-center space-x-2">
+									<input
+										type="checkbox"
+										id="is_paid_after_termination"
+										name="is_paid_after_termination"
+										checked={formData.is_paid_after_termination}
+										onChange={handleInputChange}
+										className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded"
+									/>
+									<Label
+										htmlFor="is_paid_after_termination"
+										className="text-sm font-medium text-gray-800"
+									>
+										Employee will be paid after termination
+									</Label>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="initiator_type" className="text-sm font-medium text-gray-800">
+										Initiator Type
+									</Label>
+									<select
+										id="initiator_type"
+										name="initiator_type"
+										value={formData.initiator_type}
+										onChange={handleInputChange}
+										className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-gray-400 focus:ring-gray-400"
+									>
+										<option value="EMPLOYEE">Employee</option>
+										<option value="MANAGER">Manager</option>
+										<option value="HR">HR</option>
+									</select>
+								</div>
 							</div>
 
 							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-gray-200">
@@ -300,10 +329,10 @@ const ExitProcessCreate = () => {
 									{loading ? (
 										<div className="flex items-center gap-2">
 											<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-											Submitting...
+											Creating Termination...
 										</div>
 									) : (
-										`Submit ${formData.category === "termination" ? "Termination" : "Resignation"} Request`
+										"Create Termination Process"
 									)}
 								</Button>
 							</div>

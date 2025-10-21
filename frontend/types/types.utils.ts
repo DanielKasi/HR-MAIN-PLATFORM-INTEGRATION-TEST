@@ -1675,13 +1675,18 @@ export type SeparationCategory =
 export interface ISeparationType {
 	id: number;
 	institution: number;
-	separation_type: string;
+	name: string; // Changed from separation_type
 	description: string;
-	supported_stages: IOffboardingStage[];
-	category: SeparationCategory;
+	supported_stages: ISupportedStage[]; // Changed structure
 	is_active: boolean;
+	approval_status: "under_creation" | "approved" | "rejected";
+	requires_handover_report: boolean;
+	approvals?: string;
+	created_by?: number;
+	updated_by?: number;
 	created_at: string;
 	updated_at: string;
+	deleted_at?: string | null;
 }
 
 export interface ISeparationTypeFormData {
@@ -1704,6 +1709,20 @@ export interface IOffboardingStage {
 	approvals?: string;
 	created_by?: number;
 	updated_by?: number;
+	created_at: string;
+	updated_at: string;
+	deleted_at?: string | null;
+}
+
+export interface ISupportedStage {
+	id: number;
+	stage: IOffboardingStage;
+	is_active: boolean;
+	can_be_skipped: boolean;
+	order: number;
+	created_by?: number;
+	updated_by?: number;
+	termination_type: number;
 	created_at: string;
 	updated_at: string;
 	deleted_at?: string | null;
