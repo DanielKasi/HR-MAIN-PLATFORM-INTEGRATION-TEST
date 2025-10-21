@@ -559,13 +559,14 @@ class DeviceCallbackView(APIView):
                     record_reference = record.get("record_reference")
                     datetime_str = record.get("datetime")
 
-
                     created_already_log = EmployeeLogs.objects.filter(
                         record_reference=record_reference
                     ).exists()
 
                     if created_already_log:
-                        print(f"Log with reference {record_reference} already exists. Skipping.")
+                        print(
+                            f"Log with reference {record_reference} already exists. Skipping."
+                        )
                         continue
 
                     if not all(
@@ -720,8 +721,19 @@ class DeviceCallbackView(APIView):
                 initiate_spotcheck_responses_from_attendance_records.apply_async(
                     args=[log_ids], countdown=5
                 )
-            elif event == "reg" or event == "connect":
-                pass
+            elif (event == "reg" or event == "connect") and payload.get("sn"):
+                device = Device.objects.filter(serial_number=payload.get("sn")).first()
+                if not device:
+                    return Response(
+                        {
+                            "detail": f"Device with serial number {payload.get('sn')} not found."
+                        },
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                device.status = DeviceStatus.ACTIVE
+                device.last_connection_time = timezone.now()
+                device.save()
+                
             else:
                 return Response(
                     {"detail": f"Unknown event: {event}"},

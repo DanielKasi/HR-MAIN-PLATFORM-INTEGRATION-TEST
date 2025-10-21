@@ -2,8 +2,9 @@ import { IReportableModels } from "@/types/reports.types";
 import apiRequest from "../apiRequest";
 import { toast } from "sonner";
 import { store } from "@/store";
-import { replaceUnderscore } from "../helpers";
+import { removeTrailingSlash, replaceUnderscore } from "../helpers";
 import { showErrorToast } from "../utils";
+import { MAIN_DOMAIN_URL } from "@/constants";
 
 export const REPORTS_API = {
 	getReportableModels: async ({ app }: { app: string }) => {
@@ -26,7 +27,9 @@ export const REPORTS_API = {
 			}
 		});
 
-		const baseURL = process.env.NEXT_PUBLIC_API_URL;
+		const baseURL = removeTrailingSlash(
+			process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`,
+		);
 
 		// Create a direct fetch request for file download
 		const response = await fetch(`${baseURL}/reports/report-generation/?${urlParams.toString()}`, {

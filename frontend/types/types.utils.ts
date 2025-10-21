@@ -169,28 +169,27 @@ export type OffboardingData = {
 		total: number;
 	};
 	category_counts: {
-		resignation: number;
-		termination: number;
-		retirement: number;
-		layoff: number;
-		other: number;
+		[key: string]: number;
 	};
 	pending_requests: {
-		resignation: number;
-		termination: number;
-		retirement: number;
-		layoff: number;
-		other: number;
+		resignations: number;
+		terminations: number;
+		retirements: number;
 		total: number;
 	};
 	recent_separations: {
 		id: number;
 		employee_name: string;
 		separation_type: string;
+		category: string;
 		effective_date: string;
 		separation_status: string;
 		additional_notes: string;
 	}[];
+	date_range: {
+		start_date: string;
+		end_date: string;
+	};
 };
 
 export interface IReportsToDetails {
@@ -610,6 +609,18 @@ export interface IAttendanceDashboard {
 	spotchecks_failure_rate?: number;
 	late_comers_today: ILatecomer[];
 	failed_spotchecks_today: IFailedSpotcheckToday[];
+	department_wise_overtime?: Array<{
+		department: string;
+		hours: number;
+	}>;
+	department_wise_attendance?: Array<{
+		department: string;
+		on_time: number;
+		late: number;
+		absent: number;
+	}>;
+	absenteeism_rate?: number;
+	employees_on_leave_today?: number;
 }
 
 export interface IFeedbackField {
@@ -1676,13 +1687,18 @@ export type SeparationCategory =
 export interface ISeparationType {
 	id: number;
 	institution: number;
-	separation_type: string;
+	name: string; // Changed from separation_type
 	description: string;
-	supported_stages: IOffboardingStage[];
-	category: SeparationCategory;
+	supported_stages: ISupportedStage[]; // Changed structure
 	is_active: boolean;
+	approval_status: "under_creation" | "approved" | "rejected";
+	requires_handover_report: boolean;
+	approvals?: string;
+	created_by?: number;
+	updated_by?: number;
 	created_at: string;
 	updated_at: string;
+	deleted_at?: string | null;
 }
 
 export interface ISeparationTypeFormData {
@@ -1697,13 +1713,61 @@ export interface ISeparationTypeFormData {
 export interface IOffboardingStage {
 	id: number;
 	institution: number;
-	stage_name: string;
-	stage_description: string;
+	name: string;
+	description: string;
 	is_active: boolean;
+	order: number;
+	approval_status: "under_creation" | "approved" | "rejected";
+	approvals?: string;
+	created_by?: number;
+	updated_by?: number;
 	created_at: string;
 	updated_at: string;
+	deleted_at?: string | null;
 }
 
+export interface ISupportedStage {
+	id: number;
+	stage: IOffboardingStage;
+	is_active: boolean;
+	can_be_skipped: boolean;
+	order: number;
+	created_by?: number;
+	updated_by?: number;
+	termination_type: number;
+	created_at: string;
+	updated_at: string;
+	deleted_at?: string | null;
+}
+
+export interface ITerminationType {
+	id: number;
+	approvals?: string;
+	supported_stages: ISupportedStage[];
+	created_at: string;
+	updated_at: string;
+	deleted_at?: string | null;
+	is_active: boolean;
+	approval_status: "under_creation" | "approved" | "rejected";
+	name: string;
+	description: string;
+	requires_handover_report: boolean;
+	created_by?: number;
+	updated_by?: number;
+	institution: number;
+}
+
+export interface IOffboardingStageFormData {
+	name: string;
+	description: string;
+	is_active?: boolean;
+	institution: number;
+	order?: number;
+	approval_status?: "under_creation" | "approved" | "rejected";
+	created_by?: number;
+	updated_by?: number;
+	deleted_at?: string | null;
+}
 export interface IOffboardingStageFormData {
 	institution: number | string;
 	stage_name: string;

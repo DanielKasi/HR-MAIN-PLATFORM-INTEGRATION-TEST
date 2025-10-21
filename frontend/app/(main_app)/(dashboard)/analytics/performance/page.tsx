@@ -29,11 +29,7 @@ export default function PerformancePage() {
 		},
 		employee_objectives: {
 			total: 0,
-			status_distribution: {
-				not_sarted: 0,
-				on_track: 0,
-				closed: 0,
-			},
+			status_distribution: [],
 		},
 		key_results: {
 			total: 0,
@@ -50,10 +46,7 @@ export default function PerformancePage() {
 		},
 		question_templates: {
 			total: 0,
-			category_distribution: {
-				general: 0,
-				performance_review: 0,
-			},
+			category_distribution: [],
 		},
 		bonus_point_settings: {
 			total: 0,
@@ -61,11 +54,7 @@ export default function PerformancePage() {
 		},
 		meetings: {
 			total: 0,
-			mode_distribution: {
-				online: 0,
-				hybrid: 0,
-				physical: 0,
-			},
+			mode_distribution: [],
 		},
 	});
 	const [loading, setLoading] = useState(true);
@@ -92,6 +81,17 @@ export default function PerformancePage() {
 		fetchAnalytics();
 	}, [currentInstitution]);
 
+	// Helper function to transform object data to array format for PieChart
+	const transformObjectToArray = (obj: any): Array<{ name: string; count: number }> => {
+		if (!obj) return [];
+		if (Array.isArray(obj)) return obj; // Already an array
+
+		return Object.entries(obj).map(([key, value]) => ({
+			name: key,
+			count: value as number,
+		}));
+	};
+
 	const cards = [
 		{
 			title: "Active Periods",
@@ -116,7 +116,7 @@ export default function PerformancePage() {
 		},
 		{
 			title: "Feedback Entries",
-			value: analytics.feedback?.total || 0,
+			value: analytics.feedback_360?.total || 0,
 			icon: <MessageSquare className="h-5 w-5" />,
 			description: "360° feedback",
 			link: "/performance/feedback",
@@ -130,11 +130,9 @@ export default function PerformancePage() {
 			icon: <Users className="h-6 w-6" />,
 			href: "/performance/employee-objectives",
 			color: "bg-purple-500",
-			stats: analytics?.employee_objectives?.status_distribution || {
-				not_started: 0,
-				on_track: 0,
-				closed: 0,
-			},
+			stats: transformObjectToArray(analytics?.employee_objectives?.status_distribution),
+			dataKey: "count",
+			nameKey: "name",
 		},
 		{
 			title: "Meetings",
@@ -142,83 +140,82 @@ export default function PerformancePage() {
 			icon: <Video className="h-6 w-6" />,
 			href: "/performance/meetings",
 			color: "bg-indigo-500",
-			stats: analytics?.meetings?.mode_distribution || {
-				online: 0,
-				hybrid: 0,
-				physical: 0,
-			},
+			stats: transformObjectToArray(analytics?.meetings?.mode_distribution),
+			dataKey: "count",
+			nameKey: "name",
 		},
 		{
 			title: "Question Templates",
-			description: "",
-			href: "#",
+			description: `Total: ${analytics?.question_templates?.total || 0} templates`,
+			href: "/performance/question-templates",
 			color: "bg-purple-500",
-			stats: analytics?.question_templates?.category_distribution || {
-				general: 0,
-				performance_review: 0,
-			},
+			stats: analytics?.question_templates?.category_distribution || [],
+			dataKey: "count",
+			nameKey: "category",
 		},
 	];
 
 	return (
-		<div className="min-h-screen bg-white p-6">
+		<div className="min-h-screen bg-white p-4 sm:p-6">
 			<div className="space-y-6">
 				{/* Header */}
 				<div className="mb-8">
-					<div className="flex items-center justify-between mb-4">
-						<div className="flex items-center justify-end gap-8">
-							<div>
-								<h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-									Performance Management
-								</h1>
-								<p className="text-slate-600 text-lg mt-2">
-									Comprehensive OKR and 360-degree feedback system with gamification
-								</p>
-							</div>
-							<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
-								Generate Reports
-							</Button>
+					<div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-4">
+						<div>
+							<h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+								Performance Management
+							</h1>
+							<p className="text-slate-600 text-base sm:text-lg mt-2">
+								Comprehensive OKR and 360-degree feedback system with gamification
+							</p>
 						</div>
-						<div className="flex-grow flex items-center justify-end">
-							{/* Quick Actions */}
-							<div>
-								<h2 className="text-xl text-right font-semibold text-slate-900 mb-4">
-									Quick Actions
-								</h2>
-								<div className="flex flex-wrap gap-3 justify-end">
-									<Link href="/performance/periods">
-										<Button variant="outline" className="flex items-center gap-2">
-											<Calendar className="h-4 w-4" />
-											Create Period
-										</Button>
-									</Link>
-									<Link href="/performance/objectives">
-										<Button variant="outline" className="flex items-center gap-2">
-											<Target className="h-4 w-4" />
-											Add Objective
-										</Button>
-									</Link>
-									<Link href="/performance/feedback">
-										<Button variant="outline" className="flex items-center gap-2">
-											<MessageSquare className="h-4 w-4" />
-											Give Feedback
-										</Button>
-									</Link>
-									<Link href="/performance/meetings">
-										<Button variant="outline" className="flex items-center gap-2">
-											<Video className="h-4 w-4" />
-											Schedule Meeting
-										</Button>
-									</Link>
-								</div>
-							</div>
+						<Button
+							className="rounded-xl w-full sm:w-auto"
+							onClick={() => setIsReportsDialogOpen(true)}
+						>
+							Generate Reports
+						</Button>
+					</div>
+
+					{/* Quick Actions */}
+					<div className="mt-6">
+						<h2 className="text-lg sm:text-xl font-semibold text-slate-900 mb-4">Quick Actions</h2>
+						<div className="flex flex-wrap gap-2 sm:gap-3">
+							<Link href="/performance/periods" className="w-full sm:w-auto">
+								<Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
+									<Calendar className="h-4 w-4" />
+									<span className="hidden sm:inline">Create Period</span>
+									<span className="sm:hidden">Period</span>
+								</Button>
+							</Link>
+							<Link href="/performance/objectives" className="w-full sm:w-auto">
+								<Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
+									<Target className="h-4 w-4" />
+									<span className="hidden sm:inline">Add Objective</span>
+									<span className="sm:hidden">Objective</span>
+								</Button>
+							</Link>
+							<Link href="/performance/feedback" className="w-full sm:w-auto">
+								<Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
+									<MessageSquare className="h-4 w-4" />
+									<span className="hidden sm:inline">Give Feedback</span>
+									<span className="sm:hidden">Feedback</span>
+								</Button>
+							</Link>
+							<Link href="/performance/meetings" className="w-full sm:w-auto">
+								<Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
+									<Video className="h-4 w-4" />
+									<span className="hidden sm:inline">Schedule Meeting</span>
+									<span className="sm:hidden">Meeting</span>
+								</Button>
+							</Link>
 						</div>
 					</div>
 				</div>
 
 				{/* Overview Stats */}
 				{analytics && (
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
 						{cards.map((c, idx) => (
 							<PerformanceStatsCard
 								key={idx}
@@ -233,17 +230,19 @@ export default function PerformancePage() {
 				)}
 
 				{/* Module Cards */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
 					{graphs.map((g) => (
 						<PieChart
 							title={g.title}
 							key={g.title}
-							data={g.stats}
+							data={{
+								Distribution: g.stats,
+							}}
 							colors={colors}
 							totalStr={""}
 							label={""}
-							dataKey={""}
-							nameKey={""}
+							dataKey={g.dataKey}
+							nameKey={g.nameKey}
 						></PieChart>
 					))}
 				</div>

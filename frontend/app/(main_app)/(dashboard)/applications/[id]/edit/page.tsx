@@ -48,6 +48,7 @@ import {
 	showErrorToast,
 } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
 
 const statusOptions = [
 	{ value: "new", label: "New" },
@@ -105,6 +106,7 @@ export default function EditApplicationPage() {
 		source: "website",
 		application_date: "",
 		created_by: userData?.id || 0,
+		required_document_files: {},
 	});
 
 	useDocumentTitle("EDIT A JOB APPLICATION");
@@ -151,6 +153,7 @@ export default function EditApplicationPage() {
 					application_date: fetchedApplication.application_date,
 					currentResumeUrl: fetchedApplication.resume,
 					currentCoverLetterUrl: fetchedApplication.cover_letter || undefined,
+					required_document_files: {},
 				});
 			}
 		} catch (err) {
@@ -550,7 +553,7 @@ export default function EditApplicationPage() {
 										<div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
 											<Button type="button" variant="link" size="sm" className="h-auto p-0" asChild>
 												<a
-													href={`${process.env.NEXT_PUBLIC_BASE_URL}${formData.currentResumeUrl}`}
+													href={`${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || "")}/${removeLeadingSlash(formData.currentResumeUrl)}`}
 													target="_blank"
 													rel="noopener noreferrer"
 												>
@@ -585,7 +588,7 @@ export default function EditApplicationPage() {
 										<div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
 											<Button type="button" variant="link" size="sm" className="h-auto p-0" asChild>
 												<a
-													href={`${process.env.NEXT_PUBLIC_BASE_URL}${formData.currentCoverLetterUrl}`}
+													href={`${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || "")}/${removeLeadingSlash(formData.currentCoverLetterUrl)}`}
 													target="_blank"
 													rel="noopener noreferrer"
 												>

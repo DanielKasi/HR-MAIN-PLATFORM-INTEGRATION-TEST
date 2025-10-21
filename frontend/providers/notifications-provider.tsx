@@ -13,6 +13,7 @@ import { requireAnnouncementAcknowledgmentStart } from "@/store/miscellaneous/ac
 import apiRequest from "@/lib/apiRequest";
 import { IPaginatedResponse } from "@/types/other";
 import { NOTIFICATIONS_API } from "@/lib/api/notifications.utils";
+import { removeTrailingSlash } from "@/lib/helpers";
 
 const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const dispatch = useDispatch();
@@ -36,9 +37,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	}, [notifications]);
 
 	// Compute base URL once
-	const baseUrl = process.env.NEXT_PUBLIC_API_URL
-		? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "")
-		: MAIN_DOMAIN_URL;
+	const baseUrl = removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`);
 
 	const apiUrl = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH}`;
 

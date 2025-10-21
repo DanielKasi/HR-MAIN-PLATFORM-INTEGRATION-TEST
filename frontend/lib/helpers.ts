@@ -254,7 +254,10 @@ export const getInstitutionById = async (InstitutionId: number) =>
 	await apiRequest.get(`institution/${InstitutionId}/`);
 
 export const downloadFile = (filePath: string, fileName: string) => {
-	window.open(`${process.env.NEXT_PUBLIC_BASE_URL}${filePath}`, "_blank");
+	window.open(
+		`${removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || "")}/${removeLeadingSlash(filePath)}`,
+		"_blank",
+	);
 };
 
 export const getFileUrl = (filePath: string) => {
@@ -264,8 +267,8 @@ export const getFileUrl = (filePath: string) => {
 	if (filePath.startsWith("http")) {
 		return filePath;
 	}
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-	return `${baseUrl}${filePath}`;
+	const baseUrl = removeTrailingSlash(process.env.NEXT_PUBLIC_BASE_URL || "");
+	return `${baseUrl}/${removeLeadingSlash(filePath)}`;
 };
 
 export const getFileName = (filePath: string) => {
@@ -391,3 +394,17 @@ export const replaceUnderscore = (text: string) => {
 	}
 	return text.replace(/_/g, " ");
 };
+
+export function removeTrailingSlash(text: string) {
+	if (!text) {
+		return "";
+	}
+	return text.replace(/\/$/, "");
+}
+
+export function removeLeadingSlash(text: string) {
+	if (!text) {
+		return "";
+	}
+	return text.replace(/^\/+/, "");
+}

@@ -30,10 +30,11 @@ export default function AttendanceDashboard() {
 		failed_spotchecks_today: [],
 	};
 	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
+
 	const getGroupCards1 = (data: IAttendanceDashboard) => [
 		{
 			title: "Absenteeism Rate",
-			value: data.average_late_minutes,
+			value: `${data.spot_check_response_rate || 0}%`,
 			color: "text-orange-600",
 			bg: "bg-orange-100",
 			icon: "hugeicons:calendar-user",
@@ -43,13 +44,13 @@ export default function AttendanceDashboard() {
 			title: "Late Arrivals (Avg)",
 			color: "text-indigo-600",
 			bg: "bg-indigo-100",
-			value: data.average_late_minutes,
+			value: `${data.average_late_minutes || 0}m`,
 			icon: "hugeicons:time-04",
 			link: "#",
 		},
 		{
-			title: "Spotcheck Fail Rate",
-			value: data.average_late_minutes,
+			title: "Early Checkouts (Avg)",
+			value: `${data.average_early_checkout_minutes || 0}m`,
 			color: "text-emerald-600",
 			bg: "bg-emerald-100",
 			icon: "hugeicons:location-user-02",
@@ -57,74 +58,69 @@ export default function AttendanceDashboard() {
 		},
 		{
 			title: "Overtime Hours",
-			value: data.average_overtime_hours,
+			value: `${data.average_overtime_hours || 0}h`,
 			color: "text-blue-600",
 			bg: "bg-blue-100",
 			icon: "hugeicons:time-04",
 		},
 	];
+
 	const getGroupCards2 = (data: IAttendanceDashboard) => [
 		{
-			title: "Employees Expected",
-			value: data.average_late_minutes || 0,
+			title: "Total Records",
+			value: data.total_attendance_records || 0,
 			color: "text-orange-600",
 			bg: "bg-orange-100",
 			icon: "hugeicons:user-multiple",
 			link: "#",
 		},
 		{
-			title: "Present Today",
+			title: "Spotcheck Response",
 			color: "text-emerald-600",
 			bg: "bg-emerald-100",
-			value: data.average_late_minutes || 0,
+			value: `${data.spot_check_response_rate || 0}%`,
 			icon: "hugeicons:calendar-user",
 			link: "#",
 		},
 		{
-			title: "Late Arrivals",
-			value: data.average_late_minutes || 0,
+			title: "Late Today",
+			value: data.late_comers_today?.length || 0,
 			color: "text-indigo-600",
 			bg: "bg-indigo-100",
 			icon: "hugeicons:clock-05",
 			link: "#",
 		},
 		{
-			title: "Absent Today",
-			value: data.average_overtime_hours || 0,
+			title: "Failed Spotchecks",
+			value: data.failed_spotchecks_today?.length || 0,
 			color: "text-red-600",
 			bg: "bg-red-100",
 			icon: "hugeicons:user-minus-01",
 		},
-		{
-			title: "On Leave",
-			value: data.average_overtime_hours || 0,
-			color: "text-blue-600",
-			bg: "bg-blue-100",
-			icon: "hugeicons:beach",
-			link: "#",
-		},
-		{
-			title: "Spotchecks Today",
-			value: data.average_overtime_hours || 0,
-			color: "text-indigo-600",
-			bg: "bg-indigo-100",
-			icon: "hugeicons:location-user-02",
-		},
-		{
-			title: "Spotcheck Pass Rate",
-			value: data.average_overtime_hours || 0,
-			color: "text-green-600",
-			bg: "bg-green-100",
-			icon: "hugeicons:location-user-02",
-		},
-		{
-			title: "Overtime Hours",
-			value: data.average_overtime_hours || 0,
-			color: "text-blue-600",
-			bg: "bg-blue-100",
-			icon: "hugeicons:time-04",
-		},
 	];
+
+	// Helper to transform attendance over time data
+	const transformAttendanceOverTime = (attendanceData: any[]) => {
+		if (!attendanceData || !Array.isArray(attendanceData)) return [];
+
+		return attendanceData.map((item) => ({
+			month: item.month || item.date || "Unknown",
+			present: item.present || item.count || 0,
+			absent: item.absent || 0,
+			late: item.late || 0,
+		}));
+	};
+
+	// Helper to transform attendance by status for pie chart
+	const transformAttendanceByStatus = (attendanceData: any[]) => {
+		if (!attendanceData || !Array.isArray(attendanceData)) return [];
+
+		return attendanceData.map((item) => ({
+			status: item.status || "Unknown",
+			count: item.count || 0,
+		}));
+	};
+
 	return (
 		<LoadingComponent
 			initialData={initialData}
@@ -172,38 +168,33 @@ export default function AttendanceDashboard() {
 							{/* latecomers today */}
 							<LatecomersTable data={data.late_comers_today || []} />
 
-							{/*failed spotchecks today */}
+							{/* failed spotchecks today */}
 							<SpotchecksTable data={data.failed_spotchecks_today || []} />
 						</div>
 
+						{/* Attendance Over Time - NOW USING REAL DATA */}
 						<Linechart
 							title={"Attendance Over Time"}
 							label={""}
 							data={{
-								"This Year": [
-									{ month: "JAN", late: 2, early: 5, leave: 1 },
-									{ month: "FEB", late: 1, early: 6, leave: 1 },
-									{ month: "MAR", late: 3, early: 5, leave: 0 },
-									{ month: "APR", late: 0, early: 7, leave: 1 },
-									{ month: "JUN", late: 1, early: 5, leave: 2 },
-								],
+								"This Year": transformAttendanceOverTime(data.attendance_over_time),
 							}}
-							dataKey={["late", "early", "leave"]}
+							dataKey={["present", "absent", "late"]}
 							nameKey={"month"}
 							colors={["#3CB371", "#FF1B1C", "#0CA0F5"]}
 						/>
 
 						{/* Charts Section */}
 						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-6">
-							{/* spotcheck by Status */}
+							{/* Spotcheck by Status - USING REAL DATA */}
 							<Piechart
 								totalStr={""}
-								title={"Spotcheck Rate"}
+								title={"Spotcheck Status"}
 								label={""}
 								data={{
-									"2025": Array.isArray(data.spot_checks_by_status)
+									Current: Array.isArray(data.spot_checks_by_status)
 										? data.spot_checks_by_status
-										: Object.entries(data.spot_checks_by_status).map(([status, count]) => ({
+										: Object.entries(data.spot_checks_by_status || {}).map(([status, count]) => ({
 												status,
 												count,
 											})),
@@ -213,36 +204,30 @@ export default function AttendanceDashboard() {
 								colors={colors}
 							/>
 
-							{/* department-wise attendance */}
+							{/* Attendance by Status - USING REAL DATA */}
 							<Piechart
 								totalStr={""}
-								title={"Department-wise Attendance"}
+								title={"Attendance Status"}
 								label={""}
 								data={{
-									"This Week": [
-										{ department: "On Time", count: 20 },
-										{ department: "Absent", count: 30 },
-										{ department: "Late coming", count: 40 },
-										{ department: "On Leave", count: 60 },
-									],
+									Current: transformAttendanceByStatus(data.attendance_by_status),
 								}}
 								dataKey={"count"}
-								nameKey={"department"}
+								nameKey={"status"}
 								colors={colors}
 								donut
 								labelList
 							/>
 
-							{/* department-wise overtime */}
+							{/* Overtime Distribution - USING REAL ATTENDANCE DATA */}
 							<BarHChart
-								title={"Department-wise Overtime"}
+								title={"Attendance Distribution"}
 								data={{
-									"This week": [
-										{ department: "Technology", count: 20 },
-										{ department: "Sales", count: 16 },
-										{ department: "Marketing", count: 12 },
-										{ department: "Operations", count: 10 },
-									],
+									Current:
+										data.attendance_by_status?.map((item) => ({
+											department: item.status,
+											count: item.count,
+										})) || [],
 								}}
 								dataKey={"count"}
 								nameKey={"department"}
@@ -251,13 +236,13 @@ export default function AttendanceDashboard() {
 							/>
 
 							{/* overtime employees table */}
-							<OvertimeTable />
+							<OvertimeTable data={data.department_wise_overtime || []} />
 						</div>
 					</div>
 					<ReportDialog
 						isOpen={isReportsDialogOpen}
 						onClose={() => setIsReportsDialogOpen(false)}
-						app="employee"
+						app="attendance"
 					/>
 				</div>
 			)}

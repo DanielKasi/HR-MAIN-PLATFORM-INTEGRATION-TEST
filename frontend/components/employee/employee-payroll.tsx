@@ -284,7 +284,7 @@ export function EmployeePayrollTable({
 
 														<div className="min-w-0 flex-1">
 															<div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-																{payslip.employee?.name || ""}
+																{payslip.employee?.name || payslip.employee?.user?.fullname || ""}
 															</div>
 															<div className="text-sm text-gray-500 truncate">
 																{payslip.employee.department.name}

@@ -14,13 +14,14 @@ import {
 import { Search, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { PERMISSION_CODES } from "@/constants";
+import { MAIN_DOMAIN_URL, PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
 import { showErrorToast } from "@/lib/utils";
 import { Icon } from "@iconify/react";
+import { removeTrailingSlash } from "@/lib/helpers";
 
 export default function AssetHistoriesPage() {
 	const [searchTerm, setSearchTerm] = useState("");
@@ -40,7 +41,7 @@ export default function AssetHistoriesPage() {
 		try {
 			setIsExportingToExcel(true);
 			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL}/assets/asset-histories/export-excel/`, // Removed institutionId
+				`${removeTrailingSlash(process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`)}/assets/asset-histories/export-excel/`, // Removed institutionId
 				{
 					method: "GET",
 					headers: {

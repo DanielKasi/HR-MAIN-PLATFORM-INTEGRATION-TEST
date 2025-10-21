@@ -61,7 +61,11 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import {
+	selectRelatedEmployee,
+	selectSelectedInstitution,
+	selectUser,
+} from "@/store/auth/selectors";
 import {
 	createEmployeeType,
 	getWorkTypes,
@@ -81,11 +85,12 @@ import WorkTypeModal from "@/components/dialogs/work-type-dialog";
 import { Steps } from "@/components/generic/steps";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { BankAccountSearchableSelect } from "@/components/selects/bank-accounts-select";
-import { formatCurrency } from "@/lib/helpers";
+import { formatCurrency, getFileUrl } from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
 import { BankTypeSearchableSelect } from "@/components/selects/bank-types-select";
 import BranchSearchableSelect from "@/components/selects/branch-searchable-select";
 import { duration } from "moment";
+import { fetchRelatedEmployeeStart } from "@/store/auth/actions";
 
 interface Child extends IChild {}
 interface NextOfKin extends INextOfKin {}
@@ -226,10 +231,6 @@ export default function UpdateEmployeeForm() {
 		institution: selectedInstitution ? selectedInstitution.id : 0,
 	});
 
-	// useEffect(()=>{
-	// // console.log("\n\n Positions updated to : ", positions)
-	// }, [positions])
-
 	useEffect(() => {
 		setWorkTypeFormData((prev) => ({
 			...prev,
@@ -303,6 +304,8 @@ export default function UpdateEmployeeForm() {
 		isValid: boolean;
 	}>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
 
+	const currentUser = useSelector(selectUser);
+	const currentUserRelatedEmployee = useSelector(selectRelatedEmployee);
 	const dispatch = useDispatch();
 
 	const showSuccessToast = (message: string) => {
@@ -472,10 +475,6 @@ export default function UpdateEmployeeForm() {
 	}, [employeeId, selectedInstitution]);
 
 	useEffect(() => {
-		console.log("\n\n Form data changed as : ", formData);
-	}, [formData]);
-
-	useEffect(() => {
 		setFormData((prev) => ({ ...prev, selected_branches: branches.map((br) => br.id) }));
 	}, [branches]);
 
@@ -537,11 +536,6 @@ export default function UpdateEmployeeForm() {
 			);
 			setWorkExperiences(employee.work_experiences);
 			if (employee.bank_accounts.length) {
-				console.log("\n\n Setting bank account form data to : ", {
-					bank_id: Number(employee.bank_accounts[0].bank.id),
-					account_number: employee.bank_accounts[0].account_number,
-					account_name: employee.bank_accounts[0].account_name,
-				});
 				setBankAccountFormData((prev) => ({
 					...prev,
 					bank_id: Number(employee.bank_accounts[0].bank.id),
@@ -565,7 +559,7 @@ export default function UpdateEmployeeForm() {
 			}
 
 			if (employee.employee_profile_picture) {
-				setPreviewUrl(employee.employee_profile_picture);
+				setPreviewUrl(getFileUrl(employee.employee_profile_picture));
 			}
 
 			setSelectedCountry({ name: { common: employee.country } } as ICountry);
@@ -640,12 +634,6 @@ export default function UpdateEmployeeForm() {
 
 			setFormData(updatedFormData);
 		} else if (field === "company_email") {
-			console.log(
-				"\n\n Changing company email to : ",
-				value,
-				"\n\n With prev company email state : ",
-				formData,
-			);
 			setFormData((prev) => ({
 				...prev,
 				company_email: { email: value as string, provider: null },
@@ -957,6 +945,13 @@ export default function UpdateEmployeeForm() {
 			});
 			if (updatedEmployee) {
 				showSuccessToast("Employee updated successfully");
+				if (
+					currentUser &&
+					currentUserRelatedEmployee &&
+					updatedEmployee.id === currentUserRelatedEmployee?.id
+				) {
+					dispatch(fetchRelatedEmployeeStart({ userId: currentUser.id }));
+				}
 				await attachEmployeeToNewBranches({
 					employee_id: updatedEmployee.id,
 					branches: formData.selected_branches,
@@ -982,7 +977,6 @@ export default function UpdateEmployeeForm() {
 			return;
 		}
 		try {
-			toast.info("attaching to selected branches");
 			await attachEmployeeToBranches({
 				employee_id,
 				branches: branches.map((br) => ({ branch_id: br, is_default: false })),
@@ -1869,7 +1863,6 @@ export default function UpdateEmployeeForm() {
 												: 0,
 									]}
 									onValueChange={(values) => {
-										// console.log("Selected bank accounts : ", values);
 										setBankAccountFormData((prev) => ({
 											...prev,
 											bank_id: values.length ? Number(values[0]) : 0,

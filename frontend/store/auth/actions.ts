@@ -65,6 +65,7 @@ type FetchRelatedEmployeeSuccess = ActionWithPayLoad<
 >;
 type FetchRelatedEmployeeFailure = Action<AUTH_ACTION_TYPES.FETCH_RELATED_EMPLOYEE_FAILURE>;
 type ClearRelatedEmployee = Action<AUTH_ACTION_TYPES.CLEAR_RELATED_EMPLOYEE>;
+type SetLastRefreshTime = ActionWithPayLoad<AUTH_ACTION_TYPES.SET_LAST_REFRESH_TIME, number>;
 
 export type AuthAction =
 	| LoginStart
@@ -92,6 +93,7 @@ export type AuthAction =
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_START>
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_SUCCESS>
 	| Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE>
+	| SetLastRefreshTime
 	| FetchRelatedEmployeeStart
 	| FetchRelatedEmployeeFailure
 	| FetchRelatedEmployeeSuccess
@@ -160,6 +162,9 @@ export const refreshAccessTokenFailure = () =>
 	createAction(AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE);
 export const setInactivityTimeout = (timeout: number) =>
 	createAction(AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT, timeout);
+
+export const setLastRefreshTime = (timeStampMIlliseconds: number): SetLastRefreshTime =>
+	createAction(AUTH_ACTION_TYPES.SET_LAST_REFRESH_TIME, timeStampMIlliseconds);
 
 export const fetchRelatedEmployeeStart = ({
 	userId,

@@ -18,6 +18,10 @@ export interface AssetsData {
 		returns: number;
 		total: number;
 	};
+	department_allocation: {
+		// ← ADD THIS
+		[key: string]: number;
+	};
 	recent_assets: IAsset[];
 }
 
