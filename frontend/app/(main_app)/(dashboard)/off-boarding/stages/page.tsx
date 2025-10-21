@@ -57,8 +57,9 @@ import {
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
-	stage_name: z.string().min(2, "Stage name must be at least 2 characters"),
-	stage_description: z.string().min(2, "Description must be at least 2 characters"),
+	name: z.string().min(2, "Stage name must be at least 2 characters"),
+	description: z.string().min(2, "Description must be at least 2 characters"),
+	order: z.number().int().positive("Order must be a positive number"),
 	is_active: z.boolean().optional(),
 });
 
@@ -74,8 +75,9 @@ export default function OffboardingStagesPage() {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			stage_name: "",
-			stage_description: "",
+			name: "",
+			description: "",
+			order: 1,
 			is_active: true,
 		},
 	});
@@ -102,8 +104,9 @@ export default function OffboardingStagesPage() {
 	const handleEdit = (stage: IOffboardingStage) => {
 		setEditingStage(stage);
 		form.reset({
-			stage_name: stage.stage_name,
-			stage_description: stage.stage_description,
+			name: stage.name,
+			description: stage.description,
+			order: stage.order,
 			is_active: stage.is_active,
 		});
 		setIsEditDialogOpen(true);
@@ -126,7 +129,11 @@ export default function OffboardingStagesPage() {
 				handleUpdateSuccess(editingStage);
 			} else {
 				await OffboardingStagesAPI.create({
-					stageData: { ...values, institution: selectedInstitution.id },
+					stageData: {
+						...values,
+						institution: selectedInstitution.id,
+						approval_status: "under_creation" as const,
+					},
 				});
 				handleCreateSuccess({} as IOffboardingStage);
 				setIsCreateDialogOpen(false);
@@ -158,7 +165,7 @@ export default function OffboardingStagesPage() {
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="flex justify-between items-center mb-6">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Offboarding Stages</h1>
+					<h1 className="text-3xl font-bold tracking-tight">Termination Stages</h1>
 				</div>
 			</div>
 
@@ -195,15 +202,13 @@ export default function OffboardingStagesPage() {
 								<DialogContent>
 									<DialogHeader>
 										<DialogTitle>Add New Stage</DialogTitle>
-										<DialogDescription>
-											Create a new stage for the offboarding process
-										</DialogDescription>
+										<DialogDescription>Create a new termination stage</DialogDescription>
 									</DialogHeader>
 									<Form {...form}>
 										<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
 											<FormField
 												control={form.control}
-												name="stage_name"
+												name="name"
 												render={({ field }) => (
 													<FormItem>
 														<FormLabel>Stage Name</FormLabel>
@@ -216,7 +221,7 @@ export default function OffboardingStagesPage() {
 											/>
 											<FormField
 												control={form.control}
-												name="stage_description"
+												name="description"
 												render={({ field }) => (
 													<FormItem>
 														<FormLabel>Description</FormLabel>
@@ -227,9 +232,30 @@ export default function OffboardingStagesPage() {
 													</FormItem>
 												)}
 											/>
+											<FormField
+												control={form.control}
+												name="order"
+												render={({ field }) => (
+													<FormItem>
+														<FormLabel>Order</FormLabel>
+														<FormControl>
+															<Input
+																type="number"
+																placeholder="Enter display order"
+																{...field}
+																onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+															/>
+														</FormControl>
+														<FormDescription>
+															The order in which this stage appears in the termination process
+														</FormDescription>
+														<FormMessage />
+													</FormItem>
+												)}
+											/>
 											<DialogFooter>
 												<Button type="submit" className="w-full">
-													Create Stage
+													Create Termination Stage
 												</Button>
 											</DialogFooter>
 										</form>
@@ -259,7 +285,7 @@ export default function OffboardingStagesPage() {
 									institutionId: selectedInstitution.id,
 									page: 1,
 									search: searchTerm || undefined,
-									ordering: ordering || undefined, // <-- pass ordering
+									ordering: ordering || undefined,
 								});
 							}}
 							fetchFromUrl={OffboardingStagesAPI.getPaginatedFromUrl}
@@ -282,7 +308,7 @@ export default function OffboardingStagesPage() {
 										<div className="text-center py-8 text-gray-500">
 											{searchTerm
 												? "No stages found matching your search criteria"
-												: "No offboarding stages found"}
+												: "No Termination stages found"}
 										</div>
 									);
 								}
@@ -297,10 +323,8 @@ export default function OffboardingStagesPage() {
 															<span>Stage Name</span>
 															<Button
 																size="sm"
-																variant={ordering === "stage_name" ? "default" : "outline"}
-																onClick={() =>
-																	setOrdering(ordering === "stage_name" ? "" : "stage_name")
-																}
+																variant={ordering === "name" ? "default" : "outline"}
+																onClick={() => setOrdering(ordering === "name" ? "" : "name")}
 															>
 																<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
 															</Button>
@@ -314,8 +338,8 @@ export default function OffboardingStagesPage() {
 											<TableBody>
 												{data.results.map((stage) => (
 													<TableRow key={stage.id}>
-														<TableCell className="font-medium">{stage.stage_name}</TableCell>
-														<TableCell>{stage.stage_description}</TableCell>
+														<TableCell className="font-medium">{stage.name}</TableCell>
+														<TableCell>{stage.description}</TableCell>
 														<TableCell>
 															<Badge
 																className={
@@ -392,13 +416,13 @@ export default function OffboardingStagesPage() {
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Edit Stage</DialogTitle>
-						<DialogDescription>Update the details of this offboarding stage</DialogDescription>
+						<DialogDescription>Update the details of this termination stage</DialogDescription>
 					</DialogHeader>
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
 							<FormField
 								control={form.control}
-								name="stage_name"
+								name="name"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Stage Name</FormLabel>
@@ -411,7 +435,7 @@ export default function OffboardingStagesPage() {
 							/>
 							<FormField
 								control={form.control}
-								name="stage_description"
+								name="description"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Description</FormLabel>
@@ -424,13 +448,34 @@ export default function OffboardingStagesPage() {
 							/>
 							<FormField
 								control={form.control}
+								name="order"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Order</FormLabel>
+										<FormControl>
+											<Input
+												type="number"
+												placeholder="Enter display order"
+												{...field}
+												onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+											/>
+										</FormControl>
+										<FormDescription>
+											The order in which this stage appears in the termination process
+										</FormDescription>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
 								name="is_active"
 								render={({ field }) => (
 									<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
 										<div className="space-y-0.5">
 											<FormLabel className="text-base">Active Status</FormLabel>
 											<FormDescription>
-												Determine if this stage is currently active in the offboarding process
+												Determine if this stage is currently active in the termination process
 											</FormDescription>
 										</div>
 										<FormControl>

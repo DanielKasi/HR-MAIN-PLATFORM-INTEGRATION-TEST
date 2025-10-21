@@ -301,21 +301,21 @@ export default function DashboardSideBar() {
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_PERFORMANCE_REPORTS,
 		},
 
-		// {
-		// 	title: "Offboarding",
-		// 	href: "/off-boarding",
-		// 	icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
-		// 	submenu: [
-		// 		{ title: "Analytics", href: "/analytics/offboarding" },
-		// 		{ title: "Exit Process", href: "/off-boarding/exit-process" },
-		// 		{ title: "Resignation Letters", href: "#" },
-		// 		{ title: "Offboarding Stages", href: "/off-boarding/stages" },
-		// 		{ title: "Separation Types", href: "/off-boarding/separation-types" },
-		// 		{ title: "Separation Policy", href: "/off-boarding/separation-policy" },
-		// 		// { title: "Terminations", href: "/off-boarding/terminations" },
-		// 	],
-		// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_OFFBOARDING_STAGES,
-		// },
+		{
+			title: "Offboarding",
+			href: "/off-boarding",
+			icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
+			submenu: [
+				{ title: "Analytics", href: "/analytics/offboarding" },
+				{ title: "Exit Process", href: "/off-boarding/exit-process" },
+				// { title: "Resignation Letters", href: "#" },
+				{ title: "Termination Stages", href: "/off-boarding/stages" },
+				{ title: "Termination Types", href: "/off-boarding/separation-types" },
+				// { title: "Separation Policy", href: "/off-boarding/separation-policy" },
+				// { title: "Terminations", href: "/off-boarding/terminations" },
+			],
+			requiredPermission: PERMISSION_CODES.CAN_VIEW_OFFBOARDING_STAGES,
+		},
 
 		{
 			title: "Assets",

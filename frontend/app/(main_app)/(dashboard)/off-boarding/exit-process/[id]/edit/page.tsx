@@ -1,55 +1,53 @@
+// app/off-boarding/exit-process/[id]/edit/page.tsx
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { ArrowLeft, ChevronDown, Check, Upload, X, FileText } from "lucide-react";
+import { ArrowLeft, ChevronDown, Check, Upload, X, FileText, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
-import { ExitProcessAPI, ITerminationType, CreateTerminationData } from "@/lib/exitProcess.Utils";
+import { ExitProcessAPI, ITerminationType, ITermination } from "@/lib/exitProcess.Utils";
 
 interface FormData {
 	employee_id: number | null;
 	termination_type_id: number | null;
 	last_working_day: string;
 	reason: string;
-	status: "INITIATED";
+	status: "INITIATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+	initiator_type: "EMPLOYEE" | "MANAGER" | "HR" | "EMPLOYER";
 	is_paid_after_termination: boolean;
 	final_payment_date: string;
-	created_by: number | null;
 	updated_by: number | null;
-	initiated_by_id: number | null;
 }
 
-const ExitProcessCreate = () => {
+const ExitProcessEdit = () => {
 	const router = useRouter();
-	const searchParams = useSearchParams();
-	const category = searchParams.get("category") as "resignation" | "termination" | null;
-	const typeId = searchParams.get("typeId");
+	const params = useParams();
+	const terminationId = params.id as string;
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const currentUser = useSelector(selectUser);
 	const currentUserId = currentUser?.id || null;
-	const [isLoadingUser, setIsLoadingUser] = useState(true);
-	const [authError, setAuthError] = useState<string | null>(null);
 
-	// State for termination types
+	// State for termination data
+	const [termination, setTermination] = useState<ITermination | null>(null);
 	const [terminationTypes, setTerminationTypes] = useState<ITerminationType[]>([]);
 	const [loadingTerminationTypes, setLoadingTerminationTypes] = useState(false);
 	const [selectedTerminationType, setSelectedTerminationType] = useState<ITerminationType | null>(
 		null,
 	);
-	const [hasUserInteracted, setHasUserInteracted] = useState(false);
-	const [isInitialLoad, setIsInitialLoad] = useState(true);
 
 	// State for handover report
 	const [handoverReport, setHandoverReport] = useState<File | null>(null);
 	const [handoverReportText, setHandoverReportText] = useState("");
+	const [existingHandoverReport, setExistingHandoverReport] = useState<any>(null);
 
 	const [formData, setFormData] = useState<FormData>({
 		employee_id: null,
@@ -57,86 +55,97 @@ const ExitProcessCreate = () => {
 		last_working_day: new Date().toISOString().split("T")[0],
 		reason: "",
 		status: "INITIATED",
+		initiator_type: "EMPLOYER",
 		is_paid_after_termination: false,
 		final_payment_date: new Date().toISOString().split("T")[0],
-		created_by: currentUserId,
 		updated_by: currentUserId,
-		initiated_by_id: currentUserId,
 	});
+
 	const [selectedEmployee, setSelectedEmployee] = useState<(string | number)[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [fetchLoading, setFetchLoading] = useState(true);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Fetch termination types using the utils API
+	// Fetch termination details
+	const fetchTerminationDetails = async () => {
+		if (!currentInstitution || !terminationId) return;
+
+		try {
+			setFetchLoading(true);
+			console.log("Fetching termination details for ID:", terminationId);
+
+			const terminationData = await ExitProcessAPI.getById(terminationId);
+			setTermination(terminationData);
+
+			// Set form data
+			setFormData({
+				employee_id: terminationData.employee_id || null,
+				termination_type_id: terminationData.termination_type?.id || null,
+				last_working_day: terminationData.last_working_day,
+				reason: terminationData.reason || "",
+				status: terminationData.status,
+				initiator_type: terminationData.initiator_type,
+				is_paid_after_termination: terminationData.is_paid_after_termination,
+				final_payment_date:
+					terminationData.final_payment_date || new Date().toISOString().split("T")[0],
+				updated_by: currentUserId,
+			});
+
+			// Set employee
+			if (terminationData.employee_id) {
+				setSelectedEmployee([terminationData.employee_id.toString()]);
+			}
+
+			// Set termination type
+			if (terminationData.termination_type) {
+				setSelectedTerminationType(terminationData.termination_type);
+			}
+
+			// Set handover report data
+			if (terminationData.handover_report) {
+				setExistingHandoverReport(terminationData.handover_report);
+				setHandoverReportText(terminationData.handover_report.report_text || "");
+			}
+
+			console.log("Termination data loaded successfully:", terminationData);
+		} catch (err) {
+			console.error("Error fetching termination details:", err);
+			showErrorToast({
+				error: err,
+				defaultMessage: "Failed to fetch termination details",
+			});
+		} finally {
+			setFetchLoading(false);
+		}
+	};
+
+	// Fetch termination types
 	const fetchTerminationTypes = async () => {
 		if (!currentInstitution) return;
 
 		try {
 			setLoadingTerminationTypes(true);
-			console.log("Fetching termination types from API...");
-
 			const typesData = await ExitProcessAPI.getAllTerminationTypesSmart(currentInstitution.id);
-
-			if (typesData.length === 0) {
-				console.log("API returned empty termination types");
-				showErrorToast({ defaultMessage: "No termination types configured in the system" });
-			} else {
-				console.log(`Found ${typesData.length} termination types from API`);
-			}
-
 			setTerminationTypes(typesData);
-
-			// Only preselect if typeId is provided AND this is the initial load
-			if (typeId && isInitialLoad && !hasUserInteracted) {
-				const preselectedType = typesData.find((type) => type.id === Number(typeId));
-				if (preselectedType) {
-					console.log("Preselecting termination type from URL:", preselectedType.name);
-					setSelectedTerminationType(preselectedType);
-					setFormData((prev) => ({ ...prev, termination_type_id: preselectedType.id }));
-				}
-			}
-
-			setIsInitialLoad(false);
 		} catch (err) {
 			console.error("Error fetching termination types:", err);
 			showErrorToast({
 				error: err,
-				defaultMessage: "Failed to fetch termination types from server. Please try again.",
+				defaultMessage: "Failed to fetch termination types",
 			});
-			setTerminationTypes([]);
 		} finally {
 			setLoadingTerminationTypes(false);
 		}
 	};
 
 	useEffect(() => {
-		console.log("Redux auth state:", { user: currentUser });
-
-		if (currentUserId === null) {
-			setAuthError(
-				"No logged-in user found. Please ensure you are logged in or check Redux state.",
-			);
-		}
-
-		setIsLoadingUser(false);
-	}, [currentUserId, currentUser]);
-
-	useEffect(() => {
-		setFormData((prev) => ({
-			...prev,
-			created_by: currentUserId,
-			updated_by: currentUserId,
-			initiated_by_id: currentUserId,
-		}));
-	}, [currentUserId]);
-
-	useEffect(() => {
-		if (currentInstitution) {
+		if (currentInstitution && terminationId) {
+			fetchTerminationDetails();
 			fetchTerminationTypes();
 		}
-	}, [currentInstitution]);
+	}, [currentInstitution, terminationId]);
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -159,15 +168,21 @@ const ExitProcessCreate = () => {
 		}));
 	};
 
+	const handleStatusChange = (status: FormData["status"]) => {
+		setFormData((prev) => ({ ...prev, status }));
+	};
+
+	const handleInitiatorTypeChange = (initiatorType: FormData["initiator_type"]) => {
+		setFormData((prev) => ({ ...prev, initiator_type: initiatorType }));
+	};
+
 	const handleTerminationTypeChange = (type: ITerminationType) => {
-		console.log("User selected termination type:", type.name);
 		setSelectedTerminationType(type);
 		setFormData((prev) => ({
 			...prev,
 			termination_type_id: type.id,
 		}));
 		setIsDropdownOpen(false);
-		setHasUserInteracted(true);
 
 		// Clear handover report if new type doesn't require it
 		if (!type.requires_handover_report) {
@@ -214,6 +229,11 @@ const ExitProcessCreate = () => {
 		}
 	};
 
+	const handleRemoveExistingFile = () => {
+		setExistingHandoverReport(null);
+		setHandoverReportText("");
+	};
+
 	const handleSubmit = useCallback(
 		async (e: React.FormEvent) => {
 			e.preventDefault();
@@ -233,7 +253,7 @@ const ExitProcessCreate = () => {
 
 			// Validate handover report if required
 			if (selectedTerminationType?.requires_handover_report) {
-				if (!handoverReport && !handoverReportText.trim()) {
+				if (!existingHandoverReport && !handoverReport && !handoverReportText.trim()) {
 					showErrorToast({
 						defaultMessage: "Please provide either a handover report file or text",
 					});
@@ -244,109 +264,109 @@ const ExitProcessCreate = () => {
 			try {
 				setLoading(true);
 
-				const terminationData: CreateTerminationData = {
+				const updateData: any = {
 					employee_id: formData.employee_id,
-					termination_type_id: formData.termination_type_id!,
-					initiated_by_id: currentUserId,
+					termination_type_id: formData.termination_type_id,
 					last_working_day: formData.last_working_day,
 					reason: formData.reason,
 					status: formData.status,
-					initiator_type: "EMPLOYER",
+					initiator_type: formData.initiator_type,
 					is_paid_after_termination: formData.is_paid_after_termination,
-					final_payment_date: formData.is_paid_after_termination
-						? formData.final_payment_date
-						: undefined,
-					created_by: currentUserId,
 					updated_by: currentUserId,
 				};
 
-				console.log("Submitting termination data:", terminationData);
-
-				// Step 1: Create the termination
-				const createdTermination = await ExitProcessAPI.create({ terminationData });
-
-				if (!createdTermination) {
-					throw new Error("Failed to create termination");
+				// Only include final_payment_date if payment after termination is enabled
+				if (formData.is_paid_after_termination) {
+					updateData.final_payment_date = formData.final_payment_date;
+				} else {
+					updateData.final_payment_date = null;
 				}
 
-				console.log("Termination created successfully:", createdTermination.id);
+				console.log("Updating termination data:", updateData);
 
-				// Step 2: Upload handover report if required and provided
-				if (
-					selectedTerminationType?.requires_handover_report &&
-					(handoverReport || handoverReportText.trim())
-				) {
-					try {
-						console.log("Uploading handover report...");
+				// Step 1: Update the termination
+				const updatedTermination = await ExitProcessAPI.update(terminationId, updateData);
 
-						// Create FormData for file upload
-						const formData = new FormData();
-						formData.append("offboarding", createdTermination.id.toString());
+				if (!updatedTermination) {
+					throw new Error("Failed to update termination");
+				}
 
-						if (handoverReportText.trim()) {
-							formData.append("report_text", handoverReportText.trim());
-						}
+				console.log("Termination updated successfully:", updatedTermination.id);
 
-						if (handoverReport) {
-							formData.append("report_file", handoverReport);
-						}
+				// Step 2: Handle handover report
+				if (selectedTerminationType?.requires_handover_report) {
+					const hasHandoverContent = handoverReport || handoverReportText.trim();
+					const hasExistingHandover = existingHandoverReport;
 
-						if (currentUserId) {
-							formData.append("created_by", currentUserId.toString());
-							formData.append("updated_by", currentUserId.toString());
-						}
+					if (hasHandoverContent) {
+						try {
+							console.log("Updating handover report...");
 
-						// Use the API utility with FormData
-						await ExitProcessAPI.createHandoverReport({
-							handoverData: formData,
-							isFormData: true, // Add this flag to handle FormData
-						});
+							const formData = new FormData();
+							formData.append("offboarding", terminationId);
 
-						console.log("Handover report uploaded successfully");
-					} catch (handoverError: any) {
-						console.error("Error uploading handover report:", handoverError);
+							if (handoverReportText.trim()) {
+								formData.append("report_text", handoverReportText.trim());
+							}
 
-						// More detailed error handling
-						if (handoverError.response) {
-							console.error("Handover API Response:", handoverError.response.data);
+							if (handoverReport) {
+								formData.append("report_file", handoverReport);
+							}
+
+							if (currentUserId) {
+								formData.append("updated_by", currentUserId.toString());
+							}
+
+							if (hasExistingHandover) {
+								// Update existing handover report
+								await ExitProcessAPI.updateHandoverReport(existingHandoverReport.id, {
+									handoverData: formData,
+									isFormData: true,
+								});
+								console.log("Handover report updated successfully");
+							} else {
+								// Create new handover report
+								formData.append("created_by", currentUserId!.toString());
+								await ExitProcessAPI.createHandoverReport({
+									handoverData: formData,
+									isFormData: true,
+								});
+								console.log("Handover report created successfully");
+							}
+						} catch (handoverError: any) {
+							console.error("Error handling handover report:", handoverError);
 							showErrorToast({
-								defaultMessage: `Termination created but handover report upload failed: ${handoverError.response.data?.detail || handoverError.response.statusText}`,
-							});
-						} else if (handoverError.request) {
-							console.error("Handover API Request:", handoverError.request);
-							showErrorToast({
-								defaultMessage:
-									"Termination created but handover report upload failed: Network error",
-							});
-						} else {
-							showErrorToast({
-								defaultMessage: "Termination created but handover report upload failed",
+								defaultMessage: "Termination updated but handover report failed",
 							});
 						}
-						// Don't throw - termination was created successfully
+					} else if (hasExistingHandover && !hasHandoverContent) {
+						// Delete handover report if it exists but no content provided
+						try {
+							await ExitProcessAPI.deleteHandoverReport(existingHandoverReport.id);
+							console.log("Handover report deleted successfully");
+						} catch (deleteError) {
+							console.error("Error deleting handover report:", deleteError);
+						}
 					}
 				}
 
-				showSuccessToast("Termination process initiated successfully");
-				router.push("/off-boarding/exit-process");
+				showSuccessToast("Termination process updated successfully");
+				router.push(`/off-boarding/exit-process/${terminationId}`);
 			} catch (error: any) {
-				console.error("Submission error:", error);
+				console.error("Update error:", error);
 
-				// More detailed error handling for main termination creation
 				if (error.response) {
-					console.error("Termination API Response:", error.response.data);
 					showErrorToast({
-						defaultMessage: `Failed to create termination: ${error.response.data?.detail || error.response.statusText}`,
+						defaultMessage: `Failed to update termination: ${error.response.data?.detail || error.response.statusText}`,
 					});
 				} else if (error.request) {
-					console.error("Termination API Request:", error.request);
 					showErrorToast({
-						defaultMessage: "Network error: Unable to reach server. Please check your connection.",
+						defaultMessage: "Network error: Unable to reach server",
 					});
 				} else {
 					showErrorToast({
 						error,
-						defaultMessage: "An unexpected error occurred while creating the termination process",
+						defaultMessage: "An unexpected error occurred while updating the termination process",
 					});
 				}
 			} finally {
@@ -355,39 +375,68 @@ const ExitProcessCreate = () => {
 		},
 		[
 			formData,
-			currentInstitution,
 			currentUserId,
+			terminationId,
 			selectedTerminationType,
 			handoverReport,
 			handoverReportText,
+			existingHandoverReport,
 			router,
 		],
 	);
 
 	const handleBack = () => {
-		router.back();
+		router.push(`/off-boarding/exit-process/${terminationId}`);
 	};
 
 	const getCategoryColor = (category: string) => {
 		switch (category) {
 			case "resignation":
-				return "bg-purple-100 text-purple-800";
+				return "bg-purple-100 text-purple-800 border-purple-200";
 			case "termination":
-				return "bg-red-100 text-red-800";
+				return "bg-red-100 text-red-800 border-red-200";
 			case "retirement":
-				return "bg-yellow-100 text-yellow-800";
+				return "bg-yellow-100 text-yellow-800 border-yellow-200";
 			case "contract_end":
-				return "bg-orange-100 text-orange-800";
+				return "bg-orange-100 text-orange-800 border-orange-200";
 			default:
-				return "bg-gray-100 text-gray-800";
+				return "bg-gray-100 text-gray-800 border-gray-200";
 		}
 	};
 
-	if (isLoadingUser) {
+	const getStatusColor = (status: string) => {
+		switch (status) {
+			case "INITIATED":
+				return "bg-blue-100 text-blue-800 border-blue-200";
+			case "IN_PROGRESS":
+				return "bg-yellow-100 text-yellow-800 border-yellow-200";
+			case "COMPLETED":
+				return "bg-green-100 text-green-800 border-green-200";
+			case "CANCELLED":
+				return "bg-gray-100 text-gray-800 border-gray-200";
+			default:
+				return "bg-gray-100 text-gray-800 border-gray-200";
+		}
+	};
+
+	if (fetchLoading) {
 		return (
 			<div className="flex flex-col w-full min-h-screen bg-white p-4 sm:p-6 items-center justify-center">
 				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-				<p className="text-sm text-muted-foreground mt-2">Loading user...</p>
+				<p className="text-sm text-muted-foreground mt-2">Loading termination details...</p>
+			</div>
+		);
+	}
+
+	if (!termination) {
+		return (
+			<div className="flex flex-col w-full h-full p-6 bg-white rounded-lg items-center justify-center">
+				<FileText className="h-16 w-16 text-gray-400 mb-4" />
+				<h2 className="text-xl font-semibold text-gray-600 mb-2">Termination Not Found</h2>
+				<p className="text-gray-500 mb-4">The requested termination process could not be found.</p>
+				<Button onClick={() => router.push("/off-boarding/exit-process")}>
+					Back to Exit Processes
+				</Button>
 			</div>
 		);
 	}
@@ -408,31 +457,72 @@ const ExitProcessCreate = () => {
 							</Button>
 							<div>
 								<CardTitle className="text-2xl sm:text-3xl font-semibold text-gray-800">
-									Create Termination Process
+									Edit Termination Process
 								</CardTitle>
 								<p className="text-sm text-gray-600 mt-1">
-									Initiate a new employee termination process
+									Update employee termination process details
 								</p>
+							</div>
+							<div className="ml-auto flex items-center gap-2">
+								<Badge className={getStatusColor(termination.status)}>
+									{termination.status.toLowerCase().replace(/_/g, " ")}
+								</Badge>
+								<Badge variant="outline" className="text-xs">
+									ID: {termination.id}
+								</Badge>
 							</div>
 						</div>
 					</CardHeader>
 
 					<CardContent className="p-6">
-						{authError && (
-							<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-								<p>{authError}</p>
-								<Button
-									onClick={() => router.push("/login")}
-									className="mt-2 rounded-md bg-red-600 hover:bg-red-700 text-white text-sm"
-								>
-									Go to Login
-								</Button>
-							</div>
-						)}
-
 						<form onSubmit={handleSubmit} className="space-y-6">
-							{/* Termination Type and Employee Selection - Side by Side */}
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							{/* Process Status and Initator Type */}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-800">Process Status</Label>
+									<div className="flex flex-wrap gap-2">
+										{["INITIATED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].map((status) => (
+											<Badge
+												key={status}
+												variant={formData.status === status ? "default" : "outline"}
+												className={`cursor-pointer ${
+													formData.status === status
+														? getStatusColor(status)
+														: "bg-white hover:bg-gray-50"
+												}`}
+												onClick={() => handleStatusChange(status as FormData["status"])}
+											>
+												{status.toLowerCase().replace(/_/g, " ")}
+											</Badge>
+										))}
+									</div>
+								</div>
+
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-800">Initiator Type</Label>
+									<div className="flex flex-wrap gap-2">
+										{["EMPLOYEE", "MANAGER", "HR", "EMPLOYER"].map((type) => (
+											<Badge
+												key={type}
+												variant={formData.initiator_type === type ? "default" : "outline"}
+												className={`cursor-pointer ${
+													formData.initiator_type === type
+														? "bg-blue-100 text-blue-800 border-blue-200"
+														: "bg-white hover:bg-gray-50"
+												}`}
+												onClick={() =>
+													handleInitiatorTypeChange(type as FormData["initiator_type"])
+												}
+											>
+												{type.toLowerCase()}
+											</Badge>
+										))}
+									</div>
+								</div>
+							</div>
+
+							{/* Termination Type and Employee Selection */}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								{/* Termination Type Selection */}
 								<div className="space-y-2">
 									<Label htmlFor="termination_type" className="text-sm font-medium text-gray-800">
@@ -440,20 +530,12 @@ const ExitProcessCreate = () => {
 									</Label>
 									{loadingTerminationTypes ? (
 										<div className="flex items-center justify-center py-4 border border-gray-300 rounded-lg">
-											<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+											<Loader2 className="h-4 w-4 animate-spin mr-2" />
 											<span className="text-sm text-gray-600">Loading termination types...</span>
 										</div>
 									) : terminationTypes.length === 0 ? (
 										<div className="text-center py-4 border border-gray-300 rounded-lg">
 											<span className="text-sm text-gray-600">No termination types available</span>
-											<Button
-												variant="outline"
-												size="sm"
-												className="mt-2"
-												onClick={() => fetchTerminationTypes()}
-											>
-												Retry
-											</Button>
 										</div>
 									) : (
 										<div className="relative" ref={dropdownRef}>
@@ -509,24 +591,15 @@ const ExitProcessCreate = () => {
 														</p>
 													)}
 												</div>
-												<span
-													className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(selectedTerminationType.category)}`}
-												>
+												<Badge className={getCategoryColor(selectedTerminationType.category)}>
 													{selectedTerminationType.category}
-												</span>
+												</Badge>
 											</div>
 											{selectedTerminationType.requires_handover_report && (
 												<p className="text-xs text-blue-600 mt-2">
 													<strong>Note:</strong> This termination type requires a handover report
 												</p>
 											)}
-											{selectedTerminationType.supported_stages &&
-												selectedTerminationType.supported_stages.length > 0 && (
-													<p className="text-xs text-blue-600 mt-1">
-														<strong>Stages:</strong>{" "}
-														{selectedTerminationType.supported_stages.length} stages configured
-													</p>
-												)}
 										</div>
 									)}
 								</div>
@@ -547,18 +620,50 @@ const ExitProcessCreate = () => {
 								</div>
 							</div>
 
-							{/* Handover Report Section - Only show if required */}
+							{/* Handover Report Section */}
 							{selectedTerminationType?.requires_handover_report && (
 								<div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
 									<div className="flex items-center gap-2">
 										<FileText className="h-5 w-5 text-gray-600" />
-										<h3 className="text-sm font-semibold text-gray-800">Handover Report *</h3>
+										<h3 className="text-sm font-semibold text-gray-800">Handover Report</h3>
+										{existingHandoverReport && (
+											<Badge variant="outline" className="ml-2 text-xs">
+												Existing Report
+											</Badge>
+										)}
 									</div>
+
+									{/* Existing File Display */}
+									{existingHandoverReport?.report_file && (
+										<div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+											<div className="flex items-center gap-2">
+												<div className="p-2 bg-green-100 rounded">
+													<FileText className="h-4 w-4 text-green-600" />
+												</div>
+												<div>
+													<p className="text-sm font-medium text-green-800">
+														Current: {existingHandoverReport.report_file.split("/").pop()}
+													</p>
+													<p className="text-xs text-green-600">
+														Uploaded on{" "}
+														{new Date(existingHandoverReport.created_at).toLocaleDateString()}
+													</p>
+												</div>
+											</div>
+											<button
+												type="button"
+												onClick={handleRemoveExistingFile}
+												className="p-1 hover:bg-green-100 rounded transition-colors"
+											>
+												<X className="h-4 w-4 text-green-600" />
+											</button>
+										</div>
+									)}
 
 									{/* File Upload */}
 									<div className="space-y-2">
 										<Label htmlFor="handover_report" className="text-sm font-medium text-gray-700">
-											Upload Document (Optional)
+											{existingHandoverReport ? "Replace Document" : "Upload Document"} (Optional)
 										</Label>
 										<input
 											ref={fileInputRef}
@@ -576,22 +681,26 @@ const ExitProcessCreate = () => {
 												className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex flex-col items-center justify-center gap-2 text-gray-600 hover:text-gray-700 bg-white"
 											>
 												<Upload className="h-6 w-6" />
-												<span className="text-sm">Click to upload handover report</span>
+												<span className="text-sm">
+													{existingHandoverReport
+														? "Click to replace file"
+														: "Click to upload handover report"}
+												</span>
 												<span className="text-xs text-gray-500">
 													PDF, DOC, DOCX, TXT (Max 10MB)
 												</span>
 											</button>
 										) : (
-											<div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+											<div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
 												<div className="flex items-center gap-2">
-													<div className="p-2 bg-green-100 rounded">
-														<FileText className="h-4 w-4 text-green-600" />
+													<div className="p-2 bg-blue-100 rounded">
+														<FileText className="h-4 w-4 text-blue-600" />
 													</div>
 													<div>
-														<p className="text-sm font-medium text-green-800">
+														<p className="text-sm font-medium text-blue-800">
 															{handoverReport.name}
 														</p>
-														<p className="text-xs text-green-600">
+														<p className="text-xs text-blue-600">
 															{(handoverReport.size / 1024 / 1024).toFixed(2)} MB
 														</p>
 													</div>
@@ -599,9 +708,9 @@ const ExitProcessCreate = () => {
 												<button
 													type="button"
 													onClick={handleRemoveFile}
-													className="p-1 hover:bg-green-100 rounded transition-colors"
+													className="p-1 hover:bg-blue-100 rounded transition-colors"
 												>
-													<X className="h-4 w-4 text-green-600" />
+													<X className="h-4 w-4 text-blue-600" />
 												</button>
 											</div>
 										)}
@@ -613,7 +722,7 @@ const ExitProcessCreate = () => {
 											htmlFor="handover_report_text"
 											className="text-sm font-medium text-gray-700"
 										>
-											Or Enter Report Text
+											Report Text
 										</Label>
 										<Textarea
 											id="handover_report_text"
@@ -623,7 +732,9 @@ const ExitProcessCreate = () => {
 											className="w-full min-h-[120px] resize-vertical bg-white border-gray-300 focus:border-gray-400 focus:ring-gray-400 rounded-lg"
 										/>
 										<p className="text-xs text-gray-500">
-											You can provide either a file, text, or both for the handover report.
+											{existingHandoverReport?.report_text
+												? "Current text will be replaced"
+												: "You can provide either a file, text, or both for the handover report."}
 										</p>
 									</div>
 								</div>
@@ -649,7 +760,7 @@ const ExitProcessCreate = () => {
 								</div>
 							</div>
 
-							{/* Date Fields in Grid */}
+							{/* Date Fields */}
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 								<div className="space-y-2">
 									<Label htmlFor="last_working_day" className="text-sm font-medium text-gray-800">
@@ -666,7 +777,6 @@ const ExitProcessCreate = () => {
 									/>
 								</div>
 
-								{/* Final Payment Date - Only show if checkbox is checked */}
 								{formData.is_paid_after_termination && (
 									<div className="space-y-2">
 										<Label
@@ -704,30 +814,45 @@ const ExitProcessCreate = () => {
 								/>
 							</div>
 
+							{/* Action Buttons */}
 							<div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-gray-200">
 								<Button
 									type="button"
 									variant="outline"
-									onClick={() => router.push("/off-boarding/exit-process")}
+									onClick={handleBack}
 									disabled={loading}
 									className="w-full sm:w-auto px-6 py-2 text-sm font-medium rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
 								>
 									Cancel
 								</Button>
-								<Button
-									type="submit"
-									disabled={loading || !selectedTerminationType}
-									className="flex rounded-full w-full max-w-sm items-center gap-2 px-6 lg:px-8"
-								>
-									{loading ? (
-										<div className="flex items-center gap-2">
-											<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-											Creating Termination...
-										</div>
-									) : (
-										`Create ${selectedTerminationType?.name || "Termination"} Process`
-									)}
-								</Button>
+								<div className="flex gap-3">
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => router.push(`/off-boarding/exit-process/${terminationId}`)}
+										disabled={loading}
+										className="px-6 py-2 text-sm font-medium rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
+									>
+										View Details
+									</Button>
+									<Button
+										type="submit"
+										disabled={loading}
+										className="flex rounded-full items-center gap-2 px-6 lg:px-8 bg-blue-600 hover:bg-blue-700"
+									>
+										{loading ? (
+											<div className="flex items-center gap-2">
+												<Loader2 className="h-4 w-4 animate-spin" />
+												Updating...
+											</div>
+										) : (
+											<>
+												<Save className="h-4 w-4" />
+												Update Process
+											</>
+										)}
+									</Button>
+								</div>
 							</div>
 						</form>
 					</CardContent>
@@ -737,4 +862,4 @@ const ExitProcessCreate = () => {
 	);
 };
 
-export default ExitProcessCreate;
+export default ExitProcessEdit;
