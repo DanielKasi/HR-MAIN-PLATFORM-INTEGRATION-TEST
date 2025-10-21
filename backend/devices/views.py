@@ -559,6 +559,15 @@ class DeviceCallbackView(APIView):
                     record_reference = record.get("record_reference")
                     datetime_str = record.get("datetime")
 
+
+                    created_already_log = EmployeeLogs.objects.filter(
+                        record_reference=record_reference
+                    ).exists()
+
+                    if created_already_log:
+                        print(f"Log with reference {record_reference} already exists. Skipping.")
+                        continue
+
                     if not all(
                         [
                             serial_number,
