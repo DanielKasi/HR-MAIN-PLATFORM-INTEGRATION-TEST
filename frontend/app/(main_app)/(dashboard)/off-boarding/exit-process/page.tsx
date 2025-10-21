@@ -45,7 +45,7 @@ import StageReorderModal from "@/components/stage-reorder-modal";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { useAppSelector } from "@/lib/hooks";
 
-// Your existing interfaces remain the same
+// Updated interfaces to match your API response
 export interface ITerminationStage {
 	id: number;
 	stage: {
@@ -90,19 +90,9 @@ export interface ITerminationType {
 
 export interface ITermination {
 	id: number;
-	employee: {
-		id: number;
-		name: string;
-		email: string;
-	} | null;
+	employee: string; // Changed from object to string based on API response
 	termination_type: ITerminationType;
-	initiated_by: {
-		id: number;
-		user: {
-			fullname: string;
-			email: string;
-		};
-	} | null;
+	initiated_by: string; // Changed from object to string based on API response
 	last_working_day: string;
 	reason: string;
 	status: "INITIATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
@@ -113,7 +103,7 @@ export interface ITermination {
 	} | null;
 	created_at: string;
 	updated_at: string;
-	initiator_type: "EMPLOYEE" | "MANAGER" | "HR";
+	initiator_type: "EMPLOYEE" | "MANAGER" | "HR" | "EMPLOYER"; // Added EMPLOYER
 	is_paid_after_termination: boolean;
 	final_payment_date: string | null;
 }
@@ -129,8 +119,6 @@ export default function ExitProcessPage() {
 	const router = useRouter();
 	const currentInstitution = useSelector(selectSelectedInstitution);
 
-	const [terminationTypes, setTerminationTypes] = useState<ITerminationType[]>([]);
-	const [loadingTerminationTypes, setLoadingTerminationTypes] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [categoryFilter, setCategoryFilter] = useState("all");
@@ -144,100 +132,6 @@ export default function ExitProcessPage() {
 
 	const observerRef = useRef<IntersectionObserver | null>(null);
 	const loadMoreRef = useRef<HTMLDivElement | null>(null);
-
-	// Fixed termination types fetching
-	const fetchTerminationTypes = async () => {
-		if (!currentInstitution) return;
-
-		try {
-			setLoadingTerminationTypes(true);
-			console.log("Fetching termination types...");
-
-			// Try multiple possible endpoints
-			const possibleEndpoints = [
-				"/on-boarding/termination-types/",
-				"/on-boarding/separation-types/",
-				"/api/termination-types/",
-			];
-
-			let typesData: ITerminationType[] = [];
-
-			for (const endpoint of possibleEndpoints) {
-				try {
-					const response = await apiRequest.get(endpoint);
-					console.log(`Response from ${endpoint}:`, response.data);
-
-					if (
-						response.data &&
-						(Array.isArray(response.data) || Array.isArray(response.data?.results))
-					) {
-						const dataArray = Array.isArray(response.data) ? response.data : response.data.results;
-
-						typesData = dataArray.map((item: any) => ({
-							id: item.id,
-							name: item.name || item.separation_type || `Type ${item.id}`,
-							description: item.description || "",
-							category: item.category || "other",
-							requires_handover_report: item.requires_handover_report || false,
-							supported_stages: item.supported_stages || [],
-							approval_status: item.approval_status || "approved",
-							is_active: item.is_active !== undefined ? item.is_active : true,
-							created_at: item.created_at || new Date().toISOString(),
-							updated_at: item.updated_at || new Date().toISOString(),
-						}));
-
-						if (typesData.length > 0) {
-							console.log(`Found ${typesData.length} types from ${endpoint}`);
-							break;
-						}
-					}
-				} catch (error) {
-					console.log(`Endpoint ${endpoint} failed:`, error);
-					continue;
-				}
-			}
-
-			// Fallback to hardcoded types if no API endpoint works
-			if (typesData.length === 0) {
-				console.log("Using fallback termination types");
-				typesData = [
-					{
-						id: 1,
-						name: "Voluntary Resignation",
-						description: "Employee-initiated separation",
-						category: "resignation",
-						requires_handover_report: true,
-						supported_stages: [],
-						approval_status: "approved",
-						is_active: true,
-						created_at: new Date().toISOString(),
-						updated_at: new Date().toISOString(),
-					},
-					{
-						id: 2,
-						name: "Involuntary Termination",
-						description: "Company-initiated separation",
-						category: "termination",
-						requires_handover_report: true,
-						supported_stages: [],
-						approval_status: "approved",
-						is_active: true,
-						created_at: new Date().toISOString(),
-						updated_at: new Date().toISOString(),
-					},
-				];
-			}
-
-			setTerminationTypes(typesData);
-		} catch (err) {
-			console.error("Error fetching termination types:", err);
-			showErrorToast({ error: err, defaultMessage: "Failed to fetch termination types" });
-			// Set empty array to avoid infinite loading
-			setTerminationTypes([]);
-		} finally {
-			setLoadingTerminationTypes(false);
-		}
-	};
 
 	const fetchTerminations = useCallback(
 		async (isInitial = false) => {
@@ -291,12 +185,6 @@ export default function ExitProcessPage() {
 		}
 	}, [currentInstitution?.id, searchTerm, statusFilter, categoryFilter]);
 
-	useEffect(() => {
-		if (currentInstitution) {
-			fetchTerminationTypes();
-		}
-	}, [currentInstitution?.id]);
-
 	// Infinite scroll observer (keep your existing implementation)
 	useEffect(() => {
 		if (loading || !hasMore) return;
@@ -322,24 +210,9 @@ export default function ExitProcessPage() {
 		};
 	}, [loading, hasMore, fetchTerminations]);
 
-	const handleCreateNewExitProcess = useCallback(
-		(terminationType: ITerminationType) => {
-			console.log("Creating process with type:", terminationType);
-
-			if (!terminationType?.id || !terminationType?.category) {
-				showErrorToast({ defaultMessage: "Invalid termination type selected" });
-				return;
-			}
-
-			const params = new URLSearchParams({
-				category: terminationType.category,
-				typeId: terminationType.id.toString(),
-			});
-
-			router.push(`/off-boarding/exit-process/create?${params.toString()}`);
-		},
-		[router],
-	);
+	const handleCreateNewExitProcess = useCallback(() => {
+		router.push(`/off-boarding/exit-process/create`);
+	}, [router]);
 
 	const handleReorderSuccess = useCallback(() => {
 		if (!terminationToReorder) return;
@@ -423,59 +296,16 @@ export default function ExitProcessPage() {
 					</p>
 				</div>
 				<div className="ml-auto">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								className="rounded-xl px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base focus-visible:ring-0 focus-visible:ring-offset-0"
-								disabled={loadingTerminationTypes}
-							>
-								<Plus className="h-4 w-4 mr-2" />
-								{loadingTerminationTypes ? "Loading..." : "New Exit Process"}
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-64">
-							{loadingTerminationTypes ? (
-								<div className="flex items-center justify-center py-4">
-									<Loader2 className="h-4 w-4 animate-spin mr-2" />
-									<span className="text-sm">Loading types...</span>
-								</div>
-							) : terminationTypes.length === 0 ? (
-								<div className="text-center py-4 text-sm text-muted-foreground">
-									No termination types found
-									<Button
-										variant="outline"
-										size="sm"
-										className="mt-2"
-										onClick={() => fetchTerminationTypes()}
-									>
-										Retry
-									</Button>
-								</div>
-							) : (
-								terminationTypes.map((type) => (
-									<DropdownMenuItem
-										key={type.id}
-										onClick={() => handleCreateNewExitProcess(type)}
-										className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
-									>
-										<div className="flex items-center justify-between w-full">
-											<span className="font-medium text-sm">{type.name}</span>
-											<Badge className={getCategoryColor(type.category)} variant="outline">
-												{type.category}
-											</Badge>
-										</div>
-										{type.description && (
-											<span className="text-xs text-muted-foreground mt-1">{type.description}</span>
-										)}
-									</DropdownMenuItem>
-								))
-							)}
-						</DropdownMenuContent>
-					</DropdownMenu>
+					<Button
+						className="rounded-xl px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base focus-visible:ring-0 focus-visible:ring-offset-0"
+						onClick={handleCreateNewExitProcess}
+					>
+						<Plus className="h-4 w-4 mr-2" />
+						New Exit Process
+					</Button>
 				</div>
 			</div>
 
-			{/* Rest of your JSX remains the same */}
 			<div className="flex flex-col sm:flex-row gap-4 mb-6">
 				<div className="relative sm:w-[500px]">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -514,7 +344,6 @@ export default function ExitProcessPage() {
 				</div>
 			</div>
 
-			{/* Content section remains exactly the same as your original */}
 			<div className="space-y-4">
 				{initialLoad && loading ? (
 					<TableSkeleton rows={5} columns={1} />
@@ -533,11 +362,10 @@ export default function ExitProcessPage() {
 										<CardContent className="p-6">
 											<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
 												<div className="flex-1 space-y-3">
-													{/* Your existing card content */}
 													<div className="flex items-start justify-between">
 														<div>
 															<h3 className="font-semibold text-lg">
-																{termination.employee?.name || "Unknown Employee"}
+																{termination.employee || "Employee"}
 															</h3>
 															<p className="text-sm text-muted-foreground">
 																{termination.termination_type?.name || "No type"}
@@ -621,7 +449,16 @@ export default function ExitProcessPage() {
 															<Users className="h-4 w-4 text-muted-foreground" />
 															<span className="text-muted-foreground">Initiated by:</span>
 															<span className="font-medium">
-																{termination.initiated_by?.user?.fullname || "N/A"}
+																{termination.initiated_by ||
+																	(termination.initiator_type === "EMPLOYEE"
+																		? "Employee"
+																		: termination.initiator_type === "MANAGER"
+																			? "Manager"
+																			: termination.initiator_type === "HR"
+																				? "HR"
+																				: termination.initiator_type === "EMPLOYER"
+																					? "Employer"
+																					: "System")}
 															</span>
 														</div>
 													</div>
@@ -691,11 +528,7 @@ export default function ExitProcessPage() {
 					isOpen={reorderModalOpen}
 					terminationId={terminationToReorder.id}
 					stages={getStagesForDisplay(terminationToReorder)}
-					employeeName={
-						terminationToReorder.employee?.name ||
-						terminationToReorder.employee?.email ||
-						"Employee"
-					}
+					employeeName={terminationToReorder.employee || "Employee"}
 					onClose={() => {
 						setReorderModalOpen(false);
 						setTimeout(() => setTerminationToReorder(null), 100);

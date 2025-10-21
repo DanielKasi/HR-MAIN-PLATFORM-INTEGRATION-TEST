@@ -2,7 +2,19 @@
 
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreVertical, Search, X } from "lucide-react";
+import {
+	Plus,
+	Pencil,
+	Trash2,
+	CheckCircle2,
+	XCircle,
+	MoreVertical,
+	Search,
+	X,
+	GripVertical,
+	Eye,
+	EyeOff,
+} from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -66,10 +78,23 @@ import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 const formSchema = z.object({
 	separation_type: z.string().min(2, "Type name must be at least 2 characters"),
 	description: z.string().min(2, "Description must be at least 2 characters"),
-	supported_stages: z.array(z.number()),
+	supported_stages: z.array(
+		z.object({
+			stage_id: z.number(),
+			position: z.number(),
+			can_be_skipped: z.boolean().optional(),
+		}),
+	),
 	is_active: z.boolean().optional(),
 	requires_handover_report: z.boolean().optional(),
 });
+
+interface SelectedStage {
+	stage_id: number;
+	position: number;
+	can_be_skipped: boolean;
+	stage_name: string;
+}
 
 export default function SeparationPolicyTypesPage() {
 	const router = useRouter();
@@ -181,28 +206,82 @@ export default function SeparationPolicyTypesPage() {
 	const handleEdit = (policyType: ISeparationType) => {
 		setEditingPolicyType(policyType);
 
-		// Extract stage IDs from the supported_stages array
-		const stageIds =
-			policyType.supported_stages?.map((supportedStage) =>
-				typeof supportedStage.stage === "number" ? supportedStage.stage : supportedStage.stage.id,
-			) || [];
+		// Extract stage data from the supported_stages array
+		const stageData =
+			policyType.supported_stages?.map((supportedStage, index) => ({
+				stage_id:
+					typeof supportedStage.stage === "number" ? supportedStage.stage : supportedStage.stage.id,
+				position: index + 1,
+				can_be_skipped: supportedStage.can_be_skipped || false,
+				stage_name: typeof supportedStage.stage === "object" ? supportedStage.stage.name : "Stage",
+			})) || [];
 
 		form.reset({
-			separation_type: policyType.name, // Use 'name' field from new API
+			separation_type: policyType.name,
 			description: policyType.description,
-			supported_stages: stageIds,
+			supported_stages: stageData,
 			is_active: policyType.is_active,
 			requires_handover_report: policyType.requires_handover_report,
 		});
 		setIsEditDialogOpen(true);
 	};
 
+	const addStage = (stageId: number) => {
+		const currentValues = form.getValues("supported_stages") || [];
+		const stage = stages.find((s) => s.id === stageId);
+
+		if (!stage) return;
+
+		// Check if stage is already added
+		if (currentValues.some((item) => item.stage_id === stageId)) {
+			toast.error("Stage already added");
+			return;
+		}
+
+		const newStage: SelectedStage = {
+			stage_id: stageId,
+			position: currentValues.length + 1,
+			can_be_skipped: false,
+			stage_name: stage.name,
+		};
+
+		form.setValue("supported_stages", [...currentValues, newStage]);
+	};
+
 	const removeStage = (stageId: number) => {
 		const currentValues = form.getValues("supported_stages") || [];
-		form.setValue(
-			"supported_stages",
-			currentValues.filter((v) => v !== stageId),
+		const updatedStages = currentValues
+			.filter((item) => item.stage_id !== stageId)
+			.map((item, index) => ({
+				...item,
+				position: index + 1,
+			}));
+		form.setValue("supported_stages", updatedStages);
+	};
+
+	const toggleStageSkip = (stageId: number) => {
+		const currentValues = form.getValues("supported_stages") || [];
+		const updatedStages = currentValues.map((item) =>
+			item.stage_id === stageId ? { ...item, can_be_skipped: !item.can_be_skipped } : item,
 		);
+		form.setValue("supported_stages", updatedStages);
+	};
+
+	const moveStage = (fromIndex: number, toIndex: number) => {
+		const currentValues = form.getValues("supported_stages") || [];
+		if (toIndex < 0 || toIndex >= currentValues.length) return;
+
+		const updatedStages = [...currentValues];
+		const [movedItem] = updatedStages.splice(fromIndex, 1);
+		updatedStages.splice(toIndex, 0, movedItem);
+
+		// Update positions
+		const reorderedStages = updatedStages.map((item, index) => ({
+			...item,
+			position: index + 1,
+		}));
+
+		form.setValue("supported_stages", reorderedStages);
 	};
 
 	const clearFilters = () => {
@@ -248,7 +327,7 @@ export default function SeparationPolicyTypesPage() {
 											Add Termination Type
 										</Button>
 									</DialogTrigger>
-									<DialogContent>
+									<DialogContent className="max-w-2xl">
 										<DialogHeader>
 											<DialogTitle>Add New Termination Type</DialogTitle>
 											<DialogDescription>Create a new termination type</DialogDescription>
@@ -289,15 +368,8 @@ export default function SeparationPolicyTypesPage() {
 															<FormLabel>Supported Stages</FormLabel>
 															<Select
 																onValueChange={(value: string) => {
-																	const currentValues = field.value || [];
 																	const numValue = parseInt(value);
-																	const index = currentValues.indexOf(numValue);
-
-																	if (index === -1) {
-																		field.onChange([...currentValues, numValue]);
-																	} else {
-																		field.onChange(currentValues.filter((v) => v !== numValue));
-																	}
+																	addStage(numValue);
 																}}
 															>
 																<FormControl>
@@ -307,7 +379,13 @@ export default function SeparationPolicyTypesPage() {
 																</FormControl>
 																<SelectContent>
 																	{stages.map((stage) => (
-																		<SelectItem key={stage.id} value={stage.id.toString()}>
+																		<SelectItem
+																			key={stage.id}
+																			value={stage.id.toString()}
+																			disabled={field.value?.some(
+																				(item) => item.stage_id === stage.id,
+																			)}
+																		>
 																			{stage.name}
 																		</SelectItem>
 																	))}
@@ -317,23 +395,56 @@ export default function SeparationPolicyTypesPage() {
 																Selected stages: {field.value?.length || 0}
 															</FormDescription>
 															{field.value && field.value.length > 0 && (
-																<div className="flex flex-wrap gap-2 mt-2">
-																	{field.value.map((stageId) => {
-																		const stage = stages.find((s) => s.id === stageId);
-																		return stage ? (
-																			<Badge
-																				key={stageId}
-																				variant="secondary"
-																				className="flex items-center gap-1"
-																			>
-																				{stage.name}
-																				<X
-																					className="h-3 w-3 cursor-pointer"
-																					onClick={() => removeStage(stageId)}
-																				/>
-																			</Badge>
-																		) : null;
-																	})}
+																<div className="space-y-2 mt-2">
+																	{field.value.map((stageItem, index) => (
+																		<div
+																			key={stageItem.stage_id}
+																			className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50/50"
+																		>
+																			<GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
+																			<div className="flex-1">
+																				<div className="flex items-center gap-2">
+																					<Badge variant="secondary" className="flex-shrink-0">
+																						{stageItem.position}
+																					</Badge>
+																					<span className="font-medium">
+																						{stageItem.stage_name}
+																					</span>
+																				</div>
+																			</div>
+																			<div className="flex items-center gap-2">
+																				<Button
+																					type="button"
+																					variant="ghost"
+																					size="sm"
+																					onClick={() => toggleStageSkip(stageItem.stage_id)}
+																					className={cn(
+																						"flex items-center gap-1",
+																						stageItem.can_be_skipped
+																							? "text-green-600"
+																							: "text-gray-600",
+																					)}
+																				>
+																					{stageItem.can_be_skipped ? (
+																						<EyeOff className="h-4 w-4" />
+																					) : (
+																						<Eye className="h-4 w-4" />
+																					)}
+																					<span className="text-xs">
+																						{stageItem.can_be_skipped ? "Skippable" : "Required"}
+																					</span>
+																				</Button>
+																				<Button
+																					type="button"
+																					variant="ghost"
+																					size="sm"
+																					onClick={() => removeStage(stageItem.stage_id)}
+																				>
+																					<X className="h-4 w-4" />
+																				</Button>
+																			</div>
+																		</div>
+																	))}
 																</div>
 															)}
 															<FormMessage />
@@ -383,7 +494,7 @@ export default function SeparationPolicyTypesPage() {
 					}
 				}}
 			>
-				<DialogContent>
+				<DialogContent className="max-w-2xl">
 					<DialogHeader>
 						<DialogTitle>Edit Termination Type</DialogTitle>
 						<DialogDescription>Update the details of this termination type</DialogDescription>
@@ -424,15 +535,8 @@ export default function SeparationPolicyTypesPage() {
 										<FormLabel>Supported Stages</FormLabel>
 										<Select
 											onValueChange={(value: string) => {
-												const currentValues = field.value || [];
 												const numValue = parseInt(value);
-												const index = currentValues.indexOf(numValue);
-
-												if (index === -1) {
-													field.onChange([...currentValues, numValue]);
-												} else {
-													field.onChange(currentValues.filter((v) => v !== numValue));
-												}
+												addStage(numValue);
 											}}
 										>
 											<FormControl>
@@ -442,7 +546,11 @@ export default function SeparationPolicyTypesPage() {
 											</FormControl>
 											<SelectContent>
 												{stages.map((stage) => (
-													<SelectItem key={stage.id} value={stage.id.toString()}>
+													<SelectItem
+														key={stage.id}
+														value={stage.id.toString()}
+														disabled={field.value?.some((item) => item.stage_id === stage.id)}
+													>
 														{stage.name}
 													</SelectItem>
 												))}
@@ -450,23 +558,58 @@ export default function SeparationPolicyTypesPage() {
 										</Select>
 										<FormDescription>Selected stages: {field.value?.length || 0}</FormDescription>
 										{field.value && field.value.length > 0 && (
-											<div className="flex flex-wrap gap-2 mt-2">
-												{field.value.map((stageId) => {
-													const stage = stages.find((s) => s.id === stageId);
-													return stage ? (
-														<Badge
-															key={stageId}
-															variant="secondary"
-															className="flex items-center gap-1"
-														>
-															{stage.name}
-															<X
-																className="h-3 w-3 cursor-pointer"
-																onClick={() => removeStage(stageId)}
-															/>
-														</Badge>
-													) : null;
-												})}
+											<div className="space-y-2 mt-2">
+												{field.value.map((stageItem, index) => (
+													<div
+														key={stageItem.stage_id}
+														className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50/50"
+													>
+														<GripVertical
+															className="h-4 w-4 text-gray-400 cursor-move"
+															onMouseDown={(e) => {
+																// Simple drag and drop implementation
+																e.preventDefault();
+															}}
+														/>
+														<div className="flex-1">
+															<div className="flex items-center gap-2">
+																<Badge variant="secondary" className="flex-shrink-0">
+																	{stageItem.position}
+																</Badge>
+																<span className="font-medium">{stageItem.stage_name}</span>
+															</div>
+														</div>
+														<div className="flex items-center gap-2">
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={() => toggleStageSkip(stageItem.stage_id)}
+																className={cn(
+																	"flex items-center gap-1",
+																	stageItem.can_be_skipped ? "text-green-600" : "text-gray-600",
+																)}
+															>
+																{stageItem.can_be_skipped ? (
+																	<EyeOff className="h-4 w-4" />
+																) : (
+																	<Eye className="h-4 w-4" />
+																)}
+																<span className="text-xs">
+																	{stageItem.can_be_skipped ? "Skippable" : "Required"}
+																</span>
+															</Button>
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={() => removeStage(stageItem.stage_id)}
+															>
+																<X className="h-4 w-4" />
+															</Button>
+														</div>
+													</div>
+												))}
 											</div>
 										)}
 										<FormMessage />
@@ -581,17 +724,36 @@ export default function SeparationPolicyTypesPage() {
 														</TableCell>
 														<TableCell>
 															<div className="flex flex-wrap gap-1">
-																{policyType.supported_stages?.slice(0, 3).map((supportedStage) => (
-																	<Badge
-																		key={supportedStage.id}
-																		variant="outline"
-																		className="text-xs"
-																	>
-																		{typeof supportedStage.stage === "object"
-																			? supportedStage.stage.name
-																			: "Stage"}
-																	</Badge>
-																))}
+																{policyType.supported_stages
+																	?.sort((a, b) => {
+																		// Sort by position if available, otherwise by ID
+																		const posA = a.position || 0;
+																		const posB = b.position || 0;
+																		return posA - posB;
+																	})
+																	.slice(0, 3)
+																	.map((supportedStage) => (
+																		<Badge
+																			key={supportedStage.id}
+																			variant="outline"
+																			className={cn(
+																				"text-xs flex items-center gap-1",
+																				supportedStage.can_be_skipped && "border-dashed",
+																			)}
+																		>
+																			{supportedStage.can_be_skipped && (
+																				<EyeOff className="h-3 w-3" />
+																			)}
+																			{typeof supportedStage.stage === "object"
+																				? supportedStage.stage.name
+																				: "Stage"}
+																			{supportedStage.position && (
+																				<span className="text-xs opacity-70">
+																					({supportedStage.position})
+																				</span>
+																			)}
+																		</Badge>
+																	))}
 																{policyType.supported_stages?.length > 3 && (
 																	<Badge variant="outline" className="text-xs">
 																		+{policyType.supported_stages.length - 3} more

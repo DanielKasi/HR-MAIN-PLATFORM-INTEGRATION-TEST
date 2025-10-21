@@ -279,23 +279,50 @@ const ExitProcessCreate = () => {
 					try {
 						console.log("Uploading handover report...");
 
+						// Create FormData for file upload
+						const formData = new FormData();
+						formData.append("offboarding", createdTermination.id.toString());
+
+						if (handoverReportText.trim()) {
+							formData.append("report_text", handoverReportText.trim());
+						}
+
+						if (handoverReport) {
+							formData.append("report_file", handoverReport);
+						}
+
+						if (currentUserId) {
+							formData.append("created_by", currentUserId.toString());
+							formData.append("updated_by", currentUserId.toString());
+						}
+
+						// Use the API utility with FormData
 						await ExitProcessAPI.createHandoverReport({
-							handoverData: {
-								offboarding: createdTermination.id,
-								report_text: handoverReportText.trim() || undefined,
-								report_file: handoverReport || undefined,
-								created_by: currentUserId,
-								updated_by: currentUserId,
-							},
+							handoverData: formData,
+							isFormData: true, // Add this flag to handle FormData
 						});
 
 						console.log("Handover report uploaded successfully");
-					} catch (handoverError) {
+					} catch (handoverError: any) {
 						console.error("Error uploading handover report:", handoverError);
-						showErrorToast({
-							error: handoverError,
-							defaultMessage: "Termination created but handover report upload failed",
-						});
+
+						// More detailed error handling
+						if (handoverError.response) {
+							console.error("Handover API Response:", handoverError.response.data);
+							showErrorToast({
+								defaultMessage: `Termination created but handover report upload failed: ${handoverError.response.data?.detail || handoverError.response.statusText}`,
+							});
+						} else if (handoverError.request) {
+							console.error("Handover API Request:", handoverError.request);
+							showErrorToast({
+								defaultMessage:
+									"Termination created but handover report upload failed: Network error",
+							});
+						} else {
+							showErrorToast({
+								defaultMessage: "Termination created but handover report upload failed",
+							});
+						}
 						// Don't throw - termination was created successfully
 					}
 				}
@@ -304,7 +331,24 @@ const ExitProcessCreate = () => {
 				router.push("/off-boarding/exit-process");
 			} catch (error: any) {
 				console.error("Submission error:", error);
-				showErrorToast({ error, defaultMessage: "Failed to initiate termination process" });
+
+				// More detailed error handling for main termination creation
+				if (error.response) {
+					console.error("Termination API Response:", error.response.data);
+					showErrorToast({
+						defaultMessage: `Failed to create termination: ${error.response.data?.detail || error.response.statusText}`,
+					});
+				} else if (error.request) {
+					console.error("Termination API Request:", error.request);
+					showErrorToast({
+						defaultMessage: "Network error: Unable to reach server. Please check your connection.",
+					});
+				} else {
+					showErrorToast({
+						error,
+						defaultMessage: "An unexpected error occurred while creating the termination process",
+					});
+				}
 			} finally {
 				setLoading(false);
 			}
