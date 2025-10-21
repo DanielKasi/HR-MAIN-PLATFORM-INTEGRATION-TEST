@@ -90,15 +90,15 @@ export default function BarVChart({
 			<CardContent className="flex-1 flex items-center p-2 sm:p-6">
 				<ChartContainer
 					config={chartConfig}
-					className="mx-auto w-full h-full max-h-[300px] sm:max-h-[350px] md:max-h-[400px] min-h-[250px]"
+					className="mx-auto w-full h-full max-h-[350px] sm:max-h-[400px] md:max-h-[450px] min-h-[280px]"
 				>
 					<BarChart
 						accessibilityLayer
 						data={items}
-						barCategoryGap={gap ? (window.innerWidth < 768 ? 8 : 10) : 0}
+						barCategoryGap={gap ? (window.innerWidth < 768 ? 12 : 16) : 0}
 						margin={{
 							top: 10,
-							bottom: 10,
+							bottom: window.innerWidth < 768 ? 40 : 50,
 							left: window.innerWidth < 768 ? 5 : 10,
 							right: window.innerWidth < 768 ? 5 : 10,
 						}}
@@ -107,17 +107,21 @@ export default function BarVChart({
 						<XAxis
 							dataKey={nameKey}
 							tickLine={false}
-							tickMargin={window.innerWidth < 768 ? 5 : 10}
+							tickMargin={window.innerWidth < 768 ? 8 : 12}
 							axisLine={false}
 							tickFormatter={(value) => {
 								const formatted = sentenceCase(value);
-								// Truncate long labels on mobile
-								return window.innerWidth < 768 && formatted.length > 8
-									? formatted.substring(0, 7) + "..."
-									: formatted;
+								// More aggressive truncation for mobile
+								if (window.innerWidth < 768) {
+									return formatted.length > 8 ? formatted.substring(0, 7) + ".." : formatted;
+								}
+								return formatted.length > 12 ? formatted.substring(0, 11) + ".." : formatted;
 							}}
-							interval={window.innerWidth < 768 ? "preserveStartEnd" : 0}
-							fontSize={window.innerWidth < 768 ? 10 : 12}
+							interval={0}
+							fontSize={window.innerWidth < 768 ? 10 : 11}
+							angle={0} // Keep labels horizontal
+							textAnchor="middle"
+							height={window.innerWidth < 768 ? 50 : 60}
 						/>
 						<YAxis
 							axisLine={false}

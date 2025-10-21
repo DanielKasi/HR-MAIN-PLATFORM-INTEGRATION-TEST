@@ -67,15 +67,15 @@ export default function EmployeePage() {
 		},
 		{
 			title: "New Hires (30d)",
-			value: data?.total_employees ?? 0,
+			value: data?.recent_hires ?? 0,
 			color: "text-emerald-600",
 			bg: "bg-emerald-100",
 			icon: "hugeicons:megaphone-02",
 			link: "#",
 		},
 		{
-			title: "Turn Over Rate",
-			value: data?.total_employees ?? 0,
+			title: "Average Age",
+			value: `${data?.average_age ?? 0} years`,
 			color: "text-orange-600",
 			bg: "bg-orange-100",
 			icon: "hugeicons:user-minus-02",
@@ -138,37 +138,32 @@ export default function EmployeePage() {
 								donut
 							/>
 
-							{/* Employee count by department */}
+							{/* Employee count by department - NOW USING REAL DATA */}
 							<BarVChart
-								title={"Employee By department"}
-								label={""}
+								title={"Employees By Department"}
+								label={"Employees"}
 								data={{
-									"2021-2025": [
-										{ year: "2021", count: 12 },
-										{ year: "2022", count: 20 },
-										{ year: "2023", count: 40 },
-										{ year: "2024", count: 30 },
-										{ year: "2025", count: 50 },
-									],
+									Current: data.employees_by_department.map((dept) => ({
+										department: dept.department,
+										count: dept.count,
+									})),
 								}}
 								dataKey={"count"}
-								nameKey={"year"}
+								nameKey={"department"}
 								colors={colors}
 								gap
 								rounded
 							/>
 
-							{/* Work Type Comparison */}
+							{/* Work Type Comparison - NOW USING REAL DATA */}
 							<BarVChart
 								title={"Work Type Distribution"}
-								label={""}
+								label={"Employees"}
 								data={{
-									"2025": [
-										{ worktype: "full-time", count: 12 },
-										{ worktype: "part-time", count: 20 },
-										{ worktype: "internship", count: 4 },
-										{ worktype: "contract", count: 5 },
-									],
+									Current: data.employees_by_work_type.map((workType) => ({
+										worktype: workType.work_type,
+										count: workType.count,
+									})),
 								}}
 								dataKey={"count"}
 								nameKey={"worktype"}
