@@ -287,7 +287,7 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
 
 class EmployeeStopCheckListView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ['employee', 'created_at', 'spotcheck_time', 'is_active', 'responded_at', 'status', 'notes']
-    default_ordering = ['employee']
+    default_ordering = ['-spotcheck_time']
     @extend_schema(
         request=SpotCheckModels.EmployeeSpotCheck,
         responses={
