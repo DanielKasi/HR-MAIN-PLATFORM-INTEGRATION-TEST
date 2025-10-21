@@ -215,6 +215,7 @@ class Asset(BaseApprovableModel):
 class AssetRequest(BaseApprovableModel):
 
     ASSET_REQUEST_STATUS_CHOICES = [
+        ("initiated", "Initiated"),
         ("pending", "Pending"),
         ("approved", "Approved"),
         ("rejected", "Rejected"),
@@ -237,7 +238,7 @@ class AssetRequest(BaseApprovableModel):
     asset_request_status = models.CharField(
         max_length=20,
         choices=ASSET_REQUEST_STATUS_CHOICES,
-        default="pending",
+        default="initiated",
     )
 
     notes = models.TextField(blank=True, null=True)
@@ -286,16 +287,7 @@ class AssetRequest(BaseApprovableModel):
         with transaction.atomic():
             if approval.status == "completed":
                 if approval.action.name == "create":
-                    self.asset_request_status = "approved"
-                    allocation = AssetAllocation(
-                        asset=self.asset,
-                        allocated_to=self.requester,
-                        responding_to_request=self,
-                        allocated_by=None,
-                        allocation_status="allocated",
-                        approval_status="active",
-                    )
-                    allocation.save()
+                    self.asset_request_status = "pending"
                     self.approval_status = "active"
                     self.is_active = True
                     self.deleted_at = None
