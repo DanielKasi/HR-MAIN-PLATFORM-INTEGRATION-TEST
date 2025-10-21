@@ -137,29 +137,25 @@ export default function PayrollDashboard() {
 							<BarHChart
 								title={"Payroll by Department"}
 								data={{
-									"This week": [
-										{ department: "Technology", count: 20_000_000 },
-										{ department: "Sales", count: 16_000_000 },
-										{ department: "Marketing", count: 12_000_000 },
-										{ department: "Operations", count: 10_000_000 },
-									],
+									Departments: data.payroll_by_department.map((dept) => ({
+										department: dept.department,
+										count: dept.total_net, // or total_gross depending on what you want to show
+									})),
 								}}
 								dataKey={"count"}
 								nameKey={"department"}
 								color={colors[3]}
 								rounded
 							/>
-
 							<Piechart
-								title={"Payroll Distribution"}
-								label={""}
+								title={"Penalty Breakdown"}
+								label={"Penalty Types"}
 								data={{
-									"This Month": [
-										{ name: "salary", count: 23 },
-										{ name: "Deductions", count: 12 },
-										{ name: "Overtime", count: 42 },
-										{ name: "Allowances", count: 35 },
-									],
+									Penalties:
+										data.penalty_breakdown?.map((penalty) => ({
+											name: penalty.penalty_type,
+											count: penalty.count,
+										})) || [],
 								}}
 								dataKey={"count"}
 								nameKey={"name"}
@@ -167,7 +163,7 @@ export default function PayrollDashboard() {
 							/>
 						</div>
 
-						<PayrollTable />
+						{/* <PayrollTable /> */}
 					</div>
 					<ReportDialog
 						isOpen={isReportsDialogOpen}
