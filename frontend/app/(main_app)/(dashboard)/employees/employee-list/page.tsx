@@ -147,7 +147,7 @@ export default function EmployeesPage() {
 					</CardTitle>
 
 					{/* Search and Filters Section */}
-					<div className="flex flex-col lg:flex-row gap-4 mt-6 sm:mt-12 overflow-visible">
+					<div className="flex flex-col xl:flex-row gap-4 mt-6 sm:mt-12 overflow-visible">
 						{/* Search Bar */}
 						<div className="relative w-full">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -212,22 +212,22 @@ export default function EmployeesPage() {
 										onChange={(formatted, numericValue) => setMaxSalary(formatted)}
 										className="w-full xs:w-[120px]"
 									/>
+									{(searchTerm ||
+										positionSearchTerm.length > 0 ||
+										departmentSearchTerm.length > 0 ||
+										minSalary ||
+										maxSalary) && (
+										<Button
+											variant="outline"
+											onClick={clearFilters}
+											className="w-full xs:w-auto mt-2 xs:mt-0 rounded-2xl h-12"
+										>
+											Clear Filters
+										</Button>
+									)}
 								</div>
 
 								{/* Clear Filters Button */}
-								{(searchTerm ||
-									positionSearchTerm.length > 0 ||
-									departmentSearchTerm.length > 0 ||
-									minSalary ||
-									maxSalary) && (
-									<Button
-										variant="outline"
-										onClick={clearFilters}
-										className="w-full xs:w-auto mt-2 xs:mt-0"
-									>
-										Clear Filters
-									</Button>
-								)}
 							</div>
 						</div>
 					</div>

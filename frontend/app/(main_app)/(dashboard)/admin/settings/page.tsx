@@ -31,7 +31,7 @@ export default function SettingsPage() {
 		| "branch_spotcheck"
 		| "bonus_point_settings"
 		| "integrations"
-		| "ownership_transfer"
+		| "superuser_transfer"
 	>("institution");
 	const [confirmationDialog, setConfirmationDialog] = useState({
 		isOpen: false,
@@ -52,8 +52,8 @@ export default function SettingsPage() {
 	);
 
 	useEffect(() => {
-		if (searchParams && destinationTabParam === "ownership_transfer") {
-			setActiveTab("ownership_transfer");
+		if (searchParams && destinationTabParam === "superuser_transfer") {
+			setActiveTab("superuser_transfer");
 		}
 	}, [searchParams]);
 
@@ -128,28 +128,28 @@ export default function SettingsPage() {
 							</button>
 
 							<button
-								onClick={() => setActiveTab("ownership_transfer")}
+								onClick={() => setActiveTab("superuser_transfer")}
 								className={`flex-shrink-0 lg:w-full flex items-start space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
-									activeTab === "ownership_transfer"
+									activeTab === "superuser_transfer"
 										? "bg-red-50 border border-red-200"
 										: "hover:bg-gray-50"
 								}`}
 							>
 								<Icon
 									icon="hugeicons:crown-03"
-									className={`!w-6 !h-6 ${activeTab === "ownership_transfer" ? "text-primary" : "text-gray-900"}`}
+									className={`!w-6 !h-6 ${activeTab === "superuser_transfer" ? "text-primary" : "text-gray-900"}`}
 								/>
 								<div className="whitespace-nowrap lg:whitespace-normal">
 									<div
 										className={`font-medium text-sm lg:text-base ${
-											activeTab === "ownership_transfer" ? "text-primary" : "text-gray-900"
+											activeTab === "superuser_transfer" ? "text-primary" : "text-gray-900"
 										}`}
 									>
 										Institution Ownership Transfer
 									</div>
 									<div
 										className={`text-xs lg:text-sm hidden lg:block ${
-											activeTab === "ownership_transfer" ? "text-[#6B7280]" : "text-[#6B7280]"
+											activeTab === "superuser_transfer" ? "text-[#6B7280]" : "text-[#6B7280]"
 										}`}
 									>
 										Change the super user of this institution, who will have full previledges
@@ -415,7 +415,7 @@ export default function SettingsPage() {
 													? renderBonusPointSettings()
 													: activeTab === "integrations"
 														? renderIntegrations()
-														: activeTab === "ownership_transfer"
+														: activeTab === "superuser_transfer"
 															? renderOwnershipTransfer()
 															: renderBonusPointSettings()}
 				</div>
