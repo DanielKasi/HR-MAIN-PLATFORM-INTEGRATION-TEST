@@ -465,7 +465,7 @@ class OffboardingDashboardView(APIView):
         # Recent separations
         recent_separations = [
             {
-                'id': item['id'],
+                # 'id': item['id'],
                 'employee_name': item['employee__name'],
                 'separation_type': item['termination_type__name'],
                 'category': (

@@ -228,6 +228,13 @@ class Employee(BaseApprovableModel):
         null=True,
         related_name="branch_payroll_employees",
     )
+    checkin_branch = models.ForeignKey(
+        "institution.Branch",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="branch_checkin_employees",
+    )
     date_of_birth = models.DateField(blank=True, null=True)
     work_type = models.ForeignKey(
         'employee.WorkType',
@@ -1060,7 +1067,7 @@ class EmployeeDay(BaseApprovableModel):
     def clean(self):
         if self.start_time and self.end_time:
             if self.start_time >= self.end_time:
-                raise ValidationError("Start time must be before end time.")
+                raise ValidationError({"error": "Start time must be before end time."})
             # Validate against BranchDay times
             branch_day = self.employee_working_days.employee.payroll_branch.working_days.branch_days.filter(
                 day=self.day
@@ -1068,11 +1075,11 @@ class EmployeeDay(BaseApprovableModel):
             if branch_day and branch_day.opening_time and branch_day.closing_time:
                 if self.start_time < branch_day.opening_time:
                     raise ValidationError(
-                        f"Employee start time ({self.start_time}) cannot be before branch opening time ({branch_day.opening_time})."
+                        {"error": f"Employee start time ({self.start_time}) cannot be before branch opening time ({branch_day.opening_time})."}
                     )
                 if self.end_time > branch_day.closing_time:
                     raise ValidationError(
-                        f"Employee end time ({self.end_time}) cannot be after branch closing time ({branch_day.closing_time})."
+                        {"error": f"Employee end time ({self.end_time}) cannot be after branch closing time ({branch_day.closing_time})."}
                     )
 
     def save(self, *args, **kwargs):
@@ -1128,27 +1135,27 @@ class EmployeeShift(BaseApprovableModel):
         # Validate shift type
         if self.is_recurring:
             if not self.start_date:
-                raise ValidationError("Start date is required for recurring shifts.")
+                raise ValidationError({"error": "Start date is required for recurring shifts."})
             if self.end_date and self.start_date > self.end_date:
-                raise ValidationError("Start date must be before end date.")
+                raise ValidationError({"error": "Start date must be before end date."})
             if self.date:
-                raise ValidationError("Date field should be null for recurring shifts.")
+                raise ValidationError({"error": "Date field should be null for recurring shifts."})
             # Validate weekday matches shift_day
             weekday = self.start_date.weekday() + 1  # SystemDay level 1=Monday
             if self.shift.shift_day.day.level != weekday:
                 raise ValidationError(
-                    f"Shift day ({self.shift.shift_day.day.day_name}) does not match start date weekday."
+                    {"error": f"Shift day ({self.shift.shift_day.day.day_name}) does not match start date weekday."}
                 )
         else:
             if not self.date:
-                raise ValidationError("Date is required for one-time shifts.")
+                raise ValidationError({"error": "Date is required for one-time shifts."})
             if self.start_date or self.end_date:
-                raise ValidationError("Start and end dates should be null for one-time shifts.")
+                raise ValidationError({"error": "Start and end dates should be null for one-time shifts."})
             # Validate shift_day matches date's weekday
             weekday = self.date.weekday() + 1
             if self.shift.shift_day.day.level != weekday:
                 raise ValidationError(
-                    f"Shift day ({self.shift.shift_day.day.day_name}) does not match shift date weekday."
+                    {"error": f"Shift day ({self.shift.shift_day.day.day_name}) does not match shift date weekday."}
                 )
 
         # Validate against EmployeeDay times
@@ -1158,11 +1165,11 @@ class EmployeeShift(BaseApprovableModel):
         if employee_day and employee_day.start_time and employee_day.end_time:
             if self.shift.start_time < employee_day.start_time:
                 raise ValidationError(
-                    f"Shift start time ({self.shift.start_time}) cannot be before employee working hours ({employee_day.start_time})."
+                    {"error": f"Shift start time ({self.shift.start_time}) cannot be before employee working hours ({employee_day.start_time})."}
                 )
             if self.shift.end_time > employee_day.end_time:
                 raise ValidationError(
-                    f"Shift end time ({self.shift.end_time}) cannot be after employee working hours ({employee_day.end_time})."
+                    {"error": f"Shift end time ({self.shift.end_time}) cannot be after employee working hours ({employee_day.end_time})."}
                 )
 
         # Check for time conflicts with other shifts on the same day
@@ -1184,10 +1191,9 @@ class EmployeeShift(BaseApprovableModel):
         for existing_shift in existing_shifts:
             if (self.shift.start_time < existing_shift.shift.end_time and
                 self.shift.end_time > existing_shift.shift.start_time):
-                raise ValidationError(
-                    f"Shift conflicts with existing shift '{existing_shift.shift.name}' "
+                raise ValidationError({"error": f"Shift conflicts with existing shift '{existing_shift.shift.name}' "
                     f"({existing_shift.shift.start_time} - {existing_shift.shift.end_time}) on {check_date}."
-                )
+                })
 
     def save(self, *args, **kwargs):
         self.full_clean()
