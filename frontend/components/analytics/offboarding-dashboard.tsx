@@ -52,7 +52,7 @@ export default function OffboardingDashboard() {
 
 	if (loading) {
 		return (
-			<div className="min-h-screen bg-background p-6 flex items-center justify-center">
+			<div className="min-h-screen bg-background p-4 sm:p-6 flex items-center justify-center">
 				<div className="text-center">
 					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
 					<p className="text-muted-foreground">Loading dashboard...</p>
@@ -63,7 +63,7 @@ export default function OffboardingDashboard() {
 
 	if (error) {
 		return (
-			<div className="min-h-screen bg-background p-6 flex items-center justify-center">
+			<div className="min-h-screen bg-background p-4 sm:p-6 flex items-center justify-center">
 				<div className="text-center">
 					<p className="text-red-500 mb-4">Error: {error}</p>
 					<Button onClick={() => window.location.reload()}>Retry</Button>
@@ -74,7 +74,7 @@ export default function OffboardingDashboard() {
 
 	if (!data) {
 		return (
-			<div className="min-h-screen bg-background p-6 flex items-center justify-center">
+			<div className="min-h-screen bg-background p-4 sm:p-6 flex items-center justify-center">
 				<p className="text-muted-foreground">No data available</p>
 			</div>
 		);
@@ -99,27 +99,30 @@ export default function OffboardingDashboard() {
 		}));
 
 	return (
-		<div className="min-h-screen bg-background p-6">
-			<div className="space-y-6">
+		<div className="min-h-screen bg-background p-4 sm:p-6 overflow-x-hidden">
+			<div className="space-y-4 sm:space-y-6 max-w-full">
 				{/* Header */}
-				<div className="flex flex-col md:flex-row items-center justify-between">
-					<div>
-						<h1 className="text-3xl font-bold text-foreground text-balance">
+				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+					<div className="text-center sm:text-left w-full sm:w-auto">
+						<h1 className="text-2xl sm:text-3xl font-bold text-foreground text-balance">
 							HR Offboarding Dashboard
 						</h1>
-						<p className="text-muted-foreground mt-1">
+						<p className="text-muted-foreground mt-1 text-sm sm:text-base">
 							Track employee separations and manage offboarding processes
 						</p>
 					</div>
-					<div className="flex items-center justify-end gap-8">
-						<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+					<div className="flex items-center justify-center sm:justify-end w-full sm:w-auto">
+						<Button
+							className="rounded-xl w-full sm:w-auto"
+							onClick={() => setIsReportsDialogOpen(true)}
+						>
 							Generate Reports
 						</Button>
 					</div>
 				</div>
 
 				{/* Key Metrics Cards */}
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 					<Card className="bg-card border-border">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium text-card-foreground">
@@ -178,21 +181,25 @@ export default function OffboardingDashboard() {
 				</div>
 
 				{/* Charts Section */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 					{/* Separation Status Distribution */}
 					<Card className="bg-card border-border">
 						<CardHeader>
-							<CardTitle className="text-card-foreground">Separation Status Distribution</CardTitle>
-							<CardDescription>Breakdown of separation statuses</CardDescription>
+							<CardTitle className="text-card-foreground text-lg sm:text-xl">
+								Separation Status Distribution
+							</CardTitle>
+							<CardDescription className="text-sm sm:text-base">
+								Breakdown of separation statuses
+							</CardDescription>
 						</CardHeader>
-						<CardContent>
+						<CardContent className="overflow-hidden">
 							<ChartContainer
 								config={{
 									planned: { label: "Planned", color: "hsl(var(--chart-1))" },
 									completed: { label: "Completed", color: "hsl(var(--chart-2))" },
 									cancelled: { label: "Cancelled", color: "hsl(var(--chart-3))" },
 								}}
-								className="h-[300px]"
+								className="h-[250px] sm:h-[300px] w-full"
 							>
 								<ResponsiveContainer width="100%" height="100%">
 									<PieChart>
@@ -202,7 +209,7 @@ export default function OffboardingDashboard() {
 											cy="50%"
 											labelLine={false}
 											label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-											outerRadius={80}
+											outerRadius={70}
 											fill="#8884d8"
 											dataKey="value"
 										>
@@ -220,21 +227,31 @@ export default function OffboardingDashboard() {
 					{/* Category Breakdown */}
 					<Card className="bg-card border-border">
 						<CardHeader>
-							<CardTitle className="text-card-foreground">Separation Categories</CardTitle>
-							<CardDescription>Types of employee separations</CardDescription>
+							<CardTitle className="text-card-foreground text-lg sm:text-xl">
+								Separation Categories
+							</CardTitle>
+							<CardDescription className="text-sm sm:text-base">
+								Types of employee separations
+							</CardDescription>
 						</CardHeader>
-						<CardContent>
+						<CardContent className="overflow-hidden">
 							<ChartContainer
 								config={{
 									count: { label: "Count", color: "hsl(var(--chart-1))" },
 								}}
-								className="h-[300px]"
+								className="h-[250px] sm:h-[300px] w-full"
 							>
 								<ResponsiveContainer width="100%" height="100%">
-									<BarChart data={categoryData}>
+									<BarChart data={categoryData} margin={{ left: 20, right: 20 }}>
 										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis dataKey="category" />
-										<YAxis />
+										<XAxis
+											dataKey="category"
+											fontSize={12}
+											angle={-45}
+											textAnchor="end"
+											height={70}
+										/>
+										<YAxis fontSize={12} />
 										<ChartTooltip content={<ChartTooltipContent />} />
 										<Bar dataKey="count" fill="hsl(var(--chart-1))" />
 									</BarChart>
@@ -247,21 +264,29 @@ export default function OffboardingDashboard() {
 				{/* Pending Requests Chart */}
 				<Card className="bg-card border-border">
 					<CardHeader>
-						<CardTitle className="text-card-foreground">Pending Requests by Type</CardTitle>
-						<CardDescription>Current requests awaiting approval</CardDescription>
+						<CardTitle className="text-card-foreground text-lg sm:text-xl">
+							Pending Requests by Type
+						</CardTitle>
+						<CardDescription className="text-sm sm:text-base">
+							Current requests awaiting approval
+						</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="overflow-hidden">
 						<ChartContainer
 							config={{
 								count: { label: "Count", color: "hsl(var(--chart-1))" },
 							}}
-							className="h-[250px]"
+							className="h-[200px] sm:h-[250px] w-full"
 						>
 							<ResponsiveContainer width="100%" height="100%">
-								<BarChart data={pendingRequestsData} layout="horizontal">
+								<BarChart
+									data={pendingRequestsData}
+									layout="horizontal"
+									margin={{ left: 20, right: 20 }}
+								>
 									<CartesianGrid strokeDasharray="3 3" />
-									<XAxis type="number" />
-									<YAxis dataKey="type" type="category" width={100} />
+									<XAxis type="number" fontSize={12} />
+									<YAxis dataKey="type" type="category" width={70} fontSize={12} />
 									<ChartTooltip content={<ChartTooltipContent />} />
 									<Bar dataKey="count" fill="hsl(var(--chart-1))" />
 								</BarChart>
