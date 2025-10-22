@@ -120,16 +120,19 @@ export function PayrollChart({
 							<Line
 								type="monotone"
 								dataKey="payroll"
-								stroke={themePalette.MAIN_THEME_COLOR}
+								stroke={"#ff3403"}
+								// stroke={themePalette.MAIN_THEME_COLOR}
 								strokeWidth={3}
 								dot={{
-									fill: themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR,
+									fill: "#ff3403",
+									// fill: themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR,
 									strokeWidth: 2,
 									r: 5,
 								}}
 								activeDot={{
 									r: 7,
-									fill: themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR,
+									fill: "#ff3403",
+									// fill: themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR,
 									strokeWidth: 2,
 								}}
 							/>
