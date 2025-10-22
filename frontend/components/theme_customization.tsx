@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { getDefaultInstitutionId, getInstitutionById } from "@/lib/helpers";
-import { hexToHSL } from "@/app/(main_app)/(dashboard)/layout";
+import { hexToHSL } from "@/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { removeThemeStart, updateThemeStart } from "@/store/auth/actions";
 
@@ -295,7 +295,8 @@ export function ThemeColorForm({
 				throw new Error("Failed to update theme color");
 			}
 
-			const hslColor = hexToHSL(themeColor);
+			const { h, s, l } = hexToHSL(themeColor);
+			const hslColor = `${h} ${s}% ${l}%`;
 
 			document.documentElement.style.setProperty("--primary", hslColor);
 			document.documentElement.style.setProperty("--ring", hslColor);

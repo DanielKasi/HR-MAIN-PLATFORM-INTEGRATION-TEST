@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSelector } from "react-redux";
+import { selectThemePalette } from "@/store/miscellaneous/selectors";
+import { MAIN_DEFAULT_COLOR } from "@/constants";
 
 interface EmployeeCountChartProps {
 	data?: Array<{ year: number; count: number }>;
@@ -19,6 +22,7 @@ export function EmployeeCountChart({
 	className = "",
 }: EmployeeCountChartProps) {
 	const [filteredData, setFilteredData] = useState<Array<{ year: number; count: number }>>([]);
+	const themePalette = useSelector(selectThemePalette);
 
 	useEffect(() => {
 		const filtered = data?.reduce(
@@ -83,7 +87,7 @@ export function EmployeeCountChart({
 							<Tooltip content={<CustomTooltip />} />
 							<Bar
 								dataKey="count"
-								fill="#0CA0F5"
+								fill={themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR}
 								className="hover:!bg-transparent cursor-pointer"
 								radius={[4, 4, 0, 0]}
 							/>

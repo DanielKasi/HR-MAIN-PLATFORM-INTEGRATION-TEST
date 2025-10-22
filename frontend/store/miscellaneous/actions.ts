@@ -13,6 +13,7 @@ import {
 } from "@/types/types.utils";
 import { INotification } from "../notifications/types";
 import { IAnnouncement } from "@/types/announcements.types";
+import { ThemePalette } from "@/types/other";
 
 type ToggleSideBar = Action<MISC_ACTION_TYPES.TOGGLE_SIDEBAR>;
 type OpenSideBar = Action<MISC_ACTION_TYPES.OPEN_SIDE_BAR>;
@@ -59,6 +60,11 @@ type RequireAnnouncementAcknowledgmentSuccess = ActionWithPayLoad<
 	IAnnouncement
 >;
 
+type SetThemeColorPalette = ActionWithPayLoad<
+	MISC_ACTION_TYPES.SET_THEME_COLOR,
+	{ color: string; palette: ThemePalette }
+>;
+
 export type MiscAction =
 	| ToggleSideBar
 	| OpenSideBar
@@ -74,7 +80,8 @@ export type MiscAction =
 	| SetEmployeesCacheTimestamp
 	| RequireAnnouncementAcknowledgmentStart
 	| RequireAnnouncementAcknowledgmentSuccess
-	| ClearAcknowledgmentRequiredAnnouncement;
+	| ClearAcknowledgmentRequiredAnnouncement
+	| SetThemeColorPalette;
 
 export const toggleSideBarAction = () => createAction(MISC_ACTION_TYPES.TOGGLE_SIDEBAR);
 
@@ -124,3 +131,13 @@ export const clearAcknowledgmentRequiredAnnouncement =
 	(): ClearAcknowledgmentRequiredAnnouncement => {
 		return createAction(MISC_ACTION_TYPES.CLEAR_ACKNOWLEDGMENT_REQUIRED_ANNOUNCEMENT);
 	};
+
+export const setThemeColor = ({
+	color,
+	palette,
+}: {
+	color: string;
+	palette: ThemePalette;
+}): SetThemeColorPalette => {
+	return createAction(MISC_ACTION_TYPES.SET_THEME_COLOR, { color, palette });
+};

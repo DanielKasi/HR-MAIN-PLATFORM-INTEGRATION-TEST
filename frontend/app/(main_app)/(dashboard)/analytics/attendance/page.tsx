@@ -15,6 +15,9 @@ import OvertimeTable from "./overtime.table";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ReportDialog } from "@/components/dialogs/reports-dialog";
+import { useSelector } from "react-redux";
+import { selectThemePalette } from "@/store/miscellaneous/selectors";
+import { MAIN_DEFAULT_COLOR } from "@/constants";
 
 export default function AttendanceDashboard() {
 	const initialData: IAttendanceDashboard = {
@@ -30,6 +33,7 @@ export default function AttendanceDashboard() {
 		failed_spotchecks_today: [],
 	};
 	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
+	const themePalette = useSelector(selectThemePalette);
 
 	const getGroupCards1 = (data: IAttendanceDashboard) => [
 		{
@@ -181,7 +185,11 @@ export default function AttendanceDashboard() {
 							}}
 							dataKey={["present", "absent", "late"]}
 							nameKey={"month"}
-							colors={["#3CB371", "#FF1B1C", "#0CA0F5"]}
+							colors={[
+								themePalette.COLOR_40,
+								themePalette.COLOR_90,
+								themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR,
+							]}
 						/>
 
 						{/* Charts Section */}

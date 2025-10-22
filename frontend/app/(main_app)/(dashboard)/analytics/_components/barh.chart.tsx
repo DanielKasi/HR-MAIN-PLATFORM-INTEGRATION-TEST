@@ -13,6 +13,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useSelector } from "react-redux";
+import { selectThemePalette } from "@/store/miscellaneous/selectors";
+import { MAIN_DEFAULT_COLOR } from "@/constants";
 
 type Entry = Record<string, string | number>;
 
@@ -38,6 +41,7 @@ export default function BarHChart({
 	select = true,
 }: Props) {
 	const [groups, setGroups] = React.useState<string[]>([]);
+	const themePalette = useSelector(selectThemePalette);
 
 	const [category, setCategory] = React.useState(groups[0]);
 
@@ -63,8 +67,10 @@ export default function BarHChart({
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
-			if (index == 0) acc.label = "#0CA0F5";
-			acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color: "#0CA0F5" };
+			// if (index == 0) acc.label = themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR;
+			if (index == 0) acc.label = "#ff3403";
+			// acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color: themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR };
+			acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color: "#ff3403" };
 			return acc;
 		}, {} as any);
 	}, []);
@@ -131,7 +137,8 @@ export default function BarHChart({
 						<Bar
 							dataKey={dataKey}
 							radius={rounded ? 8 : 0}
-							fill="#0CA0F5"
+							// fill={themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR}
+							fill={"#ff3403"}
 							background={{ fill: "hsl(var(--accent))" }}
 						>
 							<LabelList

@@ -54,3 +54,10 @@ export const selectRequiredAnnouncementAcknowledgment = createSelector(
 	[selectMiscState],
 	(misc) => misc.acknowledgmentRequiredAnnouncement,
 );
+
+export const selectMainThemeColor = createSelector(
+	[selectMiscState],
+	(misc) => misc.mainThemeColor,
+);
+
+export const selectThemePalette = createSelector([selectMiscState], (misc) => misc.themePalette);
