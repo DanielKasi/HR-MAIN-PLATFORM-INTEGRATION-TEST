@@ -11,10 +11,10 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import apiRequest from "@/lib/apiRequest";
+import { hexToHSL } from "@/app/(main_app)/(dashboard)/layout";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { removeThemeStart, updateThemeStart } from "@/store/auth/actions";
 import { getDefaultInstitutionId, getInstitutionById } from "@/lib/helpers";
-import { hexToHSL } from "@/utils";
 import { handleApiError } from "@/lib/apiErrorHandler";
 
 // Storage key constant
@@ -195,8 +195,7 @@ export default function ThemeColorCustomization() {
 	};
 
 	const updateColorProperties = (color: string) => {
-		const { h, s, l } = hexToHSL(color);
-		const hslColor = `${h} ${s}% ${l}%`;
+		const hslColor = hexToHSL(color);
 
 		document.documentElement.style.setProperty("--primary", hslColor);
 		document.documentElement.style.setProperty("--ring", hslColor);

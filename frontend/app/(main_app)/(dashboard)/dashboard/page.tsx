@@ -106,13 +106,14 @@ export default function Dashboard() {
 				<div className="flex items-center justify-between">
 					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">
 						{greeting},{" "}
-						<span className="inline-block capitalize">
+						<span className="inline-block">
 							{currentUser?.gender === USER_GENDER.MALE
 								? "Mr"
 								: currentUser?.gender === USER_GENDER.FEMALE
 									? "Ms"
 									: ""}
-							. {currentUser?.fullname}{" "}
+							. {capitalizeFirstLetter(currentUser?.fullname.split(" ")[0] || "")}{" "}
+							{capitalizeFirstLetter(currentUser?.fullname.split(" ")[1] || "")}
 						</span>
 					</h1>
 

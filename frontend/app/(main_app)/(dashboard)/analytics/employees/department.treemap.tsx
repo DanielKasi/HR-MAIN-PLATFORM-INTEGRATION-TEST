@@ -3,8 +3,6 @@ import { Treemap } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSelector } from "react-redux";
-import { selectThemePalette } from "@/store/miscellaneous/selectors";
 
 interface DepartmentData {
 	department: string;
@@ -19,7 +17,6 @@ interface DepartmentTreeMapProps {
 
 const CustomTreemapContent = (props: any) => {
 	const { children, onHover, hoveredIndex, isMobile } = props;
-	const themePalette = useSelector(selectThemePalette);
 
 	if (!children || children.length === 0) return null;
 
@@ -28,15 +25,7 @@ const CustomTreemapContent = (props: any) => {
 			{children.map((child: any, index: number) => {
 				const { x, y, width, height, department, count } = child;
 
-				// const colors = [
-				// 	themePalette.MAIN_THEME_COLOR,
-				// 	themePalette.COLOR_20,
-				// 	themePalette.COLOR_30,
-				// 	themePalette.COLOR_40,
-				// 	themePalette.COLOR_50,
-				// ];
-
-				const colors = ["#FF3403", "#FF9479", "#FF7957", "#FF5D35", "#FF8668"];
+				const colors = ["#0CA0F5", "#3DB3F7", "#5DC2F9", "#7DD1FB", "#9DE0FD"];
 				const fillColor = colors[index % colors.length];
 				const isHovered = hoveredIndex === index;
 
@@ -101,7 +90,6 @@ export default function DepartmentTreeMap({ data, chartConfig, title }: Departme
 	const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 	const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0 });
 	const [isMobile, setIsMobile] = React.useState(false);
-	const themePalette = useSelector(selectThemePalette);
 
 	// Check for mobile screen size
 	React.useEffect(() => {
@@ -120,29 +108,17 @@ export default function DepartmentTreeMap({ data, chartConfig, title }: Departme
 	const departmentConfig = React.useMemo(() => {
 		const config: Record<string, { label: string; color: string }> = {};
 		const colors = [
-			"#FF3403",
-			"#FF5D35",
-			"#FF7957",
-			"#FF9479",
-			"#FFAF9B",
-			"#E02D00",
-			"#FF4E22",
-			"#FF6A45",
-			"#FF8668",
-			"#F03000",
+			"#0CA0F5",
+			"#3DB3F7",
+			"#5DC2F9",
+			"#7DD1FB",
+			"#9DE0FD",
+			"#0A8AD6",
+			"#2BA7F6",
+			"#4CBAF8",
+			"#6DCBFA",
+			"#0890E8",
 		];
-		// const colors = [
-		// 	themePalette.MAIN_THEME_COLOR,
-		// 	themePalette.COLOR_40,
-		// 	themePalette.COLOR_30,
-		// 	themePalette.COLOR_20,
-		// 	themePalette.COLOR_10,
-		// 	themePalette.COLOR_80,
-		// 	themePalette.COLOR_70,
-		// 	themePalette.COLOR_60,
-		// 	themePalette.COLOR_50,
-		// 	themePalette.COLOR_90,
-		// ];
 		if (Array.isArray(data)) {
 			data.forEach((item, index) => {
 				config[item.department] = {
@@ -153,7 +129,7 @@ export default function DepartmentTreeMap({ data, chartConfig, title }: Departme
 		}
 
 		return config;
-	}, [data, themePalette]);
+	}, [data]);
 
 	const handleHover = (index: number | null) => {
 		setHoveredIndex(index);

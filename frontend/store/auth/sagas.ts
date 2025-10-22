@@ -107,9 +107,9 @@ function* login({
 }
 
 function* logout() {
-	const defaultPrimaryColor = "14 100% 51%";
-	const defaultRingColor = "14 100% 51%";
-	const defaultSideBarAccentColor = "240 3.7% 15.9%";
+	const defaultPrimaryColor = "199 93% 50%";
+	const defaultRingColor = "199 93% 50%";
+	const defaultSideBarAccentColor = "240 4.8% 95.9%";
 
 	try {
 		yield put(clearEmployeeForm());
@@ -188,6 +188,7 @@ function* resetInactivityOnAccessRefreshed() {
 
 function* inactivityWatcher() {
 	let timeoutTask: Task | null = null; // Track the timeout task
+	console.log("\n\n Inactivity watcher Hit !!!");
 
 	// Handle persisted logout warning on reload
 	const logoutWarningVisible: boolean = yield select(selectLogoutWarningVisible);

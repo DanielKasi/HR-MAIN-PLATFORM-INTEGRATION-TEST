@@ -13,9 +13,6 @@ import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatNumberByMagnitude } from "@/lib/helpers";
-import { useSelector } from "react-redux";
-import { selectThemePalette } from "@/store/miscellaneous/selectors";
-import { MAIN_DEFAULT_COLOR } from "@/constants";
 
 interface PayrollChartProps {
 	data?: {
@@ -36,7 +33,6 @@ export function PayrollChart({
 	loading,
 }: PayrollChartProps) {
 	const [payrollYear, setPayrollYear] = useState<number>(new Date().getFullYear());
-	const themePalette = useSelector(selectThemePalette);
 
 	const CustomTooltip = ({ active, payload, label }: any) => {
 		if (active && payload && payload.length) {
@@ -120,18 +116,10 @@ export function PayrollChart({
 							<Line
 								type="monotone"
 								dataKey="payroll"
-								stroke={themePalette.MAIN_THEME_COLOR}
+								stroke="#0CA0F5"
 								strokeWidth={3}
-								dot={{
-									fill: themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR,
-									strokeWidth: 2,
-									r: 5,
-								}}
-								activeDot={{
-									r: 7,
-									fill: themePalette.MAIN_THEME_COLOR || MAIN_DEFAULT_COLOR,
-									strokeWidth: 2,
-								}}
+								dot={{ fill: "#0CA0F5", strokeWidth: 2, r: 5 }}
+								activeDot={{ r: 7, fill: "#0CA0F5", strokeWidth: 2 }}
 							/>
 						</LineChart>
 					</ResponsiveContainer>

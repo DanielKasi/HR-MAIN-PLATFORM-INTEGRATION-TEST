@@ -165,17 +165,3 @@ export interface NavItem {
 }
 
 export type MaritalStatus = "single" | "married" | "divorced" | "widowed";
-
-export type ThemePalette = {
-	COLOR_10: string;
-	COLOR_20: string;
-	COLOR_30: string;
-	COLOR_40: string;
-	COLOR_50: string;
-	MAIN_THEME_COLOR: string;
-	COLOR_60: string;
-	COLOR_70: string;
-	COLOR_80: string;
-	COLOR_90: string;
-	COLOR_100: string;
-};

@@ -12,12 +12,12 @@ import {
 	CartesianGrid,
 	ResponsiveContainer,
 } from "recharts";
+import DepartmentTreeMap from "./department-treemap";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getEmployeeDashboard } from "@/lib/utils";
-import { IEmployeeDashboard } from "@/types/employee.types";
+import { IEmployeeDashboard } from "@/types/types.utils";
 import { Icon } from "@iconify/react";
-import DepartmentTreeMap from "@/app/(main_app)/(dashboard)/analytics/employees/department.treemap";
 
 const chartConfig = {
 	gender: {
@@ -87,8 +87,8 @@ export default function EmployeeDashboard() {
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 					<Card className="bg-white p-4 rounded-2xl border border-gray-100">
 						<CardContent className="flex items-start space-x-4 p-0">
-							<div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-								<Icon icon="hugeicons:user-multiple" className="!text-primary" strokeWidth={1.5} />
+							<div className="w-12 h-12 bg-[#FF3403]/10 rounded-2xl flex items-center justify-center">
+								<Icon icon="hugeicons:user-multiple" color="#ff3403" strokeWidth={1.5} />
 							</div>
 							<div className="flex-1">
 								<div className="flex justify-between items-start">
@@ -142,15 +142,14 @@ export default function EmployeeDashboard() {
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{/* Department Distribution Bar Chart */}
 					<Card className="rounded-2xl border border-gray-200">
-						{/* <CardHeader>
+						<CardHeader>
 							<CardTitle className="text-xl font-semibold">Department Distribution</CardTitle>
 							<hr className="border-gray-200 border-t mt-2" />
-						</CardHeader> */}
+						</CardHeader>
 						<CardContent>
 							<DepartmentTreeMap
 								data={data?.employees_by_department || []}
 								chartConfig={chartConfig.department}
-								title="Department Distribution"
 							/>
 						</CardContent>
 					</Card>
