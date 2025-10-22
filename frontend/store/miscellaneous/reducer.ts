@@ -10,6 +10,8 @@ import {
 	IPaginatedResponse,
 	IEmployee,
 } from "@/types/types.utils";
+import { MAIN_DEFAULT_COLOR } from "@/constants";
+import { ThemePalette } from "@/types/other";
 
 export type MiscState = {
 	sideBarOpened: boolean;
@@ -19,6 +21,8 @@ export type MiscState = {
 	cachedEmployeesPage: IPaginatedResponse<IEmployee> | null;
 	employeesCacheTimestamp: number | null;
 	acknowledgmentRequiredAnnouncement: IAnnouncement | null;
+	mainThemeColor: string; // Base theme color
+	themePalette: ThemePalette;
 };
 
 const intialMiscState: MiscState = {
@@ -29,6 +33,20 @@ const intialMiscState: MiscState = {
 	cachedEmployeesPage: null,
 	employeesCacheTimestamp: null,
 	acknowledgmentRequiredAnnouncement: null,
+	mainThemeColor: MAIN_DEFAULT_COLOR,
+	themePalette: {
+		COLOR_10: "",
+		COLOR_20: "",
+		COLOR_30: "",
+		COLOR_40: "",
+		COLOR_50: "",
+		MAIN_THEME_COLOR: "",
+		COLOR_60: "",
+		COLOR_70: "",
+		COLOR_80: "",
+		COLOR_90: "",
+		COLOR_100: "",
+	},
 };
 
 export const miscReducer = (
@@ -85,6 +103,13 @@ export const miscReducer = (
 				...state,
 				acknowledgmentRequiredAnnouncement: null,
 			};
+		// case MISC_ACTION_TYPES.SET_THEME_COLOR:
+		// 	const newPalette = action.payload as ThemePalette;
+		// 	return {
+		// 		...state,
+		// 		mainThemeColor: newPalette.MAIN_THEME_COLOR || "#ff3403",
+		// 		themePalette: newPalette,
+		// 	};
 		default:
 			return state;
 	}

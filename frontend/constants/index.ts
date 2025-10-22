@@ -1,7 +1,10 @@
 import { removeTrailingSlash } from "@/lib/helpers";
+import { ThemePalette } from "@/types/other";
 import { IPenaltyType } from "@/types/types.utils";
 
 export const MAIN_DOMAIN_URL = removeTrailingSlash("https://peracosoft.com");
+export const MAIN_DEFAULT_COLOR = "#ff3403";
+
 export const NOTIFICATIONS_STREAM_BASE_PATH = "/communication/notifications/sse/";
 
 export const LEAVE_CATEGORIES: Array<{ value: string; label: string }> = [

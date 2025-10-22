@@ -14,7 +14,7 @@ import Link from "next/link";
 import CreateOrganisationWizard from "./create-organisation/page";
 import QuickActionsWidget from "@/components/quick-actions-widget";
 
-import { MAIN_DOMAIN_URL, PERMISSION_CODES } from "@/constants";
+import { MAIN_DEFAULT_COLOR, MAIN_DOMAIN_URL, PERMISSION_CODES } from "@/constants";
 import { selectAttachedInstitutions, selectRelatedEmployee } from "@/store/auth/selectors";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +50,7 @@ import {
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
 import { hasPermission, removeLeadingSlash, removeTrailingSlash } from "@/lib/helpers";
+import { hexToHSL } from "@/utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
 import {
@@ -61,45 +62,6 @@ import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
 import DashboardSideBar from "@/components/dashboard_components/dashboard-sidebar";
 import Modules from "@/components/modules";
-
-export function hexToHSL(hex: string) {
-	hex = hex.replace("#", "");
-	const r = Number.parseInt(hex.substring(0, 2), 16) / 255;
-	const g = Number.parseInt(hex.substring(2, 4), 16) / 255;
-	const b = Number.parseInt(hex.substring(4, 6), 16) / 255;
-
-	const max = Math.max(r, g, b),
-		min = Math.min(r, g, b);
-	let h = 0,
-		s,
-		l = (max + min) / 2;
-
-	if (max !== min) {
-		const d = max - min;
-
-		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-		switch (max) {
-			case r:
-				h = (g - b) / d + (g < b ? 6 : 0);
-				break;
-			case g:
-				h = (b - r) / d + 2;
-				break;
-			case b:
-				h = (r - g) / d + 4;
-				break;
-		}
-		h /= 6;
-	} else {
-		s = 0;
-	}
-
-	h = Math.round(h * 360);
-	s = Math.round(s * 100);
-	l = Math.round(l * 100);
-
-	return `${h} ${s}% ${l}%`;
-}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname();
@@ -208,22 +170,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 			const hslValue = hexToHSL(hexColor);
 
 			if (!hslValue) return;
-			const [h, s, l] = hslValue.split(" ");
+			const { h, s, l } = hslValue;
 			const hue = h;
-			const saturation = s.replace("%", "");
-			const lightness = l.replace("%", "");
+			const saturation = s;
+			const lightness = l;
 
-			document.documentElement.style.setProperty("--primary", hslValue);
-			document.documentElement.style.setProperty("--ring", hslValue);
-			const darkerL = Math.max(Number.parseInt(lightness) - 10, 0);
+			document.documentElement.style.setProperty("--primary", `${h} ${s}% ${l}%`);
+			document.documentElement.style.setProperty("--ring", `${h} ${s}% ${l}%`);
+			const darkerL = Math.max(lightness - 10, 0);
 
 			document.documentElement.style.setProperty(
 				"--primary-hover",
 				`${hue} ${saturation}% ${darkerL}%`,
 			);
-			document.documentElement.style.setProperty("--sidebar-selected", hslValue);
-			const lighterL = Math.min(Number.parseInt(lightness) + 40, 90);
-			const lighterS = Math.max(Number.parseInt(saturation) - 15, 20);
+			document.documentElement.style.setProperty("--sidebar-selected", `${h} ${s}% ${l}%`);
+			const lighterL = Math.min(lightness + 40, 90);
+			const lighterS = Math.max(saturation - 15, 20);
 
 			document.documentElement.style.setProperty(
 				"--sidebar-hover",
@@ -231,7 +193,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 			);
 			if (document.documentElement.classList.contains("dark")) {
 				document.documentElement.style.setProperty("--sidebar-background", "240 5.9% 10%");
-				const darkModeHoverL = Math.min(Number.parseInt(lightness) + 20, 60);
+				const darkModeHoverL = Math.min(lightness + 20, 60);
 
 				document.documentElement.style.setProperty(
 					"--sidebar-hover",
@@ -246,8 +208,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	};
 
 	useEffect(() => {
-		const fallbackColor = "#0CA0F5";
-		const themeColorToUse = selectedInstitution?.theme_color || fallbackColor;
+		const themeColorToUse = selectedInstitution?.theme_color || MAIN_DEFAULT_COLOR;
 
 		updateThemeColors(themeColorToUse);
 	}, [selectedInstitution]);
