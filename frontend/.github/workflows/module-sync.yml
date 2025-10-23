@@ -1,0 +1,59 @@
+name: Module Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      module_name:
+        description: 'Module name'
+        required: true
+      module_tag:
+        description: 'Module version tag'
+        required: true
+      module_repo:
+        description: 'Module repository URL'
+        required: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Sync module
+        run: |
+          node scripts/sync-module.mjs \
+            --repo ${{ github.event.inputs.module_repo }} \
+            --tag ${{ github.event.inputs.module_tag }} \
+            --name ${{ github.event.inputs.module_name }}
+      
+      - name: Validate routes
+        run: node scripts/validate-routes.mjs
+      
+      - name: Type check
+        run: npm run type-check
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: sync ${{ github.event.inputs.module_name }}@${{ github.event.inputs.module_tag }}"
+          title: "Sync module: ${{ github.event.inputs.module_name }}@${{ github.event.inputs.module_tag }}"
+          body: |
+            Auto-sync of module from repository.
+            
+            - Module: ${{ github.event.inputs.module_name }}
+            - Version: ${{ github.event.inputs.module_tag }}
+            - Repository: ${{ github.event.inputs.module_repo }}
+          branch: sync/${{ github.event.inputs.module_name }}-${{ github.event.inputs.module_tag }}

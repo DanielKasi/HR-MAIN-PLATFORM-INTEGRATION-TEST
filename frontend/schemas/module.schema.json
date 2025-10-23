@@ -1,0 +1,36 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"type": "object",
+	"required": ["name", "version", "platformVersion", "mountPath", "routes"],
+	"properties": {
+		"name": {
+			"type": "string",
+			"pattern": "^[a-z][a-z0-9-]*$"
+		},
+		"version": {
+			"type": "string",
+			"pattern": "^\\d+\\.\\d+\\.\\d+$"
+		},
+		"platformVersion": {
+			"type": "string",
+			"description": "Semver range for compatible platform versions"
+		},
+		"mountPath": {
+			"type": "string",
+			"pattern": "^/[a-z][a-z0-9-]*$"
+		},
+		"routes": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"pattern": "^/"
+			}
+		},
+		"peerDeps": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "string"
+			}
+		}
+	}
+}

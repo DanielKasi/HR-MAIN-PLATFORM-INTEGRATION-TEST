@@ -1,0 +1,55 @@
+name: Auto Sync Modules
+
+on:
+  repository_dispatch:
+    types: [module-release]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Sync module
+        run: |
+          node scripts/sync-module.mjs \
+            --repo "https://github.com/${{ github.event.client_payload.module_repo }}" \
+            --tag "${{ github.event.client_payload.module_tag }}" \
+            --name "${{ github.event.client_payload.module_name }}"
+      
+      - name: Validate and build
+        run: |
+          node scripts/validate-routes.mjs
+          npm run type-check
+          npm run build
+      
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: auto-sync ${{ github.event.client_payload.module_name }}@${{ github.event.client_payload.module_tag }}"
+          title: "Auto-sync: ${{ github.event.client_payload.module_name }}@${{ github.event.client_payload.module_tag }}"
+          body: |
+            Automated sync triggered by module release.
+            
+            **Review required** - Please verify:
+            - [ ] Routes don't conflict
+            - [ ] Build passes
+            - [ ] Tests pass
+            - [ ] No breaking changes
+            
+            - Module: ${{ github.event.client_payload.module_name }}
+            - Version: ${{ github.event.client_payload.module_tag }}
+            - Repository: ${{ github.event.client_payload.module_repo }}
+          assignees: platform-team
+          reviewers: platform-team

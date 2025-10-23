@@ -336,7 +336,7 @@ export function* authSaga() {
 		fork(watchLogout),
 		fork(watchFetchRemoteUser),
 		fork(watchUpToDateInstitutionFetch),
-		fork(inactivityWatcher),
+		// fork(inactivityWatcher),
 		fork(watchUserRelatedEmployeeFetch),
 	]);
 }

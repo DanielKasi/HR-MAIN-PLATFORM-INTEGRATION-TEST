@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				>
 					<Providers>
 						<AnnouncementAcknowledgementPopup />
-						<LogoutWarningPopup />
+						{/* <LogoutWarningPopup /> */}
 						<>{children}</>
 						<Toaster closeButton duration={10000} position={"top-right"} />
 					</Providers>

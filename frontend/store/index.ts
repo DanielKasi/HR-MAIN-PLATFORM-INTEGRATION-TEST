@@ -17,8 +17,8 @@ import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 
 import { clearStateIfStructureChanged } from "./storeUtils";
 
-import rootReducer, { RootState } from "@/store/rootReducer";
-import rootSaga from "@/store/rootSaga";
+// Import from registry - now using the working structure
+import { rootReducer, rootSaga, RootState } from "../src/lib/redux/registry";
 import { now } from "moment";
 
 const createNoopStorage = () => {

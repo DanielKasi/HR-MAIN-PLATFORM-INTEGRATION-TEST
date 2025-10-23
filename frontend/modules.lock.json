@@ -1,0 +1,5 @@
+{
+	"description": "Module version lockfile - tracks synced module versions",
+	"version": "1.0.0",
+	"modules": {}
+}
