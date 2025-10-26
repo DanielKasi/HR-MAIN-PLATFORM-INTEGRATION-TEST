@@ -35,7 +35,11 @@ async function syncModule({ repo, tag, name }) {
 
     // Step 2: Read and validate module.json
     console.log('✅ Validating module manifest...');
-    const manifestPath = path.join(tempDir, 'module.json');
+    // Check for module.json in root or frontend directory
+    let manifestPath = path.join(tempDir, 'module.json');
+    if (!await fs.access(manifestPath).then(() => true).catch(() => false)) {
+      manifestPath = path.join(tempDir, 'frontend', 'module.json');
+    }
     const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
 
     // Basic validation
@@ -60,7 +64,11 @@ async function syncModule({ repo, tag, name }) {
 
     // Step 4: Copy module core
     console.log('📋 Copying module files...');
-    const srcAppPath = path.join(tempDir, 'src/app');
+    // Check for src/app in root or frontend directory
+    let srcAppPath = path.join(tempDir, 'src/app');
+    if (!await fs.access(srcAppPath).then(() => true).catch(() => false)) {
+      srcAppPath = path.join(tempDir, 'frontend', 'src/app');
+    }
     
     // Remove existing module if it exists
     try {
@@ -75,10 +83,11 @@ async function syncModule({ repo, tag, name }) {
 
     // Step 5: Copy module descriptor
     console.log('🔧 Copying module descriptor...');
-    const descriptorSrc = path.join(
-      tempDir,
-      'src/platform-integration/module-descriptor.ts'
-    );
+    // Check for descriptor in root or frontend directory
+    let descriptorSrc = path.join(tempDir, 'src/platform-integration/module-descriptor.ts');
+    if (!await fs.access(descriptorSrc).then(() => true).catch(() => false)) {
+      descriptorSrc = path.join(tempDir, 'frontend', 'src/platform-integration/module-descriptor.ts');
+    }
     const descriptorDest = path.join(
       rootDir,
       'src/lib/modules',
@@ -188,7 +197,10 @@ async function generateRegistry(rootDir) {
 import { combineReducers } from '@reduxjs/toolkit';
 import { all, fork } from 'redux-saga/effects';
 
-${modules.map(m => `import { moduleDescriptor as ${m} } from '@/lib/modules/${m}';`).join('\n')}
+${modules.map(m => {
+  const alias = m.replace(/-/g, '');
+  return `import { moduleDescriptor as ${alias} } from '@/lib/modules/${m}';`;
+}).join('\n')}
 
 // Host slices
 import { authReducer } from '@/store/auth/reducer';
@@ -207,7 +219,10 @@ export const rootReducer = combineReducers({
   miscellaneous: miscReducer,
   redirects: redirectsReducer,
   notifications: notificationsReducer,
-${modules.map(m => `  ...${m}.slices,`).join('\n')}
+${modules.map(m => {
+  const alias = m.replace(/-/g, '');
+  return `  ...${alias}.slices,`;
+}).join('\n')}
 });
 
 // Host sagas
@@ -222,7 +237,10 @@ function* hostSagas() {
 // Module sagas
 function* moduleSagas() {
   yield all([
-${modules.map(m => `    ...${m}.sagas.map(saga => fork(saga)),`).join('\n')}
+${modules.map(m => {
+  const alias = m.replace(/-/g, '');
+  return `    ...${alias}.sagas.map(saga => fork(saga)),`;
+}).join('\n')}
   ]);
 }
 
