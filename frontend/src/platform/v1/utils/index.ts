@@ -1,5 +1,11 @@
 export { cn } from "@/lib/utils";
 export { formatDate, formatNumberByMagnitude, capitalizeEachWord } from "@/lib/helpers";
+export {
+	buildModulePath,
+	registerModuleDescriptor,
+	getModuleMountPath,
+	buildModulePathFor,
+} from "./routing";
 
 export const formatCurrency = (amount: number, currency = "USD"): string => {
 	return new Intl.NumberFormat("en-US", {

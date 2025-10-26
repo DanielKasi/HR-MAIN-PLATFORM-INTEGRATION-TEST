@@ -1,5 +1,12 @@
 {
 	"description": "Module version lockfile - tracks synced module versions",
 	"version": "1.0.0",
-	"modules": {}
+	"modules": {},
+	"task-management": {
+		"version": "1.0.0",
+		"tag": "v1.1.1",
+		"repo": "https://github.com/DanielKasi/TASK-MGMT-INTEGRATION",
+		"syncedAt": "2025-10-26T15:31:24.280Z",
+		"checksum": "1761492684206"
+	}
 }
