@@ -1,15 +1,15 @@
 import type { ModuleDescriptor } from "@/platform/v1/types/module";
-import { authReducer } from "@/store/auth/reducer";
-import { miscReducer } from "@/store/miscellaneous/reducer";
-import { redirectsReducer } from "@/store/redirects/reducer";
-import { notificationsReducer } from "@/store/notifications/reducer";
-import { authSaga } from "@/store/auth/sagas";
+import { authReducer } from "@/lib/modules/task-management/store/auth/reducer";
+import { miscReducer } from "@/lib/modules/task-management/store/miscellaneous/reducer";
+import { redirectsReducer } from "@/lib/modules/task-management/store/redirects/reducer";
+import { notificationsReducer } from "@/lib/modules/task-management/store/notifications/reducer";
+import { authSaga } from "@/lib/modules/task-management/store/auth/sagas";
 
 export const moduleDescriptor: ModuleDescriptor = {
 	name: "task-management",
 	version: "1.0.0",
 	platformVersion: ">=1.0.0 <2.0.0",
-	routeBasePath: "/tasks",
+	routeBasePath: "/apps/task-management",
 	routes: [
 		"/dashboard",
 		"/projects",

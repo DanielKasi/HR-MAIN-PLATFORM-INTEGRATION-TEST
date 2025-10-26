@@ -1,0 +1,45 @@
+export enum AUTH_ACTION_TYPES {
+	SET_ACCESS_TOKEN = "task-managementAuth/SET_ACCESS_TOKEN",
+	REMOVE_ACCESS_TOKEN = "task-managementAuth/REMOVE_ACCESS_TOKEN",
+	SET_REFRESH_TOKEN = "task-managementAuth/SET_REFRESH_TOKEN",
+	REMOVE_REFRESH_TOKEN = "task-managementAuth/REMOVE_REFRESH_TOKEN",
+
+	LOGIN_START = "task-managementAuth/LOGIN_START",
+	LOGIN_FAILURE = "task-managementAuth/LOGIN_FAILURE",
+	FETCH_REMOTE_USER_START = "task-managementAuth/FETCH_REMOTE_USER_START",
+	FETCH_REMOTE_USER_FAILURE = "task-managementAuth/FETCH_REMOTE_USER_FAILURE",
+	SET_USER = "task-managementAuth/SET_USER",
+
+	FETCH_UP_TO_DATE_INSTITUTION = "task-managementAuth/FETCH_UP_TO_DATE_INSTITUTION",
+
+	LOGOUT_START = "task-managementAuth/LOGOUT_START",
+	LOGOUT_FAILURE = "task-managementAuth/LOGOUT_FAILURE",
+	LOGOUT_SUCCESS = "task-managementAuth/LOGOUT_SUCCESS",
+	CLEAR_AUTH_ERROR = "task-managementAuth/CLEAR_AUTH_ERROR",
+
+	SET_SELECTED_INSTITUTION = "task-managementAuth/SET_SELECTED_INSTITUTION",
+	ADD_NEW_Institution = "task-managementAuth/ADD_NEW_Institution",
+	SET_ATTACHED_INSTITUTIONS = "task-managementAuth/SET_ATTACHED_INSTITUTIONS",
+	SET_SELECTED_BRANCH = "task-managementAuth/SET_SELECTED_BRANCH",
+
+	UPDATE_THEME = "task-managementAuth/UPDATE_THEME",
+	REMOVE_THEME = "task-managementAuth/REMOVE_THEME",
+
+	SET_TEMPORARY_PERMISSIONS = "task-managementAuth/SET_TEMPORARY_PERMISSIONS",
+	CLEAR_TEMPORARY_PERMISSIONS = "task-managementAuth/CLEAR_TEMPORARY_PERMISSIONS",
+
+	SET_SELECTED_TILL = "task-managementAuth/SET_SELECTED_TILL",
+	CLEAR_SELECTED_TILL = "task-managementAuth/CLEAR_SELECTED_TILL",
+
+	// Auto Logout mechanism
+
+	USER_ACTIVITY_DETECTED = "task-managementAuth/USER_ACTIVITY_DETECTED",
+	SHOW_LOGOUT_WARNING = "task-managementAuth/SHOW_LOGOUT_WARNING",
+	HIDE_LOGOUT_WARNING = "task-managementAuth/HIDE_LOGOUT_WARNING",
+	CONFIRM_LOGOUT = "task-managementAuth/CONFIRM_LOGOUT",
+	CANCEL_LOGOUT = "task-managementAuth/CANCEL_LOGOUT",
+	REFRESH_TOKENS_START = "task-managementAuth/REFRESH_TOKENS_START",
+	REFRESH_TOKENS_SUCCESS = "task-managementAuth/REFRESH_TOKENS_SUCCESS",
+	REFRESH_TOKENS_FAILURE = "task-managementAuth/REFRESH_TOKENS_FAILURE",
+	SET_INACTIVITY_TIMEOUT = "task-managementAuth/SET_INACTIVITY_TIMEOUT",
+}

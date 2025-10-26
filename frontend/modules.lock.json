@@ -4,9 +4,9 @@
 	"modules": {},
 	"task-management": {
 		"version": "1.0.0",
-		"tag": "v1.0.3",
+		"tag": "v1.1.1",
 		"repo": "https://github.com/DanielKasi/TASK-MGMT-INTEGRATION",
-		"syncedAt": "2025-10-24T17:08:35.194Z",
-		"checksum": "1761325715182"
+		"syncedAt": "2025-10-26T15:31:24.280Z",
+		"checksum": "1761492684206"
 	}
 }

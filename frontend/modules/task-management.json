@@ -1,8 +1,8 @@
 {
 	"name": "task-management",
 	"version": "1.0.0",
-	"tag": "v1.0.3",
-	"syncedAt": "2025-10-24T17:08:35.186Z",
+	"tag": "v1.1.1",
+	"syncedAt": "2025-10-26T15:31:24.277Z",
 	"routes": [
 		"/",
 		"/(main_app)/(auth)/login",
@@ -60,5 +60,5 @@
 		"/(main_app)/(dashboard)/admin/settings/approvals/[id]/edit",
 		"/(main_app)/(dashboard)/admin/settings/approvals/approver-groups"
 	],
-	"mountPath": "/task-management"
+	"mountPath": "/apps/task-management"
 }

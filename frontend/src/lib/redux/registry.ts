@@ -1,10 +1,10 @@
 // AUTO-GENERATED - DO NOT EDIT
-// Generated at: 2025-10-24T17:08:35.199Z
+// Generated at: 2025-10-26T15:31:24.521Z
 
 import { combineReducers } from "@reduxjs/toolkit";
 import { all, fork } from "redux-saga/effects";
 
-import { moduleDescriptor as taskmanagement } from "../modules/task-management";
+import { moduleDescriptor as taskmanagement } from "@/lib/modules/task-management";
 
 // Host slices
 import { authReducer } from "@/store/auth/reducer";
@@ -33,7 +33,7 @@ function* hostSagas() {
 
 // Module sagas
 function* moduleSagas() {
-	yield all([...(taskmanagement.sagas ?? []).map((saga) => fork(saga))]);
+	yield all([...taskmanagement.sagas.map((saga) => fork(saga))]);
 }
 
 // Root saga
